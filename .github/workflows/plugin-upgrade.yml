@@ -1,0 +1,139 @@
+# plugin-upgrade.yml — bump one or more Mercatto plugins in THIS store and open
+# a PR. Triggered by `workflow_dispatch`, normally from the version-checker's
+# `plugin-upgrade` Edge Function (the Upgrade button in the Drift tab).
+#
+# CANONICAL COPY lives in minimalart/minimalart-version-checker at
+# scripts/plugin-upgrade/plugin-upgrade.yml, together with the node script this
+# workflow runs. Both are VENDORED into each store repo — edit the canonical
+# copies and re-vendor. See the README next to them.
+#
+# WHY A WORKFLOW AND NOT A DIRECT API WRITE. The store's `quality.yml` runs
+# `pnpm install --frozen-lockfile` on every PR and `pnpm-lock.yaml` is ~1 MB.
+# An Edge Function (Deno, no filesystem, no pnpm) cannot regenerate that
+# lockfile, so a PR that only PATCHes `apps/backend/package.json` through the
+# GitHub API lands red every time. Running pnpm on a real runner is the only
+# way to get a lockfile that matches the bump.
+#
+# WHAT GETS WRITTEN. A store consumes plugins from GitHub Packages and vendors
+# no `packages/plugins/` directory, so of the 7 canonical places in
+# PLAYBOOK-plugin-lifecycle.md §2 only four exist here, and all four must move
+# together or `plugin-consistency` reports drift. See apply-plugin-bumps.mjs.
+#
+# NEVER AUTO-MERGES. It opens a PR against the base branch and stops, per
+# PRD-sistema-versiones-y-updates §5: everything reaches `main` by PR with at
+# least one human reviewer.
+
+name: plugin-upgrade
+
+on:
+  workflow_dispatch:
+    inputs:
+      plugins:
+        description: >-
+          JSON array of plugins to bump:
+          [{"id":"company","version":"1.4.0","packageName":"@minimalart/mercatto-plugin-company"}]
+        required: true
+        type: string
+      base:
+        description: Base branch for the PR
+        required: false
+        default: main
+        type: string
+      requested_by:
+        description: Email of the operator who pressed Upgrade (for the PR body)
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: read
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base }}
+
+      # Mirrors quality.yml exactly: node 24 + corepack pnpm. A different pnpm
+      # major would rewrite the whole lockfile and make the diff unreviewable.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: corepack enable
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+
+      # Nothing below interpolates ${{ }} into a shell command: every value the
+      # caller controls reaches the script as an env var, and everything the
+      # script produces comes back as a $GITHUB_OUTPUT line or a file under
+      # $RUNNER_TEMP. Keeps dispatch inputs out of the shell entirely.
+      - name: Apply version bumps to the canonical places
+        id: bump
+        env:
+          PLUGINS_JSON: ${{ inputs.plugins }}
+          BASE_BRANCH: ${{ inputs.base }}
+          REQUESTED_BY: ${{ inputs.requested_by }}
+          USED_FALLBACK_TOKEN: ${{ secrets.PLUGIN_UPGRADE_TOKEN == '' }}
+        run: node .github/scripts/apply-plugin-bumps.mjs
+
+      # Regenerates pnpm-lock.yaml for the new ranges. GITHUB_TOKEN is required
+      # because these plugins resolve from GitHub Packages, not public npm.
+      - name: Install (updates the lockfile)
+        if: steps.bump.outputs.changed == 'true'
+        run: pnpm install --no-frozen-lockfile
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # The gate that matters: prove the lockfile we just produced is what a
+      # clean CI install expects. If this fails the PR would have gone red
+      # anyway — better to fail here and open nothing.
+      - name: Verify the lockfile is consistent
+        if: steps.bump.outputs.changed == 'true'
+        run: pnpm install --frozen-lockfile
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Commit and push the branch
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          BRANCH: ${{ steps.bump.outputs.branch }}
+        run: |
+          git config user.name  "minimalart-version-checker"
+          git config user.email "team.deploy@minimalart.co"
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -F "$RUNNER_TEMP/commit-message.txt"
+          git push origin "$BRANCH"
+
+      # PLUGIN_UPGRADE_TOKEN is strongly preferred over github.token: PRs opened
+      # with the default GITHUB_TOKEN do NOT trigger `on: pull_request`
+      # workflows, so quality.yml would silently never run and the PR would look
+      # green because nothing checked it. With a PAT the PR behaves like a human
+      # one. The fallback still works — apply-plugin-bumps.mjs puts a loud
+      # warning in the PR body when it is in play.
+      - name: Open the PR
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PLUGIN_UPGRADE_TOKEN || github.token }}
+          BRANCH: ${{ steps.bump.outputs.branch }}
+          BASE: ${{ inputs.base }}
+          SUBJECT: ${{ steps.bump.outputs.subject }}
+        run: |
+          gh pr create \
+            --base "$BASE" \
+            --head "$BRANCH" \
+            --title "$SUBJECT" \
+            --body-file "$RUNNER_TEMP/pr-body.md"
+
+      - name: Report when nothing changed
+        if: steps.bump.outputs.changed != 'true'
+        run: |
+          echo "::notice::Every requested plugin already sits at its target version. No branch, no PR."
