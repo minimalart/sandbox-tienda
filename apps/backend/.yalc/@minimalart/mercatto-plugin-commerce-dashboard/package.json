@@ -1,0 +1,84 @@
+{
+  "name": "@minimalart/mercatto-plugin-commerce-dashboard",
+  "version": "1.3.0",
+  "description": "Mercatto plugin — commerce analytics dashboard (pre-aggregated snapshots + admin UI)",
+  "main": ".medusa/server/src/index.js",
+  "types": ".medusa/server/src/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./.medusa/server/src/index.d.ts",
+      "default": "./.medusa/server/src/index.js"
+    },
+    "./.medusa/server/src/modules/*": "./.medusa/server/src/modules/*/index.js",
+    "./.medusa/server/src/providers/*": "./.medusa/server/src/providers/*/index.js",
+    "./admin": {
+      "import": "./.medusa/server/src/admin/index.mjs",
+      "require": "./.medusa/server/src/admin/index.js",
+      "default": "./.medusa/server/src/admin/index.js"
+    }
+  },
+  "files": [
+    ".medusa",
+    "package.json",
+    "README.md",
+    "CHANGELOG.md",
+    "mercatto-plugin.json"
+  ],
+  "keywords": [
+    "medusa-plugin",
+    "mercatto",
+    "commerce-dashboard",
+    "analytics"
+  ],
+  "scripts": {
+    "build": "medusa plugin:build",
+    "dev": "medusa plugin:develop",
+    "prepublishOnly": "pnpm build"
+  },
+  "peerDependencies": {
+    "@medusajs/admin-sdk": "2.18.0",
+    "@medusajs/core-flows": "2.18.0",
+    "@medusajs/framework": "2.18.0",
+    "@medusajs/icons": "2.18.0",
+    "@medusajs/js-sdk": "2.18.0",
+    "@medusajs/medusa": "2.18.0",
+    "@medusajs/ui": "^4.1.19",
+    "@medusajs/utils": "2.18.0",
+    "@minimalart/mercatto-multistore-contract": "0.1.0",
+    "@mikro-orm/core": "6.4.13",
+    "@mikro-orm/knex": "6.4.13",
+    "@mikro-orm/migrations": "6.4.13",
+    "@mikro-orm/postgresql": "6.4.13",
+    "@tanstack/react-query": "^5.62.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.0"
+  },
+  "peerDependenciesMeta": {
+    "@medusajs/core-flows": {
+      "optional": true
+    },
+    "@medusajs/js-sdk": {
+      "optional": true
+    },
+    "@medusajs/utils": {
+      "optional": true
+    }
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minimalart/medusa-b2c-boilerplate.git",
+    "directory": "packages/plugins/plugin-commerce-dashboard"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "private": false,
+  "yalcSig": "9121f166163298fc9892440abdf7a69e"
+}

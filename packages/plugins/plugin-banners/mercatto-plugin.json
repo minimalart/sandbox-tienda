@@ -1,0 +1,25 @@
+{
+  "$schema": "https://mercatto.minimalart.co/schemas/plugin.v1.json",
+  "schema_version": 1,
+  "id": "banners",
+  "name": "Banners",
+  "version": "1.0.2",
+  "kind": "plugin",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:banners",
+  "environment": [
+    "OPENROUTER_API_KEY",
+    "OPENROUTER_MODEL",
+    "OPENROUTER_SITE_URL",
+    "LANDING_AI_MAX_RETRIES"
+  ],
+  "medusaModuleKey": "banner",
+  "ownedTables": ["banner", "banner_analytics", "banner_audit"],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": ["banners"],
+    "admin_translation": null
+  }
+}

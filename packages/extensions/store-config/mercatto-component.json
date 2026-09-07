@@ -1,0 +1,459 @@
+{
+  "schema_version": 1,
+  "id": "store-config",
+  "name": "Preferencias",
+  "version": "1.15.1",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:store-config",
+  "environment": [
+    "AI_MEMORY_AUTOCAPTURE",
+    "AI_MEMORY_AUTOCAPTURE_APPROVAL",
+    "AI_MEMORY_ENABLED",
+    "AI_MEMORY_MIN_SIMILARITY",
+    "AI_MEMORY_TOPK",
+    "CHAT_AI_MAX_TOKENS",
+    "CHAT_AI_MODEL",
+    "CHAT_AI_REASONING_EFFORT",
+    "CHAT_AI_VALIDATION",
+    "EMBEDDINGS_MODEL",
+    "IN_PERSON_SC_NAME",
+    "LANDING_AI_MAX_RETRIES",
+    "OPENROUTER_MODEL"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/store-config",
+      "target": "apps/backend/src/modules/store-config"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/store-config",
+      "target": "apps/backend/src/api/admin/store-config"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/store-config",
+      "target": "apps/backend/src/api/store/store-config"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/minimum-purchase",
+      "target": "apps/backend/src/api/store/minimum-purchase"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/barcode-scanner",
+      "target": "apps/backend/src/api/store/barcode-scanner"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/store-config",
+      "target": "apps/backend/src/admin/routes/store-config"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/store-config.tsx",
+      "target": "apps/backend/src/admin/hooks/api/store-config.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/email-branding.tsx",
+      "target": "apps/backend/src/admin/hooks/api/email-branding.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/legal-pages.tsx",
+      "target": "apps/backend/src/admin/hooks/api/legal-pages.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/components/store-config",
+      "target": "apps/backend/src/admin/components/store-config"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/translations/store-config",
+      "target": "apps/backend/src/admin/translations/store-config"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/store-settings.ts",
+      "target": "apps/storefront/src/lib/data/store-settings.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/api/store/minimum-purchase",
+      "target": "apps/storefront/src/app/api/store/minimum-purchase"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/api/store/barcode-scanner",
+      "target": "apps/storefront/src/app/api/store/barcode-scanner"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/legal-pages.ts",
+      "target": "apps/storefront/src/lib/data/legal-pages.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/legal",
+      "target": "apps/storefront/src/modules/legal"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/legal",
+      "target": "apps/storefront/src/app/[countryCode]/(main)/legal"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-legal-pages.ts",
+      "target": "apps/backend/src/scripts/seed-legal-pages.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/site-config/site-gate.ts",
+      "target": "apps/storefront/src/lib/site-config/site-gate.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/api/site-gate",
+      "target": "apps/storefront/src/app/api/site-gate"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/site-gate",
+      "target": "apps/storefront/src/modules/site-gate"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/layout.tsx",
+      "target": "apps/storefront/src/app/[countryCode]/layout.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/setup-in-person-sales-channel.ts",
+      "target": "apps/backend/src/scripts/setup-in-person-sales-channel.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/store-config/migrations/Migration20260612100000.ts",
+    "apps/backend/src/modules/store-config/migrations/Migration20260617000003.ts",
+    "apps/backend/src/modules/store-config/migrations/Migration20260807150000StoreConfig.ts",
+    "apps/backend/src/modules/store-config/migrations/Migration20260807270000MinimumPurchase.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/components/store-config/legal-html-editor.tsx",
+      "sha256": "a1a7c4a54a513c27c79c631917fe93cab406ddef804096143817231b8686926c"
+    },
+    {
+      "path": "apps/backend/src/admin/hooks/api/email-branding.tsx",
+      "sha256": "e10b4ad663bed12a8db78988334d8dacf4eddabc0ad8ed28495b595f565fb399"
+    },
+    {
+      "path": "apps/backend/src/admin/hooks/api/legal-pages.tsx",
+      "sha256": "77fe7c34a4cbab70ec4d8384b57ab28124a3b502e6e28c529c99d7655f34c47e"
+    },
+    {
+      "path": "apps/backend/src/admin/hooks/api/store-config.tsx",
+      "sha256": "436e813d64c65cb888565a6768896483c0db53ca7a25a7f623f76091af3a9bfa"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/components/ai-config-card.tsx",
+      "sha256": "1a088bcff2e71f5c0a197a7c9a887e2cc6a30541dee87e6d2e56ced89a148117"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/components/branch-settings-card.tsx",
+      "sha256": "166612769bbe3d1f430eee4fc2898f34b7f00e9b30915b60ca3d311b6b9587c6"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/components/commerce-card.tsx",
+      "sha256": "35eed31e16d948c925b154360157c6c0ea17b8fe30396a720a2e5170ed8db598"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/components/commerce-context-card.tsx",
+      "sha256": "09e0394c5652b7616f7af24a5161ab9b7fcf2c0f5eb8786c4ebcd119dc3382b1"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/components/email-branding-card.tsx",
+      "sha256": "9857b696731926d97731193e6967613227c6a79533f417bc272672177cc16141"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/components/fiscal-docs-card.tsx",
+      "sha256": "d32bf7cb9b90bc43b262e1ef77abe78afd9ef5dd22856f501ee1ed4a2260f8b6"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/components/legal-pages-card.tsx",
+      "sha256": "b60b2e2e63c518f99c32cbb2b5373453ce74623d238ddae338a3b44f8f81d13f"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/components/minimum-purchase-create-drawer.tsx",
+      "sha256": "3322128c3f3e2fc84947b423c7b94bf3d4b647ea73cc86a6b510a4d6f19138e5"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/components/site-gate-card.tsx",
+      "sha256": "47fd21a1ef145c2d022a7a372a3102b7556f9c366ebeabd804a5b5155db66933"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/components/storefront-settings-card.tsx",
+      "sha256": "68b8c229a504e3a26b2afc305a8ad6e431e223f22ec1f4cc7838af594d5c9fd2"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/credenciales/page.tsx",
+      "sha256": "c147d015730eab843fc422b3ff3233ca7ee23847a074cd1b4de576ae2eaccfac"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-config/page.tsx",
+      "sha256": "2686744b6fc357f3d8a658a13b1fe377ab528c73ed108c7019da9a811d8dc242"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/store-config/index.ts",
+      "sha256": "bde8b3ebc2b0123ae8301aaec94b1b62daf57939069d956049b7fcb98214c7ea"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/ai-config/route.ts",
+      "sha256": "f016851f25386748da37fc1bf39a1de0e9517ae12afcad3c6ff7772708135095"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/commerce/apply/route.ts",
+      "sha256": "10f964683345561380dc38d6868d33d69531b0a1c45d00a338468dde3267dfee"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/commerce/context/route.ts",
+      "sha256": "bd3f822f5250fee03a5c3f73f6789748085fa4923d9f602d72b0a316ad19af49"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/commerce/plan/route.ts",
+      "sha256": "61e9e826c66539602464b1eb764d4f96fc70df23758ec8f7a1cb1ec507b98a98"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/email-branding/route.ts",
+      "sha256": "00252c5324b7ff9e3de34599eb644a6aedfda802bc75763c66a0b9ae76655603"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/legal-pages/route.ts",
+      "sha256": "4d1d3d38eb1f6ab487d12383a4f30369ee8df33f91f3d1b331376dc87e760d5d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/legal-pages/schema.test.ts",
+      "sha256": "18bdf51e2c9a37e34e22286a06811b8063896e100a088fc98a1e6a4d23a9cf5f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/minimum-purchase/route.ts",
+      "sha256": "7b429d47a1f98cf0d51ebe785ff926568181c800ad3e639a43385ffab8879ff2"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/minimum-purchase/validators.ts",
+      "sha256": "d3c37b23834418da6b137afe75b3ab93fe153e75079b161df6e1b2f43625b16e"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/settings/route.ts",
+      "sha256": "9a321100d4628ea635a238f54a4d882c307486cc6fc64aafaa41950c6474c9fb"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/site-gate/route.ts",
+      "sha256": "61d5d7c813f4e74ce3e35d375c8b2fafad02870bb68e919a6c639efabf583890"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/storefront-url/base.test.ts",
+      "sha256": "bb12c4a7a16d7d9a11a9280b2a4941025a34ff4253ed334fdd5a345b79a9b788"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/storefront-url/base.ts",
+      "sha256": "eb1b32cee3298fdb14a360fb5958bc08222d3af80e8e12c0c297cef6bd128e48"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-config/storefront-url/route.ts",
+      "sha256": "f41ff08567ea6539dbe32918e71f70e0eb220e12cb2166d95f5fa2d3de31fc6d"
+    },
+    {
+      "path": "apps/backend/src/api/store/barcode-scanner/lookup/route.ts",
+      "sha256": "d54d4ebc7675c06badaddcefa0e8983d8ad2669d4069c8e36dc6e4b011177c9f"
+    },
+    {
+      "path": "apps/backend/src/api/store/barcode-scanner/match.test.ts",
+      "sha256": "758afe50acc30b07e6c1031da3b6a5e9092865c8728f9ac12abdd58aa3f94141"
+    },
+    {
+      "path": "apps/backend/src/api/store/barcode-scanner/match.ts",
+      "sha256": "b563c5a265a8bafe18616cfb1e808fb12e5aebc67753dd3d2b41639e8bd41b59"
+    },
+    {
+      "path": "apps/backend/src/api/store/minimum-purchase/route.ts",
+      "sha256": "b61317440df97890940ff5d85ce1a5175635ab40a182d91f53958d4495c6d6af"
+    },
+    {
+      "path": "apps/backend/src/api/store/store-config/legal-pages/route.ts",
+      "sha256": "5d30324e288275ad7eb237b42b6d864921e215ca0f6b805f46a1fd3f70896338"
+    },
+    {
+      "path": "apps/backend/src/api/store/store-config/route.ts",
+      "sha256": "b9ea0238c6e5ac8b10be952e7c6dd4cd0261c749d4b17fc74830d8e11e5629b5"
+    },
+    {
+      "path": "apps/backend/src/api/store/store-config/site-gate/route.ts",
+      "sha256": "43aa58f147c38ed5025f90d846ebc5d60744351786c8bf09fb09e2e0d3cc30db"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/index.ts",
+      "sha256": "1b1d6620d5afabe138ff80d67bf77608c4ea3b1f28d30e047c4a552cea39c6b2"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/legal/defaults.test.ts",
+      "sha256": "575ff7469eb1648019b00b9b0c4e1a63ca9e8a2d053ecf45763da93cf53fa7de"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/legal/defaults.ts",
+      "sha256": "4b5e27c930e1ceb1d47edc49981a237c1aed73f5f0e3aa45a0ac3efcc7efeaae"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/legal/pages.ts",
+      "sha256": "3db168d2edd5c1678225407985589a4225545ae1c0b969b9e10134e70aa8b375"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/legal/tiptap-extensions.ts",
+      "sha256": "46a99fffc910bd25bf5ee1f3c2154b3fe5756aafbd4ca26f7de9b4b7526eb7d9"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/migrations/Migration20260612100000.ts",
+      "sha256": "d7a58c88e57a164747d8752aa360974038f9a4a1cc0f127c160b9843a95f8c0e"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/migrations/Migration20260617000003.ts",
+      "sha256": "2e2b93cac46d08dedb9084ac9ece207ec2f318787a67b1052916ba4eeebf241d"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/migrations/Migration20260807150000StoreConfig.ts",
+      "sha256": "bac79e212e435b79279335c1b341dddcd7c89f0db5110953ee24c99dd330cf17"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/migrations/Migration20260807270000MinimumPurchase.ts",
+      "sha256": "7ec8708e4d2ec38940f0226e958c666b3b084305af3d30502197c281aaad4f35"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/models/index.ts",
+      "sha256": "a78f6b3d8f5fd129f9d0cdfa2963815e646be4d625496d9436e2e8c623b5f5f8"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/models/minimum-purchase.ts",
+      "sha256": "ffbb90fb51ab50904f939bb8b1ba9a5547c55cd640bdffd54a685cec582418e5"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/models/store-setting.ts",
+      "sha256": "1eff6fd935b05f930647c1b1031b3c2ada828507823d710d36266a9ef436390e"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/service.ts",
+      "sha256": "923f905d92e219d3cb76b7dd05feb4873bb6608d2e9921c3e86e1f41763a01bb"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/settings.test.ts",
+      "sha256": "5b13e85f18bf275c68ca9e76b5e9c6421e9d9398445d13e7db03e4eab9e75e88"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/settings.ts",
+      "sha256": "3ba9c898e3cda5c66493337315b8a1903d03242adccdffcb015f7eb44cd33d82"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/site-gate.test.ts",
+      "sha256": "5dd0c089a5dae4d908dc4e6e86dd080b57cb8df533b73443045869f373b4dc64"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/site-gate.ts",
+      "sha256": "cd882e1d33960565bce0433fdc80ac6c5a7ca694b4ee43c5cc54c4f8b40f6a73"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/site-settings.test.ts",
+      "sha256": "cbaf518189ccabc22dc5df9002093bd8f2b62848c4ff3b6f4562e385aa9511c5"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-legal-pages.ts",
+      "sha256": "9301b4e20c1ab9490cdc892fd9104ddddf423119154ca96b72d5e79edb699883"
+    },
+    {
+      "path": "apps/backend/src/scripts/setup-in-person-sales-channel.ts",
+      "sha256": "c14dc3e294a8b56cab1185c5ce8cc9b2973b23bc12be88706360836ae34a50c4"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/legal/conditions/layout.tsx",
+      "sha256": "12206498415952a08897758dab7d4e46673b9d1ac05c1d453142f6c42802fa80"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/legal/conditions/page.tsx",
+      "sha256": "35e3a2ebca6529b7d6e6f7235333126317769fbf5f634ea88648b6aa742048ba"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/legal/exchangesAndReturns/layout.tsx",
+      "sha256": "8f82d57c47996f0b56218c0f5217fe5e796146fb6369f01478be7cc085a6baa8"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/legal/exchangesAndReturns/page.tsx",
+      "sha256": "c400608a5276b5c1a564ce2052ef1c4f5c203f54e51619a61ca4c4e3bd844508"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/legal/legals/layout.tsx",
+      "sha256": "b7e4e86ddd4e115a3c868d5bb1d0ae1477c66be3535893e241962ef930942a24"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/legal/legals/page.tsx",
+      "sha256": "56d051705cdef0887f372c94ce2004ec02b71d8409b9854f3bca245b3bf36885"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/layout.tsx",
+      "sha256": "102be7e6650457b815fba8451a69d2584d5d2a3678477183fad01e0c1028709c"
+    },
+    {
+      "path": "apps/storefront/src/app/api/site-gate/route.ts",
+      "sha256": "a8f1527e7765e9cb1ba45c9743f38ae83712cb80e2bb4556df50ab1b7e54181a"
+    },
+    {
+      "path": "apps/storefront/src/app/api/store/barcode-scanner/lookup/route.ts",
+      "sha256": "9126d4bba0d19d46d9ea7786f65e06060aec949614dd4278bd9c83a8c1acc395"
+    },
+    {
+      "path": "apps/storefront/src/app/api/store/minimum-purchase/route.ts",
+      "sha256": "10f48145d65139f745d2f4ccb7d0e0399b25623f9bd67d8a6ff1388868625b61"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/legal-pages.ts",
+      "sha256": "da1e0505690785106b6c8e60efb00477a271880be8f737e29936a753689ea9ac"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/store-settings.ts",
+      "sha256": "f467188580c9d5f55dd0fd8b0186397cedac365578137de7c8de12fab26bf53b"
+    },
+    {
+      "path": "apps/storefront/src/lib/site-config/site-gate.ts",
+      "sha256": "2bef40927572105ba7e95c5f411f4b443ee47c07e72e0f1bd9109bda1ab4d883"
+    },
+    {
+      "path": "apps/storefront/src/modules/legal/anchors.test.ts",
+      "sha256": "ca86afad655de8077e342041876674db055c1d408e59fbd065a24f021172f563"
+    },
+    {
+      "path": "apps/storefront/src/modules/legal/anchors.ts",
+      "sha256": "64e32058db28afded5bd969ea20675cc121695c33c601f864aa41b6c9cf72062"
+    },
+    {
+      "path": "apps/storefront/src/modules/legal/components/hardcoded/exchanges-and-returns.tsx",
+      "sha256": "b01bffb2096f9d1f62bad3c22837737cb1febe83ed1bd9e998ca04889562e7a1"
+    },
+    {
+      "path": "apps/storefront/src/modules/legal/components/hardcoded/privacy-policy.tsx",
+      "sha256": "aecae38deb0dfb3c3e47568ece0176ec44b1aabbcb5f81f403a45a060eaac3c7"
+    },
+    {
+      "path": "apps/storefront/src/modules/legal/components/hardcoded/terms-and-conditions.tsx",
+      "sha256": "b307e3203bc882b8d951104954c5720b0ba9b165029dbf8721bbc9bd66fb88e7"
+    },
+    {
+      "path": "apps/storefront/src/modules/legal/components/legalCard.tsx",
+      "sha256": "6080af5078e79bb6211cc703bcb5044a4bfcb3f9a8290ee4aeae8e315815c22f"
+    },
+    {
+      "path": "apps/storefront/src/modules/legal/components/legalDocument.tsx",
+      "sha256": "794162d96d9d2c75b151cb9b8f320c6d9a227daf6f5f5e7b4d87268f3cf5db0a"
+    },
+    {
+      "path": "apps/storefront/src/modules/legal/components/legalToc.tsx",
+      "sha256": "14bbb9d717031f0bab07ac9e9169b0377487b70fe933adb932324834a899c698"
+    },
+    {
+      "path": "apps/storefront/src/modules/site-gate/components/site-gate-screen.tsx",
+      "sha256": "005756de3ac029fc1775c5136678f7b850811936bfe07a50c1a4b56491be1b1d"
+    }
+  ],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": [
+      "store-config",
+      "email-branding"
+    ],
+    "admin_translation": [
+      "store-config",
+      "storeConfig"
+    ]
+  }
+}

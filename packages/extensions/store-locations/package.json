@@ -1,0 +1,9 @@
+{
+  "name": "@repo/extension-store-locations",
+  "version": "1.11.1",
+  "private": true,
+  "description": "Sucursales component source package",
+  "dependencies": {
+    "@repo/extension-store-config": "workspace:*"
+  }
+}

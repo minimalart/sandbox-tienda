@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"sports","version":"1.0.0","kind":"template","dependencies":["typesense","banners","brands","store-config","store-locations","contact","comments","shop-by-looks","videos","payment-benefits","recurring-orders","wishlist","loyalty-points","ga4","mercadopago","corporate"],"managed_paths":["apps/storefront/src/modules/home-sports"]}

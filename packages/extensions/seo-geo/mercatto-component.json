@@ -1,0 +1,421 @@
+{
+  "schema_version": 1,
+  "id": "seo-geo",
+  "name": "SEO & GEO",
+  "version": "1.8.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "store-config",
+    "typesense"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:seo-geo",
+  "environment": [
+    "EMBEDDINGS_API_KEY",
+    "EMBEDDINGS_BASE_URL",
+    "EMBEDDINGS_DIMENSIONS",
+    "EMBEDDINGS_MODEL",
+    "NEXT_PUBLIC_BASE_URL",
+    "OPENROUTER_API_KEY",
+    "OPENROUTER_SITE_URL",
+    "SEO_GEO_BATCH_PAUSE_MS",
+    "SEO_GEO_CONCURRENCY_CAP",
+    "SEO_GEO_EMBED_BATCH",
+    "SEO_GEO_EMBED_SCHEDULE",
+    "SEO_GEO_JOB_SCHEDULE",
+    "SEO_GEO_LLM_MODEL",
+    "SEO_GEO_MAX_PAGES_CAP",
+    "SEO_GEO_SCHEDULE_CHECK",
+    "SEO_GEO_STALE_MINUTES",
+    "STOREFRONT_URL"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/seo-geo",
+      "target": "apps/backend/src/modules/seo-geo"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/seo-geo",
+      "target": "apps/backend/src/api/admin/seo-geo"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/seo-geo",
+      "target": "apps/backend/src/api/store/seo-geo"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/seo-audit-run.ts",
+      "target": "apps/backend/src/jobs/seo-audit-run.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/seo-embed-catalog.ts",
+      "target": "apps/backend/src/jobs/seo-embed-catalog.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/seo-audit-schedule.ts",
+      "target": "apps/backend/src/jobs/seo-audit-schedule.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/seo-geo",
+      "target": "apps/backend/src/admin/routes/seo-geo"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/seo-geo.tsx",
+      "target": "apps/backend/src/admin/hooks/api/seo-geo.tsx"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/seo-geo/migrations/Migration20260722120000SeoGeo.ts",
+    "apps/backend/src/modules/seo-geo/migrations/Migration20260722130000SeoGeoEmbeddings.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/seo-geo.tsx",
+      "sha256": "042baa1b3dad1734ac0922cf70ebefc34ecbd94d0e0706c00a28cdd90afe8b1c"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/ai-visibility/page.tsx",
+      "sha256": "2fb4bada3aebf1fd5a9baa7b68a997854c8f340f991fe0b3673c0905d3f1f101"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/auditorias/[id]/page.tsx",
+      "sha256": "9ab9b97b062588b456d49e8f2fab363f105e2ee1bf25fe87e88b08de6fd01335"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/auditorias/page.tsx",
+      "sha256": "e05c9c50a9b6a1e32b68ad2613d5a448ea0a01e3fb6b95726e781ec333965026"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/competidores/page.tsx",
+      "sha256": "7e212e38cf80180a5a82de39e08cf6ce06c9503f51ffc16312e996ad26f97345"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/configuracion/page.tsx",
+      "sha256": "c288f47c3568a98fd15f187ff8a561c85a6f8807a326316a07c059efbcf66ce2"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/correcciones/page.tsx",
+      "sha256": "b30440d8778649a3e3e68d181ab33d84b872fc071638d0c9edd8172e794a1526"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/credenciales/page.tsx",
+      "sha256": "a58610f8d80e9b60f005a059911f544332c21913d16495e1c73b4c5c049a05b4"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/dashboard/page.tsx",
+      "sha256": "759257b024c59cf373da2a084bacf978a5d9089333a2730e7eac168abb564383"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/hallazgos/page.tsx",
+      "sha256": "5b002af963f0d30c2a5c7c0b8ce54a8a5258ba33e4645642b397bdcab3744438"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/keywords/page.tsx",
+      "sha256": "bd8170656b3efe1f9a338abfb29a19f2358c373aa5ef8fc7baf097dca1d08114"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/page.tsx",
+      "sha256": "791c68dc11fb26a756915c6cf784af5b0da0dfb7d16011be934d02d0e32de11e"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/seo-geo/simulador/page.tsx",
+      "sha256": "2f2060803d6d031c237eecb5d1d98b54db7556be28d7f31aaf6eb7c8ba1cffa7"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/_product-scope.ts",
+      "sha256": "7606c6e954ac89fde34ca96aec82b1d4b3d8159afb4b9fcbe94faa1e6b08768b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/ai-visibility/route.ts",
+      "sha256": "c6cf5267a63b0400699d84aa065680f740aba615c8df78225c0bf7fe4c8a546f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/audits/[id]/cancel/route.ts",
+      "sha256": "13c6f8fdfd4479b2b14768c9f75d21d532e4dca7d113e55313a909c597cd1259"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/audits/[id]/pause/route.ts",
+      "sha256": "810262cdbd10acf7486d13b3c6251635b152f5ccfca9e5de4cbc43bbf19eabbb"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/audits/[id]/resume/route.ts",
+      "sha256": "7a14d0ac25478b9984da6b5bffcb410d06a0bc8a35174775d0804b0b4fe25bb8"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/audits/[id]/route.ts",
+      "sha256": "561130b6080fb4cfc6ce24f78a7a0be232360f9c3917300b3035e91f8c6e445f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/audits/route.ts",
+      "sha256": "b8ad150248b63ba215c1aa8ea75f3bf55efee1d9d42b1cf44990932086d99e5d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/config/route.ts",
+      "sha256": "d61567053bcab9ea0985ede7179fe22771f6eb2535248cd978432cb6cf49d318"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/corrections/apply/route.ts",
+      "sha256": "9acc80e49df11774ab21c53428152d7f9b42a4de2db3f9d154c295c7e0894675"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/corrections/route.ts",
+      "sha256": "a2433cb22aa1715bfa5f2cff8b07e3cc025e4f574ea8e1f146340a37fb451391"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/dashboard/route.ts",
+      "sha256": "ccacdfb684dff156b1b55017d251d44a5fd6b67b1c3dd1c7564a41804b5d8240"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/findings/route.ts",
+      "sha256": "31ae69473e7ec5cf58c6697547180a57335e63a8576b472f093c24c744b9e369"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/keywords/route.ts",
+      "sha256": "86c3ed73f8c24df9e34b8e57f92c65df12ef3ca9d7ce1933b06a987bbe0140d2"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/middlewares.ts",
+      "sha256": "1b1b1222994c6dd508928ed5a3feb39f0814b8398ab2da0125970dcb6b72a006"
+    },
+    {
+      "path": "apps/backend/src/api/admin/seo-geo/simulator/route.ts",
+      "sha256": "036de9523ff9c6fee1f86510aaf6890c7b94a77341219032e18d1cf826fb1f4f"
+    },
+    {
+      "path": "apps/backend/src/api/store/seo-geo/open-graph/route.ts",
+      "sha256": "4b6205005bc1f70940011b5afd61a1e45f41d34d46505cd6ccbf091816987b2d"
+    },
+    {
+      "path": "apps/backend/src/jobs/seo-audit-run.ts",
+      "sha256": "5f23967823aa86f46198e6cf25d7219a52493c7702aa9ee194657d751b747bd7"
+    },
+    {
+      "path": "apps/backend/src/jobs/seo-audit-schedule.ts",
+      "sha256": "7eec38658ecdc23fec96667d4ecd69440b485f727f0bb7c729ad865069f28448"
+    },
+    {
+      "path": "apps/backend/src/jobs/seo-embed-catalog.ts",
+      "sha256": "7b45054bb43c81e9531f90db7a8fb465fb9fcfafe2da3e3bb375c4ded863686e"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/ai/corrections.ts",
+      "sha256": "eb4a02b66634fdf697fff38cf8a08296c456d03ddc2a5a9413ec31e75155609f"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/ai/embed-catalog.ts",
+      "sha256": "b94fd6c0554e7141e8d672000f65a85d02555164028cc9d26f61b66fcc932d52"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/ai/embedding-client.test.ts",
+      "sha256": "dd2581b59d0be061192df82c442958d43721f3a3e04374c8860681b8b37d97f2"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/ai/embedding-client.ts",
+      "sha256": "16d76165e9c8da2337e8f7b5c76b7b51891ce32db61537d74f7e26efa334a13a"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/ai/openrouter.ts",
+      "sha256": "b3f62fe01a5abc82d339fefbb649c6910251fdaffc2a6e13fefd4e40072d7058"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/ai/simulator.ts",
+      "sha256": "c2250ffb8e3414cae757e02a232b74e8056b429cfecfa35c4abe998a6bfce9de"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/config.ts",
+      "sha256": "c1c81454a4425630f5343563450f0bc154cd9d7257ffa785deeea50fbd179d90"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/crawler/concurrency.ts",
+      "sha256": "b6b82fc85882a0f5f095c4f32618d13500e053cc8af3cc335cbb3c46c4999909"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/crawler/crawl.ts",
+      "sha256": "6dec40a26bdedf519146a9f8840ac0404be74ea4ee008f214c5018f55277d637"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/crawler/discovery.ts",
+      "sha256": "73cf92262f538cc78d2a767b2bd4af446bae41207e61aa5e6a044c32531bcd95"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/crawler/page-analyzer.test.ts",
+      "sha256": "8cd9403c60caa383a873768b4fa983c8a8f98a5f28c36af171ad6c5dc6b8f362"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/crawler/page-analyzer.ts",
+      "sha256": "3abd9b98dd9696b3e3820c76b4904b8ef0c0d011b3af3eff73ec51dfab484afa"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/crawler/types.ts",
+      "sha256": "844eb61f0f6699059559ab905b674c3ef5209986366a4cab07c0feedf18d8bb9"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/crawler/url-utils.test.ts",
+      "sha256": "1d00cbc193bf10e7d0aa4e05c1fc0abd794452a5eb9cb537c359af9bb539032e"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/crawler/url-utils.ts",
+      "sha256": "e401c45b7da1c9eb0b8574f8ee055490d3f0983db72983d26ade0bc0383e4dc8"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/engines/architecture.test.ts",
+      "sha256": "ed5010abe5bf1a8b6a392149ee76d7a138782dc95b791c7fc7cd334a3f7314e3"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/engines/architecture.ts",
+      "sha256": "2dd4af434b675820aa3c14d77e018eb7c8ff5d8c8acfe9144d83303a03137ca3"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/engines/catalog.ts",
+      "sha256": "347f417fb82cdc39f0e3e7929aa7062b8a8a498f7a65085b0743291801d82770"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/engines/crawl-health.test.ts",
+      "sha256": "25005f1b11c71028bb2fef33e9fb56510ec200189cf3df4049df8233372febee"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/engines/crawl-health.ts",
+      "sha256": "12b6cb07777ea8c6718cce02e501e1db49a82e872eb6028840a5019c37676033"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/engines/index.test.ts",
+      "sha256": "e8a2c0836833fa79297a310f5cdc88630ecba812866223a1f8dead0489bc962c"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/engines/index.ts",
+      "sha256": "5e1282e2efa59452816fbf97d3a93db377a2c73f72dd120886fa634cba4558ca"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/engines/performance.ts",
+      "sha256": "2fc4f34f2b99865f6ce9b7d84d6dce157f6d9c0a812270de51def810601643d8"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/engines/technical.ts",
+      "sha256": "82993ce25ded671eee56a906ec7f68fab67e34846492835262e039db730de8f3"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/engines/types.ts",
+      "sha256": "49756d7404c293664aa01538c0ab0dd9c12614c316a667d1a922e4d33e9ab58f"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/geo/aggregate.ts",
+      "sha256": "1583f023a41b507f1c0fe8a6149076d3a1068118e0396c590b40f6304ac09d03"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/geo/load-products.ts",
+      "sha256": "646360923470945837517e1d5719f6d49b0a7f4aad2b15d7cf3bd66ea161f8f1"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/geo/run-geo.ts",
+      "sha256": "6580e0bb30c0512435c302328e71a2b31f91e977cd5cad15f513034cee99d4bc"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/geo/scoring.test.ts",
+      "sha256": "df3b9d9affd1909e137b30bd4d0e1823ddfc64e562fe9b13b227c21673f25de6"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/geo/scoring.ts",
+      "sha256": "f34acbfff9dc904727f061d6501658a11c1b7c4c273d070645e085d19e043f9f"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/geo/types.ts",
+      "sha256": "d9a1047ee4e102be8e15c6678ee2dba68e2260ffbc7124853ebaa2686235341e"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/index.ts",
+      "sha256": "24e5c6c26cf10a3dd3c852dd4eb5e63eb790f87a99bee176689a2445476c9b4c"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/lib/gate-access.ts",
+      "sha256": "e0502375d2f2620b023be5bcf8a33caa7446292c8a93643d57af73b06dd567c9"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/lib/gate-scope.test.ts",
+      "sha256": "157badcd1a39df4aba72c0fe0d530e55f19fb12cadff20fba102cc16d05563d7"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/lib/gate-scope.ts",
+      "sha256": "047b8c1f8bb1eb52d3cad8a1b558f05b7eb0a4d1966af1bd54a4957c5e49d756"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/lib/run-audit.ts",
+      "sha256": "8432764897c47e197abd5b1ca3d8835cec5de7ba862018aca5ee38ac32c391e5"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/lib/storefront-url.ts",
+      "sha256": "a5a386727dd4830d859ca08843901708d61872391edd80031dd1661a116e7d0c"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/migrations/Migration20260722120000SeoGeo.ts",
+      "sha256": "dab87e660721f8069be53be5e74e37cd03045b85ccfe547a6281614e2253bc58"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/migrations/Migration20260722130000SeoGeoEmbeddings.ts",
+      "sha256": "fe8564d1d20b1b8d0d45bb869d27d7fff27eb70829b89f466e365ba4f8bbc706"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/models/index.ts",
+      "sha256": "235c95c446ab9f7b663ac4b0ea35c6542121b8a3d6ed014e614105780d773296"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/models/seo-ai-visibility-snapshot.ts",
+      "sha256": "376cfb0f5bea4ea9e1d772844ce6e6ffac65a48aa1aea547bc3105b05ead0815"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/models/seo-audit-link.ts",
+      "sha256": "86c880d6ad320efab7b90cb6ea7be2d161c43c68ba6e88df3c5e54f87e19929b"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/models/seo-audit-page.ts",
+      "sha256": "5bf6f6cd8d9e8206b2fda54ce5cd43641f2e105c19e356142e1c3c98466d3105"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/models/seo-audit.ts",
+      "sha256": "e211f248e10566caaab229b4890293825e66237e98fdd2665c2afd5e2c0cfdc6"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/models/seo-finding.ts",
+      "sha256": "51c292dab7d9e6a8db9233c826ecf948071a2eb9dc98349b866e95eb7f1de7ad"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/models/seo-geo-product-embedding.ts",
+      "sha256": "8d2316e805a1e2f9a9a408943ecbd35aa2905876d33ba358a6fce5ef07dc2c6b"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/models/seo-geo-product-score.ts",
+      "sha256": "fb8a6c88e92ae7d09bb98e888a9dcd292bcb7191ad53bfd14a4d71caa6263e0c"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/open-graph.test.ts",
+      "sha256": "87570947014d1d7937e386a54b76316c49e758767506d7d357a2ad3d97e0120a"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/open-graph.ts",
+      "sha256": "905261d03aa12663794369bbf25323fa67a1db1ded78b1c4384fecdd5e515f7b"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/service.ts",
+      "sha256": "d10f29437326673791e95c70af73ea4e44e6abf1bc9fc2d1adc48215f06fa9b4"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/settings.ts",
+      "sha256": "43bbc13f71462b41312bd2e998b6837fa3f8e26a04daf79ba4a64535f0af3be2"
+    },
+    {
+      "path": "apps/backend/src/modules/seo-geo/site-scope.ts",
+      "sha256": "a59cf868c084d2ad7484c145b5a3b11745493fdd1a79a5307d776c7a6bf1b564"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./admin/seo-geo/middlewares",
+        "adminSeoGeoMiddlewares"
+      ]
+    ],
+    "admin_hooks": [
+      "seo-geo"
+    ],
+    "admin_translation": null
+  }
+}

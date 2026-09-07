@@ -1,0 +1,70 @@
+{
+  "name": "@minimalart/mercatto-plugin-storefront-recommendations",
+  "version": "0.1.0",
+  "description": "Mercatto storefront plugin — product recommendations (cart rail, PDP block, recently-viewed, frequently-bought-together, recommendation carousel, free-shipping progress). Consumes @minimalart/mercatto-storefront-shared via ports + provider so no host code is imported directly. Migrated from packages/extensions/recommendation-widgets.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "package.json",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./slots": {
+      "types": "./dist/slots/index.d.ts",
+      "default": "./dist/slots/index.js"
+    },
+    "./storefront/api/store/recommendations": {
+      "types": "./dist/storefront/api/store/recommendations/route.d.ts",
+      "default": "./dist/storefront/api/store/recommendations/route.js"
+    },
+    "./storefront/api/store/recommendations/events": {
+      "types": "./dist/storefront/api/store/recommendations/events/route.d.ts",
+      "default": "./dist/storefront/api/store/recommendations/events/route.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19",
+    "next": "^15 || ^16",
+    "@medusajs/js-sdk": "^2.18",
+    "@medusajs/types": "^2.18",
+    "@medusajs/ui": "^4",
+    "@minimalart/mercatto-storefront-shared": "^0.1.0"
+  },
+  "dependencies": {
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/react": "^18.3.11",
+    "next": "^15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@minimalart/mercatto-storefront-shared": "^0.1.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minimalart/medusa-b2c-boilerplate.git",
+    "directory": "packages/plugins/plugin-storefront-recommendations"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "private": false
+}

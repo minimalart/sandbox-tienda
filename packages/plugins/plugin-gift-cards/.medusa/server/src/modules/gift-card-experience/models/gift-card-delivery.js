@@ -1,0 +1,67 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GiftCardDelivery = void 0;
+const utils_1 = require("@medusajs/framework/utils");
+exports.GiftCardDelivery = utils_1.model
+    .define('gift_card_delivery', {
+    id: utils_1.model.id({ prefix: 'gcdelivery' }).primaryKey(),
+    idempotency_key: utils_1.model.text(),
+    order_id: utils_1.model.text(),
+    order_display_id: utils_1.model.number().nullable(),
+    line_item_id: utils_1.model.text(),
+    unit_index: utils_1.model.number().default(0),
+    gift_card_id: utils_1.model.text().nullable(),
+    store_credit_account_id: utils_1.model.text().nullable(),
+    buyer_customer_id: utils_1.model.text().nullable(),
+    buyer_email: utils_1.model.text(),
+    delivery_mode: utils_1.model.enum(['self', 'recipient']),
+    recipient_email: utils_1.model.text().nullable(),
+    recipient_name: utils_1.model.text().nullable(),
+    sender_name: utils_1.model.text().nullable(),
+    anonymous: utils_1.model.boolean().default(false),
+    message: utils_1.model.text().nullable(),
+    design_id: utils_1.model.text(),
+    design_snapshot: utils_1.model.json(),
+    currency_code: utils_1.model.text(),
+    face_value: utils_1.model.bigNumber(),
+    paid_amount: utils_1.model.bigNumber(),
+    timezone: utils_1.model.text(),
+    scheduled_at: utils_1.model.dateTime().nullable(),
+    expires_at: utils_1.model.dateTime().nullable(),
+    token_hash: utils_1.model.text().nullable(),
+    token_encrypted: utils_1.model.text().nullable(),
+    token_version: utils_1.model.number().default(1),
+    issuance_status: utils_1.model.enum([
+        'awaiting_payment', 'processing', 'issued', 'failed', 'canceled',
+    ]).default('awaiting_payment'),
+    delivery_status: utils_1.model.enum([
+        'not_ready', 'scheduled', 'pending', 'processing', 'sent', 'delivered',
+        'failed', 'dead_letter', 'canceled',
+    ]).default('not_ready'),
+    attempts: utils_1.model.number().default(0),
+    next_retry_at: utils_1.model.dateTime().nullable(),
+    processing_started_at: utils_1.model.dateTime().nullable(),
+    paid_at: utils_1.model.dateTime().nullable(),
+    issued_at: utils_1.model.dateTime().nullable(),
+    sent_at: utils_1.model.dateTime().nullable(),
+    delivered_at: utils_1.model.dateTime().nullable(),
+    failed_at: utils_1.model.dateTime().nullable(),
+    claimed_at: utils_1.model.dateTime().nullable(),
+    claimed_customer_id: utils_1.model.text().nullable(),
+    first_used_at: utils_1.model.dateTime().nullable(),
+    exhausted_at: utils_1.model.dateTime().nullable(),
+    provider_message_id: utils_1.model.text().nullable(),
+    last_error: utils_1.model.text().nullable(),
+    fallback_sent_at: utils_1.model.dateTime().nullable(),
+    legacy: utils_1.model.boolean().default(false),
+    metadata: utils_1.model.json().nullable(),
+})
+    .indexes([
+    { on: ['idempotency_key'], unique: true, where: 'deleted_at IS NULL' },
+    { on: ['token_hash'], unique: true, where: 'deleted_at IS NULL AND token_hash IS NOT NULL' },
+    { on: ['order_id', 'line_item_id', 'unit_index'] },
+    { on: ['gift_card_id'] },
+    { on: ['delivery_status', 'next_retry_at'] },
+    { on: ['issuance_status', 'processing_started_at'] },
+]);
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiZ2lmdC1jYXJkLWRlbGl2ZXJ5LmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vLi4vLi4vLi4vLi4vc3JjL21vZHVsZXMvZ2lmdC1jYXJkLWV4cGVyaWVuY2UvbW9kZWxzL2dpZnQtY2FyZC1kZWxpdmVyeS50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7QUFBQSxxREFBa0Q7QUFFckMsUUFBQSxnQkFBZ0IsR0FBRyxhQUFLO0tBQ2xDLE1BQU0sQ0FBQyxvQkFBb0IsRUFBRTtJQUM1QixFQUFFLEVBQUUsYUFBSyxDQUFDLEVBQUUsQ0FBQyxFQUFFLE1BQU0sRUFBRSxZQUFZLEVBQUUsQ0FBQyxDQUFDLFVBQVUsRUFBRTtJQUNuRCxlQUFlLEVBQUUsYUFBSyxDQUFDLElBQUksRUFBRTtJQUM3QixRQUFRLEVBQUUsYUFBSyxDQUFDLElBQUksRUFBRTtJQUN0QixnQkFBZ0IsRUFBRSxhQUFLLENBQUMsTUFBTSxFQUFFLENBQUMsUUFBUSxFQUFFO0lBQzNDLFlBQVksRUFBRSxhQUFLLENBQUMsSUFBSSxFQUFFO0lBQzFCLFVBQVUsRUFBRSxhQUFLLENBQUMsTUFBTSxFQUFFLENBQUMsT0FBTyxDQUFDLENBQUMsQ0FBQztJQUNyQyxZQUFZLEVBQUUsYUFBSyxDQUFDLElBQUksRUFBRSxDQUFDLFFBQVEsRUFBRTtJQUNyQyx1QkFBdUIsRUFBRSxhQUFLLENBQUMsSUFBSSxFQUFFLENBQUMsUUFBUSxFQUFFO0lBQ2hELGlCQUFpQixFQUFFLGFBQUssQ0FBQyxJQUFJLEVBQUUsQ0FBQyxRQUFRLEVBQUU7SUFDMUMsV0FBVyxFQUFFLGFBQUssQ0FBQyxJQUFJLEVBQUU7SUFDekIsYUFBYSxFQUFFLGFBQUssQ0FBQyxJQUFJLENBQUMsQ0FBQyxNQUFNLEVBQUUsV0FBVyxDQUFDLENBQUM7SUFDaEQsZUFBZSxFQUFFLGFBQUssQ0FBQyxJQUFJLEVBQUUsQ0FBQyxRQUFRLEVBQUU7SUFDeEMsY0FBYyxFQUFFLGFBQUssQ0FBQyxJQUFJLEVBQUUsQ0FB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

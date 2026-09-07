@@ -1,0 +1,40 @@
+diff --git a/.medusa/server/src/admin/index.js b/.medusa/server/src/admin/index.js
+index 7a1c12998584c2d053bb03b5a92be31647fab2a8..96c9283bf15240b5c2e732623545a48c63905c23 100644
+--- a/.medusa/server/src/admin/index.js
++++ b/.medusa/server/src/admin/index.js
+@@ -40322,7 +40322,6 @@ const GiftCardProductEditDenominationsForm = ({
+     ];
+     await mutateAsync(
+       {
+-        options,
+         variants: data.denominations.map((denomination) => ({
+           id: denomination.id,
+           title: denomination.value,
+diff --git a/.medusa/server/src/admin/index.mjs b/.medusa/server/src/admin/index.mjs
+index 94224b408a8aa8f5ca6dc708249a663eb933e164..fed9764241dfb4d0065a6b0089d8a10758f7bf03 100644
+--- a/.medusa/server/src/admin/index.mjs
++++ b/.medusa/server/src/admin/index.mjs
+@@ -40302,7 +40302,6 @@ const GiftCardProductEditDenominationsForm = ({
+     ];
+     await mutateAsync(
+       {
+-        options,
+         variants: data.denominations.map((denomination) => ({
+           id: denomination.id,
+           title: denomination.value,
+diff --git a/.medusa/server/src/subscribers/create-gift-card.js b/.medusa/server/src/subscribers/create-gift-card.js
+index e2a3fcb1bde408b8d8df13376d937feb2795d885..6fde0a3c4717f3ed2e44d62e605ee707a5f15eca 100644
+--- a/.medusa/server/src/subscribers/create-gift-card.js
++++ b/.medusa/server/src/subscribers/create-gift-card.js
+@@ -5,6 +5,11 @@ exports.default = createGiftCardHandler;
+ const utils_1 = require("@medusajs/framework/utils");
+ const create_gift_cards_1 = require("../workflows/gift-cards/workflows/create-gift-cards");
+ async function createGiftCardHandler({ event: { data }, container, }) {
++    // Mercatto issues gift cards only after the order is fully paid. Keep the
++    // plugin's modules, workflows, routes and admin UI, but neutralize this
++    // order.placed subscriber so it cannot create monetary value prematurely
++    // or race the idempotent gift_card_experience issuer.
++    return;
+     const orderId = data.id;
+     const query = container.resolve(utils_1.ContainerRegistrationKeys.QUERY);
+     const { data: [order], } = await query.graph({

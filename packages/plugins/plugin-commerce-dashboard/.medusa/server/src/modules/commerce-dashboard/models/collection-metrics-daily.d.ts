@@ -1,0 +1,19 @@
+export declare const CollectionMetricsDaily: import("@medusajs/framework/utils").DmlEntity<import("@medusajs/framework/utils").DMLEntitySchemaBuilder<{
+    id: import("@medusajs/framework/utils").PrimaryKeyModifier<string, import("@medusajs/framework/utils").IdProperty>;
+    bucket: import("@medusajs/framework/utils").TextProperty;
+    period_start: import("@medusajs/framework/utils").DateTimeProperty;
+    period_end: import("@medusajs/framework/utils").DateTimeProperty;
+    sales_channel_id: import("@medusajs/framework/utils").NullableModifier<string, import("@medusajs/framework/utils").TextProperty>;
+    country_code: import("@medusajs/framework/utils").NullableModifier<string, import("@medusajs/framework/utils").TextProperty>;
+    currency_code: import("@medusajs/framework/utils").TextProperty;
+    collection_id: import("@medusajs/framework/utils").NullableModifier<string, import("@medusajs/framework/utils").TextProperty>;
+    collection_title: import("@medusajs/framework/utils").NullableModifier<string, import("@medusajs/framework/utils").TextProperty>;
+    category_id: import("@medusajs/framework/utils").NullableModifier<string, import("@medusajs/framework/utils").TextProperty>;
+    category_name: import("@medusajs/framework/utils").NullableModifier<string, import("@medusajs/framework/utils").TextProperty>;
+    revenue: import("@medusajs/framework/utils").NumberProperty;
+    orders: import("@medusajs/framework/utils").NumberProperty;
+    units_sold: import("@medusajs/framework/utils").NumberProperty;
+    refunds: import("@medusajs/framework/utils").NumberProperty;
+    metadata: import("@medusajs/framework/utils").NullableModifier<Record<string, unknown>, import("@medusajs/framework/utils").JSONProperty>;
+    aggregated_at: import("@medusajs/framework/utils").DateTimeProperty;
+}>, "collection_metrics_daily">;

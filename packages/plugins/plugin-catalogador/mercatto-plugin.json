@@ -1,0 +1,39 @@
+{
+  "$schema": "https://mercatto.minimalart.co/schemas/plugin.v1.json",
+  "schema_version": 1,
+  "id": "catalogador",
+  "name": "Catalogador",
+  "version": "1.1.1",
+  "kind": "plugin",
+  "status": "ready",
+  "dependencies": ["storeConfig", "media_library"],
+  "incompatibilities": [],
+  "settings_namespace": "extension:catalogador",
+  "environment": [
+    "CATALOGADOR_BARCODE_API_KEY",
+    "CATALOGADOR_BARCODE_API_URL",
+    "CATALOGADOR_IMAGE_MODEL",
+    "CATALOGADOR_JOB_SCHEDULE",
+    "CATALOGADOR_SCRAPE_SEARCH_TEMPLATE",
+    "CATALOGADOR_TAVILY_API_KEY",
+    "CATALOGADOR_TEXT_MODEL",
+    "OPENROUTER_API_KEY",
+    "OPENROUTER_SITE_URL"
+  ],
+  "medusaModuleKey": "catalogador",
+  "ownedTables": [
+    "cataloging_execution",
+    "cataloging_execution_product",
+    "cataloging_operation",
+    "cataloging_asset_proposal",
+    "cataloging_snapshot",
+    "cataloging_activity"
+  ],
+  "integrations": {
+    "middlewares": [
+      ["./admin/catalogador/middlewares", "adminCatalogadorMiddlewares"]
+    ],
+    "admin_hooks": ["catalogador"],
+    "admin_translation": ["catalogador", "catalogador"]
+  }
+}

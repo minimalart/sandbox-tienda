@@ -1,0 +1,16 @@
+{
+  "name": "@repo/platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mercatto extension delivery platform",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "worker": "node src/worker.js",
+    "migrate": "node src/migrate.js",
+    "build": "node --check src/server.js && node --check src/worker.js && node --check src/github.js && node --check src/security.js && node --check src/migrate.js",
+    "typecheck": "pnpm build",
+    "test": "node --test src/*.test.js"
+  },
+  "dependencies": { "pg": "^8.13.1" }
+}

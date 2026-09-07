@@ -1,0 +1,777 @@
+{
+  "schema_version": 1,
+  "id": "recurring-orders",
+  "name": "Compras recurrentes",
+  "version": "2.0.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "email-templates",
+    "mercadopago",
+    "typesense",
+    "whatsapp"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:recurring-orders",
+  "environment": [
+    "APPLY",
+    "AUDIT_STRICT",
+    "MEDUSA_BACKEND_URL",
+    "NEXT_PUBLIC_BASE_URL",
+    "RECURRING_BATCH_SIZE",
+    "RECURRING_MAX_ATTEMPTS",
+    "RECURRING_MAX_CONSECUTIVE_FAILURES",
+    "RECURRING_METRICS_CRON",
+    "RECURRING_ORDERS_ENABLED",
+    "RECURRING_PAYMENT_EXPIRATION_HOURS",
+    "RECURRING_REMINDER_HOURS",
+    "RECURRING_RENEWAL_CRON",
+    "RECURRING_RETRY_HOURS",
+    "STOREFRONT_DEFAULT_COUNTRY",
+    "SUBSCRIPTIONS_AUTO_PAYMENT_ENABLED",
+    "SUBSCRIPTIONS_NOTIFICATIONS_CRON",
+    "SUBSCRIPTIONS_PREFLIGHT_CRON",
+    "SUBSCRIPTIONS_RETENTION_ENABLED",
+    "SUBSCRIPTIONS_STOCK_FORECAST_CRON",
+    "SUBSCRIPTIONS_STOCK_FORECAST_ENABLED",
+    "SUBSCRIPTIONS_STOREFRONT_ENABLED",
+    "SUBSCRIPTIONS_V2_ENABLED"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/recurring-order",
+      "target": "apps/backend/src/modules/recurring-order"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/recurring-orders",
+      "target": "apps/backend/src/api/admin/recurring-orders"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/recurring-orders",
+      "target": "apps/backend/src/api/store/recurring-orders"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/recurring-eligibility",
+      "target": "apps/backend/src/api/store/recurring-eligibility"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/subscription-plans",
+      "target": "apps/backend/src/api/store/subscription-plans"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/subscription-cancellation-reasons",
+      "target": "apps/backend/src/api/store/subscription-cancellation-reasons"
+    },
+    {
+      "source": "payload/apps/backend/src/api/webhooks/mercadopago-subscriptions",
+      "target": "apps/backend/src/api/webhooks/mercadopago-subscriptions"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/recurring-orders",
+      "target": "apps/backend/src/admin/routes/recurring-orders"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/recurring-orders.tsx",
+      "target": "apps/backend/src/admin/hooks/api/recurring-orders.tsx"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/recurring-orders.ts",
+      "target": "apps/storefront/src/lib/data/recurring-orders.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/products/components/subscribe-action",
+      "target": "apps/storefront/src/modules/products/components/subscribe-action"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/products/templates/product-actions-wrapper/index.tsx",
+      "target": "apps/storefront/src/modules/products/templates/product-actions-wrapper/index.tsx"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/cart/components/make-recurring",
+      "target": "apps/storefront/src/modules/cart/components/make-recurring"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/cart/templates/index.tsx",
+      "target": "apps/storefront/src/modules/cart/templates/index.tsx"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/cart/page.tsx",
+      "target": "apps/storefront/src/app/[countryCode]/(main)/cart/page.tsx"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/account/components/subscriptions",
+      "target": "apps/storefront/src/modules/account/components/subscriptions"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/subscriptions",
+      "target": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/subscriptions"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/subscriptions/renew",
+      "target": "apps/storefront/src/app/[countryCode]/(main)/subscriptions/renew"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/store/templates/typesense-product-grid.tsx",
+      "target": "apps/storefront/src/modules/store/templates/typesense-product-grid.tsx"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/store/templates/typesense-product-card.tsx",
+      "target": "apps/storefront/src/modules/store/templates/typesense-product-card.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/compute-recurring-metrics.ts",
+      "target": "apps/backend/src/jobs/compute-recurring-metrics.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/forecast-recurring-stock.ts",
+      "target": "apps/backend/src/jobs/forecast-recurring-stock.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/preflight-recurring-renewals.ts",
+      "target": "apps/backend/src/jobs/preflight-recurring-renewals.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/process-recurring-renewals.ts",
+      "target": "apps/backend/src/jobs/process-recurring-renewals.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/process-subscription-notifications.ts",
+      "target": "apps/backend/src/jobs/process-subscription-notifications.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/audit-subscriptions-v2.ts",
+      "target": "apps/backend/src/scripts/audit-subscriptions-v2.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/health-subscriptions-v2.ts",
+      "target": "apps/backend/src/scripts/health-subscriptions-v2.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/migrate-recurring-orders-v2.ts",
+      "target": "apps/backend/src/scripts/migrate-recurring-orders-v2.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/reconcile-subscriptions-v2.ts",
+      "target": "apps/backend/src/scripts/reconcile-subscriptions-v2.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/rollback-subscriptions-v2.ts",
+      "target": "apps/backend/src/scripts/rollback-subscriptions-v2.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/recurring-order-placed.ts",
+      "target": "apps/backend/src/subscribers/recurring-order-placed.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/create-recurring-order.ts",
+      "target": "apps/backend/src/workflows/create-recurring-order.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/process-renewal-cycle.ts",
+      "target": "apps/backend/src/workflows/process-renewal-cycle.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/run-renewal-cycle.ts",
+      "target": "apps/backend/src/workflows/run-renewal-cycle.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/recurring-order/migrations/Migration20260706150000RecurringOrder.ts",
+    "apps/backend/src/modules/recurring-order/migrations/Migration20260706190000RecurringOrder.ts",
+    "apps/backend/src/modules/recurring-order/migrations/Migration20260721120000RecurringOrder.ts",
+    "apps/backend/src/modules/recurring-order/migrations/Migration20260721150000RecurringOrder.ts",
+    "apps/backend/src/modules/recurring-order/migrations/Migration20260721170000RecurringOrder.ts",
+    "apps/backend/src/modules/recurring-order/migrations/Migration20260721190000RecurringOrder.ts",
+    "apps/backend/src/modules/recurring-order/migrations/Migration20260904123000RecurringOrderV2.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/recurring-orders.tsx",
+      "sha256": "ee208f8bcb955bde6790ad0f6c5fff52b6e4a24ae7c76830f792e38f29940066"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/[id]/page.tsx",
+      "sha256": "774a0236b5d273789dda20fb6fff004be97a9d3804740ce873afa782d1528f83"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/analytics/page.tsx",
+      "sha256": "a87cb4ac7f02f91186d85eb8d66a169bbd76524ff948b4eb01515bd928c4c277"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/cancellation-reasons/page.tsx",
+      "sha256": "d01a1e8a208609b67f084c26e14c408de0cde5a37068a8298e43f5f8249a6e1d"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/credenciales/page.tsx",
+      "sha256": "265eb217db73f1bfe15d5cba44b9c59b3eacdf3259d066949d1932b7a18ef4c7"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/forecast/page.tsx",
+      "sha256": "9b13696b9c1f6107c13c0b4bfad19135f680e07c15210e1db5a1842002c16bb6"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/helpers.ts",
+      "sha256": "c43a83110ec93cba8d229a5c042aeda7b980110297ff3ea451f50e811fdb7630"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/incidents/page.tsx",
+      "sha256": "f4b7b8f80a7e498a691118d784f6d65185cbb39618e0a77be70b9bd16c8b85cc"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/page.tsx",
+      "sha256": "ff76d2fae9834a8c158d365ba3f6fb167e8a0e0ef7f95d89e03a9a98a29bb5ef"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/plans/page.tsx",
+      "sha256": "016f27a4ff81349ea135bbae6dddeff13e2574cd131e8c3fa0593a7b2407a675"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/renewals/page.tsx",
+      "sha256": "fb7f7f36ef588b76a19dd489258ea37282d5a65f9a2d98ea2534de358a9dd4ef"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/section-nav.tsx",
+      "sha256": "371b70c7206fbf1d7b68b76c27213b94e9826b6ef542952f5332b5a263901486"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recurring-orders/settings/page.tsx",
+      "sha256": "bd1bafc304eb29bf8672b0bd807d046d508a977b890f5def552b496eed10b381"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/[id]/cancel/route.ts",
+      "sha256": "58bd49c63a21f441b3ff7cf0b9ff45ccad600342e468579cac592db265949c89"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/[id]/cycles/[cycle_id]/force/route.ts",
+      "sha256": "43995c40aa5676b1593bd441b4a0d2ac67e4b59193391479645c28ff3228ecce"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/[id]/cycles/[cycle_id]/retry-payment/route.ts",
+      "sha256": "b8cffed692086e6e3684b7daac67309c05f24bf479b609ee1ac79bc7595a3bcb"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/[id]/pause/route.ts",
+      "sha256": "2f47615ebc314339936cc4c71603de401bca370a3d8bbf5765bbdf0280c072c7"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/[id]/reconcile/route.ts",
+      "sha256": "fe45616e5851c68f8d58378f82240dc08c514b7e93c11719d650d8b705191f81"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/[id]/resume/route.ts",
+      "sha256": "2f1e7f7897b9a24264d6edf6a384a4aa247c9f7a0fcfcff1ca4c5af111db36f9"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/[id]/route.ts",
+      "sha256": "05c309330d6adef6c5421513526e9aa6b403e557f60343347d2701bcb5fd72ae"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/alerts/[alert_id]/resolve/route.ts",
+      "sha256": "c766a30af280f05c2fa76120d2a810dc33713b7a26cedf92994c309037685e45"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/alerts/route.ts",
+      "sha256": "9e8031848c57d924c7cef2ce308dd4155921996daa60d1a7afbf1743b91cb34f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/analytics/rebuild/route.ts",
+      "sha256": "a7b2bc772078f65095da0de6fbbbb5f59cd03389004452cdb29dd16fe5339d03"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/analytics/route.ts",
+      "sha256": "e622f87e3e7dd1553db4211d10483f3f59837ea34a46b088e6e6b5aa271d6e2b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/cancellation-reasons/[reason_id]/route.ts",
+      "sha256": "c2e984a20056845a1d653ea537d91a12839ff7ea0230666acebbda7ab8132807"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/cancellation-reasons/route.ts",
+      "sha256": "e4e85e9d4943b1ca4fcdb96262274780a22dbceba8d937d052c766f42260e4e9"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/cycles/route.ts",
+      "sha256": "ecc92bd589fba03978568f4f5b1b31ab5dba2a286b8ce799c8518aa38ac1f369"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/export/route.ts",
+      "sha256": "d79113c301957e102655ebc65d791867594ae29952cfdcbcddb6261245728d5c"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/forecast/route.ts",
+      "sha256": "f0bcd8695f7555ed97565edc4f92b5ebf0764445863e39610bf5120c5ca0bf6a"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/offers/[offer_id]/route.ts",
+      "sha256": "30d0f443bc9285f6b89a87238d87f5fa4ef4b946ed56b9dd9ff9c1f7a28cc951"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/offers/route.ts",
+      "sha256": "88c16fe4abe0c12bafe6c217f57ba597b5aede7b3ddf246b11fdec380ba7bda4"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/plans/[plan_id]/duplicate/route.ts",
+      "sha256": "3b2f68c68979e1008c6693ec8fc26546f4e61c5e759374c7db7ac33a098e8c4f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/plans/[plan_id]/publish/route.ts",
+      "sha256": "533bab21f25c16ee1376c8b83d199687b166e7d2b550b68f995162d65c854600"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/plans/[plan_id]/route.ts",
+      "sha256": "185d9e5199628abdcc57fffb5dfb3a36695f1c318b4bb3d5a37bbd106c42225a"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/plans/route.ts",
+      "sha256": "dfab18def33fc72ec6caa377de796b83c4ce5c38691027590976abdaeea8f311"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/plans/validators.ts",
+      "sha256": "4253a19f4d6d5cd6c84339b3eb9acd579c866d9d5167971e3b15ba462a1c50f1"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/route.ts",
+      "sha256": "fa3f0a400ca7a196124e757267a89418cab53ebde809c452a61feaf8605e13d1"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recurring-orders/settings/route.ts",
+      "sha256": "a6ce35d101b13fefc2946aa2e604c1410aad0f822a364d610bf018cf531ae23a"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-eligibility/route.ts",
+      "sha256": "f62dcaeca40bb4142f8f181eca01a105f858763e9e3d60b3775f7ce9f6f2bb37"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-orders/[id]/cancel/route.ts",
+      "sha256": "8221062eef5c6356a9a036482b8ce9e2ec1f7b7974d7ac790ac7f80e9674fde4"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-orders/[id]/cycles/[cycle_id]/regenerate/route.ts",
+      "sha256": "7e79617326425b9bf64570592972ae9f8fabcdf45b7d6227cd4864e3e689cbd6"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-orders/[id]/pause/route.ts",
+      "sha256": "4328e770264072616a240f060a4c1524c1893ddf99515b87e49b11c8f319983b"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-orders/[id]/payment-method/route.ts",
+      "sha256": "0fc977be72de2c0cfc2d36392b42dd0c5aea289cc2265b812f44c43788d035bb"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-orders/[id]/resume/route.ts",
+      "sha256": "478eec2f8afc1b37fb9fcf0e16b15e83fb89251853061429bd0bbc69b8628f32"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-orders/[id]/retention/route.ts",
+      "sha256": "4c3d840f894291d41e3b6025d1e30a793524e6b73a35b83a76eae0f3d3556426"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-orders/[id]/route.ts",
+      "sha256": "e50040fec92707cbd5dad77cf20ba24791858d9ce529cb8992e938d1f2c2c693"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-orders/[id]/skip-next/route.ts",
+      "sha256": "9fdc0a4e5ced0f33e809bb730a5db19d41eff28faae4a654a980cff87982e2dc"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-orders/middlewares.ts",
+      "sha256": "de972e292937f9bc164da05ae4de002a6ee67a4f6a3be63c9da041219db60458"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-orders/route.ts",
+      "sha256": "4fc57530d36cf37e09b1762a474c7d5c1b45dde3d294bc7d04cbaa455c488ed9"
+    },
+    {
+      "path": "apps/backend/src/api/store/recurring-orders/utils.ts",
+      "sha256": "c87fe7565bf2e1997c4a920b68f32ced7d97bd4da9c2977013ed18611c18d47c"
+    },
+    {
+      "path": "apps/backend/src/api/store/subscription-cancellation-reasons/route.ts",
+      "sha256": "7eb6c6bc4007068fa45875536dda06e2a5676126d9b69992f6ba000c459d6675"
+    },
+    {
+      "path": "apps/backend/src/api/store/subscription-plans/preview/route.ts",
+      "sha256": "9a209b35f6f5e1b2add0b865fc850fc207734569472337a3aa4bc4e5dd10e1a5"
+    },
+    {
+      "path": "apps/backend/src/api/store/subscription-plans/route.ts",
+      "sha256": "5946e0f218c629c40bceb3315d51beb54d47e2edc3721c119559f65057bf0fb1"
+    },
+    {
+      "path": "apps/backend/src/api/webhooks/mercadopago-subscriptions/route.ts",
+      "sha256": "700bc0e6637cfe67bb3a86da0b91a56c075bb51a3cbac9e349c21d0198d64127"
+    },
+    {
+      "path": "apps/backend/src/jobs/compute-recurring-metrics.ts",
+      "sha256": "c74d0f99e79f4a9d2e9f2c5b8bb7cc9d811c2e4bca2e23ac61421e946bbad6d2"
+    },
+    {
+      "path": "apps/backend/src/jobs/forecast-recurring-stock.ts",
+      "sha256": "1b58b66d38152067782796cc52d7abd2c9208701adfe9ca2e9eac2c87f2a7b56"
+    },
+    {
+      "path": "apps/backend/src/jobs/preflight-recurring-renewals.ts",
+      "sha256": "d3e2bd54cd0a26b8cf4842902575aeb84e41a9c763e2fc2ddb640123691c2b21"
+    },
+    {
+      "path": "apps/backend/src/jobs/process-recurring-renewals.ts",
+      "sha256": "8ad27a778b4c9f890242543a92f1b70b53a34a5d30e7f1e8f1890ae819a72e94"
+    },
+    {
+      "path": "apps/backend/src/jobs/process-subscription-notifications.ts",
+      "sha256": "3b53f50dd06698f353e87223386d1b10973118bbb4c3a0f4d5a2872c8a90c2c5"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/actions.ts",
+      "sha256": "96bc6053826841ad9abdced472e9419fa769df1fd618c6e47b22198db3271b63"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/analytics.test.ts",
+      "sha256": "ed001cf220b095a00be118cf0ba9c8ff7c983b809bca5348340dd8534084e0a6"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/analytics.ts",
+      "sha256": "313106693f7f654a6d4d371a4a30ecac075af8714539e7f801c5b2173d3a2d43"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/communications.ts",
+      "sha256": "549282ac3ef09deb75ac0a106ffd42b168726d86e817f706806afc292c1feb82"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/config.ts",
+      "sha256": "8f712194ac236984f5104b8c056cc394ff3ef150f88a6cf101fbfa213f9cdec8"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/eligibility.test.ts",
+      "sha256": "00380d639fca857e1c37c926c7e70de87dc0de910d84d8a60aec20ab44de282a"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/eligibility.ts",
+      "sha256": "58f8b2d3fc20988f2e58d103c8c7550e6a723b866f7db918a22e1b314ee4e627"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/forecast.test.ts",
+      "sha256": "8345b28cc69748e4ba0ad99cb038a402bc7ee6ad964f891a54772eb2c0c9affb"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/forecast.ts",
+      "sha256": "ad875eff71d952cb3a87f71799a2a85da1e8cf875c21a0ef6653ea77533ecb8a"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/index.ts",
+      "sha256": "f629cd9e445b9a4ce89b1c770839f94b5d20c7c6d065c6d2cb61941dc4f3a3a6"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/inventory-reservations.ts",
+      "sha256": "630749b7bee0fc4ed98b311f038b6ad2d89322d5dbb2fc2a88aa1cf0689a9ed6"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/lib.test.ts",
+      "sha256": "db464b8822ab803db96a0c3a2643c3e7c064a0300a91bb1a4cad65ee82766256"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/lib.ts",
+      "sha256": "66409210a2e69d091ad278fbfdf8b5efe63fc44ca5b099d9ed387cff4d647eaa"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/migrations/Migration20260706150000RecurringOrder.ts",
+      "sha256": "51bba42970fa91e611caef90509395cbfe48dae5e793ab4171e4804a6b6d6b99"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/migrations/Migration20260706190000RecurringOrder.ts",
+      "sha256": "2382c94779f7e2126c971c27ba0c896b2211b123d182388588b482106f1efdd1"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/migrations/Migration20260721120000RecurringOrder.ts",
+      "sha256": "b1030bd65ba13996bb982502237496883fc1e57180c33233e3a54de44d3c40f0"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/migrations/Migration20260721150000RecurringOrder.ts",
+      "sha256": "5144b24575c41eba5b5c23d36361ac578c6a0aa37091f3709d7f90cf68d50c98"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/migrations/Migration20260721170000RecurringOrder.ts",
+      "sha256": "052858ffce569eaa8a6e0be269ab66baaf6ebe9e650ffed5ad28550246ee5aad"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/migrations/Migration20260721190000RecurringOrder.ts",
+      "sha256": "c35bd245db0c639c8833e6fcc587c7fc9fe7d3baece296a4c39d3713af3b1db4"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/migrations/Migration20260904123000RecurringOrderV2.ts",
+      "sha256": "f241286bfc8d663627077e251c24501e35fde7721e5597d73051b6a8cb33e791"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/cancellation-case.ts",
+      "sha256": "75de5b917ac100183b3a2a402c55d586eb5616f8cea8db1d0a2e586e5bf874fc"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/index.ts",
+      "sha256": "4094483d0813fd0561eb9ba32fb0e5bd0325e07a9f1b3fc87d76c741cbf7c4aa"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/recurring-log.ts",
+      "sha256": "70891ef79a54a7efe4e2dd7c0bb212b9a79ce571c7489c5c9a0573bb5938014b"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/recurring-metrics-daily.ts",
+      "sha256": "1568532676f34045be6a8466959861c7b36431417290a3d6ed2d3c4b0a006664"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/recurring-offer.ts",
+      "sha256": "243b5bd6f767970d30db9b2761dcdb4afc946d359f97f63665bba09fe80494c4"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/recurring-order-item.ts",
+      "sha256": "89a40f557604695443963d150bffcf05d4a5c8a580e0559769890bf69fc28495"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/recurring-order.ts",
+      "sha256": "68b463ad06ef226b29bca5a10f4ee14c10577633d77bf98d1f4fcd2d8fdfbe13"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/recurring-setting.ts",
+      "sha256": "d3e64812bae861d202e02381c1c87dcc1b555e47566ced87edc8e2648c7f9ada"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/renewal-attempt.ts",
+      "sha256": "22262905a96040ba991aa2f6f7a4cfd46fbd2676f0582b06c4c647c4e2809b1d"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/renewal-cycle.ts",
+      "sha256": "e3f9783ca610b4433f101bb6b122a020a4e7e00d2be9e5b523c229bba0a2ff9d"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/subscription-alert.ts",
+      "sha256": "ab83fa4441e3171c2a1aa8fef52c0622d0b9ea4fa3f07d8fcb2e1abfb5c2d4ac"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/subscription-cancellation-reason.ts",
+      "sha256": "39967770d52ef29afadc8a3f4710becd7e9d4107b3da9a714e3e2797de428270"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/subscription-notification.ts",
+      "sha256": "5fc180cef85782d6b332910b9b58058bee973fb22840561c7e282ab561ab9eba"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/subscription-plan-offer.ts",
+      "sha256": "098d993928ef4b16c4578cb7046841f803bb28e0a839a2b06a1db482dc879a5b"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/subscription-plan.ts",
+      "sha256": "054ffafa67195716b9fe57f1907c30f59c361d1449adab99966fe199b48d6740"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/models/subscription-target.ts",
+      "sha256": "7643194699db4fb2a53e04829f6ccf91f5cd6b8de5afc57af704ed7f6a238c29"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/offers.test.ts",
+      "sha256": "16c10d2dd08a48b8af8612e56ce5f8381d63305506e6f42983116f07e34c24d5"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/offers.ts",
+      "sha256": "bc33c5f6f7abd8b16236d63f2528b4b8e6e482b790c6739b84a7f1a4e029d45a"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/payment/index.ts",
+      "sha256": "619c1fc618ea26060402951e85357b80063e7858ac5ca1bb4def5386aed05c59"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/payment/manual-link.ts",
+      "sha256": "b1ba8c34c80b236df88795be502a798a7f422d72c04454b50dbea7eb7b114352"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/payment/mercadopago-auto.ts",
+      "sha256": "d8dccafbf7b87332e0d13e7969c27e1eba36936820222e0f359537f22ca7e990"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/payment/rejections.test.ts",
+      "sha256": "a5ab27fe7777a1dc42ba04dc237272b8713b3275d57e9092b3490ec4e8ed00b1"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/payment/rejections.ts",
+      "sha256": "28bd8c98f3d41407fcb7cbf52e4d368ff95e05fa80b76b67e969979c95cc2da2"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/payment/types.test.ts",
+      "sha256": "e4da831b5457f57feb751fe92d1c1441fb8fd769f824035a6974be660f5781ca"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/payment/types.ts",
+      "sha256": "e55793593105b3e29f4c7041ad3117870c90daf6459dce6469634aa30e80da98"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/plan-site.ts",
+      "sha256": "a624d92ee584693e4ce69a16c40d763f48573fa581e8eba1d55fa33eba8c40ca"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/plans.ts",
+      "sha256": "65aafb01838076fd05c9bcb095fe0716eef53e95d08b1cf768ea5cce8c6f623f"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/quote.test.ts",
+      "sha256": "1fdc0b02a5cb668bd7b4cbcb0b47100d6a172f8700a75fb706e3425105d01414"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/quote.ts",
+      "sha256": "3ec7e670e5a09e5f14e878ca5f6647e777d808849ab287c5a0144ac34700854b"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/retention.test.ts",
+      "sha256": "661894a919acda296e86ab533e18d7078b66e7c7bc61e5496da6aef9add33d77"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/retention.ts",
+      "sha256": "6ba99b58989d6cac2effff3552d725cdfe39de40787b345ec8d9270578755274"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/runtime-config.test.ts",
+      "sha256": "1613b14990df5624bb432fafa8f0a4fa0470307f8e80e0a544dfecb915a2e9d3"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/runtime-config.ts",
+      "sha256": "b381a8db06416f32aa9ea531a6ab60ad72e3809bb1b7ac712f9c05623d6e4daf"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/service.ts",
+      "sha256": "3f605c37cd9eca170b19de4745b1e88a0fc113ab7f50fbd07eb9a3ae9fdecf2e"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/settings.test.ts",
+      "sha256": "877818bc68db03c1221cc985b49eca9090c92e5bf55aeac0640e7316949b3ec3"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/settings.ts",
+      "sha256": "b9c103ba6cf2d9d1dc93892ecb25e7b979e4446515d63112217c334e63de2ffd"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/site-scope.ts",
+      "sha256": "671aed7997f87efb61c6dcea6c875b33101b256bd33b92d4608e48272f533063"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/subscription-settings.test.ts",
+      "sha256": "2e4217d74cb0e497e723a7af30539029253ee535a916bfc88c695f5739fbe7d3"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/toggle.ts",
+      "sha256": "2be883a3ccf629ad66f41e0eb4294fa11b032fc460362b08c2349f3b96f5379f"
+    },
+    {
+      "path": "apps/backend/src/modules/recurring-order/types.ts",
+      "sha256": "970d4a167cfa8234d19b7e7e88d8b2440c27cd3eec58790361ffc347a283eddd"
+    },
+    {
+      "path": "apps/backend/src/scripts/audit-subscriptions-v2.ts",
+      "sha256": "2c6589c027e9290337b8e577618e99473193439bf68a2bf106f3001efd7d39eb"
+    },
+    {
+      "path": "apps/backend/src/scripts/health-subscriptions-v2.ts",
+      "sha256": "85f920cc2e2ccd65505e460f8591dd537d26a42bd40decd41cf0830d27d77a0e"
+    },
+    {
+      "path": "apps/backend/src/scripts/migrate-recurring-orders-v2.ts",
+      "sha256": "16e1df1ff05d77ce62ed80a5c38a4938b73b3b138ae3130d4af00ffad4d1357d"
+    },
+    {
+      "path": "apps/backend/src/scripts/reconcile-subscriptions-v2.ts",
+      "sha256": "0231920de6ea22f4d975b7cb9887a7ef9a75aa473ee091cf19e978b783806b19"
+    },
+    {
+      "path": "apps/backend/src/scripts/rollback-subscriptions-v2.ts",
+      "sha256": "504bf1d0ac035033d0e0105c1ba9978acb9317cf907204d274300c9497465885"
+    },
+    {
+      "path": "apps/backend/src/subscribers/recurring-order-placed.ts",
+      "sha256": "de8ea6fb3ee03ad2cdbdda85fe30fff7fb018f86b03d753bf66dbb44420106bb"
+    },
+    {
+      "path": "apps/backend/src/workflows/create-recurring-order.ts",
+      "sha256": "d9e1947d5f97deddf71fcbaf7eff8855ccd035e36e68e3b83613ddc91e432298"
+    },
+    {
+      "path": "apps/backend/src/workflows/process-renewal-cycle.ts",
+      "sha256": "4c73fc3e79c1bf45d696ef99c449433abb823ef1ee4afe5b239bec3ebde59ba8"
+    },
+    {
+      "path": "apps/backend/src/workflows/run-renewal-cycle.ts",
+      "sha256": "e991d68688a43a25803a6d79ac2eac8833ad5b5aaa4a7f96750c0729efe45f83"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/subscriptions/[id]/page.tsx",
+      "sha256": "d709752922029b366cbab28c6b5a92d763f73270943c231f94c3232ede71ebe2"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/subscriptions/page.tsx",
+      "sha256": "fba0591ff69d98abe6c2da1a14bf6ccdb9e728da26472e51243fa2d7d19bff49"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/cart/page.tsx",
+      "sha256": "53ab920382b0dd56a241c0834ebaeb56faaea656d6a51362807a7bc8510b18ab"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/subscriptions/renew/route.ts",
+      "sha256": "ba6cdc83467abfb0c595635e3f984e9eacc59067789a800dad0a87dded37cd7c"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/recurring-orders.ts",
+      "sha256": "976d70f3b3d41ea911af95c594867c00d05189867b7250b815eb72c322324bc4"
+    },
+    {
+      "path": "apps/storefront/src/modules/account/components/subscriptions/cancel-modal.tsx",
+      "sha256": "cd69f3245f3ac021372c617c380cfb6b8e32eb0241f10ff47596f7d2216fcb18"
+    },
+    {
+      "path": "apps/storefront/src/modules/account/components/subscriptions/helpers.ts",
+      "sha256": "8231fdd7be605afc691f66e840647894384d7950804d296fe14abf5940b37f5a"
+    },
+    {
+      "path": "apps/storefront/src/modules/account/components/subscriptions/payment-method-editor.tsx",
+      "sha256": "80e09c5a551549c5e9a4e5532e7543aef636c3e81f02e16a18f6aa2fb974c70d"
+    },
+    {
+      "path": "apps/storefront/src/modules/account/components/subscriptions/subscription-detail.tsx",
+      "sha256": "326061f0ac76e0f4c44bfae705cfaa48e46c223a9c66ced0776b2e8b825c1348"
+    },
+    {
+      "path": "apps/storefront/src/modules/account/components/subscriptions/subscriptions-list.tsx",
+      "sha256": "27266d50030fff1276ee152ba893ad95729a58d26ef40b298e5068efeb579da1"
+    },
+    {
+      "path": "apps/storefront/src/modules/cart/components/make-recurring/index.tsx",
+      "sha256": "66788c6d1eac61cc38d0412722eaf75d15b42305a24e276e33729ebd02fa01a2"
+    },
+    {
+      "path": "apps/storefront/src/modules/cart/templates/index.tsx",
+      "sha256": "33e1da3030f63e4a6a2960a455d6c02e558b68cc327bee185ef182d50e617385"
+    },
+    {
+      "path": "apps/storefront/src/modules/products/components/subscribe-action/index.tsx",
+      "sha256": "64db0b70909d4f35383dfb92904da7a7e27bc44a1fce3d86f5d986d205d04645"
+    },
+    {
+      "path": "apps/storefront/src/modules/products/templates/product-actions-wrapper/index.tsx",
+      "sha256": "8cd8f190c461ad927ab148890cdd4af124930ec0c3818dff666abe7aa3d639e1"
+    },
+    {
+      "path": "apps/storefront/src/modules/store/templates/typesense-product-card.tsx",
+      "sha256": "a549f332e87094b755e50cf0ff1502cffefdfcecf991a8f551ad1f50032c32a2"
+    },
+    {
+      "path": "apps/storefront/src/modules/store/templates/typesense-product-grid.tsx",
+      "sha256": "197d1c3548e2c257d68f33511111c44b2812c6655584ee8da0efe31e08c8ebb3"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./store/recurring-orders/middlewares",
+        "storeRecurringOrdersMiddlewares"
+      ]
+    ],
+    "admin_hooks": [
+      "recurring-orders"
+    ],
+    "admin_translation": null
+  }
+}

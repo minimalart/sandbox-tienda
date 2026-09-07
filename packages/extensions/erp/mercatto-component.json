@@ -1,0 +1,845 @@
+{
+  "schema_version": 1,
+  "id": "erp",
+  "name": "ERP",
+  "version": "2.21.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:erp",
+  "environment": [
+    "APPLY",
+    "DEFAULT_CURRENCY_CODE",
+    "ERP_CATALOG_SYNC_CRON",
+    "ERP_OUTBOX_CRON",
+    "ERP_STOCK_SYNC_CRON",
+    "NEXT_PUBLIC_BASE_URL",
+    "SHIPPING_PROFILE",
+    "STOCKED_QUANTITY",
+    "STOCK_LOCATION"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/erp",
+      "target": "apps/backend/src/modules/erp"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/erp",
+      "target": "apps/backend/src/api/admin/erp"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/erp",
+      "target": "apps/backend/src/admin/routes/erp"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/erp.tsx",
+      "target": "apps/backend/src/admin/hooks/api/erp.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/translations/erp",
+      "target": "apps/backend/src/admin/translations/erp"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/tinting",
+      "target": "apps/backend/src/api/store/tinting"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/erp",
+      "target": "apps/backend/src/api/store/erp"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/widgets/order-erp-widget.tsx",
+      "target": "apps/backend/src/admin/widgets/order-erp-widget.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/erp-catalog-sync.ts",
+      "target": "apps/backend/src/jobs/erp-catalog-sync.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/erp-outbox-processor.ts",
+      "target": "apps/backend/src/jobs/erp-outbox-processor.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/erp-stock-sync.ts",
+      "target": "apps/backend/src/jobs/erp-stock-sync.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/backfill-tinting-base-titles.ts",
+      "target": "apps/backend/src/scripts/backfill-tinting-base-titles.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/import-vtex.ts",
+      "target": "apps/backend/src/scripts/import-vtex.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/erp-fulfillment-created.ts",
+      "target": "apps/backend/src/subscribers/erp-fulfillment-created.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/erp-invoice-ready-email.ts",
+      "target": "apps/backend/src/subscribers/erp-invoice-ready-email.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/erp-order-placed-reconcile.ts",
+      "target": "apps/backend/src/subscribers/erp-order-placed-reconcile.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/erp-payment-captured.ts",
+      "target": "apps/backend/src/subscribers/erp-payment-captured.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/erp/migrations/Migration20260704120000Erp.ts",
+    "apps/backend/src/modules/erp/migrations/Migration20260724180000Erp.ts",
+    "apps/backend/src/modules/erp/migrations/Migration20260729190000Erp.ts",
+    "apps/backend/src/modules/erp/migrations/Migration20260820160000Erp.ts",
+    "apps/backend/src/modules/erp/migrations/Migration20260827120000Erp.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/erp.tsx",
+      "sha256": "3e7e1736c6ea0c9680fc7227ab0922637db35f9db2daf0761f18ec1e35981011"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/components/shared.tsx",
+      "sha256": "c4de213d67be2660d7d4403f8efb348bb2ba4f8d45a86c5f6116d3e069f796fa"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/configuracion/page.tsx",
+      "sha256": "5b4bd65a86640e0e5b29ffc5d114ac67090fc31eb7a6aa7d3ee7d22345d6a06f"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/credenciales/page.tsx",
+      "sha256": "758387d68bb4308e72a90bb8009f50cb0952a1cf760d94b291223dcf4d93d8d5"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/logs/[id]/page.tsx",
+      "sha256": "363104c0a48eca4ef1830715b56618118d865bfd508f3cb56d885884fef2bb8c"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/logs/page.tsx",
+      "sha256": "dd86a32c4b8e6cf016eae090abdf09c598dd725e0e6667fdfc25c3630b41264a"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/outbox/page.tsx",
+      "sha256": "119dae69caf896e9722358f9d4bd707d86463cd79922fdd2b27f80ad54e7a098"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/page.tsx",
+      "sha256": "faecbdd2f78100e691b9e27367a94b83d13ac5ae7dcd94e5556f266d1ad66485"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/panel/page.tsx",
+      "sha256": "70ef8567052293cc975897f70f4236fdb3b3adba45babe3261231014687e4abd"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/erp/index.ts",
+      "sha256": "5b29d4630fdea8796897dc7fab1515c53ed16b160dfb0525fbde22c9b2b9f8d8"
+    },
+    {
+      "path": "apps/backend/src/admin/widgets/order-erp-widget.tsx",
+      "sha256": "88195388ca7393d32e5805abd76431a4fc38dd4543bdcdc92ec50dbfc8ecaf4a"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/catalog-sync/run/route.ts",
+      "sha256": "fccf3219064b08b0f0a96b267fe4cf09520832a8ad0d2069caedd49b9da2a966"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/config/route.ts",
+      "sha256": "e55f014c2cfef95a8eab83a88821f686f9834964b0d69fdd4fa0cb73488619b3"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/fulfillment-gate.ts",
+      "sha256": "10dd229c49959b6d0339f60147e3598b0e35e8b1cd236505081e5e40d6c209c2"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/invoices/[id]/download/route.ts",
+      "sha256": "4e766c9a8ab04c6b8730140d03f5952dc77a5438fe31eb7e9955aea416a0765d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/middlewares.ts",
+      "sha256": "88b07a1183de30e6e0084b00e35f00c9610717fc968953000c161344ee5b2b0d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/orders/[id]/billing-deposito/route.ts",
+      "sha256": "268acc0f7dd43649b42b899fbcca40d58e7418b07e76e7cdd15ca96cf0c213b1"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/orders/[id]/route.ts",
+      "sha256": "0659e9cde03718cd09ab6ca669f87f48b9b9067b855fa8e8445cebd2be5cbc66"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/outbox-events/[id]/retry/route.ts",
+      "sha256": "8df9f07784fb62ea8537fafb6d7b3346343af7c794ab123c5eac8af8f42e5ecf"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/outbox-events/route.ts",
+      "sha256": "5b36c1255ced4a7778f6ecb1f332b519a2fa1a50655f01365af3c9f1b4d134f6"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/price-lists/route.ts",
+      "sha256": "bc8fab5040a3177894e9974787daf33b6a64ee4d0289d0aa50633da91213d7e3"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/stock-sync/run/route.ts",
+      "sha256": "44f7a8cae9b786ec463b3e2a65c965aa8f3a3d35fbccb8fcd8064f68263b9948"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/sync-logs/[id]/items/route.ts",
+      "sha256": "45cbdf22a0999b40ca4fb6a6bb3758df7d0684c20b56c32abddad0c083f67b0d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/sync-logs/[id]/route.ts",
+      "sha256": "50e359c3a0b8d7deea6ace08e0d3e03b4c6cf271a704d8f8e101a2771649a7ae"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/sync-logs/route.ts",
+      "sha256": "e68707527b0b8bbf66dd6f1c243ac5a4e1eea08dff9fd8bb266f7c4ec574ac16"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/tinting/bases/confirm/route.ts",
+      "sha256": "a006badf077af9a4544c1ac7d2af3529c8f04d9d4268a0278337e05677054ec3"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/tinting/bases/detect/route.ts",
+      "sha256": "e44f09669a83386df0634b03cba1ad94fd7d70310b06a5f84808ffceadb73d70"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/tinting/bases/sync-products/route.ts",
+      "sha256": "76032f091f0b1494d627c211c6ff0daf8e4b0bfddadebbce0269094140c089ef"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/tinting/colors/route.ts",
+      "sha256": "b88f9881fd0c3b1d42d7601bad81908ff74594c5a38b24f5580f5b73b86f0070"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/tinting/formulas/route.ts",
+      "sha256": "44637dcee59988d9a954b9418c7f0c9bacdef0667bc62e7f38455bf1491f39d1"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/tinting/import/route.ts",
+      "sha256": "f29b9ca1cd91512d795421470734a4a03d27162b6f11cc4e4027a8e67cfe442d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/tinting/price-probe/route.ts",
+      "sha256": "09453bb10b208ba3972242e7b36ba70c2a2bf3497823149f1f9c63cabc1b9bbb"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/tinting/route.ts",
+      "sha256": "32a47ba236a65f842b3b95079b00fa3429464590e56904e67b742553b692676c"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/validate-connection/route.ts",
+      "sha256": "9ecb12eac67f7f0d11328138f8726ef58e5e84ae6dbf4682642355d16564b038"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/validators.ts",
+      "sha256": "a98eddd21e75a91e393476c595df7c33cc2a19a3636b906a280e64f9a7223e8f"
+    },
+    {
+      "path": "apps/backend/src/api/store/erp/invoices/[order_id]/download/route.ts",
+      "sha256": "f666aec14b80e7eda3f419a4e4a4bfa6abc93f2f8e002aabdf5a77deb497ef52"
+    },
+    {
+      "path": "apps/backend/src/api/store/erp/invoices/[order_id]/route.ts",
+      "sha256": "7ccda446abe3b13f1e1ff2d50220df2e1ab0b60dbe4f9832f51a19bd67777c64"
+    },
+    {
+      "path": "apps/backend/src/api/store/erp/middlewares.ts",
+      "sha256": "1fcaea45a19354868b774b39be2d7ef49f341b83e07710a77934c534f553a76f"
+    },
+    {
+      "path": "apps/backend/src/api/store/tinting/bases/route.ts",
+      "sha256": "5e82da7fdd8ebc6d0bd9b1ef93db6546111a87ab66aea19b052ed44298e91af8"
+    },
+    {
+      "path": "apps/backend/src/api/store/tinting/catalog/route.ts",
+      "sha256": "8e0853f49f064c08a37b69dbb5c08846e4f1a83feb9bb0ce00aa451894984127"
+    },
+    {
+      "path": "apps/backend/src/api/store/tinting/colors/route.ts",
+      "sha256": "bfcc7ec0ea73293f6d98dfe6a5e93e2d6f9c6866f77cf81fbd6fca7036e5e357"
+    },
+    {
+      "path": "apps/backend/src/api/store/tinting/context.ts",
+      "sha256": "71eca562d6eae20b38a4488082aa97793249b6c879f479610f8da6047c2fc137"
+    },
+    {
+      "path": "apps/backend/src/api/store/tinting/line-items/route.ts",
+      "sha256": "c9a406a432c27eb4276452a5cf022c6b28ece54f43328fe9b324716615ac38be"
+    },
+    {
+      "path": "apps/backend/src/api/store/tinting/middlewares.ts",
+      "sha256": "0b26695f9013b41a9a6e490beb19fa37cc3027b88ad0c5060505dc047e2effd3"
+    },
+    {
+      "path": "apps/backend/src/api/store/tinting/quote/route.ts",
+      "sha256": "8761d42ecc8002fc7d635dd28568b7ee32500099e4132904529d99322afb6c82"
+    },
+    {
+      "path": "apps/backend/src/api/store/tinting/rate-limit.ts",
+      "sha256": "4554eff22ba1f404ac5f2dcbe1523067d0bebfc47b41b703980ff2ffa5b48d12"
+    },
+    {
+      "path": "apps/backend/src/api/store/tinting/validators.ts",
+      "sha256": "97dafa40251241d0c82df3ef7325140f45dc1a66da176213c82025f709cc58c1"
+    },
+    {
+      "path": "apps/backend/src/jobs/erp-catalog-sync.ts",
+      "sha256": "2c53b95d5b2bc3873218bd2a01aa752317eb87a03e28a076a70db40363ba8651"
+    },
+    {
+      "path": "apps/backend/src/jobs/erp-outbox-processor.ts",
+      "sha256": "1f942bf844fd45a72240ea30a90020a7fcb4de165ca6321ca6474b5a87e76703"
+    },
+    {
+      "path": "apps/backend/src/jobs/erp-stock-sync.ts",
+      "sha256": "6d7cfcb9664d12f322bd5039c9c8eae8a7be4f0ff5adbb2f24f68c68d4a7e8c8"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/bsale.test.ts",
+      "sha256": "89a0b61b08e0ff5c83ea76bc8d58f75e2f48738c49c0eb8e2166578c6561cf1b"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/bsale.ts",
+      "sha256": "c1c151964d5f2daa1dd9f3a183bc93ccc46210e4ab737b158f5ba9ae66a5a518"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/contabilium.test.ts",
+      "sha256": "ece497221e793e44404ede0e09287e36f584df78052ebbe91592cb13339b00bc"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/contabilium.ts",
+      "sha256": "e827715a6dfcf47c5044506b02f642ee3a34ae1f6346d0137a4cc3ebf2fa93a2"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/odoo-rpc-client.ts",
+      "sha256": "adfbac593702028eb2d14e4ec7ad0c0cf9eb29adf344a3e6f5833ed2bed57e53"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/odoo.test.ts",
+      "sha256": "6fde293da1957660b01a9d77c9dbfdd9a199ca3ebb2229dd2a875f70d9dd5309"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/odoo.ts",
+      "sha256": "f2604f2a73b3ecb3d6dedafa0dc92adae35d7eae9953ec4d23a1bb47c5e746aa"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/registry.ts",
+      "sha256": "5c408a08232e10f2465d030bcfec4fb875eea9f687304227834a0f67e8e68e78"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/types.ts",
+      "sha256": "15a3687407a9b4bfb2cd9ae42110199996f681bc48e8beeed5eb6835915d18f9"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/zeus.test.ts",
+      "sha256": "eb2a6efd352debd35c56dc73034c4c5b10d7b05429a739f99d50cc838c21eb57"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/zeus.ts",
+      "sha256": "e7cedf0cbfa568213efa0107115405518459d141e64b24566c162e292b7f7f09"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/barcode.test.ts",
+      "sha256": "8272f59c96f848de25d2c7e5967fb5138786379d78e24b0d85b4353022ad18f6"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/barcode.ts",
+      "sha256": "f3f590549eb5dd1531353842668c0b2e32c3162347ddf2aadcf5461b4d031b91"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/billing-deposito.test.ts",
+      "sha256": "f7905afe63d4a98ae5abddeed5249d40b0b308948888647a210181b8af12323c"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/billing-deposito.ts",
+      "sha256": "a8d74ce9bb9ce31a69228715d010f020867e57c5ec6f0be97968a90240bca74a"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/countries/ar.test.ts",
+      "sha256": "bc40141adb0115e37e6c1cd0fb89828043af6929650434baaf59e1f57f7d4df5"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/countries/ar.ts",
+      "sha256": "2c92560f4526e41c5b00c56a2fa2cf267d370ffd74cb02c8d8a1c577a57937e9"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/countries/cl.test.ts",
+      "sha256": "0eeeb0e809010fb5ab738746e0947f58a0c0d62e8f6ef88a3ca368121a174ea7"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/countries/cl.ts",
+      "sha256": "07f621beb0688abc2ebaf85beccda385880e2ac0500d832b6df9f4c4b98b736a"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/countries/registry.ts",
+      "sha256": "e578cfb857462f2be83d863b9d0cd954edf9b9aa01db7d6c09d07598b682c2af"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/countries/types.ts",
+      "sha256": "71397154ee4b4ec1623f47835696c4907f16ac4d22b352b936feb986454c9c15"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/crypto.test.ts",
+      "sha256": "82f47c6968ce3a196e44e76bf45d8486362871ad98d0025928ed654d0ca25972"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/crypto.ts",
+      "sha256": "9c65dccd961fadf3486e3b0f324a477580726d6a1f58b645be17e703dfd404f7"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/descriptor.test.ts",
+      "sha256": "452f42a734a5b2889660086aaacde99915fa534a46320d9aede6ec8204821154"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/fulfillment-coverage.test.ts",
+      "sha256": "9a1062a21fbf7e892c350ef7663b10c96ec99de9d14a97440f6ceccf8e9f2a5f"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/fulfillment-coverage.ts",
+      "sha256": "d3ae0b9ad77f7379e5d87756961205f0a500320d8c9d9efea9628ee15dda4ac6"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/index.ts",
+      "sha256": "735f722cbe049384c220ffe77013819844bae3b0e1d61badef999d67f4b72c2c"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/migrations/Migration20260704120000Erp.ts",
+      "sha256": "9a8c3c5dab9d325e867fc0c067d3f4e75e8c8117160a5d6b6e92d163d14bb3d4"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/migrations/Migration20260724180000Erp.ts",
+      "sha256": "fd631ea690c689dd3e4bb59a00058c85a6255e39c493a5b97d707a67467fd792"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/migrations/Migration20260729190000Erp.ts",
+      "sha256": "f323bec85d4b7f5a0b98e90254cce3881bb904c51c7f0a63ce5f302d08edd440"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/migrations/Migration20260820160000Erp.ts",
+      "sha256": "f9e8f27a5c89ab55a3ebd19d6a03dfc0cd213eb2e86b079f6b76f5fb48d08ed1"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/migrations/Migration20260827120000Erp.ts",
+      "sha256": "3e63b5fa30b39796b8b2ba7c646892768cd85e737525c0087ca059881564d3db"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/models/erp-config.ts",
+      "sha256": "9afa360bc4722cb2bfa7271152d3996e48d2c01ba33e877bf6c4a91b1afdf207"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/models/erp-invoice.ts",
+      "sha256": "43dbffcda9f8866e03b32e9c594f2604cfe28acffc662162b8842d57898f596d"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/models/erp-outbox-event.ts",
+      "sha256": "d149de25fb1c14d73daf41e884d2143bb86a0f9379c031fda7d784eec65dfe1e"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/models/erp-sync-log-item.ts",
+      "sha256": "c5fac9217820dc8a3773e7440cde455454950d4fc087eb6c2e62f06deafbc665"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/models/erp-sync-log.ts",
+      "sha256": "30f7ffcc6fc54809ea1684da5d6a69ddec274c8d2548a04a185ab07759e2f37d"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/models/erp-tinting-base.ts",
+      "sha256": "9d6a6f7d85a0dfacfd172ea57e37542874a3bb62fef2538394a97033aca5ee48"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/models/erp-tinting-color.ts",
+      "sha256": "babcfea0ec30724bf3b53779855ca4e309a2e98be802026554649675e89f9b87"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/models/erp-tinting-formula.ts",
+      "sha256": "5a26b81a7139fe9fc578f64f41b7ec0905d5419a9b06d53a1602f31ba7c93a0a"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/models/index.ts",
+      "sha256": "243d593fe65ec887b8fab1c25b0a02101d3eac00ea0112f48e2af3284f44d438"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/outbox/backoff.test.ts",
+      "sha256": "5bbe29f1cb41240e216acefc5fc1eb1ae031678d47e6aa8002064fd7a7bcb4b3"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/outbox/backoff.ts",
+      "sha256": "958c465341d0db3ef8c028026e7ba1ed27974577a874975bc801f0cf77db33fc"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/outbox/build-sale-payload.ts",
+      "sha256": "49b38cd3fc8311f6973c78524b581d0dca082bc68df360698b4306ef17f2d385"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/outbox/enqueue-sale.ts",
+      "sha256": "59c4e68edb48efd5c5e9330629c9ad8c19b12544ce27848a80ac18703905cc63"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/outbox/invoice-fetch.ts",
+      "sha256": "926e19257a78438022e958a497bbb6184024b0e1cafe6b540acf969bbdd4bea0"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/outbox/process-outbox.ts",
+      "sha256": "763dc1e3189d2f580162a216d2be7cac7d8c7949a15ea5c0909c536ed617c2c3"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sanitize.test.ts",
+      "sha256": "73347959e430f956497a1142132e1a80075d5213c78b321fb7c1bc74f232676a"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sanitize.ts",
+      "sha256": "581699fe81d70d3b9af7e07ca72da58550fb03e132dd895b3a5bd05aa8477fd0"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/service.ts",
+      "sha256": "cd5441ccafef3f5375b044ccae8150df6942a997fef22b3cb5c2e84daf482443"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/settings-merge.test.ts",
+      "sha256": "2ba2c37e086939717b45522c9934147778755afd3a467efdd22148d5f47812d1"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/settings-merge.ts",
+      "sha256": "5c675c63d8c609bfcce18dd2cfe93f4c7882aa3143d1adbd37345b4bc635b47d"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/apply-brand-assignments.ts",
+      "sha256": "64d9e81b2609ee49e3b47cc8ae3b9687e70b03c479aa5cc46c0368e6140ebd1c"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/apply-category-assignments.ts",
+      "sha256": "5cd6806b503da852888f8f912a518b25c6f4af297d7f9332d52d34c1f9d150e0"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/apply-category-tree.ts",
+      "sha256": "cb4430750428fbe10a2bed89b0c7790f7d7f2a5ccbbe839348597ea852bb5965"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/apply-color-option.ts",
+      "sha256": "ea4c28e47103b8ba72ab0697d3b48edead54b9dca67c84387dc9b386ae4d930b"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/apply-presentation-option.ts",
+      "sha256": "bcc9c8d674a82c2c3ceae159e29bedebd53c6f19f3a26fab499c04fca78bd767"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/apply-product-changes.ts",
+      "sha256": "20b58fdd1d10bacc7d76991297f241c26aa1111cc36d1ed06bbb913aa5a8b71b"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/apply-product-images.ts",
+      "sha256": "8de352328b584ba32438bc17f2bc3b65b644f641b34e9e176f72e58dd8d80c55"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/apply-product-status.ts",
+      "sha256": "b28d014457b02a1672ea423b206aab99e6ba35e079e5117fc91e481e0b762293"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/category-name.test.ts",
+      "sha256": "363c21e85ab009d6f393b560a611d3ec0a0e12340e87dc518f69d515979c7502"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/category-name.ts",
+      "sha256": "8336e669b2495efc99899d2afc327070e2d2643514c900b67542721fb170a917"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/color-option.test.ts",
+      "sha256": "04bb96a59af3cb609fbe0e0f6e1d4597615c75c6c042df4758bf202eb38e2c55"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/color-option.ts",
+      "sha256": "1d1a93912af9c27c981344308ec91edc9398f82647831c5ca357441c53be7b18"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/full-sweep-schedule.test.ts",
+      "sha256": "a6561b2e3889fdb5758c2e904b9287ad4154133552613555b5253bec0ad85acf"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/full-sweep-schedule.ts",
+      "sha256": "db3fa6e1921de3b71dcf5cb09a7180dd487f07e33a2fd619d36f9d2f923d89c3"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/full-sweep-scope.test.ts",
+      "sha256": "6c4949abe92d51f9f17f7d9ca193f8e6cbd108587ccfe0f64a380cdbd78c0094"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/full-sweep-scope.ts",
+      "sha256": "0aa0bef69c3a5f2193ebe382027c5f5c6cfd5933336cfdb0cd261d470565ac74"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/image-failures.test.ts",
+      "sha256": "1838b9acadc8f7be382d993bfe3952b1e87a5bb8bfba15e8b7bdd302054611c3"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/image-failures.ts",
+      "sha256": "463fa5ba027ebe23482c4a697cb4f029b481ac5ddcee041b56cc785e861bd49f"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/image-resolution.test.ts",
+      "sha256": "74c8a84fbf2b63148edc03ab65bc2fd0b75d65c12fa1976748a933612e8f2e4a"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-brand-assignments.test.ts",
+      "sha256": "9e63f854172b33d66016ef6fcd72e35fb4f08f544283d816ce8056344407e74a"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-brand-assignments.ts",
+      "sha256": "54be3c3defd042abd84ce7889c0305e2e54f4cf7bb700c4fd7c4c4c10bba99ec"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-category-assignments.test.ts",
+      "sha256": "5ce1c2a88e8ad78a235e65cba9acdeb85cad83fe0d9eea8bde7c2487ad2041e0"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-category-assignments.ts",
+      "sha256": "bf3a5badefbd0dc908fdce4f65428b83276e4c3823bc3a7554f7113981027597"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-category-tree.test.ts",
+      "sha256": "6d8939189cce25a13a181d59082147ede531b399a6ce9f3902f4e5da168fde85"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-category-tree.ts",
+      "sha256": "f958a8a9a732fba5e4b69b8cf6a0c0d15009be8e99da57d2f3c3a42a07dfa319"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-price-updates.test.ts",
+      "sha256": "554c2d1df1f7aa4609ed161d13752813f96b260e195e158f0bd0caf4e9f21016"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-price-updates.ts",
+      "sha256": "f084ead782704ef75487a326ee5074ae2f28d1295154809969e6ed79374cb8c2"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-product-images.test.ts",
+      "sha256": "99bd0194b9e68a1242c91172f81ff50cc0764821eeb54994e6fe8e408890034b"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-product-images.ts",
+      "sha256": "3afcc3f2eb28125293d329bec3eff6057f2ef82206327ee24fd90791733a426f"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-product-status.test.ts",
+      "sha256": "3b14dc5e7cf04bf96ca764824b8ddc82571215e808e847920339bc9f99e04eaa"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-product-status.ts",
+      "sha256": "9e6b3dce23e590b9d35a2942018befff884934db79f51b6659cba30e2235f022"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-product-updates.test.ts",
+      "sha256": "79392543f3efc8ad9697a3e9b25d757e3888aaede234543a5f5b7611ad927056"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-product-updates.ts",
+      "sha256": "8431bd2d7310b40f077853a27a863ade7abf12edc17b2c51b4fce696862ed0bb"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-stock-updates.test.ts",
+      "sha256": "5a36b18f0b319e5c34efacc237c1892ca6af38a9f4afa92f8aea2e9d8401db08"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/plan-stock-updates.ts",
+      "sha256": "4e170fb70398535b8242457b14509fe5d9ee8314e17c9dacc9e45de0f6680bcb"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/presentation-option.test.ts",
+      "sha256": "e33ed73b50306ffbe00945e5ed84365de25a432525f6128e88bc0fe2d45cad81"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/presentation-option.ts",
+      "sha256": "2473a1c1e24709aec346e5748b9bc1fc23837052a5c917023495b345555297bd"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/product-description.test.ts",
+      "sha256": "b5fdd0afc9444ce353dd99577eb9629fc340cfbccbcfc6be15482b18c571ac93"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/product-description.ts",
+      "sha256": "7d4e8242276ab8183d0939738d7159e5f24ad21aeb80248e7853b714d0826f6e"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/product-title.test.ts",
+      "sha256": "abe263b27d3d5c785490b52646409c6709a63cffcff962608410ffe923c2ffdb"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/product-title.ts",
+      "sha256": "d9c5ba56d43154ed7bf57efd9c1e15542b0acfb4133d2493b0f02ed1c62e401d"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/quantity-for-target.test.ts",
+      "sha256": "1abd80dcc7eda80fd10a58d2d645e614fa0f20fd6d0548377bd75460c023da5c"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/resolve-price-lists.ts",
+      "sha256": "88c22bea470e29b4ebdb10217d98dd8d508571c32a50b4fb36101df1678eb4a8"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/resync-stock-for-order.ts",
+      "sha256": "5f53292939bf1f994e4d367ccac7ce2f7a41c36a339abc005bffcb6190980e15"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/run-catalog-sync.ts",
+      "sha256": "8c4b615977e3ca4a715a99456c2fc21f1dc2a4ae11c7af276c687103829cd292"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/run-stock-sync.ts",
+      "sha256": "2c37b6491c9f4ca67e389d9c6aa226b6eee584313dadd5de055794596bf213a2"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/slug.ts",
+      "sha256": "ecea9c69a5369d8d8df0dd75f807db96d6ed2914cfb98a118fc9471e33bf370e"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/base-card-metadata.test.ts",
+      "sha256": "c9aa459ba8acde88d2ef1b7a02577110cbe2dcf5dd0ddcafcbbc9e5223381d82"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/base-card-metadata.ts",
+      "sha256": "08ab48aae48eaf693daefec615e298f089cfbf252bc567cefe77b8c6de15e539"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/base-detection-title.test.ts",
+      "sha256": "598d53b00317823ee94fccb930f14132211693754aa97b7cde73255421f13240"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/base-detection-title.ts",
+      "sha256": "bef69e8be86a001fa531f91a4dcbe6418937ceb9673bf5deb46f1b0e3e399bae"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/classify-error.test.ts",
+      "sha256": "9713228cc861f7f352a3a321a0faf6ada74406585deb0e91240e79c35505fb71"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/classify-error.ts",
+      "sha256": "4f1c4abf89d6da37aadb3e141411f508b2c5ccf5b4a4ad7c96004ce3a417c8ee"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/color-images.test.ts",
+      "sha256": "12962d6e86af35e65e1948c34bf591bef3e1ef8c6c6a9263017df448454b6b9b"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/color-images.ts",
+      "sha256": "db59e9e5b3478bebc37a9967301cbeaf3c5359a78dd172ca659cf9b2c2fbd150"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/formula-code.ts",
+      "sha256": "63977d65fc64935f9876b44dd875c998a27a66394621397163804260ef6934a8"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/import-rows.test.ts",
+      "sha256": "5e1a7b9252966ad234425419aac06dd495e0e30b9425cfb0e1ee281f67c3bb91"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/import-rows.ts",
+      "sha256": "5c5eaead81d3861318e719eae93f07df070bc921a69dac956357efe9fe528077"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/line-metadata.ts",
+      "sha256": "309df41d97a0c61bb6b0fe9bbb7906cceec506cd1e06a8cfb23ff0ebab22df2b"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/normalize-quote.test.ts",
+      "sha256": "e30971e9b6b926a081483b95cf72def0d4c3aecc5d8569ed89f529c2d7c8d438"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/normalize-quote.ts",
+      "sha256": "8837958f5f207776413b41d4aab046c753fe6e93eefe5a666df402230686eff1"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/parse-base.test.ts",
+      "sha256": "657cc1fb6af2de491581a168878297b89416144e9adb2415d27bfbc36efc4182"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/parse-base.ts",
+      "sha256": "20fd6a7556ce34aece7db81398794b6b6438d89dd79ac47b1a5c493bae636e57"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/plan-base-products.test.ts",
+      "sha256": "ec7373b7e74428223468e6bff8d777055baa743a8d8ecb65b9482cc5e71d7b70"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/plan-base-products.ts",
+      "sha256": "0d7ac0720660fe337b7b7bb75137d0d648cf35db8e504dcc3fa322d7425cbc08"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/quote.ts",
+      "sha256": "49e43c79306f8c8a2e687076762b6a7ddd9ccdacfd25a122539a429e34320e44"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/readiness.ts",
+      "sha256": "2dc80dd0fed0264becb9515211f2d672914d3e9a91f2d4ef93b48fa0efc4e106"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/resolve-list-index.ts",
+      "sha256": "916422c21c637151aa6d4b99df1a615d621002d6f639c14ea4863a54b42af952"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/select-bases-for-color.test.ts",
+      "sha256": "a906132de55c074abe312179ad7612fc161236628111cabb230d731d9c43ca00"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/select-bases-for-color.ts",
+      "sha256": "7e0047af5baa70325b7e3a42c8b9165a9cc2babab2fdd2eda22846c7d96bb930"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/sellable-bases.test.ts",
+      "sha256": "07e222277b6ee93ef36ecbb613d3607b9b2a9cd93f129903fd634105669a1ecd"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/tinting/sellable-bases.ts",
+      "sha256": "a08050a73a1d543e43a019cd86e952b535263996528f77fca4bb8fb77247279e"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/types.ts",
+      "sha256": "714b31e5a9355144a28fc061c0c025763a8c70da16aab95ed2234f677a4b2aa2"
+    },
+    {
+      "path": "apps/backend/src/scripts/backfill-tinting-base-titles.ts",
+      "sha256": "be65fbbbc483a21e021dfa9ec59a308ae9258c6c2483685baac2836a02f8a86e"
+    },
+    {
+      "path": "apps/backend/src/scripts/import-vtex.ts",
+      "sha256": "e5cfb1c6bada1cebae912afbf8bc63a114a6aafff526e8c2d9291624e12f8d47"
+    },
+    {
+      "path": "apps/backend/src/subscribers/erp-fulfillment-created.ts",
+      "sha256": "630f27d07c97a7a74232314cd970096c9f09917dc67a9601d936c5aa37714596"
+    },
+    {
+      "path": "apps/backend/src/subscribers/erp-invoice-ready-email.ts",
+      "sha256": "5c16b798c7d88f99b147110b8e548a7089dd0ca5ba62360cb328a39ee2ac2a34"
+    },
+    {
+      "path": "apps/backend/src/subscribers/erp-order-placed-reconcile.ts",
+      "sha256": "8d4415dfc63dcdfb3d1d1374e4b1cb6d424862625c967378fd38e6f55a404a29"
+    },
+    {
+      "path": "apps/backend/src/subscribers/erp-payment-captured.ts",
+      "sha256": "cddc3fcbaf127561ead577edf5f7fe2c178a3e715b730a3ff0604f49492e1741"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./admin/erp/middlewares",
+        "adminErpMiddlewares"
+      ],
+      [
+        "./store/tinting/middlewares",
+        "storeTintingMiddlewares"
+      ],
+      [
+        "./store/erp/middlewares",
+        "storeErpMiddlewares"
+      ]
+    ],
+    "admin_hooks": [
+      "erp"
+    ],
+    "admin_translation": null
+  }
+}

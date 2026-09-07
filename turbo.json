@@ -1,0 +1,44 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "globalDependencies": ["**/.env.*local"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "env": ["MEDUSA_ADMIN_API_KEY", "GOOGLE_MAPS_API_KEY"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
+    },
+    "start": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test": {
+      // `^build` (las DEPENDENCIAS), no `build` (este paquete).
+      //
+      // Con `["build"]`, correr los tests unitarios del storefront exigía un `next
+      // build` de producción entero — que además falla sin las env vars reales
+      // (`check-env-variables.js` hace `process.exit(1)` con
+      // NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY / COUNTRY_CODE / SALES_CHANNEL_ID). O sea
+      // que `turbo run test` era imposible en CI y en cualquier checkout sin `.env`.
+      //
+      // Los tests corren sobre `src/`, no sobre el build. Lo único que sí necesitan
+      // buildeado es el `dist/` de las dependencias del workspace (`@repo/shared`),
+      // que es exactamente lo que da `^build` — el mismo criterio que `typecheck`.
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
+    }
+  }
+}

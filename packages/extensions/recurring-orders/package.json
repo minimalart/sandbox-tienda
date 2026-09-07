@@ -1,0 +1,12 @@
+{
+  "name": "@repo/extension-recurring-orders",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Compras recurrentes component source package",
+  "dependencies": {
+    "@repo/extension-email-templates": "workspace:*",
+    "@repo/extension-mercadopago": "workspace:*",
+    "@repo/extension-typesense": "workspace:*",
+    "@repo/extension-whatsapp": "workspace:*"
+  }
+}

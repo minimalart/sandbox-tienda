@@ -1,0 +1,12 @@
+{
+  "name": "@repo/project-catalog",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "scripts": {
+    "typecheck": "node src/validate.js",
+    "build": "node src/validate.js",
+    "test": "node --test src/index.test.js"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://mercatto.minimalart.co/schemas/plugin.v1.json",
+  "schema_version": 1,
+  "id": "brands",
+  "name": "Marcas",
+  "version": "1.0.2",
+  "kind": "plugin",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:brands",
+  "environment": [],
+  "medusaModuleKey": "brand",
+  "ownedTables": ["brand", "brand_image", "product_product_brand_brand"],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": ["brands"],
+    "admin_translation": null
+  }
+}

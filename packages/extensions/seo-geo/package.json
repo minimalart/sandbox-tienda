@@ -1,0 +1,10 @@
+{
+  "name": "@repo/extension-seo-geo",
+  "version": "1.8.0",
+  "private": true,
+  "description": "SEO & GEO component source package",
+  "dependencies": {
+    "@repo/extension-store-config": "workspace:*",
+    "@repo/extension-typesense": "workspace:*"
+  }
+}

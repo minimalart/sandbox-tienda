@@ -1,0 +1,56 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GET = GET;
+const loyalty_1 = require("../../../../modules/loyalty");
+const points_1 = require("../../../../modules/points");
+const request_1 = require("../../../../lib/multistore/request");
+const scope_1 = require("../../../../lib/multistore/scope");
+const site_scope_1 = require("../../../../modules/loyalty/site-scope");
+// Aggregated KPIs for the loyalty dashboard. Sums are computed in-memory over a
+// bounded fetch — fine for typical loyalty volumes; promote to SQL aggregates if
+// the ledger grows very large.
+async function GET(req, res) {
+    const points = req.scope.resolve(points_1.POINTS_MODULE);
+    const loyalty = req.scope.resolve(loyalty_1.LOYALTY_MODULE);
+    const accounts = (await points.listPointsAccounts({}, { take: 20000, select: ['balance'] }));
+    const activeCustomers = accounts.filter((a) => (a.balance ?? 0) > 0).length;
+    const avgBalance = accounts.length
+        ? Math.round(accounts.reduce((s, a) => s + (a.balance ?? 0), 0) / accounts.length)
+        : 0;
+    // Los movimientos de ESTA tienda. El saldo agregado sigue siendo de la instancia
+    // —una cuenta por cliente— y por eso `accounts` no se filtra: partirlo por tienda
+    // dividiría el saldo de un cliente que ya compró en las dos.
+    const txnSiteWhere = await (0, scope_1.siteFilter)(req.scope, await (0, request_1.siteFromRequest)(req), site_scope_1.POINTS_TRANSACTION_SITE_SCOPE);
+    const txns = (await points.listPointsTransactions(txnSiteWhere, { take: 50000, select: ['amount', 'type', 'status'] }));
+    const issued = txns
+        .filter((t) => t.type === 'earn' && t.status !== 'reversed' && t.status !== 'expired')
+        .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    const redeemed = txns
+        .filter((t) => t.type === 'redeem')
+        .reduce((s, t) => s + Math.abs(Number(t.amount) || 0), 0);
+    const expired = txns
+        .filter((t) => t.status === 'expired')
+        .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    const grants = (await loyalty.listRewardGrants({}, { relations: ['reward'], take: 5000 }));
+    const pendingRedemptions = grants.filter((g) => g.status === 'pending').length;
+    const byReward = new Map();
+    for (const g of grants) {
+        const name = g.reward?.name ?? '—';
+        byReward.set(name, (byReward.get(name) ?? 0) + 1);
+    }
+    const topRewards = [...byReward.entries()]
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+    res.json({
+        issued,
+        redeemed,
+        expired,
+        active_customers: activeCustomers,
+        avg_balance: avgBalance,
+        pending_redemptions: pendingRedemptions,
+        total_redemptions: grants.length,
+        top_rewards: topRewards,
+    });
+}
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoicm91dGUuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi8uLi8uLi8uLi8uLi8uLi9zcmMvYXBpL2FkbWluL2xveWFsdHkvZGFzaGJvYXJkL3JvdXRlLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7O0FBYUEsa0JBNkRDO0FBekVELHlEQUE2RDtBQUU3RCx1REFBMkQ7QUFHM0QsZ0VBQXFFO0FBQ3JFLDREQUE4RDtBQUM5RCx1RUFBdUY7QUFFdkYsZ0ZBQWdGO0FBQ2hGLGlGQUFpRjtBQUNqRiwrQkFBK0I7QUFDeEIsS0FBSyxVQUFVLEdBQUcsQ0FBQyxHQUFrQixFQUFFLEdBQW1CO0lBQy9ELE1BQU0sTUFBTSxHQUFHLEdBQUcsQ0FBQyxLQUFLLENBQUMsT0FBTyxDQUFzQixzQkFBYSxDQUFDLENBQUM7SUFDckUsTUFBTSxPQUFPLEdBQUcsR0FBRyxDQUFDLEtBQUssQ0FBQyxPQUFPLENBQXVCLHdCQUFjLENBQUMsQ0FBQztJQUV4RSxNQUFNLFFBQVEsR0FBRyxDQUFDLE1BQU0sTUFBTSxDQUFDLGtCQUFrQixDQUFDLEVBQUUsRUFBRSxFQUFFLElBQUksRUFBRSxLQUFLLEVBQUUsTUFBTSxFQUFFLENBQUMsU0FBUyxDQUFDLEVBQUUsQ0FBQyxDQUV6RixDQUFDO0lBQ0gsTUFBTSxlQUFlLEdBQUcsUUFBUSxDQUFDLE1BQU0sQ0FBQyxDQUFDLENBQUMsRUFBRSxFQUFFLENBQUMsQ0FBQyxDQUFDLENBQUMsT0FBTyxJQUFJLENBQUMsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLE1BQU0sQ0FBQztJQUM1RSxNQUFNLFVBQVUsR0FBRyxRQUFRLENBQUMsTUFBTTtRQUNoQyxDQUFDLENBQUMsSUFBSSxDQUFDLEtBQUssQ0FBQyxRQUFRLENBQUMsTUFBTSxDQUFDLENBQUMsQ0FBQyxFQUFFLENBQUMsRUFBRSxFQUFFLENBQUMsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLE9BQU8sSUFBSSxDQUFDLENBQUMsRUFBRSxDQUFDLENBQUMsR0FBRyxR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

@@ -1,0 +1,472 @@
+{
+  "schema_version": 1,
+  "id": "multistore",
+  "name": "Tiendas",
+  "version": "1.6.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:multistore",
+  "environment": [
+    "DEMO_IMPORT_BACKOFF_BASE_MS",
+    "DEMO_IMPORT_THROTTLE_MS",
+    "MERCADOPAGO_ACCOUNTS",
+    "MERCADOPAGO_PUBLIC_KEY",
+    "MULTISTORE_PUBLIC_BASE_URL"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/scripts/seed-site-footer.ts",
+      "target": "apps/backend/src/scripts/seed-site-footer.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/modules/demo-store",
+      "target": "apps/backend/src/modules/demo-store"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/sites",
+      "target": "apps/backend/src/api/admin/sites"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/site-templates",
+      "target": "apps/backend/src/api/admin/site-templates"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/sites",
+      "target": "apps/backend/src/api/store/sites"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/demo-stores",
+      "target": "apps/backend/src/api/store/demo-stores"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/sites",
+      "target": "apps/backend/src/admin/routes/sites"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/demo-stores.tsx",
+      "target": "apps/backend/src/admin/hooks/api/demo-stores.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/translations/demo-stores",
+      "target": "apps/backend/src/admin/translations/demo-stores"
+    },
+    {
+      "source": "payload/apps/backend/src/links/demo-store-region.ts",
+      "target": "apps/backend/src/links/demo-store-region.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/links/demo-store-sales-channel.ts",
+      "target": "apps/backend/src/links/demo-store-sales-channel.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/links/demo-store-stock-location.ts",
+      "target": "apps/backend/src/links/demo-store-stock-location.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/demo",
+      "target": "apps/storefront/src/app/[countryCode]/(main)/demo"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/site-credentials/route.ts",
+      "target": "apps/backend/src/api/admin/site-credentials/route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/update-demo-store-sales-channel.ts",
+      "target": "apps/backend/src/workflows/update-demo-store-sales-channel.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/update-demo-store-stock-location.ts",
+      "target": "apps/backend/src/workflows/update-demo-store-stock-location.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/demo-store/migrations/Migration20260623120000.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260624170000.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260624190000.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260703120000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260703130000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260704120000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260706150001DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260726100000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260731120000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260803120000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260804120000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260805100000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260807120000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260807130000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260819120000DemoStore.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/demo-stores.tsx",
+      "sha256": "8ca6f0c7d29383ecc895f0a8d73e50895e4b4e08069ef821dab19926eb9af2ee"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/[id]/footer/page.tsx",
+      "sha256": "ecce7bdb0ce5f9cad4cec9332fb210575fa7655d0bb2f4a1a84a6aceb8d8f2e9"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/[id]/home/page.tsx",
+      "sha256": "bc30995fe5ca390d533606c09127bf67aa7e501dbc5484f885516a6f4448e5b4"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/[id]/page.tsx",
+      "sha256": "c6d4d8bea6d26adce0bf6f1f29afb2f8c0c206dd66757f6af837bf12861f791a"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/branding.tsx",
+      "sha256": "d3cbb697d2330686110971c8602e49f90f9f3c6f402463c48a4c2036996ad3d3"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/campaign-content-fields.tsx",
+      "sha256": "f903b5092e2e06356deee11334aaf6111e288c8da28c2d300af17f534edbb990"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/content-config-fields.tsx",
+      "sha256": "659a68446b965997d8f8604138813364e523fc50ceff9875b99748b4fbbd854a"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/content-config-form.test.ts",
+      "sha256": "34c46be0f7f45c326b8bc3ef8e6b4b5a140a48064771026b84281de3a6e5b5c8"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/content-config-form.ts",
+      "sha256": "a19aa92770af54d1b8f698c477afde9f35afd79a58373c8404249c048ef548f8"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/demo-store-actions.tsx",
+      "sha256": "a55c49d3e04b9f6dfdaea9af60aca19dceeeb11a017db486a8345162d94e174a"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/demo-store-create.tsx",
+      "sha256": "4d36351462762652c8416ccf855fec5795bd05ab23d208c80238e4c7888251f5"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/demo-store-edit.tsx",
+      "sha256": "92b5f7a81529fa52efa2140f88ac2f3674b7a99f4ab236a8d19f8dbfb5c02682"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/index.ts",
+      "sha256": "fc9c758beb40d2c322e3bd4fa058ababfa8c8300e7b4098524ae3fb6db93835d"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/credenciales/page.tsx",
+      "sha256": "1caf2fc0d1ac6323128b5c2289e169e1cc3619ac719b35a23e024039edd02531"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/lib.test.ts",
+      "sha256": "d8c107f24ec7f91c8a74e0ef976dc311de7b367f3e5546754dc15216b3b0c6e0"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/lib.ts",
+      "sha256": "483008efae39ba4d160f1c44e6500e7e231e87b39f63f0f8dbd7a0acd218e898"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/page.tsx",
+      "sha256": "18af775c3361528899da769fe4bbcf10558c3d8b77b0bcddee613d39e49ef144"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/settings/page.tsx",
+      "sha256": "36741e40367861cf64c2524a474df2d0b63aa0eb84b9d5590342b746aeae0559"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/demo-stores/index.ts",
+      "sha256": "2a46a1049713dceee776fee8bbe802dee97b742ec8f8a4812f9657979e019fbf"
+    },
+    {
+      "path": "apps/backend/src/api/admin/site-credentials/route.ts",
+      "sha256": "08addda5db570cc875ca2cbff112e196ad1b1fb42f46b1b70d49e9e33b0ed7fb"
+    },
+    {
+      "path": "apps/backend/src/api/admin/site-templates/route.ts",
+      "sha256": "16eab558c13f39f6c7d0920dd7e342383eacc92c2a5b61be9a496fe2da480250"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sites/[id]/import-job/route.ts",
+      "sha256": "81bc3adfa014682ba57dfbe1bbcacce9a3720121667517e448278bc3856a9382"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sites/[id]/promotions/route.ts",
+      "sha256": "1041266a211de3d936808b19c3205085462cf5871c6c73c8406c7800b2a2ea7a"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sites/[id]/retry/route.ts",
+      "sha256": "74566af7a782255355c72d8352b4eda2234f46e819c42d56c067c37e8d8e1fa0"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sites/[id]/route.ts",
+      "sha256": "7a38d99fc50e03de34d5f099029bb574c0a90d063f10204f1e1c97fc543f678c"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sites/middlewares.ts",
+      "sha256": "57d985de2949bff6c180617b563d91e89b89f765d564f5c48827308ac27cf467"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sites/route.ts",
+      "sha256": "08ea1eeb14c50d2a2327adda198d55cbd0949b8999d4257af3b8f2e6736ee0d8"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sites/schemas.ts",
+      "sha256": "5649b0585d81ccb03096a18d555629140450122b913df49436e0ba84cbc9b9e9"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sites/theme-schema.test.ts",
+      "sha256": "8964027fbb6af7557ae9e87c58fcfd7b5c93828b77ea8ef573fb9d4245433853"
+    },
+    {
+      "path": "apps/backend/src/api/store/demo-stores/[slug]/config/route.ts",
+      "sha256": "6c4a4f5f73fb1daa6b6c469ca87e11c6403a6c6a9521979e57b003c32547d614"
+    },
+    {
+      "path": "apps/backend/src/api/store/demo-stores/main/config/route.ts",
+      "sha256": "299d84942ac826831f7718696b4c0edb986df100441e7b289bc58cf81b9e9a25"
+    },
+    {
+      "path": "apps/backend/src/api/store/sites/[slug]/config/route.ts",
+      "sha256": "c78ef8ba4bc3fe31b5a5118d6050a38cccc3b4dd961bffa67b7e67273a26b5c9"
+    },
+    {
+      "path": "apps/backend/src/api/store/sites/main/config/route.ts",
+      "sha256": "2b7a2cfe7e2cb12ce308d61ebc0b71e295b32c9b3f1c61abb5b57a2808d63b26"
+    },
+    {
+      "path": "apps/backend/src/links/demo-store-region.ts",
+      "sha256": "e26e355e2f8dbbccff4ed990ee09bfede913a10fbfbd6666d4c9e9da550e678f"
+    },
+    {
+      "path": "apps/backend/src/links/demo-store-sales-channel.ts",
+      "sha256": "90c2be2ff72a431f63bbf1dbba8ab98ab51d83a337f918a8221b9f0fc6908cf6"
+    },
+    {
+      "path": "apps/backend/src/links/demo-store-stock-location.ts",
+      "sha256": "8d1c09f77fb10e5ddd8e2d5dbaff48ecd562cc9fa98b60ed105e5c5ef4cbff86"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/b2b-pricing.ts",
+      "sha256": "a1264a11e9387fe7ebae95489ca122a965d2a8856f3077e6f767cdc240066392"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/catalog/types.ts",
+      "sha256": "f604c4ecee9be3a54bd0f7886f7262adcb5530f0adf13fbad7c5db325946d4b6"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/catalog/util.test.ts",
+      "sha256": "b1716712c9e390893db8f4acbf7b69df1d1a72675f135240a42ccde14d851b5c"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/catalog/util.ts",
+      "sha256": "188936422f11844708f9807846f862b3e58ebeb64b118b89f51f923508d1e090"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/ddl-mirrors.test.ts",
+      "sha256": "0f3ed7e4421769d0ca60d50c1e15754d352d024c0c378828d6bac26a981b682c"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/ensure-tables.ts",
+      "sha256": "5be0131bbd9c4d5a3e3f476fe8d4776a02430ac12e599b0bbcf200f3fb7c283b"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/index.ts",
+      "sha256": "5438df34ab3f083b01413199c0c128369417bccaba315b5646956a521b6c41e0"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/main-store.test.ts",
+      "sha256": "d51f61e3568c11997c5f5fba9d094fe71a153bb1bad028ea8d6171da12ecf20e"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/main-store.ts",
+      "sha256": "eab356c81f44e57acaae603edcadbaddf429cc6903c015f01298d722309867f7"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260623120000.ts",
+      "sha256": "ab787c9546d73d93663052b7c6fb624ecb097e3378168ab35554a98cb3f346de"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260624170000.ts",
+      "sha256": "8f3810a2d2253a275b50d2cda7402c7bffcbb22a7214ee9697df297a6a71be96"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260624190000.ts",
+      "sha256": "c9ad06d6e70cb4f9a00be3961d5f094dfc2c87230b7bd691726cfbdd64c346bf"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260703120000DemoStore.ts",
+      "sha256": "d0ae437d9bcc9c48ebb65bc0efdfd86dfd19933c721ace338fb3331287e9b41f"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260703130000DemoStore.ts",
+      "sha256": "751df776138f3759491588c2346e1aaf1657bec9524fa7f98a045a894d963043"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260704120000DemoStore.ts",
+      "sha256": "cc3fa7aabe632d429a6fce9a70a4c883ab0a3de1ffc31fc384734e468198645d"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260706150001DemoStore.ts",
+      "sha256": "0bc8d31a6cd4796e27ed9a9b9ed1a252c95b7329718eb256bfc64d656b80bef1"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260726100000DemoStore.ts",
+      "sha256": "0cbca8376cb87ba2b17ff8daa2a342afd1f6f1f63e92a79cfbb13dfd0c2f5a38"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260731120000DemoStore.ts",
+      "sha256": "73157c9c48ef49b5dc1dc3f099a36fab0b20f06687182120f400d652895480f6"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260803120000DemoStore.ts",
+      "sha256": "1f1fa26c2501cd9028a2105fe59fb5e66f4d510d3b93320e4c6d247419c252e2"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260804120000DemoStore.ts",
+      "sha256": "e86b13b429dc649119cf26723407c6f03e21c46aba6ed7e78bb32ffaf70cfd6f"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260805100000DemoStore.ts",
+      "sha256": "f3b6a8d5cbd31cb0e4099ffe80427d3abc15f7b56dbfddcd1a4d38eabfba690a"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260807120000DemoStore.ts",
+      "sha256": "4bf6f4bacb9a6aa4b88429e66d461ca95eb6229a65a1ef27efb1e304d1df87e7"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260807130000DemoStore.ts",
+      "sha256": "f7ea9ec3671ed9ecc5722978da681dfce538ed00e5de489b0c629fa99acb775e"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260819120000DemoStore.ts",
+      "sha256": "3036940dba0b6fd4cd2da999d7115db4f54a60c8bd38c1641488a3d0023bbeab"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/models/demo-store.ts",
+      "sha256": "89df1cf648698e734dd0f129a7e4fdc1f1042036be1504594bff242904cfe69c"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/models/import-job.ts",
+      "sha256": "3942b9edfa313c2e786dcf1223981090432d382f86e62aeaa44586f8496fe0ac"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/models/index.ts",
+      "sha256": "fa7f2fe2fe9f24c64595de4100e747d42b8f6c057209a7928111ec2c9be8940c"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/models/site-setting.ts",
+      "sha256": "ce7c498e3e47ba85fec1eaf9e18b95430c33e6c41107f704ed73229f2c46e74d"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/persist-plan.ts",
+      "sha256": "f27d98b6f8683a28d0ec62620ca74c51fbf438b5e98bfef8c78af90168d22f13"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/persist.test.ts",
+      "sha256": "ac4cfbf2e30b6994bf33053ba8c264fcdecc92ce53ee68132df8232e38a6b9c5"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/persist.ts",
+      "sha256": "51d8485420c9dbd297cd44ba3d602b06b8034e4f7d954d1470a5a4256583f5a7"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/promotions.ts",
+      "sha256": "143d74186659c102faaa1d7e430b1f9439268f2979ac0a74d49f3c8b0f704f89"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/provision.ts",
+      "sha256": "8fa080aefea54d114e6cfa2f45c8b2f41fefce02f7abeba9af857017845ad3d4"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/reserved-slugs.test.ts",
+      "sha256": "a77ac4222d2c074ad87cba9946d8a65213ca6c311084cad85442affa23f47d08"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/reserved-slugs.ts",
+      "sha256": "c0309cdff2e9af70fe29e07cec0211d61dae124147f1c95f569d6b0b442b9eb0"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/service.ts",
+      "sha256": "57c2f69fe6dd0b3fd4bc8dc04711014f3a130d7e6eada60288490bd288631a19"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/settings.test.ts",
+      "sha256": "3ad5e6c9ddf0ed653b445d59bab7041eecab01dc9b6bbe1475d806c113601a0a"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/settings.ts",
+      "sha256": "a11a0926ff1d53ab10c1d8bdd473a027c0b1a3dba6b134dfe17c72c377191c6e"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/site-setting.test.ts",
+      "sha256": "9a8ebfe35e79c219b774ddb3bd71340e70aaa2321a0d5844ee659fccca1b195e"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/source-type.ts",
+      "sha256": "bb66c34a0b72d0e06177a241db88a29a0d16b4b8cdcf03c3ef093160f1909984"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/templates/campaign.ts",
+      "sha256": "49973383ab6d0bb3aeea8820388ac1a21d8eff21e4f08e9e1329eb5b80e8b66d"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/templates/fashion.ts",
+      "sha256": "69fc6063bb63b4cb53d68b38d8a24bd754bd9d36b3e9953cecdc8240b34b42d9"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/templates/index.ts",
+      "sha256": "68311f21c56e420a78f1301ec391aabc9119bd5493b271d2eaf79bcabe541840"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/templates/main-config.test.ts",
+      "sha256": "f34342236acdd141426ffdc868571821445a970ddf7f262b8a6c71b0aff3d3aa"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/templates/password-gate.test.ts",
+      "sha256": "bb572f15cd45b2db3b6140baa2d7750924b2585107e3a1a3e2b07630cca55802"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/templates/shared.ts",
+      "sha256": "afb4b02d83e98b9a4d42b03555377107c27ee5c2bb4466c9d6dc885242f105e5"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/templates/sports.ts",
+      "sha256": "a3c2c8932916c1c5a4f7328c86ab2d0a890a3ba178fd5f342805018b6f4c5a94"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/templates/supermercado.ts",
+      "sha256": "93de27e080eb54b90d688b1e5ae01b5915f438e87ff43c504e4643f43bdbe6d9"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/templates/tech-retail.ts",
+      "sha256": "3916379ce588762ed6e82a25c8f2ddfc750a3a08a2d8d6bc815b7cedd4c77f07"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/templates/technology.ts",
+      "sha256": "67ef5e6f966b816c695992236fafe1eda345ecd619c859a6e7e795729ac3a95a"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/templates/types.ts",
+      "sha256": "f92ed58deeedf5e345a1d58805333bba75145705555a90353c174f0197fb223c"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-site-footer.ts",
+      "sha256": "3021505f1cdd632c8573492b0ea6663f570f6a531ac58850e9a03a3b244dac2e"
+    },
+    {
+      "path": "apps/backend/src/workflows/update-demo-store-sales-channel.ts",
+      "sha256": "0053c3d77fbdb4dc7416e9c3b9e792ae2d5ae2f09d4c45eb0062c62151c7817c"
+    },
+    {
+      "path": "apps/backend/src/workflows/update-demo-store-stock-location.ts",
+      "sha256": "2026e4f345dee35247e2ee57484d3e5e299dc16d7102ed5ceac6875bfc832c62"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/demo/[slug]/page.tsx",
+      "sha256": "d11bb4825ff61bf6efca41ccd206fd18aad0ff546367d23e47c83cfbf2f1b789"
+    }
+  ],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": [],
+    "admin_translation": null
+  }
+}

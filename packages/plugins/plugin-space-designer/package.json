@@ -1,0 +1,106 @@
+{
+  "name": "@minimalart/mercatto-plugin-space-designer",
+  "version": "1.0.1",
+  "description": "Generic space designer with backoffice-authored furnished templates and Medusa catalog products.",
+  "main": ".medusa/server/src/index.js",
+  "types": ".medusa/server/src/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./.medusa/server/src/index.d.ts",
+      "default": "./.medusa/server/src/index.js"
+    },
+    "./.medusa/server/src/modules/*": "./.medusa/server/src/modules/*/index.js",
+    "./.medusa/server/src/providers/*": "./.medusa/server/src/providers/*/index.js",
+    "./admin": {
+      "import": "./.medusa/server/src/admin/index.mjs",
+      "require": "./.medusa/server/src/admin/index.js",
+      "default": "./.medusa/server/src/admin/index.js"
+    }
+  },
+  "files": [
+    ".medusa",
+    "package.json",
+    "README.md",
+    "CHANGELOG.md",
+    "mercatto-plugin.json",
+    "examples/educabot.ts"
+  ],
+  "keywords": [
+    "medusa-plugin",
+    "mercatto",
+    "space-designer"
+  ],
+  "scripts": {
+    "build": "medusa plugin:build",
+    "dev": "medusa plugin:develop",
+    "prepublishOnly": "pnpm build"
+  },
+  "peerDependencies": {
+    "@medusajs/admin-sdk": "2.18.0",
+    "@medusajs/core-flows": "2.18.0",
+    "@medusajs/framework": "2.18.0",
+    "@medusajs/icons": "2.18.0",
+    "@medusajs/js-sdk": "2.18.0",
+    "@medusajs/medusa": "2.18.0",
+    "@medusajs/ui": "^4.1.19",
+    "@medusajs/utils": "2.18.0",
+    "@mikro-orm/core": "6.6.14",
+    "@mikro-orm/knex": "6.6.14",
+    "@mikro-orm/migrations": "6.6.14",
+    "@mikro-orm/postgresql": "6.6.14",
+    "@tanstack/react-query": "^5.62.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "peerDependenciesMeta": {
+    "@medusajs/core-flows": {
+      "optional": true
+    },
+    "@medusajs/js-sdk": {
+      "optional": true
+    },
+    "@medusajs/utils": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@minimalart/mercatto-plugin-runtime": "workspace:^",
+    "zod": "4.2.0"
+  },
+  "devDependencies": {
+    "@medusajs/admin-sdk": "2.18.0",
+    "@medusajs/admin-shared": "2.18.0",
+    "@medusajs/cli": "2.18.0",
+    "@medusajs/core-flows": "2.18.0",
+    "@medusajs/framework": "2.18.0",
+    "@medusajs/icons": "2.18.0",
+    "@medusajs/js-sdk": "2.18.0",
+    "@medusajs/medusa": "2.18.0",
+    "@medusajs/ui": "^4.1.19",
+    "@medusajs/utils": "2.18.0",
+    "@mikro-orm/core": "6.6.14",
+    "@mikro-orm/knex": "6.6.14",
+    "@mikro-orm/migrations": "6.6.14",
+    "@mikro-orm/postgresql": "6.6.14",
+    "@tanstack/react-query": "^5.62.0",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minimalart/medusa-b2c-boilerplate.git",
+    "directory": "packages/plugins/plugin-space-designer"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "private": false
+}

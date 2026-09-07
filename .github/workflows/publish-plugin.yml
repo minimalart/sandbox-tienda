@@ -1,0 +1,108 @@
+name: Publish plugin
+
+on:
+  workflow_dispatch:
+    inputs:
+      plugin-id:
+        description: Plugin directory suffix, for example space-designer
+        required: true
+        type: string
+      version:
+        description: Exact package version expected in package.json
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: '@minimalart'
+
+      - name: Enable pnpm
+        run: corepack enable
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+
+      - name: Validate package selection
+        env:
+          PLUGIN_ID: ${{ inputs.plugin-id }}
+          EXPECTED_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$PLUGIN_ID" =~ ^[a-z0-9-]+$ ]]; then
+            echo "Invalid plugin id: $PLUGIN_ID" >&2
+            exit 1
+          fi
+
+          PLUGIN_DIR="packages/plugins/plugin-$PLUGIN_ID"
+          PACKAGE_JSON="$PLUGIN_DIR/package.json"
+          test -f "$PACKAGE_JSON"
+
+          node - "$PACKAGE_JSON" "$PLUGIN_ID" "$EXPECTED_VERSION" <<'NODE'
+          const fs = require('node:fs')
+
+          const [packageJsonPath, pluginId, expectedVersion] = process.argv.slice(2)
+          const manifest = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
+          const expectedName = `@minimalart/mercatto-plugin-${pluginId}`
+
+          if (manifest.name !== expectedName) {
+            throw new Error(`Expected package ${expectedName}, found ${manifest.name}`)
+          }
+          if (manifest.version !== expectedVersion) {
+            throw new Error(`Expected version ${expectedVersion}, found ${manifest.version}`)
+          }
+          if (manifest.private === true) {
+            throw new Error(`${manifest.name} is private`)
+          }
+          NODE
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Build
+        env:
+          PLUGIN_ID: ${{ inputs.plugin-id }}
+        run: |
+          pnpm --filter "@minimalart/mercatto-plugin-${PLUGIN_ID}^..." build
+          pnpm --dir "packages/plugins/plugin-$PLUGIN_ID" build
+
+      - name: Publish
+        env:
+          PLUGIN_ID: ${{ inputs.plugin-id }}
+          GITHUB_TOKEN: ${{ github.token }}
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          PLUGIN_DIR="packages/plugins/plugin-$PLUGIN_ID"
+          PACK_DIR="$RUNNER_TEMP/plugin-package"
+          mkdir -p "$PACK_DIR"
+          cd "$PLUGIN_DIR"
+          pnpm pack --pack-destination "$PACK_DIR"
+          PACKAGE_TARBALL="$(find "$PACK_DIR" -maxdepth 1 -type f -name '*.tgz' -print -quit)"
+          test -n "$PACKAGE_TARBALL"
+          npm publish "$PACKAGE_TARBALL" --access restricted --registry https://npm.pkg.github.com
+
+      - name: Verify published version
+        env:
+          PLUGIN_ID: ${{ inputs.plugin-id }}
+          EXPECTED_VERSION: ${{ inputs.version }}
+          GITHUB_TOKEN: ${{ github.token }}
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          PACKAGE_NAME="@minimalart/mercatto-plugin-$PLUGIN_ID"
+          ACTUAL_VERSION="$(npm view "$PACKAGE_NAME@$EXPECTED_VERSION" version --registry https://npm.pkg.github.com)"
+          test "$ACTUAL_VERSION" = "$EXPECTED_VERSION"
+          echo "$PACKAGE_NAME@$ACTUAL_VERSION is available in GitHub Packages"

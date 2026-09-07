@@ -1,0 +1,86 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: b2c-db
+    # Opt-in only: by default Postgres comes from a native service (e.g. DBngin)
+    # on the host. Start the containerized DB explicitly when there is no native
+    # one: docker compose --profile docker-db up
+    profiles: ['docker-db']
+    init: true
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mercatto
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init/pg.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - b2c-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: b2c-redis
+    init: true
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - b2c-network
+
+  typesense:
+    image: typesense/typesense:27.1
+    container_name: b2c-typesense
+    init: true
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
+    command: '--data-dir /data --api-key=dev_typesense_api_key --enable-cors'
+    ports:
+      - '8108:8108'
+    volumes:
+      - typesense_data:/data
+    healthcheck:
+      # /dev/tcp is a bash-ism — CMD-SHELL runs sh, so invoke bash explicitly
+      test:
+        [
+          'CMD',
+          'bash',
+          '-c',
+          'exec 3<>/dev/tcp/localhost/8108 && printf "GET /health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep -q ok',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - b2c-network
+
+volumes:
+  postgres_data:
+    external: true
+    name: infra_postgres_data
+  redis_data:
+    external: true
+    name: infra_redis_data
+  typesense_data:
+    external: true
+    name: infra_typesense_data
+
+networks:
+  b2c-network:
+    driver: bridge

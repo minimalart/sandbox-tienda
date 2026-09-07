@@ -1,0 +1,490 @@
+{
+  "schema_version": 1,
+  "id": "recommendation-engine",
+  "name": "Motor de Recomendaciones",
+  "version": "1.1.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "store-config"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:recommendation-engine",
+  "environment": [
+    "RECOMMENDATIONS_AGGREGATE_CRON",
+    "RECOMMENDATIONS_AGGREGATE_LOOKBACK_HOURS",
+    "RECOMMENDATIONS_BASKET_CAP",
+    "RECOMMENDATIONS_BRIDGE_CANDIDATE_LIMIT_CAP",
+    "RECOMMENDATIONS_BUILD_BATCH",
+    "RECOMMENDATIONS_BUILD_CRON",
+    "RECOMMENDATIONS_BUILD_MAX_MS",
+    "RECOMMENDATIONS_CANDIDATE_LIMIT_CAP",
+    "RECOMMENDATIONS_CONFIG_TTL_MS",
+    "RECOMMENDATIONS_DEBUG",
+    "RECOMMENDATIONS_ENABLED",
+    "RECOMMENDATIONS_EVENT_SECRET",
+    "RECOMMENDATIONS_JOBS_ENABLED",
+    "RECOMMENDATIONS_PURGE_BATCH",
+    "RECOMMENDATIONS_PURGE_CRON",
+    "RECOMMENDATIONS_PURGE_MAX_BATCHES",
+    "RECOMMENDATIONS_RATE_LIMIT_PER_MINUTE",
+    "RECOMMENDATIONS_RESULT_LIMIT_CAP",
+    "RECOMMENDATIONS_SCHEDULE_CRON",
+    "RECOMMENDATIONS_STALE_MINUTES"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/recommendations",
+      "target": "apps/backend/src/modules/recommendations"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/recommendations",
+      "target": "apps/backend/src/api/admin/recommendations"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/recommendations",
+      "target": "apps/backend/src/api/store/recommendations"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/recomendaciones",
+      "target": "apps/backend/src/admin/routes/recomendaciones"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/recommendations.tsx",
+      "target": "apps/backend/src/admin/hooks/api/recommendations.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/recommendations-aggregate-events.ts",
+      "target": "apps/backend/src/jobs/recommendations-aggregate-events.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/recommendations-build-run.ts",
+      "target": "apps/backend/src/jobs/recommendations-build-run.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/recommendations-build-schedule.ts",
+      "target": "apps/backend/src/jobs/recommendations-build-schedule.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/recommendations-purge.ts",
+      "target": "apps/backend/src/jobs/recommendations-purge.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-recommendations.ts",
+      "target": "apps/backend/src/scripts/seed-recommendations.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/recommendation-order-attribution.ts",
+      "target": "apps/backend/src/subscribers/recommendation-order-attribution.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/recommendation-order-canceled.ts",
+      "target": "apps/backend/src/subscribers/recommendation-order-canceled.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/recommendations/migrations/Migration20260724120000Recommendations.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/recommendations.tsx",
+      "sha256": "3f3f780de4ac093fc0f2443842af1c7f50b6baead4ce1d592c357f68364f05a4"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recomendaciones/configuracion/page.tsx",
+      "sha256": "1bf4e804571c80404060ce09b042d41e394b57af4cdb15f9dad7641ef676adcd"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recomendaciones/credenciales/page.tsx",
+      "sha256": "18f22d08fdad22232be7a286c34a6b5551480357a463d2584a6305f9eb88a2d1"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recomendaciones/page.tsx",
+      "sha256": "6626389d0b6ef2ddf5a4b9f67369af1346139e247ce5d11a49c837143b6d355c"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recomendaciones/relaciones/components/product-card.tsx",
+      "sha256": "bd3eb2714c0a215b1cb7e497b55dd3dca18df2c9cb5036abc89eb1eeef7ddbbd"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recomendaciones/relaciones/components/product-picker.tsx",
+      "sha256": "3093f1bfe156d0c38429f9016a81d7243fc550c8af0ae8b5b13d208551551d37"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recomendaciones/relaciones/page.tsx",
+      "sha256": "e6deab7a02a8faed3d84b527a768f4f2af0e54f83876927e07e7d97c8722bc9e"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/recomendaciones/rendimiento/page.tsx",
+      "sha256": "34425d55faaec8edee835bdc6bf0216491e1942d4a23ca5588b27c8e06f5bafc"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/aggregate/route.ts",
+      "sha256": "ce7b1853e20d1146a4f7b14bbb12f98ca127401775af782649472de5703b3595"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/config/route.ts",
+      "sha256": "1f89db071b48e3215cdb70c21b920fe5ada0e1a25acbd314e17b9c80c83600a1"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/helpers.ts",
+      "sha256": "141067e99162fe545d6cced2266f0a2d8bbbc4e89aa0b2434340aa729e8652dc"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/middlewares.ts",
+      "sha256": "7f9b6587509ec920f97304bfacdbf77f369b05b56d2ea6956abb5061948e8f0b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/performance/route.ts",
+      "sha256": "860619d285b951d1d34377d2c3cb5e64978ac1772065600aef7d9f8d40098cbc"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/placements/[id]/route.ts",
+      "sha256": "4d8b5b44f96cf674e1a97bdc7f0090ed9e0cddbdab9159761c7760c6b5f30216"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/placements/route.ts",
+      "sha256": "558d0a3b3903934bbcba71bb508de8821108fe30b7a73d8fb602694c7ff5ea1f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/preview/route.ts",
+      "sha256": "85412040905435ebec55d55e1189ce93238307f5c4c491bc71026030060d3f21"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/products/route.ts",
+      "sha256": "6cf40df90e532135a70a59c96e6fd50348a1b790463fe8913318a0e1a1efedd4"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/rebuild/route.ts",
+      "sha256": "a273cc82e1c56fbb7c5cf1e05b68228ace2eabf0ca8dbff7bc9ded6fd7d6b1e7"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/relations/[id]/route.ts",
+      "sha256": "343a6a01dc6ad03ff89138fa69671fc23db645d22056d3830a92d6426cd68b01"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/relations/bulk/route.ts",
+      "sha256": "fdef53cd18663ec270f21845662e7e5cc063f2dee9c1932b958920146f736540"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/relations/route.ts",
+      "sha256": "663722830af12fb3e43a39abbcb8588eebce9ac37b5c7d7e182b35e774e54684"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/seed/route.ts",
+      "sha256": "40020c5e457120d78455483166c4d02f3e3e111983f75655e0ded1c7759272ad"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/strategies/[id]/route.ts",
+      "sha256": "ae67f1bd5938231d37b615590ddd1a0ac91fde6b7a0a8b24887d6620c6bedd62"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/strategies/route.ts",
+      "sha256": "3d3788b8218ef8a31e179b3813e0a0638e941d69404d06ddff79fabe88c10f64"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/validators.ts",
+      "sha256": "53739d5bd30a3dc39ee9b8331b08678d4a10bbd1faa7e45875e0707f799fd6da"
+    },
+    {
+      "path": "apps/backend/src/api/admin/recommendations/versions/route.ts",
+      "sha256": "7cb1dd00df050e9ad7f0875aed4f17bc55b7966b4d9c5ccaf624c3549690efe3"
+    },
+    {
+      "path": "apps/backend/src/api/store/recommendations/events/route.ts",
+      "sha256": "df6d0030fe0477a6afecb704621b7bbcbaee7b290d769874139aaa21ff786683"
+    },
+    {
+      "path": "apps/backend/src/api/store/recommendations/middlewares.ts",
+      "sha256": "94f3ef0e4b45c9414a3ca2710581bb24608d40c0f8be5219944788c7451d3893"
+    },
+    {
+      "path": "apps/backend/src/api/store/recommendations/rate-limit.ts",
+      "sha256": "7d4aaf1e3eb87b140704cbdffa82441900b0b1f14866ef565dfd60d4bdd76a9d"
+    },
+    {
+      "path": "apps/backend/src/api/store/recommendations/route.ts",
+      "sha256": "e616dd7a1404af5f7d8b6632627840b75652e4bd9eb2c81909c8e7eed0cf98a7"
+    },
+    {
+      "path": "apps/backend/src/api/store/recommendations/validators.ts",
+      "sha256": "322e2eab533d6713124f7b699de42a829937a6a9f4db1528bc4e7f6dad8dec10"
+    },
+    {
+      "path": "apps/backend/src/jobs/recommendations-aggregate-events.ts",
+      "sha256": "72c89f6c3bef8c868300c916f9eef1a17764ddd5853ab18ce8511c9a594688ef"
+    },
+    {
+      "path": "apps/backend/src/jobs/recommendations-build-run.ts",
+      "sha256": "275f6dc77a26c4000ab1af41c9b0bdb2c47fc0377aff14000e4cca87888466bb"
+    },
+    {
+      "path": "apps/backend/src/jobs/recommendations-build-schedule.ts",
+      "sha256": "1e2583e03af8eea71fa40f7bf26eb0f3a80521a87362c4059bacbd51577af86e"
+    },
+    {
+      "path": "apps/backend/src/jobs/recommendations-purge.ts",
+      "sha256": "79a8e2b63a1b7092ddbb0c5b3a28c700b59a4c83d24eab8fcb1d1c3d55f04dd0"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/config.test.ts",
+      "sha256": "7247a59a8032a6d4031cfaf3014f0c1ba894947d14aef52a6dacdff05fb5edf0"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/config.ts",
+      "sha256": "d64e6d5c4a08f12323a8ca717ea9d12db0caace9f1c264d4cfc236ac00155e4f"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/descriptor.test.ts",
+      "sha256": "7479fc7b16bec0cc6502d5e460612dfefe5312100b7bc6eb929beefa6cdaecdc"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/events/aggregate.ts",
+      "sha256": "353dc9b359b33cccdfa072f252d402af3104fa94125a75fdc40b4ee72adc1899"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/events/attribution.test.ts",
+      "sha256": "79d6e497035f975bddcf54c65d0f08ed1426287e8b4be6498b6c911bc50414c1"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/events/attribution.ts",
+      "sha256": "f5eae2ed877add66cff5601c8962180cebeee511f7ab84bdc8d1f76455876e12"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/events/integrity.test.ts",
+      "sha256": "cc6d75f2d0009611fab86157cf2beff3f67c3142f9fcd14be61335837a6fef55"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/events/integrity.ts",
+      "sha256": "9d14bb8a6fea8feaf1e65e091cbb5c7d03e2f5a3d73f62dcc4115f12faa3d0f8"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/events/performance.test.ts",
+      "sha256": "be94215b4c7b872a8cd5a86a6e8e2cbc3b65909902bc71bbdc5c95b8a0d806d0"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/events/performance.ts",
+      "sha256": "648c5e3de445f84864aceb3f93dded650f128ef78d6d98a2a0098ef3f9ed9fcd"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/events/purge.test.ts",
+      "sha256": "bdd5149687892c21d4f1ce50d206d9edb2040c762fdb0031eeed952133b13ac1"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/events/purge.ts",
+      "sha256": "9171f6f20262ae910078577b78ca7d8fd4595113424845fa91cde9f8e926cf7c"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/events/record.ts",
+      "sha256": "6b2ec625e9b89b9c9f198b302807d16ee3d4191180746faae681230c307303ff"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/index.ts",
+      "sha256": "f194052a4317e4956a37fcefd78f4661b1c2607cbee1d4957c98e557d4fba728"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/migrations/Migration20260724120000Recommendations.ts",
+      "sha256": "0ef4aca5aa4eacf99714266cebb87d0724942323b408555fb96e2ecb2ebf87b4"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/models/index.ts",
+      "sha256": "7c1fc458d4707e1d0b0158a17cc64371730499a9f00ad454b92ae6ffe565c18e"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/models/recommendation-event.ts",
+      "sha256": "609fffe24ce82383e7da66ef0524610bab88bd3b54940fdf3aac6c407888322c"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/models/recommendation-metric.ts",
+      "sha256": "b698aa13a6e45835a8085d62aff5b9877db1e82921427f5a93d19aa86f3faafc"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/models/recommendation-placement.ts",
+      "sha256": "226f660cf700b13a9c41f609ccae70ad034e67f1919fad6d8c728bc4b9c50e7e"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/models/recommendation-relation.ts",
+      "sha256": "0e2045830485af7f46a8fc73671a0f7baa6af219294b6c000cc06f844b30d747"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/models/recommendation-strategy.ts",
+      "sha256": "1bb7e721de5754546c2cde44789cd29921481544aaf7d8f6e4bcb38c1b4cdcb7"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/models/recommendation-version.ts",
+      "sha256": "974f7eeceefb186a7c6ee634d8e865101d51a4726be39d89e954b1926941395f"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/recompute/fbt-math.test.ts",
+      "sha256": "2bce87a2e5f9588f36c456dc7140cfe8ab6315fd47538e7c3524449d02112e52"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/recompute/fbt-math.ts",
+      "sha256": "c2c6166937092597e61ed38657f1e54814069ff8342c994bcb473ade5fb42706"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/recompute/orders-sql.ts",
+      "sha256": "3f9902f4eb346a53738f8743ff00ada70ef9dcffdf4777f466df881f28acfe89"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/recompute/run-build.ts",
+      "sha256": "12168b772eada2a6dc887d2e645b16abb3583c685cb7f9cb4923a4cf6bcee3e4"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/recompute/schedule.test.ts",
+      "sha256": "be24e0fbaa7d5c99aae6fb880a901ae7684199c67c93c66fd917afbe9443123c"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/recompute/schedule.ts",
+      "sha256": "bd0f19ec3d60f29104bc60fd19e25c409b34078b11bded69d0bf04bf1f4e1382"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/recompute/similar.ts",
+      "sha256": "aee108bb29b12eb38c609cbf95c28371ef7d5c59ae7cb7f8cc6235f9f1ae4402"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/recompute/similarity-scoring.test.ts",
+      "sha256": "96c15e370466f777e1af2913425d2edcee16e26004b5919998518578c98caf4d"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/recompute/similarity-scoring.ts",
+      "sha256": "bf1e74f8caaa10a825de686b3d141a3a867347f83684d79ea6d5037a69307edc"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/recompute/swap.ts",
+      "sha256": "a57de7106ba7a860b73f0790f8ed040bc06fa50305c1e60f1d974d5b7aa2bb00"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/schema-parity.test.ts",
+      "sha256": "bbbd4be4e4033dacdd8b3466d683a299f8e542987ec59548d05d359abd33ff62"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/seed/defaults.test.ts",
+      "sha256": "cb2cb2ff92efd4fd43098f9102a77ea1d84c6346a3de91d22b787f0490b10599"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/seed/defaults.ts",
+      "sha256": "28a1df4dccb5dec69a6b08d7b5b1c43f974df034da9a5a5c54565b7d0bf53a32"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/bridge.test.ts",
+      "sha256": "9f3f43070258aec9e4d495dee1df9347aaffc74a0b101cf6635a06f661fb5653"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/bridge.ts",
+      "sha256": "7e714ef0974840cb53c9b64939017900d6280d118350d4fd47c5e627baebeed6"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/cache.test.ts",
+      "sha256": "13ed97f68716bb7c4c8d9303ebc9346536b140b5e476787e068ed7d3946c0679"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/cache.ts",
+      "sha256": "37a034e5b65f3e4e7f4fd4ec7a81ccf89dfea3a38be7f3a1c8695f384dd94681"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/candidates.test.ts",
+      "sha256": "407cfabd80a03b09bdeff4bccfdda3abb896076e3bbf9cfd791082be68e9cd9e"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/candidates.ts",
+      "sha256": "52a5754bab4a6494d7ec0b1ce27fc8267d29191d07c619982a331cf5c166ed0f"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/filters.test.ts",
+      "sha256": "77ec51dd05a5b1adac8ca9ab68d4b881de70479463f4b3839005e7136395a267"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/filters.ts",
+      "sha256": "f90b69339c0b877161731af749af06a00fa13f8398eef19da2c0e2e9cdbde9e7"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/fixtures.test-helpers.ts",
+      "sha256": "7fbf3478370d10e10f399af8a94c6a5a9ab05264d9dac7fda93bb50bdb7ecc5e"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/hydrate.test.ts",
+      "sha256": "6dc391381aa0687a4b3065d19c9a1f5f7c8285e170832eea6ea058deb43fa631"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/hydrate.ts",
+      "sha256": "981281c3ccddac1b58aaeb15b210286e680a9dbb907324e91056efd5cd7f8321"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/ranking.test.ts",
+      "sha256": "62493cca71fe0de323b6e0382d60e6df8412ebb75f3e039963269e634c159200"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/ranking.ts",
+      "sha256": "5757296b0fb93acb1c8906706bdb79448a6e0e0e48fb23cc8d679d65162df820"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/request-token.test.ts",
+      "sha256": "7c260fbbd00d65a2ae5480ae85fd66cf97c9ab21b8ba98ce95d307f1a8dc8d55"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/request-token.ts",
+      "sha256": "e74d05796ea87691a7986dd66d450955ea9523732e556d9efed367ec7d8c77d1"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/resolve-orchestration.test.ts",
+      "sha256": "0b6c676c57c9f713c7b89b26c23747433dd8ca05464403be9dec871e3f1d7a3d"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/resolve.test.ts",
+      "sha256": "be1ffa4b5941a0e6338d60d0838c4a8ad2102b389e4912b8cc7f1a9fa5d45bcf"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/serve/resolve.ts",
+      "sha256": "c24069a961dff95bb0caa73b76cf8ed033e3ab0db0461393077831f04a9eb51b"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/service.ts",
+      "sha256": "6dd0254a133e760c8f82ba8b84441b4938877c915236ec9a3c806cc0a38f5004"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/settings.test.ts",
+      "sha256": "6fe9dbdb5ef54101501bb201a3fa3c840341bfec3cded11e04e5fb94e99cad86"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/settings.ts",
+      "sha256": "3cdff77bd5224251a61e91960b1a54b841c4c2040921137b3aa20e14ea5c5b6c"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/site-scope.ts",
+      "sha256": "d8842ab90a1829d3b1cc7397a95d1d5aeffbb09758aa063d1ed5a3e37458fbe0"
+    },
+    {
+      "path": "apps/backend/src/modules/recommendations/types.ts",
+      "sha256": "1e7b0f56cd67562ee77b6b0519529aec226ea4c636e5a01cfa0ee962e2674b19"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-recommendations.ts",
+      "sha256": "54d37f32f327774ab2743a8fe4f71d6462162a92ad82dfa7801d529a10165b6d"
+    },
+    {
+      "path": "apps/backend/src/subscribers/recommendation-order-attribution.ts",
+      "sha256": "4485dbecca45e83dac87ae2712d8887dd16c0434ef9f0f8a48654d6bb284af8e"
+    },
+    {
+      "path": "apps/backend/src/subscribers/recommendation-order-canceled.ts",
+      "sha256": "dcfc10c3cdac934c17c982af9109281c2b39a9bc928f8ea6ec814011d22154f0"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./admin/recommendations/middlewares",
+        "adminRecommendationsMiddlewares"
+      ],
+      [
+        "./store/recommendations/middlewares",
+        "storeRecommendationsMiddlewares"
+      ]
+    ],
+    "admin_hooks": [
+      "recommendations"
+    ],
+    "admin_translation": null
+  }
+}

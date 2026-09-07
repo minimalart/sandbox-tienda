@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "project": { "name": "Tienda Ejemplo", "slug": "tienda-ejemplo" },
+  "commerce": { "country_code": "ar", "currency_code": "ars", "locale": "es-AR" },
+  "branding": {
+    "primary_color": "#111827",
+    "logo_url": null,
+    "favicon_url": null,
+    "font_family": "Inter"
+  },
+  "content": { "navigation": [], "footer": {}, "home": {} },
+  "template": "grocery",
+  "template_config": {},
+  "extensions": ["typesense"]
+}

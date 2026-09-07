@@ -1,0 +1,679 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+  /* === Mercatto design tokens — fuente de verdad visual === */
+  --mc-green: #2e7d32;
+  --mc-green-hover: #256b2a;
+  /* Brand tints derived from the ACTIVE primary (overridden inline per-tenant)
+     so soft/pale brand backgrounds across the app — account sidebar, avatars,
+     gift cards, loyalty, filter/shipping chips — follow demo branding instead
+     of a fixed green. The base --mc-green stays green for semantic success. */
+  --mc-green-light: color-mix(in srgb, var(--primary-color) 50%, white);
+  --mc-green-pale: color-mix(in srgb, var(--primary-color) 14%, white);
+  --mc-green-soft: color-mix(in srgb, var(--primary-color) 6%, white);
+
+  --mc-yellow: #f9a825;
+  --mc-yellow-soft: #fff8e1;
+  --mc-red: #d32f2f;
+  --mc-blue: #1976d2;
+
+  --mc-ink: #111827;
+  --mc-text: #374151;
+  --mc-muted: #6b7280;
+  --mc-subtle: #9ca3af;
+  --mc-border: #e5e7eb;
+  --mc-surface: #f9fafb;
+  --mc-surface-strong: #f3f4f6;
+  --mc-white: #ffffff;
+
+  --mc-shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.06);
+  --mc-shadow-md: 0 8px 24px rgba(17, 24, 39, 0.1);
+
+  --mc-radius-xs: 4px;
+  --mc-radius-sm: 8px;
+  --mc-radius-md: 12px;
+  --mc-radius-lg: 16px;
+  --mc-radius-xl: 24px;
+  --mc-radius-full: 9999px;
+  --radius: 0.75rem;
+
+  --mc-duration-fast: 120ms;
+  --mc-duration-base: 200ms;
+  --mc-duration-slow: 300ms;
+
+  /* Alias legacy: las refs existentes a var(--font-roboto) ahora resuelven a Inter */
+  --font-roboto: var(--font-inter);
+
+  /* === Escala de marca (remapeada azul → verde Mercatto) === */
+  --cerulean-blue-50: 120 50% 97%;
+  --cerulean-blue-100: 120 43% 95%;
+  --cerulean-blue-200: 122 38% 84%;
+  --cerulean-blue-300: 123 38% 74%;
+  --cerulean-blue-400: 123 38% 64%;
+  --cerulean-blue-500: 122 39% 49%;
+  --cerulean-blue-600: 123 46% 34%;
+  --cerulean-blue-700: 125 47% 28%;
+  --cerulean-blue-800: 124 55% 24%;
+  --cerulean-blue-900: 128 50% 16%;
+  --cerulean-blue-950: 129 54% 10%;
+
+  /* === Tokens de la app (remapeados a Mercatto) === */
+  --primary-color: var(--mc-green);
+  /* Darken the ACTIVE primary (overridden inline per-tenant) instead of a fixed
+     green, so hovers adapt to demo branding — no hardcoded hover color. */
+  --primary-color-dark: color-mix(in srgb, var(--primary-color) 85%, black);
+  --primary-soft-bg: color-mix(in srgb, var(--primary-color) 6%, transparent);
+  --tertiary-color: #4a5565;
+  --chevron-color: #a3adbc;
+  --shipping-option-bg: var(--mc-green-soft);
+  --text-dark: var(--mc-ink);
+  --text-muted: var(--mc-text);
+  --badge-bg: var(--mc-surface-strong);
+  --label-color: #364153;
+  --input-border: var(--mc-border);
+  --icon-muted: var(--mc-subtle);
+  --success-color: var(--mc-green);
+  --success-bg: rgba(46, 125, 50, 0.1);
+  --warning-color: var(--mc-yellow);
+  --warning-bg: rgba(249, 168, 37, 0.12);
+  /* Drives native checkbox/radio accent-color (see below) + social icons +
+     login "recordarme"/"olvidaste" text. Follow the active primary so it's not
+     a fixed green on demos. */
+  --social-icon-color: var(--primary-color);
+  --filter-brand-bg: var(--mc-green-pale);
+  --filter-subbrand-bg: #deeff1;
+  --filter-category-bg: #e0edf9;
+  --filter-tag-bg: var(--mc-yellow-soft);
+  --discount-badge: #f97316; /* orange-500: unifica el badge de promo con el de las cards */
+  --promo-badge: var(--mc-green-hover);
+  --price-strikethrough: var(--mc-muted);
+  /* Login/registro: gradiente derivado del color primario activo (sigue el
+     branding de la demo) en vez de un verde fijo. */
+  --auth-gradient-from: var(--primary-color);
+  --auth-gradient-to: color-mix(in srgb, var(--primary-color) 45%, white);
+  --store-cde: #16527f;
+  --store-cde-bg: #deeff1;
+  --store-mayorista: #aa00ff;
+  --store-mayorista-bg: #f2e6ff;
+  --store-pdv: #ff5eb9;
+  --store-pdv-bg: #ffeff6;
+}
+
+html {
+  overflow-x: clip;
+}
+
+body {
+  font-family: var(--font-inter), Inter, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  color: var(--mc-text);
+  background-color: var(--mc-white);
+  overflow-x: clip;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-manrope), Manrope, var(--font-inter), sans-serif;
+  color: var(--mc-ink);
+}
+
+/* Fallback para checkboxes nativos sin estilar. Los del storefront usan
+   <CheckboxInput> (tilde primario sobre fondo blanco), que se excluye acá:
+   `accent-color` deja que el navegador elija el color del tilde y con primarios
+   claros lo pinta negro. */
+input[type="checkbox"]:not([data-styled-checkbox]) {
+  accent-color: var(--social-icon-color);
+  border-radius: 2.5px;
+}
+
+/* shadcn/ui tokens — consumidos por los componentes del portal B2B (bg-background,
+   text-foreground, bg-primary, etc.). Nombres nuevos (no pisan vars del storefront).
+   primary = verde de marca (#2e7d32). Solo afecta a clases que usa el portal. */
+:root {
+  --background: 210 20% 98%;
+  --foreground: 0 0% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 20%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 20%;
+  --primary: 123 46% 34%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 138 45% 95%;
+  --accent-foreground: 123 46% 22%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 123 46% 34%;
+  /* Sidebar (shadcn sidebar primitive — portal B2B) */
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 0 0% 25%;
+  --sidebar-primary: 123 46% 34%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 138 45% 95%;
+  --sidebar-accent-foreground: 123 46% 22%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 123 46% 34%;
+}
+
+/* Dark mode del portal B2B (clase .dark aplicada solo sobre el subárbol del portal). */
+.dark {
+  --background: 222 18% 11%;
+  --foreground: 0 0% 92%;
+  --card: 222 16% 14%;
+  --card-foreground: 0 0% 92%;
+  --popover: 222 16% 14%;
+  --popover-foreground: 0 0% 92%;
+  --primary: 123 40% 48%;
+  --primary-foreground: 0 0% 8%;
+  --secondary: 222 14% 20%;
+  --secondary-foreground: 0 0% 92%;
+  --muted: 222 14% 18%;
+  --muted-foreground: 0 0% 62%;
+  --accent: 123 25% 22%;
+  --accent-foreground: 123 40% 80%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 222 12% 24%;
+  --input: 222 12% 24%;
+  --ring: 123 40% 48%;
+  --sidebar-background: 222 16% 13%;
+  --sidebar-foreground: 0 0% 85%;
+  --sidebar-primary: 123 40% 48%;
+  --sidebar-primary-foreground: 0 0% 8%;
+  --sidebar-accent: 123 25% 20%;
+  --sidebar-accent-foreground: 123 40% 82%;
+  --sidebar-border: 222 12% 22%;
+  --sidebar-ring: 123 40% 48%;
+}
+
+@layer base {
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes logo-marquee {
+    0% {
+      transform: translateX(0);
+    }
+
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .home-section-heading {
+    font-size: 1.5rem;
+    line-height: 1.25;
+    font-weight: 700;
+  }
+
+  @media (min-width: 640px) {
+    .home-section-heading {
+      font-size: 1.875rem;
+      line-height: 1.2;
+    }
+  }
+
+  .reveal-element {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity 420ms ease-out,
+      transform 420ms ease-out;
+    will-change: opacity, transform;
+  }
+
+  .reveal-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-hidden {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-element,
+    .reveal-visible,
+    .reveal-hidden {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+}
+
+/* Google Places Autocomplete dropdown — must appear above all modals (z-[10000]) */
+.pac-container {
+  z-index: 99999 !important;
+}
+
+/* Unified section header typography for the home page:
+   title text-2xl (mobile) / text-3xl (sm+), bold, tight but readable leading. */
+.brand-section-title,
+.home-section-heading {
+  color: var(--text-dark) !important;
+  font-family: var(--font-manrope), Manrope, sans-serif !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0;
+  line-height: 1.25 !important;
+}
+
+@media (min-width: 640px) {
+  .brand-section-title,
+  .home-section-heading {
+    font-size: 1.875rem !important;
+    line-height: 1.2 !important;
+  }
+}
+
+@layer utilities {
+  /* Mix blend mode para imágenes de productos */
+  .product-image-blend {
+    mix-blend-mode: multiply;
+  }
+
+  /* Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  input:focus ~ label,
+  input:not(:placeholder-shown) ~ label {
+    @apply -translate-y-2 text-xsmall-regular;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.35s ease-in-out both;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-in-out both;
+  }
+
+  @keyframes auth-slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(18px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes auth-field-in {
+    from {
+      opacity: 0;
+      transform: translateX(-12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes auth-logo-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes auth-button-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-auth-view {
+    animation: auth-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .animate-auth-logo {
+    animation: auth-logo-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+  }
+
+  .animate-auth-title {
+    animation: auth-field-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  }
+
+  .animate-auth-subtitle {
+    animation: auth-field-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+  }
+
+  .animate-auth-field-1 {
+    animation: auth-field-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+  }
+
+  .animate-auth-field-2 {
+    animation: auth-field-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+  }
+
+  .animate-auth-field-3 {
+    animation: auth-field-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+  }
+
+  .animate-auth-field-4 {
+    animation: auth-field-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+  }
+
+  .animate-auth-field-5 {
+    animation: auth-field-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+  }
+
+  .animate-auth-field-6 {
+    animation: auth-field-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+  }
+
+  .animate-auth-button {
+    animation: auth-button-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+  }
+
+  .animate-auth-footer {
+    animation: auth-field-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+  }
+
+  .interactive-elevate {
+    transition:
+      transform 250ms ease-in-out,
+      box-shadow 250ms ease-in-out,
+      border-color 250ms ease-in-out;
+  }
+
+  .interactive-elevate:hover,
+  .interactive-elevate:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -20px rgb(15 23 42 / 0.35);
+  }
+
+  .logos-marquee {
+    animation: logo-marquee 10s linear infinite;
+    display: flex;
+  }
+
+  /* Marquesina de marcas del home (layout "marquee" de LogoShowcase). La
+     duración la fija el componente inline según la cantidad de marcas, para que
+     la velocidad sea constante. Se pausa mientras el mouse está encima. */
+  .brands-marquee-track {
+    animation: logo-marquee 30s linear infinite;
+  }
+
+  .brands-marquee:hover .brands-marquee-track {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .brands-marquee-track {
+      animation: none;
+    }
+  }
+
+  input:focus ~ label {
+    @apply left-0;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: #212121;
+    -webkit-box-shadow: 0 0 0px 1000px #fff inset;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  input[type="search"]::-webkit-search-decoration,
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-results-button,
+  input[type="search"]::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+  }
+}
+
+@layer components {
+  .content-container {
+    @apply max-w-[1440px] w-full mx-auto px-6;
+  }
+
+  .contrast-btn {
+    @apply px-4 py-2 border border-black rounded-full hover:bg-black hover:text-white transition-colors duration-200 ease-in;
+  }
+
+  .text-xsmall-regular {
+    @apply text-[10px] leading-4 font-normal;
+  }
+
+  .text-small-regular {
+    @apply text-xs leading-5 font-normal;
+  }
+
+  .text-small-semi {
+    @apply text-xs leading-5 font-semibold;
+  }
+
+  .text-base-regular {
+    @apply text-sm leading-6 font-normal;
+  }
+
+  .text-base-semi {
+    @apply text-sm leading-6 font-semibold;
+  }
+
+  .text-large-regular {
+    @apply text-base leading-6 font-normal;
+  }
+
+  .text-large-semi {
+    @apply text-base leading-6 font-semibold;
+  }
+
+  .text-xl-regular {
+    @apply text-2xl leading-[36px] font-normal;
+  }
+
+  .text-xl-semi {
+    @apply text-2xl leading-[36px] font-semibold;
+  }
+
+  .text-2xl-regular {
+    @apply text-[30px] leading-[48px] font-normal;
+  }
+
+  .text-2xl-semi {
+    @apply text-[30px] leading-[48px] font-semibold;
+  }
+
+  .text-3xl-regular {
+    @apply text-[32px] leading-[44px] font-normal;
+  }
+
+  .text-3xl-semi {
+    @apply text-[32px] leading-[44px] font-semibold;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Blog article body. Renders the sanitized HTML produced server-side from the
+   Tiptap document. No @tailwindcss/typography dependency — scoped rules only.
+   ────────────────────────────────────────────────────────────────────────── */
+.blog-content {
+  @apply text-ui-fg-subtle leading-relaxed;
+  /* Evita que palabras largas, URLs o code inline desborden la columna y
+     rompan el layout más allá del ancho máximo. */
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.blog-content > * + * {
+  @apply mt-4;
+}
+.blog-content h1 { @apply text-3xl font-bold text-ui-fg-base mt-8; }
+/* Títulos de sección del artículo en color primario (ver imagen de referencia). */
+.blog-content h2 { @apply text-2xl font-bold mt-10; color: var(--primary-color); }
+.blog-content h3 { @apply text-xl font-semibold mt-8; color: var(--primary-color); }
+.blog-content h4 { @apply text-lg font-semibold text-ui-fg-base mt-6; }
+.blog-content h5,
+.blog-content h6 { @apply text-base font-semibold text-ui-fg-base mt-4; }
+.blog-content p { @apply text-base; }
+.blog-content a { color: var(--primary-color); @apply underline; }
+.blog-content strong { @apply font-semibold text-ui-fg-base; }
+.blog-content ul { @apply list-disc pl-6; }
+.blog-content ol { @apply list-decimal pl-6; }
+.blog-content li { @apply my-1.5; }
+/* Viñetas y numeración con color primario. */
+.blog-content ul li::marker { color: var(--primary-color); }
+.blog-content ol li::marker { color: var(--primary-color); @apply font-semibold; }
+.blog-content ul[data-type="taskList"] { @apply list-none pl-0; }
+.blog-content ul[data-type="taskList"] li { @apply flex items-start gap-2; }
+.blog-content blockquote {
+  @apply border-l-4 border-ui-border-strong pl-4 italic text-ui-fg-muted;
+}
+.blog-content hr { @apply my-8 border-ui-border-base; }
+.blog-content img { @apply rounded-lg my-6 w-full; }
+.blog-content pre {
+  @apply rounded-lg bg-ui-bg-component p-4 overflow-x-auto text-sm;
+}
+.blog-content code { @apply rounded bg-ui-bg-component px-1 py-0.5 text-sm; }
+.blog-content table { @apply w-full border-collapse my-6 text-sm; }
+.blog-content th,
+.blog-content td {
+  @apply border border-ui-border-base px-3 py-2 text-left;
+}
+.blog-content th { @apply bg-ui-bg-subtle font-semibold; }
+.blog-content iframe { @apply w-full aspect-video rounded-lg my-6; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Páginas legales (/legal/*). Renderizan el HTML saneado que el backend guarda
+   desde el editor del backoffice.
+
+   Separado de `.blog-content` a propósito: los legales tienen su propia paleta
+   —#18324A para los títulos, slate-600 para el cuerpo— que viene del diseño de
+   la maqueta, mientras que el blog usa `--primary-color` del tenant. Reusar la
+   del blog haría que los títulos de los términos y condiciones cambien de color
+   con la marca de cada tienda, que no es lo que la maqueta pide.
+
+   El cuerpo arranca en H3 y no en H2: el H1 es el título de la página y el H2 es
+   el NOMBRE de la sección (el `<summary>` del acordeón). `sanitizeLegalHtml`
+   descarta cualquier H2 que llegue del editor, así que acá no hay regla para él
+   a propósito — si apareciera una, taparía el hecho de que el dato no existe.
+   ────────────────────────────────────────────────────────────────────────── */
+.legal-content {
+  @apply text-[15px] leading-7 text-slate-600;
+  /* Un artículo de ley con una URL larga no puede desbordar la tarjeta. */
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.legal-content > * + * { @apply mt-4; }
+.legal-content > :first-child { @apply mt-0; }
+.legal-content h3 { @apply font-semibold text-[15px] leading-snug mt-6 text-[#18324A]; }
+.legal-content h4 { @apply font-semibold text-[14px] mt-5 text-[#18324A]; }
+.legal-content p { @apply text-[15px] leading-7; }
+.legal-content strong { @apply font-semibold text-slate-700; }
+.legal-content a { @apply underline underline-offset-2 text-[#18324A]; }
+.legal-content ul { @apply list-disc pl-5; }
+.legal-content ol { @apply list-decimal pl-5; }
+.legal-content li { @apply my-1.5; }
+.legal-content blockquote {
+  @apply border-l-4 border-slate-200 pl-4 italic text-slate-500;
+}
+.legal-content hr { @apply my-6 border-slate-200; }
+.legal-content table { @apply w-full border-collapse my-5 text-sm; }
+.legal-content th,
+.legal-content td { @apply border border-slate-200 px-3 py-2 text-left; }
+.legal-content th { @apply bg-slate-50 font-semibold text-slate-700; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Acordeón de las secciones legales (`<details>` nativo).
+
+   Los estados de apertura van con SELECTORES PLANOS y no con la variante
+   `group-open:` de Tailwind: el `package.json` declara `^3.0.23` y no hay forma
+   de comprobar en este repo qué versión quedó instalada, así que depender de una
+   variante que puede no existir produce un chevron que nunca gira — el tipo de
+   detalle que no rompe nada y llega a producción igual.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* El triángulo por defecto del `<summary>`: `list-style` lo saca en Firefox y en
+   Chrome moderno, pero Safari sigue necesitando el pseudo-elemento propio. */
+.legal-accordion summary { list-style: none; }
+.legal-accordion summary::-webkit-details-marker { display: none; }
+.legal-accordion summary::marker { content: ''; }
+
+.legal-accordion details[open] > summary .legal-chevron {
+  transform: rotate(180deg);
+}
+
+/* Foco visible en el `<summary>`: es el control con el que se navega la página
+   entera por teclado, y el reset de Tailwind le saca el outline del navegador. */
+.legal-accordion summary:focus-visible {
+  @apply outline-none ring-2 ring-inset ring-[--primary-color];
+}
+
+/* Borde de las cards de producto (tienda Mercatto/supermercado) que se "dibuja"
+   alrededor cuando el producto entra al carrito. El trazo del SVG se normaliza
+   con pathLength=100, así una sola animación de stroke-dashoffset funciona sin
+   importar el tamaño real de la card. */
+@keyframes cart-border-draw {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+.cart-border-draw {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: cart-border-draw 0.55s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cart-border-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

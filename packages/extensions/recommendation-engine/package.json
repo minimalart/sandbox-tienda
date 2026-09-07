@@ -1,0 +1,9 @@
+{
+  "name": "@repo/extension-recommendation-engine",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Motor de Recomendaciones component source package",
+  "dependencies": {
+    "@repo/extension-store-config": "workspace:*"
+  }
+}

@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "id": "corporate",
+  "name": "Corporativos",
+  "version": "1.10.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "b2b",
+    "fiscal-documentation"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:corporate",
+  "environment": [
+    "CORPORATE_ACTIVATION_MODE",
+    "WHOLESALE_DISCOUNT",
+    "WHOLESALE_PRICE_LIST_TITLE"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/corporate",
+      "target": "apps/backend/src/modules/corporate"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/corporates",
+      "target": "apps/backend/src/api/admin/corporates"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/corporates",
+      "target": "apps/backend/src/api/store/corporates"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/corporate-invitations",
+      "target": "apps/backend/src/api/store/corporate-invitations"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/corporates",
+      "target": "apps/backend/src/admin/routes/corporates"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/corporates.tsx",
+      "target": "apps/backend/src/admin/hooks/api/corporates.tsx"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/corporate.ts",
+      "target": "apps/storefront/src/lib/data/corporate.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/corporate",
+      "target": "apps/storefront/src/app/[countryCode]/(main)/corporate"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/account/components/corporate",
+      "target": "apps/storefront/src/modules/account/components/corporate"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/create-wholesale-price-list.ts",
+      "target": "apps/backend/src/scripts/create-wholesale-price-list.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/corporate-activated-email.ts",
+      "target": "apps/backend/src/subscribers/corporate-activated-email.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/corporate-created-email.ts",
+      "target": "apps/backend/src/subscribers/corporate-created-email.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/accept-corporate-invitation.ts",
+      "target": "apps/backend/src/workflows/accept-corporate-invitation.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/create-corporate.ts",
+      "target": "apps/backend/src/workflows/create-corporate.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/invite-corporate-member.ts",
+      "target": "apps/backend/src/workflows/invite-corporate-member.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/link-corporate-customer-group.ts",
+      "target": "apps/backend/src/workflows/link-corporate-customer-group.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/set-corporate-status.ts",
+      "target": "apps/backend/src/workflows/set-corporate-status.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/corporate/migrations/Migration20260614120000.ts",
+    "apps/backend/src/modules/corporate/migrations/Migration20260807170000Corporate.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/corporates.tsx",
+      "sha256": "99c9d7e214c87c12a2d49983a92b28d2a6b84427b4f000d0c8306c1e5c113bf7"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/corporates/components/corporate-detail.tsx",
+      "sha256": "6450931e50ef70972e4b751f0e753238e7a482ffa8022c2b316e36ffd03572f8"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/corporates/components/fiscal-docs-tab.tsx",
+      "sha256": "0f5da3454ceb799744ae92607460a2a0c51a555ae57362d17904cde51363746b"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/corporates/credenciales/page.tsx",
+      "sha256": "53d172f885781193c367a86257a014aaf17e70cdc1a6f5c926d435725feff478"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/corporates/page.tsx",
+      "sha256": "376253de294e7050a1f6cee0d784f8f3f24a9d0dfc2244ce77f725f9d944393b"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/corporates/settings/page.tsx",
+      "sha256": "e001d6c46bf298c82d2dbb58940552b6ffc58e9c03c7556e575370b9f2db0bbd"
+    },
+    {
+      "path": "apps/backend/src/api/admin/corporates/[id]/activity/route.ts",
+      "sha256": "948aa0288450f782a01f4d05793240f611a965b4cff18806fd91bdf2b01dc7d7"
+    },
+    {
+      "path": "apps/backend/src/api/admin/corporates/[id]/customer-group/route.ts",
+      "sha256": "b37fb6d9cd9bfb058749d3318a7433d4667a5fe8c7f01fd1a690cab98d60deca"
+    },
+    {
+      "path": "apps/backend/src/api/admin/corporates/[id]/members/[memberId]/route.ts",
+      "sha256": "29f0ec12c64651ab4d6c11e43d47405555b808e27de45d93cf5fff15bc17529f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/corporates/[id]/members/route.ts",
+      "sha256": "bcfc696d9703c7f8a9529479a9d0d8ccd2a60328306b97121029370dbb91feb0"
+    },
+    {
+      "path": "apps/backend/src/api/admin/corporates/[id]/route.ts",
+      "sha256": "1aa69f7edd86d068d57dd416b3061bbd6ff34a5f96d13df834131e56a8f68416"
+    },
+    {
+      "path": "apps/backend/src/api/admin/corporates/[id]/rules/[ruleId]/route.ts",
+      "sha256": "648d82435a03fa0bec9d02c146b4ded93342e2408f98676c55cf9adc60ade19e"
+    },
+    {
+      "path": "apps/backend/src/api/admin/corporates/[id]/rules/route.ts",
+      "sha256": "c648845610b3e4cc3bec01bf7bf81be9ba98973e29f7b6bee4c3a71b6e003fc0"
+    },
+    {
+      "path": "apps/backend/src/api/admin/corporates/[id]/status/route.ts",
+      "sha256": "cb2de17b59a1676dc265410adbd8710529e6d08b65eed957fa02582c49d68e54"
+    },
+    {
+      "path": "apps/backend/src/api/admin/corporates/route.ts",
+      "sha256": "c7d4e76bf02a09b4375a6caefce1607ac58181bd3d94d1b2cd7d01123f0d83d9"
+    },
+    {
+      "path": "apps/backend/src/api/admin/corporates/validators.ts",
+      "sha256": "877c2b2e610a7e7f457e786dae73321e4b558af638ff95250e6d37932f492844"
+    },
+    {
+      "path": "apps/backend/src/api/store/corporate-invitations/[token]/route.ts",
+      "sha256": "066054981d69097f937f30269b45cf4b7edbdf03600c397cfcbfe6cf96bf9849"
+    },
+    {
+      "path": "apps/backend/src/api/store/corporates/invitations/accept/route.ts",
+      "sha256": "2abb6b15940e31b81ba831a149a486edbc9169c8fd788049f6cd3088c861eca1"
+    },
+    {
+      "path": "apps/backend/src/api/store/corporates/invitations/route.ts",
+      "sha256": "d272bacbd7442dc83f0faf63370276b4a957c6ed2e0bcb214f67c4724b8ccd3b"
+    },
+    {
+      "path": "apps/backend/src/api/store/corporates/me/members/route.ts",
+      "sha256": "268bf4aa407a50509b9216af5d5cbe0f602ce38a6bef767bd82e746a7745d777"
+    },
+    {
+      "path": "apps/backend/src/api/store/corporates/me/route.ts",
+      "sha256": "0346ebc7e47c4386b07aaef6c992a0896e8f6641de0be656e821b16e8a3a72f5"
+    },
+    {
+      "path": "apps/backend/src/api/store/corporates/me/validate-cart/route.ts",
+      "sha256": "bf353e2cef35b4647e453b5cd1d254a2b1e4c936209433dd658835c2e08dc5fd"
+    },
+    {
+      "path": "apps/backend/src/api/store/corporates/members/[id]/route.ts",
+      "sha256": "787d74f40c366552456b226c920d877c7009c383dfe9a3f41ee55775d46fe8e2"
+    },
+    {
+      "path": "apps/backend/src/api/store/corporates/middlewares.ts",
+      "sha256": "b8ad6bfb33e54af00c398d710a3ef03c2a225974a45d2b528649adad5ce9b6c8"
+    },
+    {
+      "path": "apps/backend/src/api/store/corporates/register/route.ts",
+      "sha256": "0f76f6da49077479267406abf370031ccb5a223dd96ed0332c0ae4b974cf51d2"
+    },
+    {
+      "path": "apps/backend/src/api/store/corporates/validators.ts",
+      "sha256": "ff50ec248341dc57d171b7472fa3ea123e37b88634f2ab8a97b3e0c7354a5cfb"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/index.ts",
+      "sha256": "97702aa348c0aabe8fb3edb5b4d6a2a34d68511f7c9325e71811520bf39caf8c"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/migrations/Migration20260614120000.ts",
+      "sha256": "4ca254a31b749ca042b3401ba5d98926191fc202c43e3b456e67329c9faf8b09"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/migrations/Migration20260807170000Corporate.ts",
+      "sha256": "4f1aabfd2a5367a3a2a77d9a479c883bdd3495b8f4702044695ae41474674a20"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/models/corporate-invitation.ts",
+      "sha256": "1f284fe5aa3ee52fdaeb15d79350236fd9f50821d525980267339abb065bab22"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/models/corporate-member.ts",
+      "sha256": "e322fb90156befe9388625ca8b379874fc56c8f644192d9a41d3adf859428043"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/models/corporate-rule.ts",
+      "sha256": "2e650cd4db3ab2dc484203429f2dc8dcb43cb88ff1807eeb44bef597e4fa9eda"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/models/corporate.ts",
+      "sha256": "1e91df7171820e63fab087c3fc6ac83a47f31a8a682e9daeed499d23f2b4a0bf"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/models/index.ts",
+      "sha256": "950e1c486fbfb1d6c61465a4ce3413a2d62a04c800f3364670a090bb315370f1"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/service.ts",
+      "sha256": "c8457ad7862d27d4418bf83a99eb563ff278fd7dace6affcf089e9dc404b4707"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/settings.test.ts",
+      "sha256": "2b8cd937fcf59de31fda700faea74f9990489fde19d759865a2fddb326d03543"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/settings.ts",
+      "sha256": "da418d00c139ff059fef2717df753ac521aba6f3f0e5e4d32eabe925a15e5556"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/site-scope.ts",
+      "sha256": "a9c3af1f9e10f405fa3e447d317e967e1044dfef552f9d83f7d3fce90a7dba8e"
+    },
+    {
+      "path": "apps/backend/src/modules/corporate/types.ts",
+      "sha256": "2eda16aea0c70001bb91fef001cca945330f8c995c3223653377dd51ba01c7a0"
+    },
+    {
+      "path": "apps/backend/src/scripts/create-wholesale-price-list.ts",
+      "sha256": "0ddd7fbc0f7bb7f22967635596d24e2b3f04f6535bdfa117c7d171ea596af305"
+    },
+    {
+      "path": "apps/backend/src/subscribers/corporate-activated-email.ts",
+      "sha256": "e077a205dd5ad4cbf4c64eae43aaf0fad33a3dd6c129ab3c21d81e5293da278b"
+    },
+    {
+      "path": "apps/backend/src/subscribers/corporate-created-email.ts",
+      "sha256": "8de59912a8f3e77cc49ddcf0c5468f27417822d9b51d3de1a1a31eddccea8d21"
+    },
+    {
+      "path": "apps/backend/src/workflows/accept-corporate-invitation.ts",
+      "sha256": "f0829315cfbd1b212edb10c01806f896029cab6a973afd91ceaa209544e328a1"
+    },
+    {
+      "path": "apps/backend/src/workflows/create-corporate.ts",
+      "sha256": "641d43862275cb6da2cc5ad58afe6ed1d5b0a2808077d81418563b37bd21df9f"
+    },
+    {
+      "path": "apps/backend/src/workflows/invite-corporate-member.ts",
+      "sha256": "d4bfae7e40681c1e211d43bbf5f4de5d0b2c729667b5c182c350a4cb5b911ee5"
+    },
+    {
+      "path": "apps/backend/src/workflows/link-corporate-customer-group.ts",
+      "sha256": "847237b4596cd3420c174548c6d3e8de3ffda699a22ded0769d3dc2784032ffa"
+    },
+    {
+      "path": "apps/backend/src/workflows/set-corporate-status.ts",
+      "sha256": "78d2ec28358c75b859402087971d12e037f7ca8c2bd8c0c399480344782f167a"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/corporate/invite/[token]/page.tsx",
+      "sha256": "258fde0dafc8f0d826fcc84692de03d8e375128631eaecf1301e14dc9d592f99"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/corporate/register/page.tsx",
+      "sha256": "8360b36e5acb854c5140b9910e43a5fd2bb018a01935e25799aa2ff916e042b6"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/corporate.ts",
+      "sha256": "26ec2d7aa3cdb51182e82f73f033e2d3541de47347de1a1a8ba175cc5caf6cd8"
+    },
+    {
+      "path": "apps/storefront/src/modules/account/components/corporate/accept-invitation.tsx",
+      "sha256": "56edd075e2f05d0a4589bf040f0f6209f08a606d7157ef0018aacb5f3c484912"
+    },
+    {
+      "path": "apps/storefront/src/modules/account/components/corporate/company-dashboard.tsx",
+      "sha256": "60c91344409c2c430f47325cd075d4ede5a1851aa7870004d495cf5f9f6d4896"
+    },
+    {
+      "path": "apps/storefront/src/modules/account/components/corporate/register-form.tsx",
+      "sha256": "a6aea5d9664446c3f6d1b7f57454f2b782f9a8d2367f6a697ada44a7adc15124"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./store/corporates/middlewares",
+        "storeCorporatesMiddlewares"
+      ]
+    ],
+    "admin_hooks": [
+      "corporates"
+    ],
+    "admin_translation": null
+  }
+}

@@ -1,0 +1,182 @@
+/*
+ * Fashion template — scoped design tokens.
+ *
+ * A deliberately distinct identity from both Grocery (green supermarket) and
+ * Technology (blue, tiles): warm bone-white canvases, a warm near-black ink, a
+ * single muted taupe for secondary text, sharp (un-rounded) edges, an editorial
+ * serif for display and an airy uppercase sans for labels. Photography is the
+ * protagonist; chrome recedes. Inspired by COS / Zara / Aime Leon Dore / Nike.
+ *
+ * Everything is scoped under `.fashion-home` so it can never leak into the
+ * other templates or the rest of the storefront.
+ */
+.fashion-home {
+  --f-canvas: #f4f1ea; /* warm bone / off-white */
+  --f-paper: #ffffff;
+  --f-ink: #1a1815; /* warm near-black */
+  --f-muted: #6f685e; /* warm taupe-gray */
+  --f-subtle: #9b9388;
+  --f-hairline: #e3ded4;
+  --f-divider: #ece8df;
+  --f-dark: #1a1815; /* dark editorial tile */
+  --f-on-dark: #f4f1ea;
+
+  /* Editorial serif for display; airy sans for body and labels. */
+  --f-serif: var(--font-fashion-serif), "Cormorant Garamond", Georgia,
+    "Times New Roman", serif;
+  --f-sans: var(--font-inter), Inter, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "Helvetica Neue", sans-serif;
+
+  /* Reused storefront pieces read --primary-color; keep them on the ink tone. */
+  --primary-color: var(--f-ink);
+
+  font-family: var(--f-sans);
+  color: var(--f-ink);
+  background-color: var(--f-canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Editorial display headline (serif). */
+.f-display {
+  font-family: var(--f-serif);
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: -0.005em;
+}
+
+/* Section title. */
+.f-section-title {
+  font-family: var(--f-serif);
+  font-size: clamp(1.5rem, 1.1rem + 1.5vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--f-ink);
+}
+
+.f-section-subtitle {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--f-muted);
+}
+
+/* Small uppercase eyebrow / label — the editorial "kicker". */
+.f-eyebrow {
+  font-family: var(--f-sans);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--f-muted);
+}
+
+/* Primary CTA: minimal underlined link (no fill, sharp). */
+.f-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--f-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--f-ink);
+  padding-bottom: 4px;
+  border-bottom: 1px solid currentColor;
+  transition: opacity 0.2s ease;
+}
+.f-cta:hover {
+  opacity: 0.6;
+}
+
+/* Solid CTA: ink rectangle, paper text — for buttons over photography. */
+.f-btn-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--f-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  background-color: var(--f-ink);
+  color: var(--f-on-dark);
+  padding: 0.85rem 2rem;
+  border: 1px solid var(--f-ink);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.f-btn-solid:hover {
+  background-color: transparent;
+  color: var(--f-ink);
+}
+
+/* On dark imagery the chrome flips to paper. */
+.f-on-dark .f-eyebrow {
+  color: rgba(244, 241, 234, 0.75);
+}
+.f-on-dark .f-cta {
+  color: var(--f-on-dark);
+}
+.f-on-dark .f-btn-solid {
+  background-color: var(--f-on-dark);
+  color: var(--f-ink);
+  border-color: var(--f-on-dark);
+}
+.f-on-dark .f-btn-solid:hover {
+  background-color: transparent;
+  color: var(--f-on-dark);
+}
+
+/* Hide scrollbars on the horizontal carousels (mobile swipe rails). */
+.f-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.f-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Shared commerce screens (store, PDP, quick view) when the fashion template is active. */
+.fashion-home .store-template-page {
+  background: var(--f-canvas);
+}
+
+.fashion-home .store-template-page aside > div,
+.fashion-home [data-testid="shopping-list-results"],
+.fashion-home [data-testid="product-page-cart-controls"],
+.fashion-home [data-testid="sticky-cart-bar"] {
+  border-radius: 0;
+  border-color: var(--f-hairline);
+  box-shadow: none;
+}
+
+.fashion-home .store-template-page h1,
+.fashion-home .store-template-page h2,
+.fashion-home #product-info h1 {
+  font-family: var(--f-serif);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.fashion-home .store-template-page button,
+.fashion-home .store-template-page a,
+.fashion-home [data-testid="sticky-cart-button"],
+.fashion-home [data-testid="product-page-cart-button"] {
+  border-radius: 0;
+}
+
+.fashion-home [data-testid="sticky-cart-button"],
+.fashion-home [data-testid="product-page-cart-button"] {
+  background: var(--f-ink);
+  color: var(--f-on-dark);
+}
+
+.fashion-home [data-testid="sticky-cart-button"]:hover,
+.fashion-home [data-testid="product-page-cart-button"]:hover {
+  background: transparent;
+  color: var(--f-ink);
+  box-shadow: inset 0 0 0 1px var(--f-ink);
+}

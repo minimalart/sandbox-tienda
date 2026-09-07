@@ -1,0 +1,164 @@
+/*
+ * Technology template — scoped design tokens.
+ *
+ * A deliberately distinct identity from the Grocery (green, supermercado)
+ * template: a single quiet "Action Blue" accent, near-white parchment
+ * surfaces, near-black tiles, generous whitespace and tight display
+ * tracking — inspired by Apple / Samsung / Best Buy / B&H / Frávega.
+ *
+ * Everything is scoped under `.tech-home` so it can never leak into the
+ * grocery template or the rest of the storefront.
+ */
+.tech-home {
+  --tech-blue: #0066cc;
+  --tech-blue-strong: #0071e3;
+  --tech-blue-on-dark: #2997ff;
+  --tech-ink: #1d1d1f;
+  --tech-muted: #6e6e73;
+  --tech-subtle: #86868b;
+  --tech-hairline: #e5e5e7;
+  --tech-divider: #f0f0f0;
+  --tech-canvas: #ffffff;
+  --tech-parchment: #f5f5f7;
+  --tech-pearl: #fafafc;
+  --tech-dark: #0b0b0f;
+  --tech-tile: #1d1d1f;
+
+  /*
+   * Reused storefront pieces (CartQuantitySelector, WishlistButton, …) read
+   * `--primary-color`. Scope it to the tech blue inside the technology home so
+   * they stay on-brand regardless of the demo tenant's theme color.
+   */
+  --primary-color: var(--tech-blue);
+
+  /* SF Pro on Apple platforms, Inter elsewhere (per the design brief). */
+  --tech-font: -apple-system, BlinkMacSystemFont, var(--font-inter), Inter,
+    "Segoe UI", "Helvetica Neue", sans-serif;
+
+  font-family: var(--tech-font);
+  color: var(--tech-ink);
+  background-color: var(--tech-canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tech-home h1,
+.tech-home h2,
+.tech-home h3 {
+  font-family: var(--tech-font);
+  letter-spacing: -0.02em;
+}
+
+/* Section title used across the tech home. */
+.tech-section-title {
+  font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--tech-ink);
+}
+
+.tech-section-subtitle {
+  margin-top: 0.5rem;
+  font-size: clamp(0.95rem, 0.9rem + 0.3vw, 1.125rem);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--tech-muted);
+}
+
+/* The signature blue pill CTA. */
+.tech-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background-color: var(--tech-blue);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0.75rem 1.5rem;
+  transition: transform 0.12s ease, background-color 0.2s ease;
+}
+.tech-btn-primary:hover {
+  background-color: var(--tech-blue-strong);
+}
+.tech-btn-primary:active {
+  transform: scale(0.96);
+}
+
+/* Ghost pill — the secondary CTA. */
+.tech-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background-color: transparent;
+  color: var(--tech-blue);
+  border: 1px solid currentColor;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0.75rem 1.5rem;
+  transition: transform 0.12s ease, background-color 0.2s ease;
+}
+.tech-btn-secondary:active {
+  transform: scale(0.96);
+}
+
+/* On dark tiles the ghost CTA flips to white. */
+.tech-on-dark .tech-btn-secondary {
+  color: #fff;
+}
+.tech-on-dark .tech-link {
+  color: var(--tech-blue-on-dark);
+}
+
+.tech-link {
+  color: var(--tech-blue);
+  font-weight: 500;
+}
+.tech-link:hover {
+  text-decoration: underline;
+}
+
+/* Hide scrollbars on the horizontal carousels (mobile-first rails). */
+.tech-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.tech-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Shared commerce screens (store, PDP, quick view) when the technology template is active. */
+.tech-home .store-template-page {
+  background: var(--tech-canvas);
+}
+
+.tech-home .store-template-page aside > div,
+.tech-home [data-testid="product-page-cart-controls"],
+.tech-home [data-testid="sticky-cart-bar"] {
+  border-color: var(--tech-hairline);
+  border-radius: 1.5rem;
+}
+
+.tech-home .store-template-page h1,
+.tech-home .store-template-page h2,
+.tech-home #product-info h1 {
+  font-family: var(--tech-font);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.tech-home [data-testid="sticky-cart-button"],
+.tech-home [data-testid="product-page-cart-button"] {
+  border-radius: 9999px;
+  background: var(--tech-blue);
+}
+
+.tech-home [data-testid="sticky-cart-button"]:hover,
+.tech-home [data-testid="product-page-cart-button"]:hover {
+  background: var(--tech-blue-strong);
+}

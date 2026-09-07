@@ -1,0 +1,158 @@
+{
+  "name": "@minimalart/mercatto-plugin-loyalty",
+  "version": "1.1.1",
+  "description": "Mercatto plugin — loyalty program (points ledger + engine)",
+  "main": ".medusa/server/src/index.js",
+  "types": ".medusa/server/src/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./.medusa/server/src/index.d.ts",
+      "default": "./.medusa/server/src/index.js"
+    },
+    "./.medusa/server/src/modules/*": "./.medusa/server/src/modules/*/index.js",
+    "./.medusa/server/src/providers/*": "./.medusa/server/src/providers/*/index.js",
+    "./admin": {
+      "import": "./.medusa/server/src/admin/index.mjs",
+      "require": "./.medusa/server/src/admin/index.js",
+      "default": "./.medusa/server/src/admin/index.js"
+    },
+    "./storefront/context": {
+      "types": "./.medusa/server/src/storefront/context/loyalty-context.d.ts",
+      "default": "./.medusa/server/src/storefront/context/loyalty-context.js"
+    },
+    "./storefront/account/loyalty-overview": {
+      "types": "./.medusa/server/src/storefront/account/loyalty-overview/index.d.ts",
+      "default": "./.medusa/server/src/storefront/account/loyalty-overview/index.js"
+    },
+    "./storefront/account/loyalty-rewards": {
+      "types": "./.medusa/server/src/storefront/account/loyalty-rewards/index.d.ts",
+      "default": "./.medusa/server/src/storefront/account/loyalty-rewards/index.js"
+    },
+    "./storefront/checkout/loyalty-rewards-checkout": {
+      "types": "./.medusa/server/src/storefront/checkout/loyalty-rewards-checkout/index.d.ts",
+      "default": "./.medusa/server/src/storefront/checkout/loyalty-rewards-checkout/index.js"
+    },
+    "./storefront/api/points": {
+      "types": "./.medusa/server/src/storefront/api/points/route.d.ts",
+      "default": "./.medusa/server/src/storefront/api/points/route.js"
+    },
+    "./storefront/api/loyalty/grants": {
+      "types": "./.medusa/server/src/storefront/api/loyalty/grants/route.d.ts",
+      "default": "./.medusa/server/src/storefront/api/loyalty/grants/route.js"
+    },
+    "./storefront/api/loyalty/redeem": {
+      "types": "./.medusa/server/src/storefront/api/loyalty/redeem/route.d.ts",
+      "default": "./.medusa/server/src/storefront/api/loyalty/redeem/route.js"
+    },
+    "./storefront/api/loyalty/rewards": {
+      "types": "./.medusa/server/src/storefront/api/loyalty/rewards/route.d.ts",
+      "default": "./.medusa/server/src/storefront/api/loyalty/rewards/route.js"
+    },
+    "./storefront/api/loyalty/tier": {
+      "types": "./.medusa/server/src/storefront/api/loyalty/tier/route.d.ts",
+      "default": "./.medusa/server/src/storefront/api/loyalty/tier/route.js"
+    }
+  },
+  "files": [
+    ".medusa",
+    "package.json",
+    "README.md",
+    "CHANGELOG.md",
+    "mercatto-plugin.json"
+  ],
+  "keywords": [
+    "medusa-plugin",
+    "mercatto",
+    "loyalty",
+    "points"
+  ],
+  "scripts": {
+    "build": "medusa plugin:build",
+    "dev": "medusa plugin:develop",
+    "prepublishOnly": "pnpm build"
+  },
+  "peerDependencies": {
+    "@heroicons/react": "^2.0.0",
+    "@medusajs/admin-sdk": "2.18.0",
+    "@medusajs/framework": "2.18.0",
+    "@medusajs/icons": "2.18.0",
+    "@medusajs/js-sdk": "2.18.0",
+    "@medusajs/medusa": "2.18.0",
+    "@medusajs/types": "2.18.0",
+    "@medusajs/ui": "^4.1.19",
+    "@minimalart/mercatto-multistore-contract": "workspace:*",
+    "@mikro-orm/core": "6.4.13",
+    "@mikro-orm/knex": "6.4.13",
+    "@mikro-orm/migrations": "6.4.13",
+    "@mikro-orm/postgresql": "6.4.13",
+    "@tanstack/react-query": "^5.62.0",
+    "lucide-react": "^0.400.0",
+    "next": "^15.0.0 || ^16.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@minimalart/mercatto-plugin-runtime": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@heroicons/react": {
+      "optional": true
+    },
+    "@medusajs/js-sdk": {
+      "optional": true
+    },
+    "@medusajs/loyalty-plugin": {
+      "optional": true
+    },
+    "@medusajs/types": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "zod": "4.2.0"
+  },
+  "devDependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@medusajs/admin-sdk": "2.18.0",
+    "@medusajs/admin-shared": "2.18.0",
+    "@medusajs/cli": "2.18.0",
+    "@medusajs/core-flows": "2.18.0",
+    "@medusajs/framework": "2.18.0",
+    "@medusajs/icons": "2.18.0",
+    "@medusajs/js-sdk": "2.18.0",
+    "@medusajs/loyalty-plugin": "2.18.0",
+    "@medusajs/medusa": "2.18.0",
+    "@medusajs/types": "2.18.0",
+    "@medusajs/ui": "^4.1.19",
+    "@mikro-orm/core": "6.4.13",
+    "@mikro-orm/knex": "6.4.13",
+    "@mikro-orm/migrations": "6.4.13",
+    "@mikro-orm/postgresql": "6.4.13",
+    "@tanstack/react-query": "^5.62.0",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "lucide-react": "^0.400.0",
+    "next": "^16.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minimalart/medusa-b2c-boilerplate.git",
+    "directory": "packages/plugins/plugin-loyalty"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "private": false
+}

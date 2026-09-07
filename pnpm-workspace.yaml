@@ -1,0 +1,7 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'packages/contracts/*'
+  - 'packages/extensions/*'
+  - 'packages/plugins/*'
+  - 'packages/templates/*'

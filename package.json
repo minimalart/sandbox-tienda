@@ -1,0 +1,56 @@
+{
+  "name": "@repo/monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "B2C E-commerce boilerplate with MedusaJS, Next.js and Typesense",
+  "engines": {
+    "node": ">=20.18.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.12.3",
+  "scripts": {
+    "site:create": "node packages/project-composer/src/cli.js",
+    "site:catalog:validate": "node packages/project-catalog/src/validate.js",
+    "site:components:extract": "node packages/project-composer/src/extract-components.js",
+    "site:components:validate": "node packages/project-composer/src/validate-components.js",
+    "site:components:verify": "node packages/project-composer/src/verify-components.js",
+    "backend:lock:verify": "node scripts/verify-backend-lock.js",
+    "dev": "node scripts/dev-with-docker.js",
+    "dev:apps": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "dx:services": "docker compose -f infra/docker-compose.yml up -d db redis typesense",
+    "dx:stop": "docker compose -f infra/docker-compose.yml stop",
+    "dx:down": "docker compose -f infra/docker-compose.yml down -v",
+    "setup:medusa": "node scripts/setup-medusa.js",
+    "setup:db": "pnpm dx:services && node scripts/setup-medusa.js"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "^19.0.6",
+      "@types/react-dom": "^19.0.2",
+      "@medusajs/types": "2.18.0",
+      "@medusajs/js-sdk": "2.18.0",
+      "@medusajs/core-flows": "2.18.0",
+      "@medusajs/framework": "2.18.0",
+      "@medusajs/medusa": "2.18.0",
+      "@medusajs/workflows-sdk": "2.18.0",
+      "@medusajs/orchestration": "2.18.0",
+      "i18next": "23.7.11",
+      "react-i18next": "13.5.0"
+    },
+    "patchedDependencies": {
+      "@medusajs/loyalty-plugin@2.18.0": "patches/@medusajs__loyalty-plugin@2.18.0.patch"
+    }
+  }
+}

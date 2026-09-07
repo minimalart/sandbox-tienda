@@ -1,0 +1,38 @@
+[
+  {
+    "name": "cifra correcta respaldada por los datos",
+    "data": "{\"count\":42,\"orders\":[{\"id\":\"o1\",\"total\":1000},{\"id\":\"o2\",\"total\":500}]}",
+    "answer": "Hubo 42 órdenes en el período, con un total combinado visible de $1.500 entre las dos mostradas.",
+    "expectGrounded": true
+  },
+  {
+    "name": "recomendación cualitativa con datos presentes",
+    "data": "{\"count\":3,\"products\":[{\"title\":\"Remera\",\"inventory\":0},{\"title\":\"Buzo\",\"inventory\":5}]}",
+    "answer": "La Remera está sin stock; conviene reponerla o pausar su publicación para no perder conversiones.",
+    "expectGrounded": true
+  },
+  {
+    "name": "cifra inventada que no aparece en los datos",
+    "data": "{\"count\":42,\"orders\":[{\"id\":\"o1\",\"total\":1000}]}",
+    "answer": "Las ventas crecieron 37% respecto del mes anterior y el ticket promedio fue de $2.350.",
+    "expectGrounded": false
+  },
+  {
+    "name": "afirmacion numerica concreta sin ningun dato",
+    "data": "",
+    "answer": "Tenés 1.204 clientes activos y una tasa de recompra del 28%.",
+    "expectGrounded": false
+  },
+  {
+    "name": "total correcto a partir de la suma de los datos",
+    "data": "{\"items\":[{\"sku\":\"A\",\"qty\":2},{\"sku\":\"B\",\"qty\":3}]}",
+    "answer": "Se vendieron 5 unidades en total (2 del SKU A y 3 del B).",
+    "expectGrounded": true
+  },
+  {
+    "name": "ranking inventado no presente en los datos",
+    "data": "{\"products\":[{\"title\":\"Remera\"},{\"title\":\"Buzo\"}]}",
+    "answer": "El producto más vendido fue el Buzo con 312 unidades, seguido por la Remera con 188.",
+    "expectGrounded": false
+  }
+]

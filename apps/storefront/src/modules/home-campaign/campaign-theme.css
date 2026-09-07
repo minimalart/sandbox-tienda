@@ -1,0 +1,29 @@
+/*
+ * Tokens del template Campaña (landing institucional).
+ * Se scopean a `.campaign-home` para no filtrar al chrome de otros templates.
+ */
+.campaign-home {
+  --campaign-bg: #0f1114;
+  --campaign-bg-alt: #191b1f;
+  --campaign-fg: #f5f6f8;
+  --campaign-fg-muted: #a4a8b0;
+  --campaign-accent: #22c55e;
+  --campaign-border: #2a2d33;
+  --campaign-card-bg: #ffffff;
+  --campaign-card-fg: #0f1114;
+  --campaign-radius: 14px;
+}
+
+.campaign-home .campaign-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--campaign-accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

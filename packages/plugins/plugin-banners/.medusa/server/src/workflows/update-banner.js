@@ -1,0 +1,98 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateBannerWorkflow = void 0;
+const workflows_sdk_1 = require("@medusajs/framework/workflows-sdk");
+const banner_1 = require("../modules/banner");
+const validateUpdateInputStep = (0, workflows_sdk_1.createStep)('validate-update-input', async (input, { container }) => {
+    const bannerService = container.resolve(banner_1.BANNER_MODULE);
+    const banners = await bannerService.listBanners({ id: input.id });
+    const banner = banners[0];
+    if (!banner) {
+        throw new Error(`Banner with id "${input.id}" not found`);
+    }
+    const startAt = input.data.start_at ?? banner.start_at;
+    const endAt = input.data.end_at ?? banner.end_at;
+    if (startAt && endAt) {
+        const start = new Date(startAt);
+        const end = new Date(endAt);
+        if (start >= end) {
+            throw new Error('start_at must be before end_at');
+        }
+    }
+    if (input.data.handle && input.data.handle !== banner.handle) {
+        const existing = await bannerService.listBanners({
+            handle: input.data.handle,
+        });
+        if (existing.length > 0) {
+            throw new Error(`Banner with handle "${input.data.handle}" already exists`);
+        }
+    }
+    return new workflows_sdk_1.StepResponse({ banner, input });
+});
+const updateBannerStep = (0, workflows_sdk_1.createStep)('update-banner', async (context, { container }) => {
+    const { banner: originalBanner, input } = context;
+    const bannerService = container.resolve(banner_1.BANNER_MODULE);
+    const updateData = {};
+    if (input.data.internal_name !== undefined) {
+        updateData.internal_name = input.data.internal_name;
+    }
+    if (input.data.handle !== undefined) {
+        updateData.handle = input.data.handle;
+    }
+    if (input.data.type !== undefined) {
+        updateData.type = input.data.type;
+    }
+    if (input.data.device_type !== undefined) {
+        updateData.device_type = input.data.device_type;
+    }
+    if (input.data.placement !== undefined) {
+        updateData.placement = input.data.placement;
+    }
+    if (input.data.status !== undefined) {
+        updateData.status = input.data.status;
+    }
+    if (input.data.priority !== undefined) {
+        updateData.priority = input.data.priority;
+    }
+    if (input.data.content !== undefined) {
+        updateData.content = input.data.content;
+    }
+    if (input.data.media !== undefined) {
+        updateData.media = input.data.media;
+    }
+    if (input.data.cta !== undefined) {
+        updateData.cta = input.data.cta;
+    }
+    if (input.data.start_at !== undefined) {
+        updateData.start_at = input.data.start_at ? new Date(input.data.start_at) : null;
+    }
+    if (input.data.end_at !== undefined) {
+        updateData.end_at = input.data.end_at ? new Date(input.data.end_at) : null;
+    }
+    if (input.data.rules !== undefined) {
+        updateData.rules = input.data.rules;
+    }
+    if (input.data.metadata !== undefined) {
+        updateData.metadata = input.data.metadata;
+    }
+    const updatedBanner = await bannerService.updateBanners({
+        id: input.id,
+        ...updateData,
+    });
+    await bannerService.createAuditEntry(input.id, 'updated', input.user_id, updateData, originalBanner);
+    return new workflows_sdk_1.StepResponse(updatedBanner, {
+        id: input.id,
+        originalData: originalBanner,
+    });
+}, async (context, { container }) => {
+    if (!context?.id)
+        return;
+    const bannerService = container.resolve(banner_1.BANNER_MODULE);
+    await bannerService.updateBanners({ id: context.id, ...context.originalData });
+});
+exports.updateBannerWorkflow = (0, workflows_sdk_1.createWorkflow)('update-banner', function (input) {
+    const validated = validateUpdateInputStep(input);
+    const banner = updateBannerStep(validated);
+    return new workflows_sdk_1.WorkflowResponse(banner);
+});
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoidXBkYXRlLWJhbm5lci5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uL3NyYy93b3JrZmxvd3MvdXBkYXRlLWJhbm5lci50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7QUFBQSxxRUFLMkM7QUFDM0MsOENBQWtEO0FBVWxELE1BQU0sdUJBQXVCLEdBQUcsSUFBQSwwQkFBVSxFQUN4Qyx1QkFBdUIsRUFDdkIsS0FBSyxFQUFFLEtBQWdDLEVBQUUsRUFBRSxTQUFTLEVBQUUsRUFBRSxFQUFFO0lBQ3hELE1BQU0sYUFBYSxHQUF3QixTQUFTLENBQUMsT0FBTyxDQUFDLHNCQUFhLENBQUMsQ0FBQztJQUU1RSxNQUFNLE9BQU8sR0FBRyxNQUFNLGFBQWEsQ0FBQyxXQUFXLENBQUMsRUFBRSxFQUFFLEVBQUUsS0FBSyxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUM7SUFDbEUsTUFBTSxNQUFNLEdBQUcsT0FBTyxDQUFDLENBQUMsQ0FBQyxDQUFDO0lBQzFCLElBQUksQ0FBQyxNQUFNLEVBQUUsQ0FBQztRQUNaLE1BQU0sSUFBSSxLQUFLLENBQUMsbUJBQW1CLEtBQUssQ0FBQyxFQUFFLGFBQWEsQ0FBQyxDQUFDO0lBQzVELENBQUM7SUFFRCxNQUFNLE9BQU8sR0FBRyxLQUFLLENBQUMsSUFBSSxDQUFDLFFBQVEsSUFBSSxNQUFNLENBQUMsUUFBUSxDQUFDO0lBQ3ZELE1BQU0sS0FBSyxHQUFHLEtBQUssQ0FBQyxJQUFJLENBQUMsTUFBTSxJQUFJLE1BQU0sQ0FBQyxNQUFNLENBQUM7SUFFakQsSUFBSSxPQUFPLElBQUksS0FBSyxFQUFFLENBQUM7UUFDckIsTUFBTSxLQUFLLEdBQUcsSUFBSSxJQUFJLENBQUMsT0FBTyxDQUFDLENBQUM7UUFDaEMsTUFBTSxHQUFHLEdBQUcsSUFBSSxJQUFJLENBQUMsS0FBSyxDQUFDLENBQUM7UUFDNUIsSUFBSSxLQUFLLElBQUksR0FBRyxFQUFFLENBQUM7WUFDakIsTUFBTSxJQUFJLEtBQUssQ0FB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

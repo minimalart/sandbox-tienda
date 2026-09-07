@@ -1,0 +1,476 @@
+{
+  "schema_version": 1,
+  "id": "correo-argentino",
+  "name": "Correo Argentino",
+  "version": "1.2.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "delivery"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:correo-argentino",
+  "environment": [
+    "CORREO_ARGENTINO_AFORO_DIVISOR",
+    "CORREO_ARGENTINO_AGREEMENT",
+    "CORREO_ARGENTINO_API_KEY",
+    "CORREO_ARGENTINO_AUTO_FULFILL",
+    "CORREO_ARGENTINO_CUSTOMER_ID",
+    "CORREO_ARGENTINO_DIMENSION_FALLBACK_ENABLED",
+    "CORREO_ARGENTINO_DIMENSION_FALLBACK_HEIGHT",
+    "CORREO_ARGENTINO_DIMENSION_FALLBACK_LENGTH",
+    "CORREO_ARGENTINO_DIMENSION_FALLBACK_WEIGHT",
+    "CORREO_ARGENTINO_DIMENSION_FALLBACK_WIDTH",
+    "CORREO_ARGENTINO_EXT_CLIENT",
+    "CORREO_ARGENTINO_HOSTNAME",
+    "CORREO_ARGENTINO_MAX_DIMENSION_CM",
+    "CORREO_ARGENTINO_MAX_WEIGHT_G",
+    "CORREO_ARGENTINO_MICORREO_BASE_PATH",
+    "CORREO_ARGENTINO_MICORREO_HOSTNAME",
+    "CORREO_ARGENTINO_MICORREO_PASS",
+    "CORREO_ARGENTINO_MICORREO_USER",
+    "CORREO_ARGENTINO_ORIGIN_CITY",
+    "CORREO_ARGENTINO_ORIGIN_DEPARTMENT",
+    "CORREO_ARGENTINO_ORIGIN_FLOOR",
+    "CORREO_ARGENTINO_ORIGIN_NUMBER",
+    "CORREO_ARGENTINO_ORIGIN_POSTAL_CODE",
+    "CORREO_ARGENTINO_ORIGIN_STATE",
+    "CORREO_ARGENTINO_ORIGIN_STREET",
+    "CORREO_ARGENTINO_PAQAR_BASE_PATH",
+    "CORREO_ARGENTINO_PRODUCT_CATEGORY",
+    "CORREO_ARGENTINO_PRODUCT_WEIGHT_UNIT",
+    "CORREO_ARGENTINO_SEED_SHIPPING_OPTIONS",
+    "CORREO_ARGENTINO_SELF_GENERATED_TN",
+    "CORREO_ARGENTINO_SELLER_ID",
+    "CORREO_ARGENTINO_SENDER_CELLPHONE",
+    "CORREO_ARGENTINO_SENDER_EMAIL",
+    "CORREO_ARGENTINO_SENDER_NAME",
+    "CORREO_ARGENTINO_SENDER_OBSERVATION",
+    "CORREO_ARGENTINO_SENDER_PHONE",
+    "CORREO_ARGENTINO_SERVICE_TYPE",
+    "CORREO_ARGENTINO_TEST_MODE",
+    "CORREO_ARGENTINO_TN_PREFIX",
+    "CORREO_ARGENTINO_TRACKING_BASE_URL",
+    "CORREO_ARGENTINO_TRACKING_BUSINESS_HOURS_ONLY",
+    "CORREO_ARGENTINO_TRACKING_SYNC_SCHEDULE"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/correo-argentino-fulfillment",
+      "target": "apps/backend/src/modules/correo-argentino-fulfillment"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/correo-argentino",
+      "target": "apps/backend/src/api/admin/correo-argentino"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/correo-argentino",
+      "target": "apps/backend/src/api/store/correo-argentino"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/correo-argentino",
+      "target": "apps/backend/src/admin/routes/correo-argentino"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/correo-argentino.tsx",
+      "target": "apps/backend/src/admin/hooks/api/correo-argentino.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/translations/correo-argentino",
+      "target": "apps/backend/src/admin/translations/correo-argentino"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/widgets/order-correo-widget.tsx",
+      "target": "apps/backend/src/admin/widgets/order-correo-widget.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/lib/correo.ts",
+      "target": "apps/backend/src/admin/lib/correo.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/correo-generate-tickets.ts",
+      "target": "apps/backend/src/workflows/correo-generate-tickets.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-correo-domicilio.ts",
+      "target": "apps/backend/src/scripts/seed-correo-domicilio.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-correo-sucursal.ts",
+      "target": "apps/backend/src/scripts/seed-correo-sucursal.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/sync-correo-tracking-status.ts",
+      "target": "apps/backend/src/jobs/sync-correo-tracking-status.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/correo-order.ts",
+      "target": "apps/backend/src/subscribers/correo-order.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/correo-ticket-tracking-whatsapp.ts",
+      "target": "apps/backend/src/subscribers/correo-ticket-tracking-whatsapp.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/lib/correo.test.ts",
+      "target": "apps/backend/src/admin/lib/correo.test.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/sync-correo-tracking-status.test.ts",
+      "target": "apps/backend/src/jobs/sync-correo-tracking-status.test.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/correo-order.test.ts",
+      "target": "apps/backend/src/subscribers/correo-order.test.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/correo-generate-tickets.test.ts",
+      "target": "apps/backend/src/workflows/correo-generate-tickets.test.ts"
+    }
+  ],
+  "migrations": [],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/correo-argentino.tsx",
+      "sha256": "8f02d676ee8609442208873216b38780f5ea6f6aa06707d592808766945c1afa"
+    },
+    {
+      "path": "apps/backend/src/admin/lib/correo.test.ts",
+      "sha256": "cf8c60a39b82613a813495e478a2f149e71bc461428ad460e232ac05f030ad5f"
+    },
+    {
+      "path": "apps/backend/src/admin/lib/correo.ts",
+      "sha256": "a74702c0d1dc89477016150c54b3e9c54a3cdb6982a5b4ec5bd45febedde5543"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/correo-argentino/components/bulk-tickets-modal.tsx",
+      "sha256": "c8b95bb0efe9d5d6f6496ca78048390f959576d093a8e930995ddb4e823109fd"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/correo-argentino/components/config-status.tsx",
+      "sha256": "ab2a343d4da979dcc5b13480bdf2720d7c28e6f4a340be2a4382e10672216dc3"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/correo-argentino/components/fulfillment-list.tsx",
+      "sha256": "7fb23e6a5cdc660206d904a847d6d947070e9e97d67fab69ecbdff0594f8a2a0"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/correo-argentino/components/label-batch-modal.tsx",
+      "sha256": "8e505f5a030abcd6ca38726a861d72f66be1082cb89b659951b239cf58117a47"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/correo-argentino/components/tracking-modal.tsx",
+      "sha256": "53e756424239accd1771a95d69e7bddfc3b23445b710bfbb896742b6bdf4dc22"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/correo-argentino/configuracion/page.tsx",
+      "sha256": "f4c2c77eb66cb2e6a77553c62ef06f18d37976f6bed4f7ec716dc4357fc8da04"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/correo-argentino/credenciales/page.tsx",
+      "sha256": "3bb18aa589a1bc443450fa4332e81dc69f6f85383118e46289e318b677af2399"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/correo-argentino/envios/page.tsx",
+      "sha256": "9dd31eec1a0e612ce43656cca54af0d06c3e7eef106e8cf92797539dcf8f502b"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/correo-argentino/page.tsx",
+      "sha256": "a89f64044b67a1dc548295f4708cd40c9501c62354ecb2d091a8ef9f13bd4056"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/correo-argentino/index.ts",
+      "sha256": "af00644f8688c8f38fdfd7a263b08a7518f7b37fd4da9dfc15e10c07d372c1e0"
+    },
+    {
+      "path": "apps/backend/src/admin/widgets/order-correo-widget.tsx",
+      "sha256": "1022421bb521ac7ae9a82ccccb9869c1f19d6ed741bc81db7103a77c6be28b53"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/_input.test.ts",
+      "sha256": "c782a1e4c19841262e1dbb22a26da1f20305ab67c12faa3e1e135312f094d250"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/_input.ts",
+      "sha256": "60cb79f113c34a0f1d4ccc035e59b9417e7bb836fa82fee67bd12b55d4ea4988"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/_label-response.test.ts",
+      "sha256": "2b4f4cb45fec9bc2c3760a3bc0ba4575702d5789466820ffba15a5f47a773390"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/_label-response.ts",
+      "sha256": "558d1768fbe39215aaba3705f03434dfc45f46fa5e729adc488bf13f0d9590f6"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/_site-client.ts",
+      "sha256": "3fd054cce955dc5137f01a02fdf96cd988d111bf0b1c84b43831c39029144f61"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/_status-for-error.test.ts",
+      "sha256": "cc852607046483321b000cd04368165a58c3d485341f5a29dc5f2bac6703435d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/_status-for-error.ts",
+      "sha256": "8d04698dbbf8213515df4da5b75e98af8190f81c51bbb9bf6b53dc9d94da0f65"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/fulfillments/route.ts",
+      "sha256": "77ff3ce0860786ce6466cebfda4871dc2f41012616a180f5808cc92a4eb9d905"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/health/_env-report.test.ts",
+      "sha256": "be392bf845ea2efae8377168702912c16f20afe4ad36bea7acd43a3debb24a60"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/health/_env-report.ts",
+      "sha256": "715caa6951ac2156b8d94b35d664892b82e5972ac31af1b09eecbdd768a336ee"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/health/_probe.test.ts",
+      "sha256": "54f658a67ccf1a834ee33f10376a6823bbc43d48303d2406938905d7b4d35811"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/health/_probe.ts",
+      "sha256": "ffa3553a5bf188e07b03b0f5a86dee4a94a044ae2c7cc4fa6d97d3c1ff5d8165"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/health/route.ts",
+      "sha256": "1438363e458bf9bf798d68b15e7382436ca097182e5ec97d1d97eaa75261e2f7"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/labels/[id]/route.ts",
+      "sha256": "39b2e3a90880f2df0b887644250a69839858ae6f323a9d1b0b69057c4dd819cf"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/labels/bulk/route.ts",
+      "sha256": "bbb1ad8de640efceae539b5c55e0717c4106ad7d357ce21f7d044329452b15e8"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/labels/route.ts",
+      "sha256": "59100e497fe9183cd38537f1f18a8d1909a142415ba2f2369c74ffcaec24bab0"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/orders/[orderId]/tickets/route.ts",
+      "sha256": "5773e8e33f88d0659470fefc921fe5d4ba43d3d4e5ecbef8a5a91036a036627b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/tickets/bulk/route.ts",
+      "sha256": "e2bea74920f461e449afb29eee86a8039b63603f2bd70a84c3ecafb6e33d568f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/correo-argentino/tracking/[tracking_number]/route.ts",
+      "sha256": "ef7a39753305d11ee8282241684a4a6f949227727a946c787aefe670cb18262b"
+    },
+    {
+      "path": "apps/backend/src/api/store/correo-argentino/_shared.test.ts",
+      "sha256": "3a10f4fbf68c8b57a918e647eb750c88071cc6b01c35b93069a2b591d2e29e73"
+    },
+    {
+      "path": "apps/backend/src/api/store/correo-argentino/_shared.ts",
+      "sha256": "ca87dd0877b2399a0f4195280a51b7e33861240c70f8163aefdcc80f494d5535"
+    },
+    {
+      "path": "apps/backend/src/api/store/correo-argentino/agencies/route.ts",
+      "sha256": "c82082355358e5631df860eebf5820e7ac1ef0d90bd18a35aad60f3b8c03f35d"
+    },
+    {
+      "path": "apps/backend/src/api/store/correo-argentino/rates/route.ts",
+      "sha256": "d4dceea51c585387ba011e5c3e18e8fea542a77c8b899cfceb1346c28228e036"
+    },
+    {
+      "path": "apps/backend/src/api/store/correo-argentino/tracking/[tracking_number]/route.ts",
+      "sha256": "a555f14891730017de2b85314ba4ee90fef20563fb22b9b94acb24e4d6a11b2a"
+    },
+    {
+      "path": "apps/backend/src/jobs/sync-correo-tracking-status.test.ts",
+      "sha256": "8bff65d4cd3a6f0099ca572013e7f236761e29f82cf96bbafb8ed46fa50c19fa"
+    },
+    {
+      "path": "apps/backend/src/jobs/sync-correo-tracking-status.ts",
+      "sha256": "c02619f8900e7f1a2ae9834232132c3e6e5868fdf25aeec597b2438b6a4acdc3"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/clients/micorreo-client.test.ts",
+      "sha256": "0adf697016dd99d0b466b1a834985d79b0229ed66cae3f4a689063e685a2f9eb"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/clients/micorreo-client.ts",
+      "sha256": "2b446e3710063ed2244bb4246bf8176698abbeb0248a62438e1379a278cd5e38"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/clients/paqar-client.test.ts",
+      "sha256": "8182fd1459c1937dc67209148cc2e352454e55cf3c28c5f1227238f6c3470138"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/clients/paqar-client.ts",
+      "sha256": "b868ea00ff057815028ef35fd4b9196015583e0c2cb91e4ccd1aa6382b6373a3"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/env-options.test.ts",
+      "sha256": "26cb899b9f6f92cabb59c09440423f653e561ab09508a7bcd30651efb2c7ba9e"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/env-options.ts",
+      "sha256": "b3ac265f17fc8e430870478ef509f196877cb68988e65a043eb4eb63a9dab1c2"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/get-client.test.ts",
+      "sha256": "51626be20fa61dba2a1fcea3f7b3933ef54857b1f341345a9fe8a5e0f533d3ed"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/get-client.ts",
+      "sha256": "7d299ffc27294e9e8a336d41381645b1bbc991008c00cdae0b1b825272553b46"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/index.ts",
+      "sha256": "ba74462e8664138ea9832c16bfcbf36443009a512ea7e4447b77f97e20b03b2d"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/label-download.test.ts",
+      "sha256": "95ef726821fa3d1916de37d174b6f200e21d3ead41f6faa8b5c4b212a45ed801"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/label-download.ts",
+      "sha256": "376c7aed501ddc8d200420ec0ef904fb5059d17d22fabe7cd7645b83f8d0c1e5"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/normalizers/tracking-status.test.ts",
+      "sha256": "ec2ac7866e1e507ee36a20e88858fbb51eac43874d1c80c78b3e04f7a38a87e7"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/normalizers/tracking-status.ts",
+      "sha256": "c6c67152095d2945fe44a896de44ec356c720a220fa34fa57c1868437659cdc5"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/README.md",
+      "sha256": "bd272ffedc9be4bfc6bc361757b912458412c589d8f9503c386d983c49d9f7f9"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/service.test.ts",
+      "sha256": "fc0625e8c0dd3be4dc7dbc6f1bd5faa26d78e54523b15aae4cb57c81df114b3e"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/service.ts",
+      "sha256": "5190701322b07135e95d80f0682e9724e482653e0b898775376a76330e4fa015"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/settings.test.ts",
+      "sha256": "be72d578011f293ac932dea700a6f7a0511ce27aa1f3c3bc5d2a9b082d442253"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/settings.ts",
+      "sha256": "0019cafe592532cf59716dc72e1e85e418bc289dc673ab4b44b2010354c2597d"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/site-credentials.test.ts",
+      "sha256": "e356ca92b9ae32002eca4c549ba93d6948ffba5bc92bcd9c5fb370e23cdf2761"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/site-credentials.ts",
+      "sha256": "fa625e8b283ddf7c0a7f37842db5fce6485c652d58044177cf9ff476dc27470d"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/transformers/__fixtures__/agencies-sample.json",
+      "sha256": "1d37ffb4cd2cac1163f134d22322c5fb7a9d08a1446b1ea66bb2c4a1c13ceab0"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/transformers/agencies.test.ts",
+      "sha256": "3e783dae5bb62ac0eb3193620c612154c181db3b77b9f02038ba02760f4da8d5"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/transformers/agencies.ts",
+      "sha256": "95326cd6403db79d2d60a00fdfc14387453493f700f203c05df7bd262406c010"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/transformers/consolidate-parcel.test.ts",
+      "sha256": "27926c1454f725bdaa40412cf0ce971493257902bb9d0d79f4d769ba79713485"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/transformers/consolidate-parcel.ts",
+      "sha256": "b97a0a3e2a29b78185deafc6405c33cefb4f7fd3e6d6ec44404923ad95eb0fe9"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/transformers/order-payload.test.ts",
+      "sha256": "1066810043fbba14c4764bf3af10c7b489c7f41f123e14cafa57b597ec60f455"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/transformers/order-payload.ts",
+      "sha256": "63c17f2d160e79977202eec7b77a2b5df367cd4008bdfe4fa3461b58737d5eb3"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/transformers/province-codes.test.ts",
+      "sha256": "17a1acad109345acd07bd30e3fc617fb225c9800e3fc4353090439b3c6b02df6"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/transformers/province-codes.ts",
+      "sha256": "254b647a89b7760df39622ff3bce3330ff54d2f47787b49ef81c794c06cb4c2d"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/types.ts",
+      "sha256": "af7cfea7106eec3bc01dfca53d8ef702e9577d0c91b768ace6ddf484e43b2171"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/utils/errors.test.ts",
+      "sha256": "a8501f29d6108789606f782aa42de763ab006849cac518c29598cfa7b31c0261"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/utils/errors.ts",
+      "sha256": "36832b62c82189999e5135aca41124762e0af5b82729dbe271c445f5700ff479"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/utils/list-fulfillments.test.ts",
+      "sha256": "fbcb6b9bfd7d25b8a9fca6da1a358d80e86b708974d95a05e9777f1095fdaccf"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/utils/list-fulfillments.ts",
+      "sha256": "f82d18919c893092bc8cf36e8cb664bbd85d0e464ccb76eab16177986e528002"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/utils/tracking-url.test.ts",
+      "sha256": "d609181cccd0f56ee116a9213fa95b9442a3daee9abf87f3846d67f7e74e3f2c"
+    },
+    {
+      "path": "apps/backend/src/modules/correo-argentino-fulfillment/utils/tracking-url.ts",
+      "sha256": "e52666817654a3e01ab9a09be1d9e55071c2ec1869616c32821f4e6b70808dec"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-correo-domicilio.ts",
+      "sha256": "8ead2da9f855895090c7d041c653332fa26e6abefee27880b65458feb902c69d"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-correo-sucursal.ts",
+      "sha256": "dc03854eecba8396b520d7060316e8eec981caced37f96ade5e868bd89a8960e"
+    },
+    {
+      "path": "apps/backend/src/subscribers/correo-order.test.ts",
+      "sha256": "0b81c7b047544c9ca5355e621d751f82437f2cdf6217cf3b0d2913ca5b1e2bd5"
+    },
+    {
+      "path": "apps/backend/src/subscribers/correo-order.ts",
+      "sha256": "dd7abaae6b9280a50eb7c5a28f19dc28b120e184ef4f8197f17edb54dfe3aa0c"
+    },
+    {
+      "path": "apps/backend/src/subscribers/correo-ticket-tracking-whatsapp.ts",
+      "sha256": "b1d5b539d05281ce981c41229c1a80df14ff505126a63ddecc185d33ef9d2c77"
+    },
+    {
+      "path": "apps/backend/src/workflows/correo-generate-tickets.test.ts",
+      "sha256": "d841f5aac8e236df5879aa083924199dc4d60f45a27c396798322567036ff541"
+    },
+    {
+      "path": "apps/backend/src/workflows/correo-generate-tickets.ts",
+      "sha256": "aab15d62e13b4f59fd1a3652d5fa8bdbcc3485d1bd88a7c531998a59a70d2a45"
+    }
+  ],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": [
+      "correo-argentino"
+    ],
+    "admin_translation": [
+      "correo-argentino",
+      "correoArgentino"
+    ]
+  }
+}

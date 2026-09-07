@@ -1,0 +1,25 @@
+{
+  "$schema": "https://mercatto.minimalart.co/schemas/plugin.v1.json",
+  "schema_version": 1,
+  "id": "pdf-catalog",
+  "name": "Catálogos PDF",
+  "version": "1.3.3",
+  "kind": "plugin",
+  "status": "ready",
+  "dependencies": ["store-config"],
+  "incompatibilities": [],
+  "settings_namespace": "extension:pdf-catalog",
+  "environment": [],
+  "medusaModuleKey": "pdf_catalog",
+  "ownedTables": ["pdf_catalog", "pdf_catalog_channel", "pdf_catalog_hotspot"],
+  "integrations": {
+    "middlewares": [
+      [
+        "./admin/pdf-catalogs/middlewares",
+        "adminPdfCatalogsMiddlewares"
+      ]
+    ],
+    "admin_hooks": ["pdf-catalogs"],
+    "admin_translation": null
+  }
+}

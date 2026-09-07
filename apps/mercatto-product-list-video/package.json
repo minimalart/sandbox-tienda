@@ -1,0 +1,23 @@
+{
+  "name": "@repo/mercatto-product-list-video",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "preview": "remotion studio src/index.ts",
+    "build": "remotion render src/index.ts ProductListVideo out/mercatto-product-list.mp4 --codec=h264 --overwrite",
+    "render": "remotion render src/index.ts ProductListVideo out/mercatto-product-list.mp4 --codec=h264 --overwrite",
+    "still": "remotion still src/index.ts ProductListVideo out/frame-15s.png --frame=450 --overwrite",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.482",
+    "@types/node": "^20.19.41",
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "remotion": "4.0.482",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {}
+}

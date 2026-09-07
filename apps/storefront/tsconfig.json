@@ -1,0 +1,70 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@lib/util/money": ["../../../packages/contracts/storefront-shared/src/util/money"],
+      "@lib/util/get-individual-variant": ["../../../packages/contracts/storefront-shared/src/util/get-individual-variant"],
+      "@lib/util/is-product-in-stock": ["../../../packages/contracts/storefront-shared/src/util/is-product-in-stock"],
+      "@lib/util/free-shipping-target": ["../../../packages/contracts/storefront-shared/src/util/free-shipping-target"],
+      "@lib/util/cn": ["../../../packages/contracts/storefront-shared/src/util/cn"],
+      "@lib/util/placeholder-image": ["../../../packages/contracts/storefront-shared/src/util/placeholder-image"],
+      "@lib/stores/recently-viewed.store": ["../../../packages/contracts/storefront-shared/src/stores/recently-viewed.store"],
+      "@modules/common/components/checkbox-input": ["../../../packages/contracts/storefront-shared/src/components/checkbox-input"],
+      "@modules/common/components/scroll-carousel": ["../../../packages/contracts/storefront-shared/src/components/scroll-carousel"],
+      "@modules/common/components/product-image": ["../../../packages/contracts/storefront-shared/src/components/product-image"],
+      "@/*": [
+        "*"
+      ],
+      "@lib/*": [
+        "lib/*"
+      ],
+      "@modules/*": [
+        "modules/*"
+      ],
+      "@pages/*": [
+        "pages/*"
+      ]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "strictNullChecks": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    ".nyc_output",
+    "coverage",
+    "jest-coverage",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "tests"
+  ]
+}

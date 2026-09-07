@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "recommendation-widgets",
+  "name": "Widgets de Recomendaciones",
+  "version": "1.1.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "recommendation-engine"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:recommendation-widgets",
+  "environment": [],
+  "files": [
+    {
+      "source": "payload/apps/storefront/src/app/api/store/recommendations",
+      "target": "apps/storefront/src/app/api/store/recommendations"
+    }
+  ],
+  "migrations": [],
+  "managed_files": [
+    {
+      "path": "apps/storefront/src/app/api/store/recommendations/events/route.ts",
+      "sha256": "3369ef9a41c5a8640dde2f28b166059eac79f6d797bb4e18ab2f0133e869c2f5"
+    },
+    {
+      "path": "apps/storefront/src/app/api/store/recommendations/route.ts",
+      "sha256": "105c1de127a22c4ba6b4511f384c05366460b86a0c4c64a115a77748beee14d3"
+    }
+  ],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": [],
+    "admin_translation": null
+  }
+}

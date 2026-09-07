@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1580 1000" role="img" aria-label="Gift card Mercatto">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#064e3b"/><stop offset=".55" stop-color="#059669"/><stop offset="1" stop-color="#34d399"/></linearGradient><filter id="b"><feGaussianBlur stdDeviation="45"/></filter></defs>
+  <rect width="1580" height="1000" rx="72" fill="url(#g)"/>
+  <circle cx="1320" cy="140" r="310" fill="#ffffff" opacity=".12" filter="url(#b)"/>
+  <circle cx="170" cy="920" r="360" fill="#fde68a" opacity=".16" filter="url(#b)"/>
+  <path d="M0 735C300 610 510 895 830 735s500-70 750 35v230H0Z" fill="#022c22" opacity=".23"/>
+  <text x="110" y="130" fill="#fff" font-family="Arial,sans-serif" font-size="38" font-weight="700" letter-spacing="9">MERCATTO</text>
+</svg>

@@ -1,0 +1,36 @@
+{
+  "_comment": [
+    "Set de evaluación de relevancia del buscador. Cada caso declara qué se espera,",
+    "no qué devuelve hoy: así el harness mide mejoras y regresiones en vez de",
+    "congelar el comportamiento actual.",
+    "",
+    "  q            término a buscar",
+    "  label        clase de caso — agrupa el reporte",
+    "  expectRoot   raíz que debería aparecer en el título o en el path de categoría",
+    "               de los primeros resultados (comparación sin acentos)",
+    "  expectFoundGt debe encontrar más de N resultados",
+    "  rejectRegex  patrón que NO debe aparecer en los resultados",
+    "",
+    "Los casos de acá son genéricos. Los VALIOSOS se siembran con analytics de",
+    "producción: el harness los suma solo desde getQueriesWithoutResults() y",
+    "getPopularSearchQueries()."
+  ],
+  "cases": [
+    { "q": "remera",      "label": "exacto",       "expectRoot": "remer",     "expectFoundGt": 0 },
+    { "q": "remra",       "label": "typo-1",       "expectRoot": "remer",     "expectFoundGt": 0 },
+    { "q": "remrea",      "label": "transposición", "expectRoot": "remer",    "expectFoundGt": 0 },
+    { "q": "pantalno",    "label": "typo-1",       "expectRoot": "pantal",    "expectFoundGt": 0 },
+    { "q": "desodorate",  "label": "typo-2",       "expectRoot": "desodor",   "expectFoundGt": 0 },
+    { "q": "remeras",     "label": "plural",       "expectRoot": "remer",     "expectFoundGt": 0 },
+    { "q": "jabones",     "label": "plural-ones",  "expectRoot": "jab",       "expectFoundGt": 0 },
+    { "q": "aerosoles",   "label": "plural-oles",  "expectRoot": "aerosol",   "expectFoundGt": 0 },
+    { "q": "rocio",       "label": "sin-acento",   "expectFoundGt": 0 },
+    { "q": "rocío",       "label": "con-acento",   "expectFoundGt": 0 },
+    { "q": "adidas",      "label": "marca",        "expectRoot": "adidas",    "expectFoundGt": 0 },
+    { "q": "limpieza",    "label": "categoría",    "expectRoot": "limpi",     "expectFoundGt": 0 },
+    { "q": "lavandina",   "label": "exacto",       "expectRoot": "lavandina", "expectFoundGt": 0 },
+    { "q": "yerba",       "label": "exacto",       "expectRoot": "yerba",     "expectFoundGt": 0 },
+    { "q": "aerosol 500", "label": "numérico",     "expectFoundGt": 0, "rejectRegex": "\\b600\\b" },
+    { "q": "xyzabc123nonexistent", "label": "sin-sentido", "expectFoundGt": -1 }
+  ]
+}

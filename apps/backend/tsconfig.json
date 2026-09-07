@@ -1,0 +1,60 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "baseUrl": ".",
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "declaration": false,
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsbuildinfo/backend.tsbuildinfo"
+  },
+  // `src/admin` queda DOBLEMENTE excluido: el `include` no toma `.tsx` y el
+  // `exclude` lo nombra. Medido: tiene 132 errores de tipo preexistentes, así que
+  // meterlo al gate es un proyecto aparte (ver `.github/workflows/quality.yml`).
+  //
+  // CONSECUENCIA A TENER PRESENTE: un JSX desbalanceado en el admin NO lo atrapa
+  // nada — ni `tsc`, ni CI — y sólo explota en el build de Vite. Es crítico al
+  // envolver secciones en condicionales (`{!isMain && (<>…</>)}`).
+  //
+  // CÓMO VALIDARLO A MANO, sin arreglar los 132:
+  //
+  //   1. tsconfig temporal que extienda a este + `"jsx": "react-jsx"`,
+  //      `"lib": ["ES2022","DOM"]`, `"include": ["src/admin/**/*.ts","src/admin/**/*.tsx"]`
+  //      y —CRÍTICO— `"exclude": ["node_modules","dist"]`. Sin pisar el `exclude`,
+  //      se hereda el de acá abajo, que nombra `src/admin`; y `exclude` FILTRA a
+  //      `include`, así que el chequeo compila CERO archivos y sale en verde por
+  //      vacío. Pasó: reportó "0 errores" con el `include` bien puesto.
+  //   2. `./node_modules/.bin/tsc -p ese-tsconfig`. Confirmá que no corrió en vacío
+  //      con `--listFiles | rg -c 'src/admin/'` — tienen que ser ~550, no 0.
+  //   3. filtrar SÓLO los códigos de sintaxis: `rg "error TS1\d{3}:"` — con los dos
+  //      puntos, porque `TS1[0-9]{3}` sin ellos matchea "1804" dentro de TS18048.
+  //
+  // JSX roto = TS1005 / TS1109 / TS1381 / TS17002 / TS1128 / TS1160. Si no aparece
+  // ninguno, el JSX parsea. Ruido esperado que NO es problema: TS1470 `import.meta`
+  // en 5 archivos (artefacto de `module: nodenext`; el admin buildea con Vite).
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "medusa-config.ts"],
+  "exclude": ["src/admin", "node_modules", "dist", "**/*.test.ts"]
+}

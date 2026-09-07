@@ -1,0 +1,70 @@
+{
+  "$schema": "https://mercatto.minimalart.co/schemas/plugin.v1.json",
+  "schema_version": 1,
+  "name": "@minimalart/mercatto-plugin-loyalty",
+  "version": "1.1.1",
+  "kind": "plugin",
+  "extractedFrom": [
+    "packages/extensions/loyalty-points",
+    "packages/extensions/loyalty-engine"
+  ],
+  "medusaModuleKey": ["points", "loyalty"],
+  "compatibleBaseVersions": ">=2.5.0 <3.0.0",
+  "dependencies": {
+    "extensions": [],
+    "plugins": [],
+    "coreServices": ["eventBus", "cart", "order", "customer"],
+    "externalServices": []
+  },
+  "emitsEvents": [
+    "loyalty.points.earned",
+    "loyalty.points.redeemed",
+    "loyalty.reward.granted"
+  ],
+  "consumesEvents": [
+    "order.placed",
+    "order.canceled",
+    "customer.created",
+    "comment.approved"
+  ],
+  "envVars": {
+    "required": [],
+    "optional": [
+      "LOYALTY_EXPIRE_SCHEDULE",
+      "POINTS_EARN_RATE"
+    ]
+  },
+  "migrations": {
+    "ownsTables": [
+      "points_account",
+      "points_transaction",
+      "loyalty_program",
+      "loyalty_tier",
+      "loyalty_reward",
+      "loyalty_reward_grant",
+      "loyalty_earn_rule",
+      "loyalty_campaign"
+    ],
+    "requiresLinksTo": []
+  },
+  "adminUi": {
+    "hasRoutes": true,
+    "hasWidgets": true,
+    "requiresHostDedupe": true
+  },
+  "storefront": {
+    "exposesRoutes": [
+      "/store/points",
+      "/store/points/redeem",
+      "/store/loyalty/grants",
+      "/store/loyalty/redeem",
+      "/store/loyalty/rewards",
+      "/store/loyalty/tier"
+    ]
+  },
+  "integrations": {
+    "middlewares": [],
+    "adminHooks": ["loyalty"],
+    "adminTranslation": null
+  }
+}

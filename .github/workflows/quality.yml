@@ -1,0 +1,83 @@
+name: Quality
+
+# Segundo check bloqueante de PR: tipos y tests.
+#
+# POR QUÉ EXISTE. Hasta ahora el único check de PR era `validate-catalog.yml`, que
+# valida el catálogo y los payloads de extensiones — nada de código. Y el build de
+# Vercel tampoco atrapa errores de tipos, porque `apps/storefront/next.config.js`
+# tiene `typescript.ignoreBuildErrors: true`. O sea que un renombre incompleto podía
+# llegar a producción sin que nada lo viera.
+#
+# POR QUÉ ES UN WORKFLOW APARTE. `validate-catalog.yml` no necesita `pnpm install`
+# (sus dos scripts usan sólo builtins de node) y por eso tarda segundos. Este sí
+# instala dependencias: mezclarlos volvería lento el check rápido.
+#
+# QUÉ NO CORRE, Y POR QUÉ:
+#
+#   `pnpm build`   — el build del storefront ABORTA sin las env vars reales:
+#                    `check-env-variables.js` hace `process.exit(1)` si falta
+#                    NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY / COUNTRY_CODE /
+#                    SALES_CHANNEL_ID. Meterlas acá sería filtrar config de producción
+#                    a un runner de CI para no ganar nada: el build real ya corre en
+#                    el deploy.
+#
+#   `pnpm lint`    — `pnpm --filter @repo/storefront lint` NUNCA funcionó:
+#                    `apps/storefront/biome.jsonc` hace `extends: ["ultracite/core"]`
+#                    y `ultracite` no es dependencia de ningún package.json del
+#                    workspace. Falla con "Failed to resolve the configuration from
+#                    ultracite/core". Arreglarlo es su propio PR, con su medición.
+#
+#   typecheck del admin — `apps/backend/src/admin` está DOBLEMENTE excluido del
+#                    tsconfig del backend (`include` sin `.tsx` y `exclude: ["src/admin"]`),
+#                    y medido tiene 132 errores de tipo preexistentes. Gatearlo es un
+#                    proyecto aparte. Consecuencia asumida: un JSX desbalanceado en el
+#                    admin sólo lo atrapa el build de Vite. Para validarlo a mano ver
+#                    el comentario en `apps/backend/tsconfig.json`.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # node 24, NO 20. `apps/backend`/`apps/storefront` corren sus tests con
+      # `node --experimental-transform-types`, que requiere >= 22.7. Con el node 20 de
+      # `validate-catalog.yml` este job fallaría por el runtime, no por el código.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: corepack enable
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # `turbo run typecheck` declara `dependsOn: ["^build"]`, así que buildea las
+      # dependencias del workspace primero. Eso es lo que hace que el storefront
+      # typechequee limpio: sus únicos 2 errores eran `TS2307: Cannot find module
+      # '@repo/shared'` por falta del `dist/` de ese paquete.
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # `test` también usa `^build` (las DEPENDENCIAS, no el paquete propio). Antes
+      # era `["build"]`, lo que exigía un `next build` de producción entero para
+      # correr tests unitarios — imposible en CI. Ver el comentario en `turbo.json`.
+      - name: Test
+        run: pnpm test

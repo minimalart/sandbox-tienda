@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "id": "whatsapp",
+  "name": "WhatsApp",
+  "version": "1.6.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:whatsapp",
+  "environment": [
+    "KAPSO_API_KEY",
+    "KAPSO_BASE_URL",
+    "KAPSO_BUSINESS_ACCOUNT_ID",
+    "KAPSO_CONFIG_ID",
+    "KAPSO_INBOX_EMBED_URL",
+    "KAPSO_PHONE_NUMBER_ID",
+    "KAPSO_TEMPLATE_CART_ABANDONED_1",
+    "KAPSO_TEMPLATE_CART_ABANDONED_2",
+    "KAPSO_TEMPLATE_CART_ABANDONED_3",
+    "KAPSO_TEMPLATE_RECURRING_ORDER_CREATED",
+    "KAPSO_TEMPLATE_RECURRING_ORDER_PAUSED",
+    "KAPSO_TEMPLATE_RECURRING_ORDER_RESUMED",
+    "KAPSO_TEMPLATE_RECURRING_ORDER_SKIPPED",
+    "KAPSO_TEMPLATE_RECURRING_ORDER_CANCELLED",
+    "KAPSO_TEMPLATE_RECURRING_ORDER_GENERATED",
+    "KAPSO_TEMPLATE_RECURRING_ORDER_UPDATED",
+    "KAPSO_TEMPLATE_LANG",
+    "KAPSO_TEMPLATE_ORDER_CANCELLED",
+    "KAPSO_TEMPLATE_ORDER_CONFIRMATION",
+    "KAPSO_TEMPLATE_ORDER_DELIVERY",
+    "KAPSO_TEMPLATE_ORDER_TRACKING",
+    "KAPSO_TEMPLATE_PASSWORD_RESET",
+    "KAPSO_TEMPLATE_RECURRING_ORDER_FAILED",
+    "KAPSO_TEMPLATE_RECURRING_PAYMENT_FAILED",
+    "KAPSO_TEMPLATE_RECURRING_RENEWAL_READY",
+    "KAPSO_TEMPLATE_RECURRING_RENEWAL_UPCOMING",
+    "KAPSO_TEMPLATE_RECURRING_RENEWAL_REMINDER",
+    "KAPSO_TEMPLATE_RECURRING_STOCK_SKIPPED",
+    "KAPSO_TEMPLATE_RECURRING_STOCK_UNAVAILABLE",
+    "KAPSO_WEBHOOK_SECRET",
+    "KAPSO_WEBHOOK_VERIFY_TOKEN",
+    "WHATSAPP_COUNTRY_CODE",
+    "WHATSAPP_HANDOFF_AUTO_RESUME_HOURS",
+    "WHATSAPP_PLACEHOLDER_IMAGE_URL",
+    "WHATSAPP_REGION_ID",
+    "WHATSAPP_SALES_CHANNEL_ID"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/kapso-whatsapp",
+      "target": "apps/backend/src/modules/kapso-whatsapp"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/kapso",
+      "target": "apps/backend/src/api/admin/kapso"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/whatsapp",
+      "target": "apps/backend/src/api/store/whatsapp"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/whatsapp",
+      "target": "apps/backend/src/admin/routes/whatsapp"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/kapso.tsx",
+      "target": "apps/backend/src/admin/hooks/api/kapso.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/translations/whatsapp",
+      "target": "apps/backend/src/admin/translations/whatsapp"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/whatsapp-advisor.tsx",
+      "target": "apps/backend/src/admin/hooks/api/whatsapp-advisor.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/whatsapp-conversations.tsx",
+      "target": "apps/backend/src/admin/hooks/api/whatsapp-conversations.tsx"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/whatsapp.ts",
+      "target": "apps/storefront/src/lib/data/whatsapp.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/whatsapp",
+      "target": "apps/storefront/src/modules/whatsapp"
+    }
+  ],
+  "migrations": [],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/kapso.tsx",
+      "sha256": "aadfdad61afb438c0ea19acfdad6e3a485efe7fa02d648ecd28ea82aae1c00b2"
+    },
+    {
+      "path": "apps/backend/src/admin/hooks/api/whatsapp-advisor.tsx",
+      "sha256": "796f50be3afeffc0252c67516b08239a9684561085826945849930ea8ad1a9c0"
+    },
+    {
+      "path": "apps/backend/src/admin/hooks/api/whatsapp-conversations.tsx",
+      "sha256": "3b3d4e2678162b3701a9e5e77190524a03383a11cbaf48bc906e102e846eecc3"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/asesor/page.tsx",
+      "sha256": "aa380f8725a7d86ad65b656b6274914b4ca4b6ac200d69c7772fd06e2b8a8ae8"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/components/bot-channels-card.tsx",
+      "sha256": "cd73276bf902715fe5a6ce94b066236deb12f5a09299cc748b9e5a46f8be4925"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/components/floating-button-card.tsx",
+      "sha256": "1541b1df39d526687c07bf21003013f6767a28e4426e8604228aa9ad2cb7dc89"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/components/template-create-modal.tsx",
+      "sha256": "20c3bb2263e691f9e281ff72d5ceb2abfdd9e1e6e2e0574fce909e0a6e9e97d9"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/components/template-view-drawer.tsx",
+      "sha256": "2a6b21ef89b83f0e4af86d573e610805f178a9f0df2401ea64ad3eaa51bc69eb"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/components/templates-tab.tsx",
+      "sha256": "34737b0245ff37fc8c0a24e3417743a42982f5f325de2211a75bce0ba3f0af9a"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/components/whatsapp-body-editor.tsx",
+      "sha256": "5115be3d9d08bf3e6fe9f9616a9e6e90f0a0a68c934654d93e68f0f523ad5f5b"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/components/whatsapp-template-preview.tsx",
+      "sha256": "8e7152dfbfd139e7a310ff76af95b4c00c8d6d9209f4f0e57cd0744ed15e37b5"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/credenciales/page.tsx",
+      "sha256": "181eed44c346159978385827df538e8d8f489f8b8f611ec092452287ac4c0d8a"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/inbox/page.tsx",
+      "sha256": "430e7e0ddaa04b00781be2980447abf9f9e88c61bcca5bef807ca50b75b81ea2"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/page.tsx",
+      "sha256": "78b683e6c48d4913a90bd2c82e519215ed0c65e27607959063d94207ce9ce04e"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/settings/page.tsx",
+      "sha256": "03936d1a24cd732a0b3c491c1b831e0422b3b3371646c858801ec2a83cdd26cb"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/whatsapp/templates/page.tsx",
+      "sha256": "6387596c250bfe8d9f5c5fdb8eef60927b19409e7a88fcb31fc1fcbe29a17c07"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/whatsapp/index.ts",
+      "sha256": "7cbe82f8c66285321cc6f28c2ff4b1f8f2c20cc977fa5012b5d31052f06f9cd2"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/bindings/[key]/route.ts",
+      "sha256": "d912619710fee29816dab0b88c16103a9289449f513a6b91ee4877c1fd2d512c"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/bindings/route.ts",
+      "sha256": "7af643d4d1a759f91bda94c6d08673ebbea1e7e471fd474c3e96d09ad6bcd918"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/bindings/validators.ts",
+      "sha256": "ab4f4aa1b86ac35c7a8fd406dc2af7e8deb6c10a4167cfa0060eeef7c5809cd5"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/bot-channels/route.ts",
+      "sha256": "f18fbd15b22a78248a97c90b8c82b41dbe491db01ee0a8697bb0a1e317635f95"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/bot-channels/validators.ts",
+      "sha256": "8206cf31c0fd66c3a62178d7a336ff5117df719225cb43a6fc1db6532ab7b226"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/floating-button/route.ts",
+      "sha256": "b6a878e368a32ffb16c70a9b9b0ba56e899858d60602d60494f027440b67e92d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/floating-button/validators.ts",
+      "sha256": "c4c0d1d160427a61a047e15c4e3113e7d46118860c7e80608b723696d04d15e0"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/inbox-embed/route.ts",
+      "sha256": "dcd3cf8e4bc7d1d80c77aaaa3b4cdec5b3b5aaea897bc68aa09129434985d734"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/middlewares.ts",
+      "sha256": "fc78c41590792412d9ef1ae5e90236d502967ea36819478eb38302524f07106f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/templates/[name]/route.ts",
+      "sha256": "413bfd61d9a81d21a0066707b8108349d6cf3242b7663f7dcfa6165b365ffb33"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/templates/route.ts",
+      "sha256": "0edaed0c26158f92f8e699390d06eee4bd1c43e16cc9eb9b05930ac9020a8872"
+    },
+    {
+      "path": "apps/backend/src/api/admin/kapso/templates/validators.ts",
+      "sha256": "16b248e938c3639623210dfa384288dbdf49a88062f7042baa003f362071d53d"
+    },
+    {
+      "path": "apps/backend/src/api/store/whatsapp/floating-button/route.ts",
+      "sha256": "6422bb6eaf21da97fda3e87f618edd948607062c4341d47292cc05755cecc98a"
+    },
+    {
+      "path": "apps/backend/src/modules/kapso-whatsapp/bot-channels.test.ts",
+      "sha256": "5227faaaceaaf732c997ba03d2b19e8ec1733d3d860e528225a18e9235699e8b"
+    },
+    {
+      "path": "apps/backend/src/modules/kapso-whatsapp/bot-channels.ts",
+      "sha256": "3683cda07dfb0487c3d8659047056424641c08ac1ae821afb6e2b65f38d1c22a"
+    },
+    {
+      "path": "apps/backend/src/modules/kapso-whatsapp/client.ts",
+      "sha256": "f826def84659a2191a235b7472e7db68f5ac013971ce951ddf51fd22c09910c5"
+    },
+    {
+      "path": "apps/backend/src/modules/kapso-whatsapp/floating-button.test.ts",
+      "sha256": "f94f169bb80b218e87b47dd7b9b75838a8ad678b91e4a0f177aab3e167ffdeaf"
+    },
+    {
+      "path": "apps/backend/src/modules/kapso-whatsapp/floating-button.ts",
+      "sha256": "2bfa2c8a3eb159f5d31fc892c05c8cb3e9cac91e427412b0a0802c105ad15a2e"
+    },
+    {
+      "path": "apps/backend/src/modules/kapso-whatsapp/index.ts",
+      "sha256": "837184e78ae11cec0a7b0f68ab6f8b1d7abda375d4a45f9fd4e9d264b7517c6b"
+    },
+    {
+      "path": "apps/backend/src/modules/kapso-whatsapp/service.ts",
+      "sha256": "220d0a19aa63729e909cdaa2328e527cf0f696b5a174a53495c844ba80628621"
+    },
+    {
+      "path": "apps/backend/src/modules/kapso-whatsapp/settings.ts",
+      "sha256": "7636bba50b8401125d2f96e69b3837e6bbcb609b678449f7439093172083986d"
+    },
+    {
+      "path": "apps/backend/src/modules/kapso-whatsapp/templates/index.ts",
+      "sha256": "529d77c7740a27377c15e84e8c35c9af30761cb3c98049f7c16c6c24575d9258"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/whatsapp.ts",
+      "sha256": "f22eb4588d8e6283285ee74ea18d53a856f7921c945e2830208ef0ea9d06cd92"
+    },
+    {
+      "path": "apps/storefront/src/modules/whatsapp/components/floating-button/index.tsx",
+      "sha256": "9d9ad55da312218ee78cd5b7aa4425c159c607fed48391695792bbf32d992412"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./admin/kapso/middlewares",
+        "adminKapsoMiddlewares"
+      ]
+    ],
+    "admin_hooks": [
+      "kapso",
+      "whatsapp-advisor",
+      "whatsapp-conversations"
+    ],
+    "admin_translation": [
+      "whatsapp",
+      "whatsapp"
+    ]
+  }
+}

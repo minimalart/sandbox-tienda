@@ -1,0 +1,179 @@
+# Warns (does NOT block) when a PR touches plugin/catalog paths but leaves
+# the 7 canonical places from PLAYBOOK-plugin-lifecycle.md §2 desalineados.
+#
+# Runs `scripts/plugin-consistency/check.mjs` from the
+# minimalart-version-checker repo. On drift, posts a sticky comment on the
+# PR listing every finding and how to auto-fix locally. The job itself
+# always exits 0 so the PR is still mergeable — this is a heads-up, not a
+# gate. If we ever want blocking behavior, flip `continue-on-error` on
+# the "run check" step to false and set the report step's exit code.
+#
+# Related:
+#   - Skill /plugin-publish (in the checker repo) — walks a human through
+#     a NEW version bump so all 7 places move together.
+#   - Local pre-push hook — see docs/plugin-consistency.md for the opt-in
+#     install snippet.
+#
+# Path filter — extend this list when a new canonical place appears.
+# Documented in docs/plugin-consistency.md #cómo-extender.
+
+name: Plugin consistency
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/plugins/**'
+      - 'packages/project-catalog/**'
+      - 'apps/backend/package.json'
+      - 'apps/backend/src/admin/lib/extension-versions.ts'
+      - 'apps/backend/src/lib/platform/catalog.json'
+      # Also self-trigger when the workflow, its docs, or the vendored
+      # script change — any PR that tweaks the check gets validated by
+      # the check itself.
+      - '.github/workflows/plugin-consistency.yml'
+      - 'docs/plugin-consistency.md'
+      - 'scripts/plugin-consistency/**'
+  workflow_dispatch:
+
+# The comment we post is sticky by PR — same job overwrites the previous
+# comment instead of leaving a trail. Needs write permission on issues.
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout boilerplate
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Uses the VENDORED script at scripts/plugin-consistency/check.mjs.
+      # Sourced from minimalart/minimalart-version-checker; sync flow docs
+      # in scripts/plugin-consistency/README.md.
+      - name: Run consistency check (JSON for parsing)
+        id: check
+        continue-on-error: true
+        run: |
+          node scripts/plugin-consistency/check.mjs \
+            --boilerplate . \
+            --json > /tmp/plugin-report.json
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: Also print human-readable to the logs
+        continue-on-error: true
+        run: |
+          node scripts/plugin-consistency/check.mjs \
+            --boilerplate . || true
+
+      - name: Build PR comment body
+        id: comment
+        run: |
+          node <<'EOF' > /tmp/pr-comment.md
+          const fs = require('fs');
+          let report;
+          try {
+            report = JSON.parse(fs.readFileSync('/tmp/plugin-report.json', 'utf-8'));
+          } catch (err) {
+            console.log('<!-- plugin-consistency-check -->');
+            console.log('### 🔍 Plugin consistency check');
+            console.log('');
+            console.log('_El check no pudo generar reporte JSON válido. Ver los logs del workflow para el detalle._');
+            console.log('');
+            console.log('```');
+            console.log(String(err.message || err).slice(0, 400));
+            console.log('```');
+            process.exit(0);
+          }
+          const plugins = Array.isArray(report.plugins) ? report.plugins : [];
+          const failing = plugins.filter(p => !p.ok);
+          const lines = [];
+          lines.push('<!-- plugin-consistency-check -->');
+          lines.push('### 🔍 Plugin consistency check');
+          lines.push('');
+          const total = typeof report.total === 'number' ? report.total : plugins.length;
+          if (failing.length === 0 && !report.mirrorMismatch) {
+            lines.push(`Todos los ${total} plugins consistentes. ✅`);
+            lines.push('');
+            lines.push('_Este comment es informativo — no bloquea el merge._');
+          } else {
+            lines.push(`Detectamos **${failing.length} plugin(s)** con drift entre los 7 lugares canónicos del \`PLAYBOOK-plugin-lifecycle.md\` §2.`);
+            lines.push('');
+            lines.push('> ⚠️ Es un **warning**, no un blocker. Podés mergear igual, pero conviene fixear antes del release.');
+            lines.push('');
+            if (report.mirrorMismatch) {
+              lines.push('- `apps/backend/src/lib/platform/catalog.json` (mirror) diverge del catalog principal.');
+              lines.push('');
+            }
+            lines.push('#### Resumen por plugin');
+            lines.push('');
+            for (const p of failing) {
+              lines.push(`<details><summary><b>${p.id}</b> · <code>${p.truth || '?'}</code> (source of truth)</summary>`);
+              lines.push('');
+              for (const f of p.findings) {
+                const tag = f.fixable ? '🟢 auto-fixable' : '🟡 manual';
+                lines.push(`- ${tag} — \`${f.where}\``);
+                lines.push(`  - expected: \`${f.expected}\``);
+                lines.push(`  - actual: \`${f.actual}\``);
+              }
+              lines.push('');
+              lines.push('</details>');
+              lines.push('');
+            }
+            lines.push('#### Cómo fixear');
+            lines.push('');
+            lines.push('```bash');
+            lines.push('# Desde el checker repo (asume clones hermanos)');
+            lines.push('cd minimalart-version-checker');
+            lines.push('node scripts/plugin-consistency/check.mjs \\');
+            lines.push('  --boilerplate ../medusa-b2c-boilerplate --fix');
+            lines.push('cd ../medusa-b2c-boilerplate && git diff  # revisar');
+            lines.push('```');
+            lines.push('');
+            lines.push('Los items 🟡 manuales necesitan review humano — mayormente entries a `apps/backend/src/admin/lib/extension-versions.ts`. Ver `docs/plugin-consistency.md`.');
+            lines.push('');
+            lines.push('Para NUEVOS bumps, arrancá con el skill `/plugin-publish` en Claude Code — te camina por los 9 pasos de una en una.');
+          }
+          console.log(lines.join('\n'));
+          EOF
+
+      - name: Upsert sticky comment
+        uses: actions/github-script@v7
+        env:
+          COMMENT_PATH: /tmp/pr-comment.md
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync(process.env.COMMENT_PATH, 'utf-8');
+            const marker = '<!-- plugin-consistency-check -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            if (!issue_number) return;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner, repo, issue_number, per_page: 100,
+            });
+            const existing = comments.find(c => c.body?.startsWith(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number, body,
+              });
+            }
+
+      - name: Upload JSON report as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-consistency-report
+          path: /tmp/plugin-report.json
+          retention-days: 30

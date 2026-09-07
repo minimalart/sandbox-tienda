@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Mercatto project manifest",
+  "type": "object",
+  "required": ["project", "commerce", "template", "extensions"],
+  "properties": {
+    "project": { "type": "object", "required": ["name", "slug"] },
+    "commerce": { "type": "object", "required": ["country_code", "currency_code", "locale"] },
+    "branding": { "type": "object" },
+    "content": { "type": "object" },
+    "template": { "type": "string" },
+    "extensions": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+  }
+}

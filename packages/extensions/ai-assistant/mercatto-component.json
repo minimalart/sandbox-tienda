@@ -1,0 +1,932 @@
+{
+  "schema_version": 1,
+  "id": "ai-assistant",
+  "name": "Asistente IA",
+  "version": "1.32.16",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "store-config"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:ai-assistant",
+  "environment": [
+    "AI_MEMORY_EMBED_CRON",
+    "AI_PROPOSALS_AGENT",
+    "AI_PROPOSALS_CRON",
+    "AI_PROPOSALS_ENGINE",
+    "AI_PROPOSALS_LIMIT",
+    "AI_PROPOSALS_MAX_STEPS",
+    "AI_PROPOSALS_SPECIALIST_STEPS",
+    "CHAT_AI_MAX_TOKENS",
+    "CHAT_AI_MODEL",
+    "CHAT_AI_REASONING_EFFORT",
+    "EMBEDDINGS_API_KEY",
+    "EMBEDDINGS_BASE_URL",
+    "EMBEDDINGS_DIMENSIONS",
+    "EMBEDDINGS_MODEL",
+    "MCP_AUTH_TOKEN",
+    "MCP_MEDUSA_URL",
+    "MCP_OAUTH_REDIRECT_BASE",
+    "MEDUSA_BACKEND_URL",
+    "MEDUSA_BASE_URL",
+    "NEXT_PUBLIC_BASE_URL",
+    "OPENAI_API_KEY",
+    "OPENROUTER_API_KEY",
+    "OPENROUTER_SITE_URL"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/ai-assistant",
+      "target": "apps/backend/src/modules/ai-assistant"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/ai-assistant",
+      "target": "apps/backend/src/api/admin/ai-assistant"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/ai-assistant",
+      "target": "apps/backend/src/admin/routes/ai-assistant"
+    },
+    {
+      "source": "payload/apps/backend/src/api/webhooks/kapso",
+      "target": "apps/backend/src/api/webhooks/kapso"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/whatsapp-analytics",
+      "target": "apps/backend/src/api/admin/whatsapp-analytics"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/whatsapp-conversations",
+      "target": "apps/backend/src/api/admin/whatsapp-conversations"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-ai-agents.ts",
+      "target": "apps/backend/src/scripts/seed-ai-agents.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-redactor.ts",
+      "target": "apps/backend/src/scripts/seed-redactor.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-content-team.ts",
+      "target": "apps/backend/src/scripts/seed-content-team.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-campaign-team.ts",
+      "target": "apps/backend/src/scripts/seed-campaign-team.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/mcp/middlewares.ts",
+      "target": "apps/backend/src/api/mcp/middlewares.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/mcp/oauth/authorize/route.ts",
+      "target": "apps/backend/src/api/mcp/oauth/authorize/route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/mcp/oauth/middlewares.ts",
+      "target": "apps/backend/src/api/mcp/oauth/middlewares.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/mcp/oauth/register/route.ts",
+      "target": "apps/backend/src/api/mcp/oauth/register/route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/mcp/oauth/token/route.ts",
+      "target": "apps/backend/src/api/mcp/oauth/token/route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/mcp-oauth/callback/route.ts",
+      "target": "apps/backend/src/api/mcp-oauth/callback/route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/embed-pending-memories.ts",
+      "target": "apps/backend/src/jobs/embed-pending-memories.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/generate-proposals.ts",
+      "target": "apps/backend/src/jobs/generate-proposals.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260619120000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260619140000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260619160000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260622120000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260625000000AiAssistantReconcileChat.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260626120000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260626140000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260626160000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260627120000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260627130000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260628120000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260628140000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260629120000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260630120000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260630160000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260630180000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260630200000.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260702130000AiAssistantReconcileMemory.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/agents/page.tsx",
+      "sha256": "ae68717529c36fd2a4350ef55a0afd5fd38fceb9ad8af6cdf12f1e4d69e897a0"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/chat/page.tsx",
+      "sha256": "222b5de25166ae9beb553325e7c6f4d6050838aa843d4a1bf3c07a700cbe7f4c"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/agent-avatar.tsx",
+      "sha256": "54c502c822c61b8904244d1e7a5ac1838057cf9317b1c27e77a5ce64b0988307"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/agent-documents.tsx",
+      "sha256": "055e523ac2c81d75e9ffb96a146355289cbde1b210e63ef7dc575d92697c1a8a"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/agents.tsx",
+      "sha256": "9d49ac1c40f606dd0d707843396d433fc9bbd86c41d02331c35f19f4a114c892"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/campaign-blocks.tsx",
+      "sha256": "e643e73d26ec3080f1fd593a4821810015175eb7353b448b24bed51ca035ad0c"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/chat.tsx",
+      "sha256": "31cf25b9aa76b9e8e2b0bc3061608f015a8bdbfc9248205d58e826b9cd79c2e5"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/mcp-keys.tsx",
+      "sha256": "69225ea8afc4986a444b004b1617d1140fb39bd97d92c669a699766efa45fcac"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/mcp-servers.tsx",
+      "sha256": "63082f2d20b4588c345199d8634e9de59e5ed3785aaebeec5d540a4715d5592e"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/memory.tsx",
+      "sha256": "0fb6a4713132214317b83d4c677ac1c25953603a8c0c0c5aa1223c9b58e5ace3"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/proposals.tsx",
+      "sha256": "d2dba8c92301ff6e23b402a1d31f1a051c287edae656a6c002d3df346ec0e38e"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/runs.tsx",
+      "sha256": "79d767eb50e4d22ebc71bd142b84930428e77df3ce0b549f09b418650d3689a0"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/suggested-connectors.tsx",
+      "sha256": "a75e20302f0bf6808e98946906296fa0e7b84588ab06a11aa690290160a40adf"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/tool-permission-toggle.tsx",
+      "sha256": "525136283700105997285cf0f86901ff9cc7cac817b800ad97c4debc827293b8"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/tools-config.tsx",
+      "sha256": "c778cf4f9cbbae16209886ef27f14ca208c6637d1d02381b60f82bb896fc7e31"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/visual-renderer.tsx",
+      "sha256": "50cfd817ff055e400abc1ab0480bd80e694d6c3e47a9ddd98c22798983743a3c"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/components/workflows.tsx",
+      "sha256": "23d6fc0037f904f045ad2e9b505fbd1bef62f8236892e6727ed05494420b415b"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/config/page.tsx",
+      "sha256": "ec30a142287f8470f42b111c0df9ed2fe9955e00eb9c83a1b52a817728767727"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/credenciales/page.tsx",
+      "sha256": "42dbea66356036be4645235c612c2ea04d431926517bfe9211383c40721f7c50"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/hooks.tsx",
+      "sha256": "5215005278c8a73f995c157a8f8e0c8cb4994a1a6e36327cfc5712958acd9c71"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/lib/campaign-blocks.ts",
+      "sha256": "0996386135f08c3ded4124749bcc1ed555d239dafdc9118da0c0ded2dd3ea9f5"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/lib/options.ts",
+      "sha256": "0e5fd2db90d660517b02b75d526ef5ec1a866ad5a3eaf0914bc84c355797ebc2"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/lib/period.ts",
+      "sha256": "42ba8b167968b7d243082f1b165dbd1402e9eaa9f2caca802554731d52773567"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/lib/suggestions.ts",
+      "sha256": "38233d874c1c728ca7dea83ba686d36c75c177beda7afc1f07aad0beabb4e6eb"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/lib/visuals.ts",
+      "sha256": "a6e78fd064fe75a65b2dc6db4f4424e93f1834150c1f4fa38204f1264cb2d2f8"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/memoria/page.tsx",
+      "sha256": "a909fa94464a0bc28c891e58877864f7c66e2b711fbf5c5f0b4a779e28354bdc"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/page.tsx",
+      "sha256": "0ea056620c46c24e47f9cbcaeb4525b16f5a68b6c2b88b36a281543165227ca1"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/proposals/page.tsx",
+      "sha256": "689564daaaf248c133f7e967568a74316bde54a1012a16321e5e1eaee67cadfc"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/runs/page.tsx",
+      "sha256": "ab7751459da7eb4f7a1a91db7d235af3825fc713122ae9f04faeb8821b759851"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/workflows/page.tsx",
+      "sha256": "d0de7b7f833486d710a87b139b2f5ac1c0b555feadb76b0dcd55e27fcb2a5528"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/agents/[id]/documents/route.ts",
+      "sha256": "e5814486ca1e94e2efa9ce1eb2e5e824e29a2a8cb136cd8083a824732d87d51a"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/agents/[id]/route.ts",
+      "sha256": "352496bc478d2e3c5849adbccab7bdb6856774a71d73bf8ecbd26e117a3478ea"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/agents/route.ts",
+      "sha256": "ea80794d33a089476094f69421e915b6b5bf0491e5c8c03a00ca7c6624047711"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/documents/[id]/route.ts",
+      "sha256": "798cfd0b90ae933f5fc59d0e36d0771739b76c15269f8dc7d04c5c97d5ff4665"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/draft-agent/route.ts",
+      "sha256": "89b04b411a7a6e00ee3fad84ec604c31eababb828bdecb35aa1c3bc0b9efbb04"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/keys/[id]/route.ts",
+      "sha256": "99edb192163e1872357de6b5e07d1bf922cf990cf10c6190dd44c2bc27690831"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/keys/route.ts",
+      "sha256": "08d38928f8c16a54daf429ac2054e57f9a15becbb7f376de42cb080415f9078a"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/mcp-servers/_serialize.ts",
+      "sha256": "42e5762be1c4153f97c7d209f720af9f418c95ec07829aa76f4dbe821e658482"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/mcp-servers/[id]/oauth/start/route.ts",
+      "sha256": "dea08812f66b634df0bf334f6710c03a24640b5346b6646b7aa869f655dc56d4"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/mcp-servers/[id]/refresh/route.ts",
+      "sha256": "1b608d1a6e254eef73d5a0676f4cb0a8ab849e979d9d45faee6b8b4219361043"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/mcp-servers/[id]/route.ts",
+      "sha256": "45705f91ad743aa87128edf4ba4bc437c1a2cbf3a56b7b656ec0e7bf99f27371"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/mcp-servers/route.ts",
+      "sha256": "e927c57d31ba4544f1470b9d21eef2036fa3338e36fde76f9ad1fb266fbdad48"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/memory/[id]/feedback/route.ts",
+      "sha256": "3a01cd3c9c77ebaa422168f1b81a897f00865d05d1e9194bb98a0366a5f91d79"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/memory/[id]/route.ts",
+      "sha256": "29890d025df41fdc6bb53e8a9b55d636a9b1ef21a1107d6199f4b4ed91b2bc2c"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/memory/route.ts",
+      "sha256": "c9d61e9418b7b60887f198c477dc986680377b9e4bf1dfe5c7d0ae618dbacc36"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/memory/search/route.ts",
+      "sha256": "243c8e0be2eb0c058d47f2383ebaebfa65caa0ad0da15f1fa396caed54c6f533"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/middlewares.ts",
+      "sha256": "48cbea12b60f1e36512a9f6da47097f6623c101d5cbdf205134ee6527bf86038"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/proposals/[id]/approve/route.ts",
+      "sha256": "8ee9e1cca992491a91632987d0ace3f36d4c6ec89304151e0e9edbefa44b970b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/proposals/[id]/reject/route.ts",
+      "sha256": "946946cc1a27b3b5dcf850f7d9f46b93a76b56d96cb2646358c142159f92b950"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/proposals/[id]/route.ts",
+      "sha256": "02308382eab774a311a3f53065e92ecf305de7e63e445484b81591dae1b2b68d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/proposals/generate/route.ts",
+      "sha256": "8026ddbe6ae05179be73116b00db92d875bb2322c5934d1b0e23526fcde35a74"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/proposals/route.ts",
+      "sha256": "7a179a2a4939ad3333f8f5d192abcf19b06a8b83a9f36421c5ff882eee5539b0"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/runs/[id]/route.ts",
+      "sha256": "ce399696d7b4af8dda4905b2caea9214fef674ff0b68f380580d7fed2d0ae29b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/runs/route.ts",
+      "sha256": "4589f7eb79757c4669c51e3f1074363d353c481e195d6cc98e84f11824ed480b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/skills/[id]/route.ts",
+      "sha256": "08a8855eb6c60ec624155d2b644b80eded0c0d0bbc11f45c39df22787a9fcb11"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/skills/route.ts",
+      "sha256": "928e514e4c00ade5048859c165ba1dfd49fff5cbf79b1a996d0cde8623cd3a40"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/threads/[id]/campaign/route.ts",
+      "sha256": "3e92583147cfa420dd411ea10606a494699ad00a326b937e9cb1d463371d2ead"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/threads/[id]/confirm/route.ts",
+      "sha256": "f8c798b29c4cdca5def83490f1957e5c8796b58cf7621112832a246c53727aa2"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/threads/[id]/messages/route.ts",
+      "sha256": "83b60d32bab9e19b863ef6a72f2d9d37a33817b00f3dc783476874945d1bfa69"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/threads/[id]/messages/stream/route.ts",
+      "sha256": "c94eedf44c4d3bc1522b1651fbce933d0c540b52521dd68f50e2de1df0d798ec"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/threads/[id]/route.ts",
+      "sha256": "45091256ebd32fbcba8452e4ad5432e87d3e4fd550e78c016a5ea9a2c8a436a1"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/threads/route.ts",
+      "sha256": "18b903a5cec6161f5da6e25691f87454441f5f9c6b59708173f953fc8dcbec94"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/tools/route.ts",
+      "sha256": "f92bbb762b78ce1fbd0f3f8894b0aaed410f048b9097009f4c665533954f2fe7"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/validators.ts",
+      "sha256": "bf5ead5aaa2fd6835853f5754c91f93822e88f3929615d78cb9c8761560e76fc"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/workflows/[id]/route.ts",
+      "sha256": "4869dd7efbecb51677bb8596049eca9c6ec2bdaf57c50592c4c3668e67264aa6"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/workflows/route.ts",
+      "sha256": "259faf76235eb0bd45b5d5fbabcf3697c82e9a69e08ab04c13478b6747019edc"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/workflows/runs/[runId]/resume/route.ts",
+      "sha256": "f09aa4e5cd846e3e800fb91a207e577500646a17e7a4c7548572557b5ffcaa65"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/workflows/runs/[runId]/route.ts",
+      "sha256": "1086453f4e6acd0abbd147b856d48be825c4bc885bc883b35e95b4a86f03ede5"
+    },
+    {
+      "path": "apps/backend/src/api/admin/ai-assistant/workflows/runs/route.ts",
+      "sha256": "b1c70f8f8ae7a963fe2bf5ff06175738589fcc8761b7db9a0b823d16e5d1828e"
+    },
+    {
+      "path": "apps/backend/src/api/admin/whatsapp-analytics/route.ts",
+      "sha256": "0f1cc12a0555779b723c6bcb6cdc14ad67da9fcf4ff81312785e6be5f89cf59e"
+    },
+    {
+      "path": "apps/backend/src/api/admin/whatsapp-conversations/route.ts",
+      "sha256": "9f21cc136691c2b2810055be2b1ac38ca35ca7e3469c53437b09cd3fb93d2778"
+    },
+    {
+      "path": "apps/backend/src/api/mcp-oauth/callback/route.ts",
+      "sha256": "7ee3bba28ed4dad7545761fb6baf5c5b62cdcc079b5adf994ff755c9a8d05a00"
+    },
+    {
+      "path": "apps/backend/src/api/mcp/middlewares.ts",
+      "sha256": "46d7e2576ec2a99ffa1b6ece79246391ef5d025776de62bb3e8ceaf458767d3e"
+    },
+    {
+      "path": "apps/backend/src/api/mcp/oauth/authorize/route.ts",
+      "sha256": "108238fbc8c5c922478af12f9d502536fa61eb339ee1b5b4acde0166627e0176"
+    },
+    {
+      "path": "apps/backend/src/api/mcp/oauth/middlewares.ts",
+      "sha256": "b2e88ed4c19f47fc0add0ade92623e6b37d6d5e2ea1988828e1429ab6440587f"
+    },
+    {
+      "path": "apps/backend/src/api/mcp/oauth/register/route.ts",
+      "sha256": "d41591636660cdab632e0714e56866ef30ef9d866d4ce897cdafff939e42e028"
+    },
+    {
+      "path": "apps/backend/src/api/mcp/oauth/token/route.ts",
+      "sha256": "5f515eac54d2a88cdb62cdc26b95a6f057cf258cf180acc42bf4a5b6b86aaf17"
+    },
+    {
+      "path": "apps/backend/src/api/webhooks/kapso/middlewares.ts",
+      "sha256": "92d8ff9d4a30e728debce1121fc81368caf0fbc36e0dfab20e478012a64e70a9"
+    },
+    {
+      "path": "apps/backend/src/api/webhooks/kapso/route.ts",
+      "sha256": "8fabe74acfdd3f4376574e03fdb00d3576a313ba9432018995545add2dabde73"
+    },
+    {
+      "path": "apps/backend/src/jobs/embed-pending-memories.ts",
+      "sha256": "b74de115de7df1fc36069b6a4a3abf3bf1fda9024bafe86f620c15a39de0db6f"
+    },
+    {
+      "path": "apps/backend/src/jobs/generate-proposals.ts",
+      "sha256": "690f99f15d64b6165421d5cd29d60209a46a7a06b47c404b7f6f19b2d940dad8"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/__evals__/grounding-cases.json",
+      "sha256": "92fd1a6086390860e876797b475ebb34dd65767d8436ffdec9f72fb352a447de"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/agent-fixtures.ts",
+      "sha256": "f9f94a9e670f9a73747708361eef568038b059cb3f2316fa19acafb1b9143c03"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/agent-manifest.test.ts",
+      "sha256": "625e9e134e60d718e30707c5ba4fbfe4ea3f528154f06654caca42359057cc11"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/agent-manifest.ts",
+      "sha256": "95942784fa187a8b755b89948bd98df69b9ca51ef80fee5970a123971581db58"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/agent.headless.test.ts",
+      "sha256": "1a0fee2f610d19e6530c8b64afaac345977c51d75fccbc91788ccfc53e5ce1de"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/agent.hooks.test.ts",
+      "sha256": "e7b7b98f1192e0c1d46c9349c0e5b74cfd2e137a7d59dcef8b37533871fe8bbe"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/agent.loop.test.ts",
+      "sha256": "646df5fe4286a61efaa945b23d885d566d09842a10f39cb2f10174445ac59cd9"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/agent.ts",
+      "sha256": "7fce9723ac4c73d4726419355c7efaed07989bcd908766eb8129f98dd5f684c3"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/agents.test.ts",
+      "sha256": "1ab2882d3ef96c5862c0759b5de6f3e52dce9f2ecdfdf8f097d040f7ad9a1bd3"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/agents.ts",
+      "sha256": "63192de40775ff251020aa20439a2999910cd32e66d6be878848309598f1ca9d"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/campaign-enrich.ts",
+      "sha256": "1890e175dae8b8479b7961e5c6f7a094781280dbe61e335cb8658bdf67277c26"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/campaign.test.ts",
+      "sha256": "6c3b8b6d3053e292143a286fa7ffe358c210c66e4aa11101e8cfe1e28293772f"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/campaign.ts",
+      "sha256": "bd49e1ce61212a96396903f510cafee7fab8d788568d22ffe8dc47c83a5dd45b"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/capabilities.test.ts",
+      "sha256": "15bdf8ab451995f1203b4a8ba0de80c71266a07f538c1707edcf1a5f781c51e3"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/capabilities.ts",
+      "sha256": "2eb84b5a742431b8bb96405fb1f7cf457b718b0d5dadb1b880ddd616eb794dce"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/chat-client.retry.test.ts",
+      "sha256": "94dba8416f74221636f64c5fd0914582ecc97d4540de0a236c181b3a0864a8bd"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/chat-client.stream.test.ts",
+      "sha256": "d82a264fb22ad44d8e666ad73013c82794fab6948bafafc0a1adac4ef7f184b5"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/chat-client.ts",
+      "sha256": "613d1e1a4b6be38ec7238ae167459242cc5501b33109adc21b4bd1970d509615"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/document-parse.test.ts",
+      "sha256": "1f5840ba3ab4ac5ec513caf21e801f816b582a703eeb6fcb1a0b8a06330e5456"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/document-parse.ts",
+      "sha256": "0b3ee4a6725078232f13f1d3ef97a644fb123c88d608613237ebf6dbb8602a98"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/embedding-client.test.ts",
+      "sha256": "e7e95e72fc5e8050a7052100da1d682c7927bd16da7b1c295bd26cca0cc90ee4"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/embedding-client.ts",
+      "sha256": "57747db132f40a056f536c65ab1c2a35a7a05b275429d8a0478518bd4a6c7a80"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/evals.test.ts",
+      "sha256": "c83e74fa58a3cb0e3cbdabeb89a77587266e7d3409803c55513c1dadfc026c2e"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/headless.ts",
+      "sha256": "658dc75ef6b5d4c3a1cbf39cf44b7961b82da0c967928bc7a8d4a0e88898cb38"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/hooks.ts",
+      "sha256": "0e5fac5b135c3ed9cf3a82ca74fe94b5a1e6b6fc35e8fce9dcf49263e871c06e"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/mcp-auth.ts",
+      "sha256": "48248e7a6c7ada249beba3f62f25733cea0e9c248cb2da3941629b2fc180214c"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/mcp-client.ts",
+      "sha256": "9db94f818e3eed36a52bf718ef7870c9c274e92749536105b663da4e595310c8"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/mcp-oauth.ts",
+      "sha256": "ab6c89515de04749d3b019ef60c7dcde45a99b0ff97c32ab44e20d44f26140f2"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/memory.test.ts",
+      "sha256": "e1b0dfb4b50aea2ad3a503fcd0c92dd005ac9a501d00802ddd0c649260be0642"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/memory.ts",
+      "sha256": "0cb25c98186305153ca57da81c2d1aa082cd314f19b580adb9a13c97afbaa10a"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/analytics-tools.test.ts",
+      "sha256": "f3391eb2b7880f6bd1f1532b30c90f73f6be6f8ab2a5950934c4cc613d050f70"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/analytics-tools.ts",
+      "sha256": "9aa41153ee48754bc76bf3a6628e952a384a1b88175bb96dcc1deb6525d18176"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/artifact-tools.ts",
+      "sha256": "332d86a7d625c5d006f15edca18c52f4ca3974477f53797eec68f439f1a47cdd"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/blog-content-quality.test.ts",
+      "sha256": "1dbd846fa537cd4cb2aa9df0ba9603930ba9444add8fac559204c541630ff28b"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/blog-content-quality.ts",
+      "sha256": "687be3b8ae3fccf549c047cc9bd62d1494f5afe5f60112a2c5cc0ceac0e1bc60"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/index.ts",
+      "sha256": "736b684da00a45a9adb9b828d8bee620609ff1f09676125960e6bf33c6a02ce9"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/loyalty-tools.ts",
+      "sha256": "5d627239c7cacac227e2f90cdcae40837129a7f6e6a5fca8806343d533466959"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/names.ts",
+      "sha256": "3a12b86bfa08d0d91345a774e0a9fdc0d8a41e70473b8e87bdbee210c8fafb15"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/whatsapp-tools.ts",
+      "sha256": "228cbab28823f1b785b24b736e76efe1deb56cd79fea250c10c4d92b4e37127c"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/policy.test.ts",
+      "sha256": "9cb673d1c2781369e0bd82b3d9518b405e36d2a4b999cb672e71e4e05702102d"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/policy.ts",
+      "sha256": "b26077dfaf386afa23007ee233459eae66ebc915a7907bdbfc7e71fa8cb04119"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/presets.ts",
+      "sha256": "471e1a998afc49646d9b86e1f4977a01aed9de1b1249fd6078222c745e1186b4"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/prompt.test.ts",
+      "sha256": "12f2b0073064e711707af14ce10be4855eb52b881a66f2d048ca5da8585dea23"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/prompt.ts",
+      "sha256": "22b9fb686f35a8e7c85d47752bcb82fe8b38a94d2d59ac1e49d672de20d0522d"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/proposal-engine.test.ts",
+      "sha256": "9747b931cd1f5e498861d6d8744f2cf6a276f3a11f2c7cb2955792a062e00891"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/proposal-engine.ts",
+      "sha256": "92c89d113b7cc6fe734ea496049cb5ff0ab9ff160efa16eaa9050d4006c87c34"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/proposals.test.ts",
+      "sha256": "e41667f216a294c1e65d406d96e7d37b1ad74337edc84c61c30998e7b89c5186"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/proposals.ts",
+      "sha256": "e9238e3f4a15470eaeb6a96ecebe926506d91f711e1fad7a06e5683da03eddc5"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/run-events.test.ts",
+      "sha256": "efebc63f51099b3b92cdaf979a2b3cf7fc93ec2ac0c6ba4ceb5f91720600fd5a"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/run-events.ts",
+      "sha256": "48c5c472260b4abab1cdb512c6782f94c1e80a3257ec6186f4a82fefcfd3066c"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/runtime-contract.test.ts",
+      "sha256": "1695cb7a993da4dff7a9aeebea80e9f4ddc605a833a8f6b19fbc2af47cca5061"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/runtime.ts",
+      "sha256": "b165f5f44df55004515bcb7bdf3e4f7b6a1e484ca559d5312a7065b85fdb1ba3"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/self-correct.test.ts",
+      "sha256": "8e6dd6b1efdf1580711dfc01c9c123ac7a8d0ef6e988ba87a97816319e528835"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/tool-labels.ts",
+      "sha256": "28e89f937eeec7d07fd77caa581f238a035515f50b79673182065e0689c83d24"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/tool-registry.test.ts",
+      "sha256": "45fcee1ad60ee7ac336bcc4d49c2ee0f7b5cb33e5cceebcea3892ec50900e7d2"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/tool-registry.ts",
+      "sha256": "ac8c8ef54b388ac5e1a1668caee3b3aea3c45c29e7c34785f2850d01e32358ae"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/tool-result.ts",
+      "sha256": "e495e58bd920f0953f057a521a4b1a6d9a715c79d128521b1edac5c863c78f06"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/tracing.ts",
+      "sha256": "8ccd5baaa00dc1e8313c5c290679c76b944b2ca8a6c847621e5d17c44e1d5a51"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/types.ts",
+      "sha256": "4470e2b4c996f6b026c61249d82141d64e941317e14d77b347325b623b439b60"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/validation.test.ts",
+      "sha256": "9ee4ac19b561343c20b1844e9547391aee787e33926911b3ac239d060a8023f0"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/validation.ts",
+      "sha256": "6ea034d98f5b0f519bd638d8a68546df512b580acaeeea16b16a958bd1b81bdb"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/workflow-engine.ts",
+      "sha256": "aec36a1977c94b2e34d061d1c4b1292b782b8fcb35f6e9499587e38960aa41aa"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/workflows/campaign.ts",
+      "sha256": "c09c1f15e4c0a03ae1963ff457b75c880c475d8de27da76a15ad7c3196560279"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/workflows/recipe.ts",
+      "sha256": "8e27163a3850f5b7096fc1088d7c85b5084aa4f8296a3703714055e7270d775b"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/crypto.test.ts",
+      "sha256": "1df63195265377812e66e4cec6cea2eaf57c18161309bc0c4da1d26f8913455a"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/crypto.ts",
+      "sha256": "48bbbe3698e750a64c520b3fcbd20105722e81a317b24098c4025e7c93b477ae"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/index.ts",
+      "sha256": "07c61a4ad79fec8aa5faf28dc2d67a069db88d02247023c986e7fc3ca1956193"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/mcp-keys.ts",
+      "sha256": "41989e6074edd8695672e42dbbc4287fc4f60869a32ce42950d4d2eeafa118db"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260619120000.ts",
+      "sha256": "492826dea618b9f0df07892b624ae2c403bfd8e321d24aba9847b65b1deab152"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260619140000.ts",
+      "sha256": "006eeda12215be58e3f867ea0278a0722862b36e563cbd3d4b56a18ade43d7df"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260619160000.ts",
+      "sha256": "dd4d5e62ea06de0eba170c0f06e9640fb1c1d7f5d87a39b6552631c5b6b77150"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260622120000.ts",
+      "sha256": "cad3e62a889a809b6274bfc015a74d00d2049603cff418f0f1359678bf39b3ae"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260625000000AiAssistantReconcileChat.ts",
+      "sha256": "e4a8f371ce909fbe858ffc5e1f31719dec12244bfaf0e8fe23630affbedc27dd"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260626120000.ts",
+      "sha256": "bda3fe2e34bc9f79d577221c77e68fa6a97c025a0ee0374b6b17f9dc047d56e4"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260626140000.ts",
+      "sha256": "44fb210db3fd0aab355d41c185186f9cfebe9480576bea6cf11c7be0e59e80b2"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260626160000.ts",
+      "sha256": "7fd49968fb206a961cbb6c7e8ed82bba203d4bf4d68e4753e3c98bd3f63198cb"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260627120000.ts",
+      "sha256": "53a0d95a8ccd47fd6fead73499673cd28ba8c10b94e32d3e5eafa224bcc0c0c1"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260627130000.ts",
+      "sha256": "6c2ffc93b9a11c16d74e8c83050afe4535a50f6f8e485013868463f612cd2544"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260628120000.ts",
+      "sha256": "4dcb9ddf00ae3bf56c4dedb22543129d4dd98d8b55d9ebd44f42ea126d568f76"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260628140000.ts",
+      "sha256": "7ea77ed0fe45568794041da19071c5ead4073a4b85d349286a21f277d178f1fa"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260629120000.ts",
+      "sha256": "835f1de12662ac1814e00c79ac85494e639d6f07691eaa53248a66c6199bc436"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260630120000.ts",
+      "sha256": "790af9f50c38b05ea45510bae2ab85241f5e4369ae2c3ba7701585e49b5b9116"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260630160000.ts",
+      "sha256": "567d28365b9d33fd9e35284474e6b149e3c64cdd9421c5bb5937f4812be44667"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260630180000.ts",
+      "sha256": "0955cd36cc3fa2f9f405bac2585046505fba1e8636507525d6dd730e2fd28e2b"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260630200000.ts",
+      "sha256": "fa1ade927c99794657b11ae365b5618b63d9a2fe0f122705b8c412570939bcd4"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260702130000AiAssistantReconcileMemory.ts",
+      "sha256": "7ae3543fdfc01db78268c822ff2142bec53e8a286f3e7c33ee2d69b1712a1cb0"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/agent-memory.ts",
+      "sha256": "afd4d475c7568ed286acc3df0c3cc1f883ed57ff147f03121c4d35dfa0d03472"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/agent-run.ts",
+      "sha256": "32b229acb1a9aa52b895e70c3553dac275f27b6635a849a6e962a0e7bdc7ed47"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/agent-step.ts",
+      "sha256": "97ee4d3e69a8fb6e6686c31b86356d9ac4745f1c87c8edc20497e4f05c457b6d"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/agent.ts",
+      "sha256": "24edc6d29c490031369f8e8a0ca162e06d77564dd27b014cad2526160409e87a"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/campaign.ts",
+      "sha256": "cf4e1da22ebf36bf44b1800ff62305c8e75b26f6058037a456a4a643a5b7086c"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/chat-message.ts",
+      "sha256": "158f392d56d0c4ca4f8755e78be9958ac9989874fa69c51a1db621430f48d98d"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/chat-thread.ts",
+      "sha256": "392070249c9c89dee0ba1d5ee22ebc032b30501452fa2f2dc23c735fb045591c"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/index.ts",
+      "sha256": "9811fb95409861a5be883f13e4944585be0246fa14af0508f8e39ef8f550a05d"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/mcp-api-key.ts",
+      "sha256": "6c2efa77ec0d01a63ee0c26c2da7606ff7e8cd5a4460d69b2d887704855d3b9b"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/mcp-server.ts",
+      "sha256": "5056fc24ccce0a06b61447bae42eb357f3036ef7dd354332bdf36bb74aa5ee2b"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/memory-document.ts",
+      "sha256": "4463916ad9427530b584dd2e3c8867d47b027ebcc5e72e8ac67de60bed9d888a"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/oauth-client.ts",
+      "sha256": "5db9ea8a1dff7e81fc8ae701774fc0f5115e77ac5f1dd62fb7e18a86734d1930"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/oauth-code.ts",
+      "sha256": "f4171ae05a8c3de8a9b6fc97079543b4cc85b717a451e7f2f41b394e9e3de311"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/oauth-token.ts",
+      "sha256": "a30c899aad1e0dd37ad947159e3b3829b4ab0305ae167af456897270400a77d7"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/proposal.ts",
+      "sha256": "a1190c8150e7e4020ed2fe5174d2c7956b1142b856fb7f79791d0e5c9b189d3f"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/skill.ts",
+      "sha256": "060ff8ddf547d6faed9e8ef47bdada8339d0831243616b1e95730f76d8a488d0"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/tool-policy.ts",
+      "sha256": "6350fdc761207344443e6212d9e993b1fdf0d024a61f803c5dba7409ad6deaff"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/workflow-run.ts",
+      "sha256": "5a3796ff0649ae821adf4b786046aa377d183dce2c5e4b47ed0bf6a6532974c3"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/models/workflow.ts",
+      "sha256": "78c976bbbbec24cce79133b4b9b025317feae0fd078de5dcab6116a6c380513c"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/oauth.ts",
+      "sha256": "aa785686d2cfca0706bad13a48343f2c4e19f9986b86f0c96ef7eb9312511980"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/service.ts",
+      "sha256": "7a5769784e081a86d9bbea11fb6c48773bff310be2a5f5fbb3873b94d9becaeb"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/settings.test.ts",
+      "sha256": "77aef81cda06085cd50828f1ef18d1b84fe66c25ff5f4698836b36cf0c472d98"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/settings.ts",
+      "sha256": "226f81e73219142048640a74afd12f546a2ae526e4094ab0222221373023885d"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-ai-agents.ts",
+      "sha256": "066e3e366ebe995979e70dc107b3854637df8bd710dbaedc23469f2d248918ef"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-campaign-team.ts",
+      "sha256": "8d5bb3ceb064ac2dee3e4217adcd45775a019c5406d07e93c9fc5fb1e0c3a361"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-content-team.ts",
+      "sha256": "4872244cabd0a99150834cdd4b6c9d8f9b4f42adf02fc8280a00469cc475b5d3"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-redactor.ts",
+      "sha256": "f77b4a9af118087178c23ce84409a2559d609c1e7e722ece108341338001e33f"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./admin/ai-assistant/middlewares",
+        "adminAiAssistantMiddlewares"
+      ],
+      [
+        "./mcp/middlewares",
+        "mcpMiddlewares"
+      ],
+      [
+        "./mcp/oauth/middlewares",
+        "mcpOAuthMiddlewares"
+      ],
+      [
+        "./webhooks/kapso/middlewares",
+        "kapsoWebhookMiddlewares"
+      ]
+    ],
+    "admin_hooks": [],
+    "admin_translation": null
+  }
+}

@@ -1,0 +1,364 @@
+{
+  "schema_version": 1,
+  "id": "store-locations",
+  "name": "Sucursales",
+  "version": "1.11.1",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "store-config"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:store-locations",
+  "environment": [],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/store-location",
+      "target": "apps/backend/src/modules/store-location"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/store-locations",
+      "target": "apps/backend/src/api/admin/store-locations"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/sales-channels-b2c",
+      "target": "apps/backend/src/api/admin/sales-channels-b2c"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/store-locations",
+      "target": "apps/backend/src/api/store/store-locations"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/store-locations",
+      "target": "apps/backend/src/admin/routes/store-locations"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/store-locations.tsx",
+      "target": "apps/backend/src/admin/hooks/api/store-locations.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/translations/store-locations",
+      "target": "apps/backend/src/admin/translations/store-locations"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-store-locations.ts",
+      "target": "apps/backend/src/scripts/seed-store-locations.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/store-locations",
+      "target": "apps/storefront/src/modules/store-locations"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/store-locations.ts",
+      "target": "apps/storefront/src/lib/data/store-locations.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/branch.ts",
+      "target": "apps/storefront/src/lib/data/branch.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/branch-types.ts",
+      "target": "apps/storefront/src/lib/data/branch-types.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/api/store/addresses",
+      "target": "apps/storefront/src/app/api/store/addresses"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/components/delivery/store-location-filter.tsx",
+      "target": "apps/backend/src/admin/components/delivery/store-location-filter.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/links/store-location-sales-channel.ts",
+      "target": "apps/backend/src/links/store-location-sales-channel.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/test-polygon-engine.ts",
+      "target": "apps/backend/src/scripts/test-polygon-engine.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/provision-branch.ts",
+      "target": "apps/backend/src/workflows/provision-branch.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/store-location/migrations/Migration20260612000000.ts",
+    "apps/backend/src/modules/store-location/migrations/Migration20260617000000.ts",
+    "apps/backend/src/modules/store-location/migrations/Migration20260617000001.ts",
+    "apps/backend/src/modules/store-location/migrations/Migration20260617000002.ts",
+    "apps/backend/src/modules/store-location/migrations/Migration20260727120000StoreLocation.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/components/delivery/store-location-filter.tsx",
+      "sha256": "7401d2aa0baf9adc35c06f397e80b93fdd5420821038ab53886cfc8d9aeb9765"
+    },
+    {
+      "path": "apps/backend/src/admin/hooks/api/store-locations.tsx",
+      "sha256": "94f35352192955a010ab985990a73c1e4b9f02a89dc84edfa439498a6abffc79"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/branch-config-section.tsx",
+      "sha256": "17f3442805668ea1ebb548d60cca11207ec887ff5205488e21c434c7ca4ee824"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/business-hours-editor.tsx",
+      "sha256": "9e6fe7e766d14a95342a77eeaa797cb3cbd4e86d0f75c0f920e6543eff6e2143"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/coverage-section.tsx",
+      "sha256": "200e22f307307d61cdda28cd20ca3a95ee83c8a95fdbef2e01a0e9f98728f9d1"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/delivery-section.tsx",
+      "sha256": "c81ec280b45eacb7d73f415fdae9047336a17793be357f05743045ff64b66b9f"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/geojson-areas.test.ts",
+      "sha256": "c108755bea9e7828a11ddb52a0d541d863fa948f7f878f05d08a56b475290f8a"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/geojson-areas.ts",
+      "sha256": "5f1103db0aad90b9a20d36448afa3f1798d96834600e141f3a8dedcf5d9f1c7d"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/google-maps-loader.ts",
+      "sha256": "4152cc1d96022a4c5676c031e00eabaf6b9471425608da7296b507db92a641c0"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/image-uploader.tsx",
+      "sha256": "ba141d649a322fa50f206f1b4a0b9d850dcadacfd0583b0617eef1a775c284f5"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/index.ts",
+      "sha256": "76cbd52fdcedf58e711139a34e72da444285ce194a8d0cdb024c6d3e698323e4"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/location-picker.tsx",
+      "sha256": "4b29705e3d83eb3190d8cf7f6086da0c4a9d1dbb72e61f4340ee32bf272fd80b"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/polygon-picker.tsx",
+      "sha256": "27a2c7622c7338c94e5c792b0142b00c98dc93309702deb3eadd6dc800f9c9ac"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/simplify-ring.test.ts",
+      "sha256": "04bbc709de34e52d27f3303b7baddb7548704c4c800391c7cad2e2127edb3bf2"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/simplify-ring.ts",
+      "sha256": "bf45973ba37ac0d4fb66c1441cdd8c7ca7c0f8e4a2c68914b684a290c6bc86cf"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/store-location-actions-menu.tsx",
+      "sha256": "1698e47c16bb38ae5646019c23b8eed1cee41da488aaa5e2120bccb3d3ea18ec"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/components/store-location-form.tsx",
+      "sha256": "18e8db0dbe68b8163ebaa71832b04a8777c84ead46576b1c5e64638751fbfaf0"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/credenciales/page.tsx",
+      "sha256": "130b4cb2683d5afe7038ab90401a8ebf3de4f4a82b803d334cf1bb81ff04ea3c"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/store-locations/page.tsx",
+      "sha256": "6719ca4c6a019ef47523094cde783e2908a03ffeecc8847b5fdeaaf79851bc27"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/store-locations/index.ts",
+      "sha256": "ded5d5f404e0f01bcae7858b8e92f546779004a9ae6e4b9c94b5466decd8e317"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sales-channels-b2c/route.ts",
+      "sha256": "4950ba423d096979d10b231b6c0b3ef3a9cd2ceed47bdc603d383cea007f3a04"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-locations/[id]/branch-config/route.ts",
+      "sha256": "4987d0e5a3e380ee8603919a524381b12ec117471eea5b0177cb1510b37d3117"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-locations/[id]/coverage/[coverageId]/route.ts",
+      "sha256": "8f413a7987448f2d91ae01a1ac1c531c743180b603a8516f6a26bad2cff49ac9"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-locations/[id]/coverage/route.ts",
+      "sha256": "c4ee13f93ffbe6dfc5adba03b4155a0e29d2107624f95d18e2e9433f80a08db1"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-locations/[id]/delivery/route.ts",
+      "sha256": "b89934eb0607af8ef18ab982de7ab15eb0a536cf565aab131e777eaac2eb6d3a"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-locations/[id]/route.ts",
+      "sha256": "3f0cb61d625e50e4c2622ace40a789503d8f0bbaf110be5871bfd6da30caec84"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-locations/route.ts",
+      "sha256": "e5977214097bbb81d4e103814decb97c5c055a7777207addf4f768012f7ceca3"
+    },
+    {
+      "path": "apps/backend/src/api/admin/store-locations/validators.ts",
+      "sha256": "7030138168ea63f664cf273d08a4852b24aefed60277185fad5bd14b2cbe1c61"
+    },
+    {
+      "path": "apps/backend/src/api/store/store-locations/helpers.ts",
+      "sha256": "6548b53c79372293a40a9437c3e75d633b06065adc51ad6ca427975c4049161a"
+    },
+    {
+      "path": "apps/backend/src/api/store/store-locations/middlewares.ts",
+      "sha256": "133a62e4c9fabce64d81f8527d2d1de02cf6efec7022705d78552adfe4ccfefc"
+    },
+    {
+      "path": "apps/backend/src/api/store/store-locations/preferred/route.ts",
+      "sha256": "1488e2111b50c2be8938093dd5bd3a884d7da7056a4fb02de9ad8a1050b48202"
+    },
+    {
+      "path": "apps/backend/src/api/store/store-locations/resolve/route.ts",
+      "sha256": "4ec78c1cc91fbbe0df4976344cac1a34da70157e2ee743e4e141013b23189a3b"
+    },
+    {
+      "path": "apps/backend/src/api/store/store-locations/route.ts",
+      "sha256": "53f199c9836815e70ea97cd91f3c4163614dcdb6408d888bef7356eb56e27ff4"
+    },
+    {
+      "path": "apps/backend/src/api/store/store-locations/shipping-coverage-gate.ts",
+      "sha256": "51baf32627189cb66b17bc360e2104a82755bfc8062662e073e685fe89d7b777"
+    },
+    {
+      "path": "apps/backend/src/links/store-location-sales-channel.ts",
+      "sha256": "a66c19847890edab58a12cc67f39cc9776bbe8d6247d73be15a9ff74fb4e9ba4"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/coverage/polygon-engine.ts",
+      "sha256": "abbd483c0875ed112380ff13a34afb39920fe0198d25ece99126ac6b5f1c6012"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/coverage/shipping-gate.test.ts",
+      "sha256": "b2f9c6c8b0f5e36443e4711713b06da65acd1e2c052abe571fb9760891e9cf7c"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/coverage/shipping-gate.ts",
+      "sha256": "2a190214d4e46c733e1359f60947edcfa3b008127cdfe89e3b5e80268ad31668"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/coverage/types.ts",
+      "sha256": "122f0dc2ed804607823efca1ac8d69b650b1fe90620b79656d18984587ebcfac"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/index.ts",
+      "sha256": "720bb803d87ab05dbbb73b45ee5a2d0cfc499e20168d8805696d3dc8b501ed9d"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/migrations/Migration20260612000000.ts",
+      "sha256": "a6ab1b4c219a2e71cb00554d28f3512f177d0e6c09c695942c5163fc0ea94b70"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/migrations/Migration20260617000000.ts",
+      "sha256": "af5a7c940cd3861bcbfc538c055d57bbbaa3994821eed6115b00755527a77a4d"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/migrations/Migration20260617000001.ts",
+      "sha256": "0a726f11fbe6766afb98de6c9711616db6ce0d0ceed002d2c0da71f245cc752d"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/migrations/Migration20260617000002.ts",
+      "sha256": "f1fb2e6fb0bb4cefb8446c34b2bde2e2e89669e4125dac493e359ce274672142"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/migrations/Migration20260727120000StoreLocation.ts",
+      "sha256": "11a04d36c507068c3e171cd101b506e734912235ce6cbf516342b663c5190d9b"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/models/branch-coverage.ts",
+      "sha256": "1f0440c2ff5397f0a8cab0f7c27ed48ebf0037e4a0ab57241ac13e41ac91f3d3"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/models/branch-delivery.ts",
+      "sha256": "6b3c37ee6fb7c023c0f1b1bd5617b9a5b6b165e07f2734e78bb8b8e1517e1436"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/models/index.ts",
+      "sha256": "3ecd4bdc9b8224386f7411006bc8e58c6fcf90abb2c0891bb1c313adc0305579"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/models/store-location.ts",
+      "sha256": "ab2b5a814e8f84e39804dcfcd97d7c08692c0a5ac8a1d7d57e92c367d42fa353"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/service.ts",
+      "sha256": "0eabc7bc8ab6b5e586893bbd80368bbebd1d0bac9d0fdcb0b69b131cf7d0bb5c"
+    },
+    {
+      "path": "apps/backend/src/modules/store-location/site-scope.ts",
+      "sha256": "c81b67e69da535a6e4115ddda1172ff5b95416244e88dd8f8a927aed818f0ad9"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-store-locations.ts",
+      "sha256": "88783e77c79b0c5e45336b4a47d33179a5b4fb26be3d35c0f95b149e4e6bbabb"
+    },
+    {
+      "path": "apps/backend/src/scripts/test-polygon-engine.ts",
+      "sha256": "a0b93dfa3ce280725d58c747171a4a0f2c9e16d414c1c92711702dc3a25fa0cf"
+    },
+    {
+      "path": "apps/backend/src/workflows/provision-branch.ts",
+      "sha256": "6b67548cbed54c9628e832d51ed34cdb6b0d4ef8107882169f15120a88a1116c"
+    },
+    {
+      "path": "apps/storefront/src/app/api/store/addresses/route.ts",
+      "sha256": "2e7993bd3034280a1bd09f811eea62b6ee7647761975768e0eb9add93ee3d00b"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/branch-types.ts",
+      "sha256": "90549ddae1ce5608085de643f7900084a0a0c2a5071bf8be25b2c465479e801a"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/branch.ts",
+      "sha256": "82888b9d069194fec28696b80dac4ba99b922ca097dc05b07c593dbb2ff0e6fd"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/store-locations.ts",
+      "sha256": "f722e496c2064439f5ff2a626f0b18854342ee655f491c2f34d22c1639c3a434"
+    },
+    {
+      "path": "apps/storefront/src/modules/store-locations/components/store-card.tsx",
+      "sha256": "ef67e9ebe1ec3ccb66d32bdead8b906f5824d546da5ca86ea1f49d96a175b720"
+    },
+    {
+      "path": "apps/storefront/src/modules/store-locations/components/store-locator-client.tsx",
+      "sha256": "c482a8f0d8fc501bfaa0ed052d0ef2df1d16c597b207bb4577f25eb0a08b0e23"
+    },
+    {
+      "path": "apps/storefront/src/modules/store-locations/components/store-locator-filters.tsx",
+      "sha256": "a7f779570e07a9a67b78f46447c520856628847b7945c402a7b3b998faf962ec"
+    },
+    {
+      "path": "apps/storefront/src/modules/store-locations/components/store-map.tsx",
+      "sha256": "d3b4610f3f9428be96af57db30a2809c8646ca55942650a7ea7614ebcef10ff4"
+    },
+    {
+      "path": "apps/storefront/src/modules/store-locations/templates/index.tsx",
+      "sha256": "f381dd2ad782a8afd434d0fe5dda95b9d6811cd388336967049a3de4c30484e0"
+    },
+    {
+      "path": "apps/storefront/src/modules/store-locations/utils/business-hours.ts",
+      "sha256": "ff85d01bd8376c3077ec6eb34593dcd2a927b6bc4c9d3498003a6126cb2100de"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./store/store-locations/middlewares",
+        "storeStoreLocationsMiddlewares"
+      ]
+    ],
+    "admin_hooks": [
+      "store-locations"
+    ],
+    "admin_translation": [
+      "store-locations",
+      "storeLocations"
+    ]
+  }
+}

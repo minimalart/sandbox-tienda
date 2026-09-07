@@ -1,0 +1,824 @@
+{
+  "schema_version": 1,
+  "id": "delivery",
+  "name": "Delivery",
+  "version": "1.4.1",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "store-locations"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:delivery",
+  "environment": [
+    "GOOGLE_MAPS_API_KEY",
+    "OWN_FLEET_AUTO_FULFILL",
+    "VITE_GOOGLE_MAPS_API_KEY"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/delivery",
+      "target": "apps/backend/src/modules/delivery"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/delivery",
+      "target": "apps/backend/src/api/admin/delivery"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/delivery",
+      "target": "apps/backend/src/api/store/delivery"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/delivery",
+      "target": "apps/backend/src/admin/routes/delivery"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/delivery.tsx",
+      "target": "apps/backend/src/admin/hooks/api/delivery.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/delivery-analytics.tsx",
+      "target": "apps/backend/src/admin/hooks/api/delivery-analytics.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/delivery-routes.tsx",
+      "target": "apps/backend/src/admin/hooks/api/delivery-routes.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/optimize-route.ts",
+      "target": "apps/backend/src/workflows/optimize-route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/transition-delivery-execution.ts",
+      "target": "apps/backend/src/workflows/transition-delivery-execution.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/create-delivery-execution.ts",
+      "target": "apps/backend/src/workflows/create-delivery-execution.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-coverage.ts",
+      "target": "apps/backend/src/scripts/seed-coverage.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/driver",
+      "target": "apps/storefront/src/modules/driver"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/api/driver",
+      "target": "apps/storefront/src/app/api/driver"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/driver",
+      "target": "apps/storefront/src/app/driver"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/components/delivery/execution-detail-drawer.tsx",
+      "target": "apps/backend/src/admin/components/delivery/execution-detail-drawer.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/links/delivery-execution-fulfillment.ts",
+      "target": "apps/backend/src/links/delivery-execution-fulfillment.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/links/delivery-execution-order.ts",
+      "target": "apps/backend/src/links/delivery-execution-order.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/links/delivery-execution-shipping-option.ts",
+      "target": "apps/backend/src/links/delivery-execution-shipping-option.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/links/delivery-zone-store-location.ts",
+      "target": "apps/backend/src/links/delivery-zone-store-location.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/links/driver-user.ts",
+      "target": "apps/backend/src/links/driver-user.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-own-fleet.ts",
+      "target": "apps/backend/src/scripts/seed-own-fleet.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/smoke-test-delivery.ts",
+      "target": "apps/backend/src/scripts/smoke-test-delivery.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/delivery-execution-create.ts",
+      "target": "apps/backend/src/subscribers/delivery-execution-create.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/delivery-execution-reconcile.ts",
+      "target": "apps/backend/src/subscribers/delivery-execution-reconcile.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/own-fleet-delivery-whatsapp.ts",
+      "target": "apps/backend/src/subscribers/own-fleet-delivery-whatsapp.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/own-fleet-order.ts",
+      "target": "apps/backend/src/subscribers/own-fleet-order.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/assign-delivery.ts",
+      "target": "apps/backend/src/workflows/assign-delivery.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/attach-execution-to-route.ts",
+      "target": "apps/backend/src/workflows/attach-execution-to-route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/auto-assign-delivery.ts",
+      "target": "apps/backend/src/workflows/auto-assign-delivery.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/auto-build-routes.ts",
+      "target": "apps/backend/src/workflows/auto-build-routes.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/capture-proof-of-delivery.ts",
+      "target": "apps/backend/src/workflows/capture-proof-of-delivery.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/create-delivery-execution.test.ts",
+      "target": "apps/backend/src/workflows/create-delivery-execution.test.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/create-route.ts",
+      "target": "apps/backend/src/workflows/create-route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/dispatch-route.ts",
+      "target": "apps/backend/src/workflows/dispatch-route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/driver-delivery-action.ts",
+      "target": "apps/backend/src/workflows/driver-delivery-action.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/update-route-stops.ts",
+      "target": "apps/backend/src/workflows/update-route-stops.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/validate-delivery-pin.ts",
+      "target": "apps/backend/src/workflows/validate-delivery-pin.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/delivery/migrations/Migration20260622120000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260622121000DeliveryReconcile.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260622130000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260622140000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260622150000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260622160000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260622170000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260622180000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260622190000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260622200000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260622210000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260622220000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260626000000.ts",
+    "apps/backend/src/modules/delivery/migrations/Migration20260803120000DeliveryReconcileCartCollision.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/components/delivery/execution-detail-drawer.tsx",
+      "sha256": "193b1cdffe2b460f27d4172599685b794a2f5704429ac58357d2357b5c94af48"
+    },
+    {
+      "path": "apps/backend/src/admin/hooks/api/delivery-analytics.tsx",
+      "sha256": "2c8f8b8459586ab11a3f838c763fe1ca59e7fe8924118b50de4510db4a7e065e"
+    },
+    {
+      "path": "apps/backend/src/admin/hooks/api/delivery-routes.tsx",
+      "sha256": "69bf762263f7cfee5d473c0cbc54fae4e47ea2d6abb5733800db40ab0b23ae5a"
+    },
+    {
+      "path": "apps/backend/src/admin/hooks/api/delivery.tsx",
+      "sha256": "a30ad35d956b1d3f20c7e69506be884cd2d8a92f2058f7ecb0ac8a3a42e84bbe"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/analytics/page.tsx",
+      "sha256": "8cf195a5c91b349f77ee4d0cc002a9de48ec748b7af474ee9558f2248a095410"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/coverages/map/page.tsx",
+      "sha256": "317842c19d7963a57f2e1145bdaced2ec7ad9cb1be43b95f22ef865f16abae61"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/coverages/page.tsx",
+      "sha256": "215d2172cb1bdef19bfd572793e53d14698309f2fbf5ebd663d046b563f7f8ae"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/credenciales/page.tsx",
+      "sha256": "c4939c26a38ef4d37d207f7a1f9cf9c7643a19c10312df988b5506bbeafec088"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/drivers/page.tsx",
+      "sha256": "9adc492ef0fdee49cb32cb8b4c7a2d83fca5094ae6d55b746c3b3ac390b13ff6"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/page.tsx",
+      "sha256": "d0651a125ad8f133e6c2f478ce31812cd82d58852611b76e286a6d287c0b84a7"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/routes/page.tsx",
+      "sha256": "c9bdf6d6d09fabcd937dd6aef35407a8e5d94c8e131bcc5c85e73279f86b1ad7"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/rules/page.tsx",
+      "sha256": "dc8485d8bed4a9099cc14688f3c3c22481c637d33b9925b3ab90c5ab20b8a425"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/settings/page.tsx",
+      "sha256": "57c8d935c07848418f9f702df13ccba2c25098c8a0300dd75fd7be7513de80b7"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/vehicles/page.tsx",
+      "sha256": "8ca4a2afd9c8c0c38ac2616b2a412003b16215bb08a94bdc1045443ff1c37e1f"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/zones/conflicts/page.tsx",
+      "sha256": "3aad686a52176c39a67718a090dc6d0e831cfe153d4bcf0da2f9785a9ce98de6"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/zones/conflicts/zones-map.tsx",
+      "sha256": "bd13f90c0c1d2b62730e0185a9a9269d495b75894a0d378686421f8b76a5df7b"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/delivery/zones/page.tsx",
+      "sha256": "fd9ec0ad7091be52c80d629ac2f3691366d346e89fdae0758c456c7a3b4a728d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/analytics/route.ts",
+      "sha256": "ebce08a179a54cad0bc23a330bd44b1106b58545e092da0691bf1e3465bcec9c"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/coverages-overview/route.ts",
+      "sha256": "b9b612456cd4da67bc5ac13c0dfc5393f735a1c78c0430273fca74b9748c4deb"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/drivers/[id]/route.ts",
+      "sha256": "eda3f2e0486c76f48186e739aa96b6f82b54e2f905fab0e27a4feba708023ce2"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/drivers/[id]/shifts/[shiftId]/route.ts",
+      "sha256": "7e131d4553beaebe59341829f04142d410acfa5837f841314658b1e3f537cd62"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/drivers/[id]/shifts/route.ts",
+      "sha256": "e56698f403df0d82d46006c0a2b8bcec0bc331b7e1caeac2893b7cdb8a891084"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/drivers/route.ts",
+      "sha256": "cd001cd22daacc707bab20ecd8e35610981742ca31a3e46522da4d9f50d7142b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/executions/[id]/assign/route.ts",
+      "sha256": "b7deb02e62cd239a37c90af638f323bff37b0c00450c5e248a929006ecf9ec8d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/executions/[id]/auto-assign/route.ts",
+      "sha256": "62877594ac5fb09655aa245cd9564f6f1793980952fe5fda1af99968a80702c3"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/executions/[id]/eligible-resources/route.ts",
+      "sha256": "b136526d7b19d596547b50df7d244c24d66f873e50f4ac97d930fbc92144b535"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/executions/[id]/events/route.ts",
+      "sha256": "540c1e7a5a0f5546f3f210f8e35a2cda8696eec9fa115ddbf50109fecfd903ec"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/executions/[id]/proofs/route.ts",
+      "sha256": "0a98f7b8eb1bf7a0bbeb0be62e851d94644a472006894e4a80f56b0a0a6cfa1c"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/executions/[id]/route.ts",
+      "sha256": "625fedba0d96d5b85eb4982bfb2fdb2b754a5cc012eb87221db4aefe12bb1bca"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/executions/route.ts",
+      "sha256": "fe9f73c7d4efe2a889726233d7aecf8ca8240deb537b9c2ce0e461df3835fb7e"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/middlewares.ts",
+      "sha256": "3459552ac208acb87282de8b210d250821aedc066d46da4c035f4ed055ae8ba4"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/routes/[id]/dispatch/route.ts",
+      "sha256": "dc847cb8beb4c9c116939963ed5aba45d327a9b2dc94f00f83e77eac18dffbb0"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/routes/[id]/optimize/route.ts",
+      "sha256": "ffd608cf647ff8128d506748cb308deabc36c19cfa4e3eeb026477da9e4d4cd8"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/routes/[id]/route.ts",
+      "sha256": "d3f516bbf6e73ab074e26432469d1f12e94c53feefc705da2114bc4dc940b1ad"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/routes/[id]/stops/route.ts",
+      "sha256": "77374fd2e0e79a8a6ef3aa3283782d7d383e69568d8314e57ab5049abca20a90"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/routes/auto-build/route.ts",
+      "sha256": "2bcc223aebeb5bfe43b6332a63576e1a202dfaa77b4b7d0410b2b0d5e74c22b7"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/routes/route.ts",
+      "sha256": "dfa6d92b93a9a5df3aa117cb403742dca454979fdcd9bc6e469b28985ecc18fa"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/rules/[id]/route.ts",
+      "sha256": "3133aae5cecfc233dd3986d3aa52194cd97d6e7d3d94e7841b34549dbb4505ec"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/rules/route.ts",
+      "sha256": "9a05ef6a5cc610990d57153160b027cbe4680bf00ca6c59d3f8afada4214640b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/validators.ts",
+      "sha256": "c2a9ca62df37f4ad1870217379911de0f772599ab263345c9727238ee090a8bc"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/vehicles/[id]/route.ts",
+      "sha256": "78b1c43fb46922a2a8b6a0eacabc751acfc94dce25f09e0c26016f7ad4ca2d3a"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/vehicles/route.ts",
+      "sha256": "a4b460ad0c5c89a06e744c1faafe945d79c0d8d28898e95eda9756951c1383a3"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/zones/[id]/resources/[resourceId]/route.ts",
+      "sha256": "2e0318e37a51b7e4caa0eb045895603dcbcaff4149a592faee7e01cd8411485a"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/zones/[id]/resources/route.ts",
+      "sha256": "820cf0adde7bcb794500b96c2b1d376d3787e7f0c16d1821ab660e8c7b7ec903"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/zones/[id]/route.ts",
+      "sha256": "4a36f522a9862c5a20f7e52139e0b25bc7080e7e65e13f0e694406630352f3aa"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/zones/conflicts/route.ts",
+      "sha256": "823e8fb659799fb2703064c32c8e15b1eb8dd3b7496e9f1ea04607477663cf01"
+    },
+    {
+      "path": "apps/backend/src/api/admin/delivery/zones/route.ts",
+      "sha256": "29c325cf10fc349b3878f8d3d5ff49719122dc52482eda152c7ef7df3271a97c"
+    },
+    {
+      "path": "apps/backend/src/api/store/delivery/driver/executions/[id]/action/route.ts",
+      "sha256": "1636990cb4faf141a99e0e4f882939bf5aceef1001ca11cd81761a447747e240"
+    },
+    {
+      "path": "apps/backend/src/api/store/delivery/driver/me/stops/route.ts",
+      "sha256": "ee754ed8e9d72e4401d30c7410d3d5dc17742f3e1a7f93f6f1e1e7b919b9b48c"
+    },
+    {
+      "path": "apps/backend/src/api/store/delivery/driver/resolve-driver.ts",
+      "sha256": "c65e3f2d3774fa4edd709da80bbe40441268157a13ae340fa446855d72a3734d"
+    },
+    {
+      "path": "apps/backend/src/api/store/delivery/driver/uploads/route.ts",
+      "sha256": "39c8516ced0765632cae8812bd9eabfffaf7e2cb1e611a7ea869143acad33daf"
+    },
+    {
+      "path": "apps/backend/src/api/store/delivery/driver/validators.ts",
+      "sha256": "44d1194e671cd34633ecb09e87a90f1de14d68604967b07c8601add2437f7101"
+    },
+    {
+      "path": "apps/backend/src/api/store/delivery/middlewares.ts",
+      "sha256": "f5f682dfdbab2937fc3203b75934876be77f0c6df5b9b299f99146854ce45780"
+    },
+    {
+      "path": "apps/backend/src/api/store/delivery/tracking/[tracking_number]/route.ts",
+      "sha256": "7e16b0b92aab812e0628a237d38e14085d41ed12676a8c1230453ca5d042dcd5"
+    },
+    {
+      "path": "apps/backend/src/api/store/delivery/tracking/[tracking_number]/validators.ts",
+      "sha256": "914dce72be8e389e9928f966fb43e3a0e351a0ccbadd5ad5c6bfc5c49db5ed37"
+    },
+    {
+      "path": "apps/backend/src/links/delivery-execution-fulfillment.ts",
+      "sha256": "72185c3187651317668c23e9e3816538a3c462b14ed9bbfe2202898fbc694b13"
+    },
+    {
+      "path": "apps/backend/src/links/delivery-execution-order.ts",
+      "sha256": "8d2ff3eacaba337453f87c95fcbd485c9e8ab610f509acfa9dcb5e97415d26d5"
+    },
+    {
+      "path": "apps/backend/src/links/delivery-execution-shipping-option.ts",
+      "sha256": "20c13cca52e08c6ba616ce620a71b158c661675cd0b2108ccfda3d73be16f488"
+    },
+    {
+      "path": "apps/backend/src/links/delivery-zone-store-location.ts",
+      "sha256": "64bea175be3000cf70d79c4c37e38cfe472c82cc81a7daa265138ad5e7ff92c2"
+    },
+    {
+      "path": "apps/backend/src/links/driver-user.ts",
+      "sha256": "9beff1d90eaf1720485294703092bd491c5cb6bd2b950edc3f0a1bdf29c21c57"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/analytics-constants.ts",
+      "sha256": "06b2a540785e042ea30d0645ca01201acdfebe6cd75f1476a9ff0acfb9dd5248"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/analytics.ts",
+      "sha256": "b2d7f551c8bc986b42070f4670a9bb4e036103096dc2f298c18982bf4d3938c8"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/assignment-strategies.test.ts",
+      "sha256": "9548a5245db385e15d1061e6a7e0aefd9576ed2ea10270e94d90f4135e643a85"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/assignment-strategies.ts",
+      "sha256": "bf1f541052724e3be404eee565f5d9c8063e5ce1287d4ed2ee8d89f154a3cbf6"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/fleet-eligibility.test.ts",
+      "sha256": "9b5f2d659be49d28143a6d85d7a128ad04f0e3fca17ae2c4bf0a3730d28821d6"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/fleet-eligibility.ts",
+      "sha256": "6abee04e6b2c2a480fb0adbf5a3dfd34ee22f4776b7335f61682c29aa843bc1e"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/geo.ts",
+      "sha256": "51175ae49c7e859c0494ac89153c46b1938de0f4f659ac3bd810271fbee208cf"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/geocoding.ts",
+      "sha256": "46f595f482fb3e121c17ce30bb0f593e7637cca41ba5ffb84da9ea363ca1804d"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/index.ts",
+      "sha256": "bfaba6927cd92d2215744aa2a9905d264cfbf01eba6cec5088b9b8279344686d"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622120000.ts",
+      "sha256": "858289a5ecb8e72254976bbde3fc44d644f9e7f94c781edcf8b485734c2f93c8"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622121000DeliveryReconcile.ts",
+      "sha256": "b7baada27ccf340d16b73e15b7575cd2d038869dc30c55b67f1deb7b67d0a404"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622130000.ts",
+      "sha256": "da8442300cdd4e774b99bfb4e8aff96f65d9242d6ed1e82dd95fde006b7e55ed"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622140000.ts",
+      "sha256": "17f82ec1ba770f87064d15f2721fdebf73e5fe369b879eccefda71e751bc14f3"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622150000.ts",
+      "sha256": "f204888600339498aeb8a391a0bca774ff85858da9e1b52fcd0620464cdbbee1"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622160000.ts",
+      "sha256": "668fd876d06f56818e06604751da20457078e4481d4055123f2a7b1d8033c412"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622170000.ts",
+      "sha256": "9a879233a26e4daf8b97d74eb9b40bfcce930fa4b88bcb19e8840a3062cdeadf"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622180000.ts",
+      "sha256": "1768738d7ff4d6ce701e1cdda3cd2117f3c41673d6b903c09e61d3ef61b832d0"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622190000.ts",
+      "sha256": "8c092fc12bf9a757f305793b6331e3b479e1286f20b2c044347944b327ec9b83"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622200000.ts",
+      "sha256": "100e87354293b663fd7036095b4aac64933b01756baa1f9b495d7dd1e0bf0dfd"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622210000.ts",
+      "sha256": "d0fe59c1a7457925b8a3e3681db9822781141224fa75eddddcff8ca643a303cb"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260622220000.ts",
+      "sha256": "d18b4e852f42c1f5d37c53d54abaad02e2a5d43bd9cb90584fe32b01e17a346b"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260626000000.ts",
+      "sha256": "a26556cfab249319e7421244cc6b37534ed0a68d8ba48ca53eafa9818d586daa"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/migrations/Migration20260803120000DeliveryReconcileCartCollision.ts",
+      "sha256": "883e0f53684772f1d5604de80eebe366fab4bbac4c6403c46b91ab022cc8acc3"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/delivery-execution.ts",
+      "sha256": "04950888a9eea61ca753a5ddad58715b70f2148fda779de8e880b44787c079f0"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/delivery-rule.ts",
+      "sha256": "236014398cebbea1417096aed2d2141f41f23013579a3eaa6a5dd152dfd77580"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/delivery-zone.ts",
+      "sha256": "98cd25a962308889140362b508beff8ed414e56b30522cff014030288e547936"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/driver-shift.ts",
+      "sha256": "6682addcd3effb7f61d93aa2087bcd3db2ebb13b6970182774ab58283dc0c401"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/driver.ts",
+      "sha256": "006faacdc0e5c86d5d9f520bb1c83c7d7be3aac581b5764805beb3291fbbd0dd"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/index.ts",
+      "sha256": "b8ec2c3539233460a587a49832a424ab460ede49228ca89100579bf45430b107"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/proof-of-delivery.ts",
+      "sha256": "a5f3f5bb2349409e7c3afc4bb32be9963fe35c0d332f2739f96a5e2420c981f0"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/route-stop.ts",
+      "sha256": "7c5d10ed4f464b3eb1b2e36ced3d0d10c80f94e030798cdc0ae280d6b702bc93"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/route.ts",
+      "sha256": "b0fb6e777a585344963c6705556d62851f13674eb14cd8cc98b37c1efda39dd9"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/tracking-event.ts",
+      "sha256": "d619f5840aa1c3aef16c3504fc8d3736d1640bec7a48e3aa98c965f86a7028e4"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/vehicle.ts",
+      "sha256": "868cfe52774ddb2c04890f8d58b29e89c2a469f25588edd2afc21788f277d362"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/models/zone-resource.ts",
+      "sha256": "a1cd7e413c737d7e31ebc86603b99a9cfc5f475657b7361f42183f5220714481"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/normalizers/andreani.ts",
+      "sha256": "3e600e27f6b81d3ad439abbd32a855226dda62bd9796430406aaf50de8168c0f"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/normalizers/correo-argentino.test.ts",
+      "sha256": "06cefabef35750683c36eddfed67ed6d4c7fa04615842603b8821d0a3c06f61f"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/normalizers/correo-argentino.ts",
+      "sha256": "cd79c88ab5b0d1966fd941fa44726fd32f5be13aa4671ee772bbe170793ecc5e"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/order-context.test.ts",
+      "sha256": "1c8e9d477df0f134a3643c9c9fc44f4f1b82ca68829f1808866bcf38dddb6026"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/order-context.ts",
+      "sha256": "b9c0d1e7895628f968543c34f6b75921be969ffa40cc4a080ca97628be9ddfb8"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/order-query.ts",
+      "sha256": "0a40d2d229e0b3ed02f2e3ce0a99a61e66db10ebb1edd54b9c1e0784b0775f02"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/providers/abstract-delivery-provider.ts",
+      "sha256": "3588d44baeabb69a51cf2ca2dfa20a83689be8441ee3f1b85370b732d37e0a11"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/providers/andreani/index.ts",
+      "sha256": "a282079a8b25ff27df33be2a81f446780b52b70feb2d9c59d18a8c16b85e240c"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/providers/correo-argentino/index.ts",
+      "sha256": "5f053af91a0257e511342b32d4898a0bdeffe59b0c37879f3c9c43642b22e7dd"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/providers/own-fleet/index.ts",
+      "sha256": "c783ca008f0f9f2c1b85f0432792350e98acdaa7010bbc7385a499a7c645c8ba"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/providers/registry.ts",
+      "sha256": "5d898f709a65b184a7e3b27ebcdc64947b6bffa40b9fe3cc72af353cad2432a8"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/providers/types.ts",
+      "sha256": "b955e39f1a92917511fb607c128d577e494010b0b6bc657c01af4e37c721d468"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/route-builder.test.ts",
+      "sha256": "5b04718c096a8571ffd54c2107f383edead123097547ec5169ee4155112af949"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/route-builder.ts",
+      "sha256": "f719056b21ad013d8677c6c6a61d92090fbabefa4e16fcc71c404e294cfd7662"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/route-optimizer.test.ts",
+      "sha256": "0f1c4956bcedccfc383b92103f84d24122771af25c9094860d524ff82d3193ff"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/route-optimizer.ts",
+      "sha256": "67a6bff529c9b9b15e3f8aadad211cd99bb3fb9ae6c1305d8672ab3b676b943f"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/rules-engine.test.ts",
+      "sha256": "10154ab830244af6a61bf7b2c2d3f6eae5c287cb0350f60f97410afe885da590"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/rules-engine.ts",
+      "sha256": "a1285a8d39218736df64e2a0af6eba98602eab266525d435a949966251cfea6e"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/service.ts",
+      "sha256": "617b2888d810371f3f5f7be4f6b3a5cde94a4744e88f020d3c6f809eef0cfae0"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/settings.test.ts",
+      "sha256": "34a3eeec2f2885730ee275ee5074c7892cb3285df3cdbaf746f1c8218a9c9766"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/settings.ts",
+      "sha256": "d1275a2af33e0610e97038e5f76876a70180c257ce11fd3cbc23810edcf9dc03"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/site-scope.ts",
+      "sha256": "193b7d2a623c9b3c6674a0a11fa3a0cc41d6cbae7bcbe75a157196109916256a"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/tracking-types.ts",
+      "sha256": "8be071abb47c70cbe53eea642114bedf01d6fd90a08560b48b38c765706e210b"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/transitions.test.ts",
+      "sha256": "265749d23aa845ddd4de1bfdf3657c79e22287a2c60d9cd2542bf089adc9d10f"
+    },
+    {
+      "path": "apps/backend/src/modules/delivery/types.ts",
+      "sha256": "d02b4a3619f575fa2770818405334c5e8e019f1ed62dff8920050b535020bd6d"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-coverage.ts",
+      "sha256": "d1479dd8285eafecd4ab1b7df1c1ad0a9c2aa95b357d1690ce5d82f149a1f4fd"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-own-fleet.ts",
+      "sha256": "226781422021c8871bbc4c9eb7d556f55ecdab62dd0c7de20d782444dcdb28f4"
+    },
+    {
+      "path": "apps/backend/src/scripts/smoke-test-delivery.ts",
+      "sha256": "806a07ee5a2f861e5e8f9791b2224b88120742a7c37be3412436104b1e1ec1b6"
+    },
+    {
+      "path": "apps/backend/src/subscribers/delivery-execution-create.ts",
+      "sha256": "90c7bdf3519e8160f1f82cbe1200d3aeb93316b75a0e707dd8f6f634eb96bf87"
+    },
+    {
+      "path": "apps/backend/src/subscribers/delivery-execution-reconcile.ts",
+      "sha256": "ee0dd72fd4d1f3410a8f8eb9c40b362fa32ce71adefc8783e33d1cf39d168927"
+    },
+    {
+      "path": "apps/backend/src/subscribers/own-fleet-delivery-whatsapp.ts",
+      "sha256": "e0500b3862590e3f3ba77e3a2e14694454d4c6d05c03a78c050a6346854d9b92"
+    },
+    {
+      "path": "apps/backend/src/subscribers/own-fleet-order.ts",
+      "sha256": "5e455d6c1760159e6bcf7b1550f53498d7780a59c0e0c5a0277b2a3e92feae0d"
+    },
+    {
+      "path": "apps/backend/src/workflows/assign-delivery.ts",
+      "sha256": "881b0f5854f3642ff6a49ad934f3e3f297272d3737355af8600dfbc17da8fa39"
+    },
+    {
+      "path": "apps/backend/src/workflows/attach-execution-to-route.ts",
+      "sha256": "eb9de701d8abdb5c4176f5a18da32962ab6210bf7194b1f3d1164c5e5f27e9fe"
+    },
+    {
+      "path": "apps/backend/src/workflows/auto-assign-delivery.ts",
+      "sha256": "1b672d86f08ba5f1fa02a5cacce6f1018e1f3e401cf5e73adaffd9fbdeb6f1d5"
+    },
+    {
+      "path": "apps/backend/src/workflows/auto-build-routes.ts",
+      "sha256": "2944b866c51ec17a471d827672cbd1d831ff853c57cac1d384413bb8a59f5024"
+    },
+    {
+      "path": "apps/backend/src/workflows/capture-proof-of-delivery.ts",
+      "sha256": "e96b1ad2233e3eb9acdb121f925858a7d44b56292685e405a10100fde87062da"
+    },
+    {
+      "path": "apps/backend/src/workflows/create-delivery-execution.test.ts",
+      "sha256": "639ed3b84bc8a40a3ec2a5e7016421cded549571da796fe2aba18a53e253c4a4"
+    },
+    {
+      "path": "apps/backend/src/workflows/create-delivery-execution.ts",
+      "sha256": "a4c75e6f4c306e2977205e626f30da2e304dbfb6e45e0e86c82f97b07fe56bf7"
+    },
+    {
+      "path": "apps/backend/src/workflows/create-route.ts",
+      "sha256": "409e3f28028c2cb93ad898c56a70950b2f9531fc1d430b5513dcc4dd3af291fe"
+    },
+    {
+      "path": "apps/backend/src/workflows/dispatch-route.ts",
+      "sha256": "c423ceb01e336b04f690a094549424713261313d4db1d04a1e38c545d510e1b7"
+    },
+    {
+      "path": "apps/backend/src/workflows/driver-delivery-action.ts",
+      "sha256": "c3afd5d767e1d349672eaa0b963fd5487c31323ae57ef0527e9935ba6478d363"
+    },
+    {
+      "path": "apps/backend/src/workflows/optimize-route.ts",
+      "sha256": "055129bc85568a8a93e6dff65fb69c4415d632dbeabcddb05431b3371db26f9d"
+    },
+    {
+      "path": "apps/backend/src/workflows/transition-delivery-execution.ts",
+      "sha256": "4e6f9cebc1df93b502f4a0f1cca3911186aa60133ffa524ed80f0528bd94e653"
+    },
+    {
+      "path": "apps/backend/src/workflows/update-route-stops.ts",
+      "sha256": "86e8bc33171c668392fcf2934a42c80d7b761f7347fa234602ecbd8c5c8cab02"
+    },
+    {
+      "path": "apps/backend/src/workflows/validate-delivery-pin.ts",
+      "sha256": "515d605b27f6463a8973c8394a23a48e131574a0a1564edd36b0b5e7ea4d76c6"
+    },
+    {
+      "path": "apps/storefront/src/app/api/driver/auth/route.ts",
+      "sha256": "52f4593d9e8df2de41b327a20328a070fcef2f7274d329d270c5c4447813178d"
+    },
+    {
+      "path": "apps/storefront/src/app/driver/(authenticated)/layout.tsx",
+      "sha256": "952e7083af538a6de0bafe91dae64f77d101a4343c1bd19205f088b363905866"
+    },
+    {
+      "path": "apps/storefront/src/app/driver/(authenticated)/stops/[id]/page.tsx",
+      "sha256": "2028c773b93b68c93f3cc66a88820d5b25056b59ecaff50868e37ecfb9a6f482"
+    },
+    {
+      "path": "apps/storefront/src/app/driver/(authenticated)/stops/page.tsx",
+      "sha256": "c9e6ff96dd7ca011f82995601143a08dbd7ba2dca1722009c5714fa9e017fc84"
+    },
+    {
+      "path": "apps/storefront/src/app/driver/layout.tsx",
+      "sha256": "c871584454c9a64eb19b2a8cf9a8be0f23512f96cbff23ad410b99e3c8dab09f"
+    },
+    {
+      "path": "apps/storefront/src/app/driver/login/page.tsx",
+      "sha256": "00a18a77ff889bf14610ceb7032f140c4565864c71af5e83e8df9e39f8847f19"
+    },
+    {
+      "path": "apps/storefront/src/app/driver/page.tsx",
+      "sha256": "53169cba9060e4a80d6e6a214f982de773c592759e00a7cf443bd64aba7ae540"
+    },
+    {
+      "path": "apps/storefront/src/modules/driver/components/barcode-scanner.tsx",
+      "sha256": "7f0424bee71cdfa2520796ada250509e8354984d9686dbd1a9b9fa49cdd8b71e"
+    },
+    {
+      "path": "apps/storefront/src/modules/driver/components/photo-capture.tsx",
+      "sha256": "8a50e4ea10fe0f9984b33e1c64b0dec5249ad54cfa831f4718aefd68b7991ea5"
+    },
+    {
+      "path": "apps/storefront/src/modules/driver/components/proof-of-delivery.tsx",
+      "sha256": "4cbef3a369a65e596e3797aacd5a2041170ef514143ff773396ca2cedeebb790"
+    },
+    {
+      "path": "apps/storefront/src/modules/driver/components/signature-pad.tsx",
+      "sha256": "a2263c20540bfc3d8aa8217eab603959b178b8e06ec585d0520920327d902a7c"
+    },
+    {
+      "path": "apps/storefront/src/modules/driver/components/status-badge.tsx",
+      "sha256": "6951f81528060ef47ef23a8422f210a4a1410635e2ec8fd5722f5f7f0d6685b6"
+    },
+    {
+      "path": "apps/storefront/src/modules/driver/components/stop-detail.tsx",
+      "sha256": "581b13043d27b07fa0a04ef43f23375d568271e37e8b1188a2a946e7cc4803d3"
+    },
+    {
+      "path": "apps/storefront/src/modules/driver/components/stops-list.tsx",
+      "sha256": "3e37c74eba070d7f4c4338d0cd7bb04efbaa0e1397799a31426fbf141d72590b"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./admin/delivery/middlewares",
+        "adminDeliveryMiddlewares"
+      ],
+      [
+        "./store/delivery/middlewares",
+        "storeDeliveryMiddlewares"
+      ]
+    ],
+    "admin_hooks": [
+      "delivery",
+      "delivery-analytics",
+      "delivery-routes"
+    ],
+    "admin_translation": null
+  }
+}

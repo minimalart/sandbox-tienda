@@ -1,0 +1,6 @@
+{
+  "name": "@repo/project-creator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Admin manifest creator for independent Mercatto projects"
+}

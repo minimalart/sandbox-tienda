@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "storefront",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@repo/storefront", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@repo/backend", "dev"],
+      "port": 9000
+    },
+    {
+      "name": "storefront-preview",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@repo/storefront", "exec", "next", "dev"],
+      "autoPort": true
+    }
+  ]
+}

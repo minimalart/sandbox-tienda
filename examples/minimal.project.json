@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "project": { "name": "Minimal Store", "slug": "minimal-store" },
+  "commerce": { "country_code": "ar", "currency_code": "ars", "locale": "es-AR" },
+  "branding": {},
+  "content": {},
+  "template": "grocery",
+  "template_config": {},
+  "extensions": []
+}

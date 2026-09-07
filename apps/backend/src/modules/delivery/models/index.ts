@@ -1,0 +1,11 @@
+export { DeliveryExecution } from './delivery-execution';
+export { TrackingEvent } from './tracking-event';
+export { Driver } from './driver';
+export { Vehicle } from './vehicle';
+export { ProofOfDelivery } from './proof-of-delivery';
+export { DeliveryZone } from './delivery-zone';
+export { DeliveryRule } from './delivery-rule';
+export { Route } from './route';
+export { RouteStop } from './route-stop';
+export { DriverShift } from './driver-shift';
+export { ZoneResource } from './zone-resource';

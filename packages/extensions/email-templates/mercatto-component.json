@@ -1,0 +1,381 @@
+{
+  "schema_version": 1,
+  "id": "email-templates",
+  "name": "Plantillas de email",
+  "version": "1.5.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "store-config"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:email-templates",
+  "environment": [
+    "ADMIN_EMAIL",
+    "COMPANY_INVITE_SENDGRID_TEMPLATE_ID",
+    "CORPORATE_INVITE_SENDGRID_TEMPLATE_ID",
+    "EMAIL_FROM",
+    "EMAIL_ICONS_BASE_URL",
+    "SENDGRID_API_KEY"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/email",
+      "target": "apps/backend/src/modules/email"
+    },
+    {
+      "source": "payload/apps/backend/src/modules/email-template",
+      "target": "apps/backend/src/modules/email-template"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/email-templates",
+      "target": "apps/backend/src/api/admin/email-templates"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/email-templates",
+      "target": "apps/backend/src/admin/routes/email-templates"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/email-templates.tsx",
+      "target": "apps/backend/src/admin/hooks/api/email-templates.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/translations/email-templates",
+      "target": "apps/backend/src/admin/translations/email-templates"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-email-templates.ts",
+      "target": "apps/backend/src/scripts/seed-email-templates.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/order-cancelled-email.ts",
+      "target": "apps/backend/src/subscribers/order-cancelled-email.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/email-template-designs.test.ts",
+      "target": "apps/backend/src/scripts/email-template-designs.test.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/email-template-designs.ts",
+      "target": "apps/backend/src/scripts/email-template-designs.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/order-cancelled-email.test.ts",
+      "target": "apps/backend/src/subscribers/order-cancelled-email.test.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/order-placed-email.ts",
+      "target": "apps/backend/src/subscribers/order-placed-email.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/create-email-template.ts",
+      "target": "apps/backend/src/workflows/create-email-template.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/update-email-template.ts",
+      "target": "apps/backend/src/workflows/update-email-template.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/order-placed-email.test.ts",
+      "target": "apps/backend/src/subscribers/order-placed-email.test.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/email-template/migrations/Migration20260616120000.ts",
+    "apps/backend/src/modules/email-template/migrations/Migration20260618120000.ts",
+    "apps/backend/src/modules/email-template/migrations/Migration20260807220000EmailTemplate.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/email-templates.tsx",
+      "sha256": "ec4a001a21c5a86b421d34ff5f94f5372f9208b12b195b1ee00b4da67148ebe8"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/email-templates/[id]/components/real-sends-panel.tsx",
+      "sha256": "09ef60350a5189945eb1ac456b3dd4b333248c57d78d72bcd0749e0ba557e6af"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/email-templates/[id]/components/test-send-modal.tsx",
+      "sha256": "887e00bd320f34b474a0cb9073f34c915ff81b351b043af94081e4886fe208ea"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/email-templates/[id]/page.tsx",
+      "sha256": "29fffbd4126b12d2d795836ea72a9d6fa4308b0cddc796c99935c6e8b2b270d7"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/email-templates/credenciales/page.tsx",
+      "sha256": "ab5662d69f7ce785391a816b8c4bb886e0c0a3ce8b321c03619ff9bc68c7648d"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/email-templates/page.tsx",
+      "sha256": "8ce51bedf321997740ec43fa007457129f5ead9766362a25cb4d9d35ad861535"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/email-templates/settings/page.tsx",
+      "sha256": "c47737205d5ff58de2f0de70fa9eb0ef23bda60ad5fe38ba6709dfc6b46e9511"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/email-templates/index.ts",
+      "sha256": "4b3f1a7008e9360c9b798ef1bfaa6e2f09e528b21e95f9caf9fafb3e7a58303e"
+    },
+    {
+      "path": "apps/backend/src/api/admin/email-templates/[id]/preview/route.ts",
+      "sha256": "9ca4584a8179dfd3b4d0c4fa355f840a233220ee5d1e0c3f246ef539f75c1b89"
+    },
+    {
+      "path": "apps/backend/src/api/admin/email-templates/[id]/publish/route.ts",
+      "sha256": "7b4cb1ea40edf2d0e9e30df5c1a5cc8cebfda4faf32ce2812bc81b1aa5f352df"
+    },
+    {
+      "path": "apps/backend/src/api/admin/email-templates/[id]/route.ts",
+      "sha256": "9c46dc649d2b162a4319e3a58d01a0405a24322d1973e1c2c81fd6a705048aa3"
+    },
+    {
+      "path": "apps/backend/src/api/admin/email-templates/[id]/sends/route.ts",
+      "sha256": "1019e6a7ddd5078e3dab18966cf1ac6172e92b60615957b0937567acc94a6524"
+    },
+    {
+      "path": "apps/backend/src/api/admin/email-templates/[id]/test-send/route.ts",
+      "sha256": "95b58342da51e0f7a6adb50a4ef04b33c6aa31c957412e0b73a1daceaf1d1f88"
+    },
+    {
+      "path": "apps/backend/src/api/admin/email-templates/[id]/unpublish/route.ts",
+      "sha256": "77d7c8deb9453761222efd21cce7d13b62da3f4677ceff79a0448acee1df7f1d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/email-templates/route.ts",
+      "sha256": "e44c44849a06b1aaa2156ffa9cc79d792e2aaa4a1dd34f6a581aaaaeff27e17f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/email-templates/sends-analysis.test.ts",
+      "sha256": "aa898391ec73150ade6cd942cded2142fc9bdee2dfdda2a94623b858dffc6c11"
+    },
+    {
+      "path": "apps/backend/src/api/admin/email-templates/sends-analysis.ts",
+      "sha256": "e617406b70f06733029ac8116da92fb47790dcfd397158928d4811ea270e0741"
+    },
+    {
+      "path": "apps/backend/src/api/admin/email-templates/validators.test.ts",
+      "sha256": "4adb0f5a495d8dfb8c231dc5656e2cdea4e122576eccd6028569eadf9267b0d5"
+    },
+    {
+      "path": "apps/backend/src/api/admin/email-templates/validators.ts",
+      "sha256": "a5348e7dc4eb4a6a2425bb36c7e046329d69312b14b6fd5595afa0b1b1508a7f"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/branding-defaults.test.ts",
+      "sha256": "574e0df4e54e426585fcc82cc358a90253883c19ce77a214e2c7c6ff4144a323"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/branding-defaults.ts",
+      "sha256": "80b43fb4ca936869d5b12f49e8614402c5b24bdd8bba6da2722be4efe41fdf2a"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/index.ts",
+      "sha256": "c8d191aba4ea8c88708a1fbfcbb30a97e567ca79efd536ca26f23eeff170448e"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/migrations/Migration20260616120000.ts",
+      "sha256": "1e3107b44b985fb7afcd1c560cbaa66b5ca141d360b1ecc3f6432bf0a94cb580"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/migrations/Migration20260618120000.ts",
+      "sha256": "05e8316bc80cb7ee58be4cddc5745c2c1b66f71baf688188b51aad06aa7c516b"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/migrations/Migration20260807220000EmailTemplate.ts",
+      "sha256": "19c66cb4da9158995ccee438efea7a412792a317d0b7d226ad25679cf5ed1cbf"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/models/email-template.ts",
+      "sha256": "cca93e1d8723bbeae135cacc0e313eac04060bee50a53a69612e1769f82390d9"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/models/index.ts",
+      "sha256": "ba4e7b6ea4232e414c2d499d472ede47b762e38c4e4da183b71506a280178a20"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/render-email.ts",
+      "sha256": "51dd61c6fcf48d63334672f7d3bfee24035a4b1ce55750db38a37470b63c7d06"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/render.ts",
+      "sha256": "41681efb3e0e6780983faacb2d044c4f364c315e0cd3c3b9e36f71eb8b9d7f8c"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/service.ts",
+      "sha256": "0221ecff7f56fbb1c0b47178c57fe25d8fd500425c51c3814ebd4cd3e97f9993"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/site-scope.ts",
+      "sha256": "2609deddaf9e60939a2fa8496d42d1c81b3368c8ee6769712008c81a50b1b751"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/types.ts",
+      "sha256": "12b776a987d298ffc3658b3d762f180ff53c44c7fa3edd7ec429c3fed96aa510"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/unique-key-scope.test.ts",
+      "sha256": "5417e9b244bfa53c0ca58a40a1f97644119daecc97aa65167905793d8ddcdb7c"
+    },
+    {
+      "path": "apps/backend/src/modules/email/admin-recipient.ts",
+      "sha256": "e2e4506d2cd8453030b07a3c474f004025d0728aad7228fc21fb33529ae5eada"
+    },
+    {
+      "path": "apps/backend/src/modules/email/db-template-pick.test.ts",
+      "sha256": "0ea7a4c270106f64ca465b4b5cf9930aa0662444f32f70ee8364780daaa34b59"
+    },
+    {
+      "path": "apps/backend/src/modules/email/db-template-pick.ts",
+      "sha256": "9026c4fa88193430e1615fd8fa254fc218b189fda754fffe6cbf1aecf2aa5012"
+    },
+    {
+      "path": "apps/backend/src/modules/email/index.ts",
+      "sha256": "2d1ce681855a0ee42046e7b01bc7f6d5e8fb6880b850da5735c34288ccce65af"
+    },
+    {
+      "path": "apps/backend/src/modules/email/service.ts",
+      "sha256": "81a6198475a82a8afa9549c0057479ecca95dcb90fdf636c5fe6778eac115396"
+    },
+    {
+      "path": "apps/backend/src/modules/email/settings.ts",
+      "sha256": "7dc703cad6ac4579e1a80eea1419d3c660db9b5b2b2cde501bc6d924548d417e"
+    },
+    {
+      "path": "apps/backend/src/modules/email/site-branding.test.ts",
+      "sha256": "9e8a1075b8aff87255f999ecde2b2b6f2abbe0d85900068dfea9ad6a0d9111f9"
+    },
+    {
+      "path": "apps/backend/src/modules/email/template-variables.test.ts",
+      "sha256": "51997eee5be6cb9fbd7b199c6982944e8293c2c16c44c7463ade6a805a8f018c"
+    },
+    {
+      "path": "apps/backend/src/modules/email/template-variables.ts",
+      "sha256": "24ae0800083575503c25acaf24ddfdaf2a3eac485e701de281721ca0d5276ed2"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/b2b-client-approved.ts",
+      "sha256": "d19520c68bb8083a6ba5dc432b93d3454c75d62d6df8dfd758f918628735c72a"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/cart-abandoned.ts",
+      "sha256": "45ff7b6ee27b672a91489f92f596fb23d4a23506cb4f44a4a5cdb5cd342fb577"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/company-register.ts",
+      "sha256": "d01b15f6f9d83af47eaa3051f6398df57aefff5386b899ceb3cdfb356aa50417"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/customer-register.ts",
+      "sha256": "9bde2fcefba6fbb459e4a388bf96d371803a11df952fcb5c3b967d4f461a5525"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/email-helpers.ts",
+      "sha256": "3489d723e1aa7e92ab0c3623915ebd65e54c14ddcde7d0835629ac3e1e8558b0"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/index.ts",
+      "sha256": "06eebf209891a2e0de50b397f94bb6c4580dbbc142542595d1f2e55aa064626f"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/invite.ts",
+      "sha256": "ddcdab50774ac912963fd90994a6f12558e2467d829787173eb872bf0a679aad"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/kit-cde-notification.ts",
+      "sha256": "0433f0e6685cbf75eaaa742cb8c125877f633e56f01629001ca3a5a4ef99b208"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/order-cancelled.ts",
+      "sha256": "4873750720476a685d391cbaa4396d9869c980375c9015b595e7c9b4c0c0ffc4"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/order-confirmation.ts",
+      "sha256": "55f0def214ceaf1acec47dcbd2aad08b2ccf8906c690913048ed522d632b2c13"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/order-invoice.ts",
+      "sha256": "3c33550d39c0cc1fd3339db81b92b83c89f232fa97e2180d275e917d04049549"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/order-notification-admin.ts",
+      "sha256": "6c4ec6fbf48f7e7130b82fafc11dfa7111ae534a22ed38fc183d387061c60256"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/order-tracking.ts",
+      "sha256": "b24b7350033680ddad770d0f2fa641278a932a908ea9229217438045414996ae"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/password-reset.ts",
+      "sha256": "6b317a480ec00668801465046b5f7198c7c606aadaed63de039682439203f853"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/quotation-notification-admin.ts",
+      "sha256": "c35d49b2abe609fe60783b82deaf205ec636be7300d162dcc85d7dca6cad1a12"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/quotation-rejected-admin.ts",
+      "sha256": "66b48d72f8a31d6cfc7b9daee78d857f0c9126c33ba5482e2511c8f7a6b71edb"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/return-requested.ts",
+      "sha256": "81eac3945a977fcd3bb6ee3015d4a53721ccb03d39930c6473e444cf0ddcc387"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/stock-sync-report.ts",
+      "sha256": "296aa489547577d05ed8e7385cb561bfd6251c5f4620fcd1133728745bd1cdb5"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/types.ts",
+      "sha256": "82f024740b86d1dd0ce2bd613f895e0266efd105793e44fc01cc6a2dc163893d"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/whatsapp-handoff-admin.ts",
+      "sha256": "4e06aa90ab06de10c7a9538b0db5b61eafb0b40d6adf8cea223bbac3b8faa60c"
+    },
+    {
+      "path": "apps/backend/src/scripts/email-template-designs.test.ts",
+      "sha256": "9b40a74611ba7f8d43071a29a0af270904236e436817d3e295aadbcaa402e3ea"
+    },
+    {
+      "path": "apps/backend/src/scripts/email-template-designs.ts",
+      "sha256": "59d65af7f2c4ba29c0b99c11235a1c2cc658fff100f5b348c83457815a3113dd"
+    },
+    {
+      "path": "apps/backend/src/scripts/seed-email-templates.ts",
+      "sha256": "36331ce512bff83912145973fd1f688a06ceca86c4f527285959fd495006dc9d"
+    },
+    {
+      "path": "apps/backend/src/subscribers/order-cancelled-email.test.ts",
+      "sha256": "65b1a644a45be267c65811dbfd3cb12075f9624239a875bd7d5d74393dfeedb3"
+    },
+    {
+      "path": "apps/backend/src/subscribers/order-cancelled-email.ts",
+      "sha256": "af42af50514ccfcf976c2bc26547636e3fdff72eb6fd16dd1a5825836e15bd21"
+    },
+    {
+      "path": "apps/backend/src/subscribers/order-placed-email.test.ts",
+      "sha256": "88b44473d423bccc0651f2a4bdf5a06ee60776c4c92fbc2bcc26276245b17816"
+    },
+    {
+      "path": "apps/backend/src/subscribers/order-placed-email.ts",
+      "sha256": "f9996525b1d6b7bfb203cbfee47303510ef972476283a7bf81b100fa3ba6946a"
+    },
+    {
+      "path": "apps/backend/src/workflows/create-email-template.ts",
+      "sha256": "f6d36be773e43ae8f913fbcdd39a5afc4fd7e894cf2cbb48c69afdf84c1355bb"
+    },
+    {
+      "path": "apps/backend/src/workflows/update-email-template.ts",
+      "sha256": "c07f9256b4a41e17765643de1cf9834befbfa3d94efc57c77f5b57b0a4681c9f"
+    }
+  ],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": [
+      "email-templates"
+    ],
+    "admin_translation": null
+  }
+}

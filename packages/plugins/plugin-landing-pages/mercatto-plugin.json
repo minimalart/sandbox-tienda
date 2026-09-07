@@ -1,0 +1,25 @@
+{
+  "$schema": "https://mercatto.minimalart.co/schemas/plugin.v1.json",
+  "schema_version": 1,
+  "id": "landing-pages",
+  "name": "Landing Pages",
+  "version": "1.0.1",
+  "kind": "plugin",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:landing-pages",
+  "environment": [
+    "LANDING_AI_MAX_RETRIES",
+    "OPENROUTER_API_KEY",
+    "OPENROUTER_MODEL",
+    "OPENROUTER_SITE_URL"
+  ],
+  "medusaModuleKey": "landing_page",
+  "ownedTables": ["landing_page"],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": ["landing-pages"],
+    "admin_translation": null
+  }
+}

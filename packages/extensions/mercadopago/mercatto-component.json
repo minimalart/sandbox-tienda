@@ -1,0 +1,232 @@
+{
+  "schema_version": 1,
+  "id": "mercadopago",
+  "name": "Mercado Pago",
+  "version": "1.2.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "payment-benefits"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:mercadopago",
+  "environment": [
+    "MERCADOPAGO_ACCESS_TOKEN",
+    "MERCADOPAGO_ACCOUNTS",
+    "MERCADOPAGO_API_ENABLED",
+    "MERCADOPAGO_ENABLED",
+    "MERCADOPAGO_PUBLIC_KEY",
+    "MERCADOPAGO_WEBHOOK_SECRET"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/admin/routes/mercadopago",
+      "target": "apps/backend/src/admin/routes/mercadopago"
+    },
+    {
+      "source": "payload/apps/backend/src/modules/mercado-pago",
+      "target": "apps/backend/src/modules/mercado-pago"
+    },
+    {
+      "source": "payload/apps/backend/src/modules/mercado-pago-api",
+      "target": "apps/backend/src/modules/mercado-pago-api"
+    },
+    {
+      "source": "payload/apps/backend/src/api/mercado-pago",
+      "target": "apps/backend/src/api/mercado-pago"
+    },
+    {
+      "source": "payload/apps/backend/src/api/mercado-pago-api",
+      "target": "apps/backend/src/api/mercado-pago-api"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/mercadopago",
+      "target": "apps/backend/src/api/store/mercadopago"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/setup-mercadopago.ts",
+      "target": "apps/backend/src/scripts/setup-mercadopago.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/probe-mercadopago-benefits.ts",
+      "target": "apps/backend/src/scripts/probe-mercadopago-benefits.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/api/store/mercadopago",
+      "target": "apps/storefront/src/app/api/store/mercadopago"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/mercadopago.ts",
+      "target": "apps/storefront/src/lib/data/mercadopago.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/checkout/components/payment-mercadopago-brick",
+      "target": "apps/storefront/src/modules/checkout/components/payment-mercadopago-brick"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/common/icons/mercadopago.tsx",
+      "target": "apps/storefront/src/modules/common/icons/mercadopago.tsx"
+    }
+  ],
+  "migrations": [],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/routes/mercadopago/credenciales/page.tsx",
+      "sha256": "c1fdcfd9f7c198e2057af89572075dd3ee8a415602bfbe471b71de1e4658c75f"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/mercadopago/page.tsx",
+      "sha256": "14a87e90fa612a85250d13e70ab562798fe0f84b63d2928dac765d0ff0929c1a"
+    },
+    {
+      "path": "apps/backend/src/api/mercado-pago-api/route.ts",
+      "sha256": "403e72f66b11de5d4b40c355b8cd1300e5bae586f40772adcf187ea85d9195c5"
+    },
+    {
+      "path": "apps/backend/src/api/mercado-pago/route.ts",
+      "sha256": "e61ea77c6875723c7646ecc62459b731e75584f0bd726e4bdff1bcc0fb047ed5"
+    },
+    {
+      "path": "apps/backend/src/api/store/mercadopago/installments/route.ts",
+      "sha256": "6539c1dca0db441811449d4a5718b8f9a4f9cb45c6105813c153ab2745009a72"
+    },
+    {
+      "path": "apps/backend/src/api/store/mercadopago/installments/validators.ts",
+      "sha256": "d6abb7bf10c74d86e4d9a3d908d3a2f8356bc87d915c208916d8fb547b1e737c"
+    },
+    {
+      "path": "apps/backend/src/api/store/mercadopago/middlewares.ts",
+      "sha256": "e1840b1c9f02125a4ac3a8688874c6cf1e8680bb336c1f6483552165b34f2bd6"
+    },
+    {
+      "path": "apps/backend/src/api/store/mercadopago/payment-methods/query-config.ts",
+      "sha256": "98e69985d6eb78081149123731499d7f6ca12b1af07d28381083768fb04d8393"
+    },
+    {
+      "path": "apps/backend/src/api/store/mercadopago/payment-methods/route.ts",
+      "sha256": "6e42c23fc1e2b96f446bddfa20a7c3d381fe21d496b282304b63092a900d9951"
+    },
+    {
+      "path": "apps/backend/src/api/store/mercadopago/payment-methods/validators.ts",
+      "sha256": "99254618e70b50f34ea64631313f4624db3118f4ee67f536fd9275c5261bce5c"
+    },
+    {
+      "path": "apps/backend/src/api/store/mercadopago/payment/route.ts",
+      "sha256": "91c82c6b40b4e6768fe2b880af8c92ebdfa5ba96b8c4fec062e4f62d5bb2fd33"
+    },
+    {
+      "path": "apps/backend/src/api/store/mercadopago/payment/validators.ts",
+      "sha256": "7fa4c6493a3c758a0a2f41078a0cca10dc685505d623fa17fd4441a1ab47dea6"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago-api/constants.ts",
+      "sha256": "71a995a8db3bdb3a34dcc8a994dbfc27a1cdb4a44eb26e0da4bc92c88c94a3bf"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago-api/index.ts",
+      "sha256": "5985e7c4dbd128575d894190b9554d3d95065754ea1f2edeff3db2001dfcc95b"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago-api/lib/sync-region-providers.ts",
+      "sha256": "71fd02418d74e65dafaf79310020258e24b5c18c54fd5177b753b8b5772f9e93"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago-api/loaders/sync-regions.ts",
+      "sha256": "5b5c90006a837a25f4c6211ffbc466b6895fece33221c19d1eec590f76461e8a"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago-api/service.ts",
+      "sha256": "5b1dc2c80639c1af5fb4f89ead0f6ebe4a856115335c56ef4df5d378ac3c5091"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago-api/workflows/create-payment.ts",
+      "sha256": "90a6ce0831be3ac54475be31b26f9bcae38cba574d82526a57de101a7549d876"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago-api/workflows/steps/create-payment-method.ts",
+      "sha256": "da09951402df5a2f18f654f396d63a68fd0dd6c90271d1345a5b5fa8e2091cd1"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago-api/workflows/steps/create-payment.ts",
+      "sha256": "5b1fa8736b62649d7e9001aa0ce611218f7c3d3d0af75a176519fb7a6f9aea25"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago-api/workflows/steps/validate-transaction-amount.ts",
+      "sha256": "d9fb6eee8656f5a5500b51cd2e32055546f1aee74fa29db93e91ebca384d3e4c"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago/constants.ts",
+      "sha256": "b88ab17fb7ee1a38714010057d29dc6f472c8bcbd131c2e40d5ce8c2826335f5"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago/index.ts",
+      "sha256": "55c317319ced07451da90d564453426fe7d8ac463ab5eb7ba1bbef278a6b3357"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago/lib/sync-region-providers.ts",
+      "sha256": "d609f6231e6e8c6a036dae4349cd3093e5ff084d0feb8c5f5e51ab995fd9de9f"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago/loaders/sync-regions.ts",
+      "sha256": "c6400969a211976fd0e36aaafda39d25f0b6e41f4190d86146acd4540ee2d00d"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago/service.ts",
+      "sha256": "4a6dadb1d9efeabb77fcbea93bef5ca8363a86d35f75998cd814beb94ff2d1f5"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago/utils/accounts.test.ts",
+      "sha256": "19ec957e65d929c9fc696983b979e416125c36fdc48e198061e2dc9990e020eb"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago/utils/accounts.ts",
+      "sha256": "fd05f364b68f0c6e5490a584b5b523bdec630a04ab20d5ed4f385a1c86d9ea1e"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago/utils/status-mapper.ts",
+      "sha256": "c253a69399fc4bbcb893030e8f34be17687372cc38c47c7cdb74ee2c2a0bb628"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago/utils/webhook-verifier.ts",
+      "sha256": "eeb0e69e7bcd8ff4ca6af8c2e9b2afe6d1a18c3252108c5829964d9fdde4dea0"
+    },
+    {
+      "path": "apps/backend/src/scripts/probe-mercadopago-benefits.ts",
+      "sha256": "e73fcc66ae818f985f1a3fdd7d52e5f295c4ab5f472981a1cfa8fe024ee50794"
+    },
+    {
+      "path": "apps/backend/src/scripts/setup-mercadopago.ts",
+      "sha256": "38836404f47ecbb5173a6a02a90722e50a16a5288581519b4ae6933e5aad4e27"
+    },
+    {
+      "path": "apps/storefront/src/app/api/store/mercadopago/payment/route.ts",
+      "sha256": "bdb4fb870754b25fe69686ca992e2a7eb97e99b6469237493f6e7453dddd5289"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/mercadopago.ts",
+      "sha256": "f709a001d7670b4125c26214118775f8d1d0e4f27ad338d5bf97df2434d2b9ac"
+    },
+    {
+      "path": "apps/storefront/src/modules/checkout/components/payment-mercadopago-brick/bridge.ts",
+      "sha256": "ab3225a5383ede44bdd38d729a8499b52676a6434f1915128a3219ba51b410f5"
+    },
+    {
+      "path": "apps/storefront/src/modules/checkout/components/payment-mercadopago-brick/index.tsx",
+      "sha256": "6ae1c196793fdc3c90b1597544e633fd6a8a742431d6babf6ee6c0a96a3acc45"
+    },
+    {
+      "path": "apps/storefront/src/modules/common/icons/mercadopago.tsx",
+      "sha256": "f98506b817fe72e98f6acd26a0b90762b98442af341ecd83897e977c99d4ab93"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./store/mercadopago/middlewares",
+        "storeMercadopagoMiddlewares"
+      ]
+    ],
+    "admin_hooks": [],
+    "admin_translation": null
+  }
+}

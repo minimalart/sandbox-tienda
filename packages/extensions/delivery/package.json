@@ -1,0 +1,9 @@
+{
+  "name": "@repo/extension-delivery",
+  "version": "1.4.1",
+  "private": true,
+  "description": "Delivery component source package",
+  "dependencies": {
+    "@repo/extension-store-locations": "workspace:*"
+  }
+}

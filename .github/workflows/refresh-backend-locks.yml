@@ -1,0 +1,38 @@
+name: Refresh backend locks
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - apps/backend/package.json
+      - .github/workflows/refresh-backend-locks.yml
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  locks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable
+      - name: Resolve published backend dependencies
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm install --prefix apps/backend --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Resolve workspace lock
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm install --lockfile-only --ignore-scripts
+      - run: node scripts/verify-backend-lock.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-locks
+          path: |
+            apps/backend/package-lock.json
+            pnpm-lock.yaml
+          retention-days: 3

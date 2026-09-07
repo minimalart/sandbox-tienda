@@ -1,0 +1,11 @@
+import { setDefaultBillingProfile } from "@lib/data/billing-profile";
+import { NextResponse } from "next/server";
+
+export async function POST(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const result = await setDefaultBillingProfile(id);
+  return NextResponse.json(result);
+}

@@ -1,0 +1,41 @@
+import { acceptTransferRequest } from "@lib/data/orders";
+import { Heading, Text } from "@medusajs/ui";
+import TransferImage from "@modules/order/components/transfer-image";
+
+export default async function TransferPage({
+  params,
+}: {
+  params: { id: string; token: string };
+}) {
+  const { id, token } = params;
+
+  const { success, error } = await acceptTransferRequest(id, token);
+
+  return (
+    <div className="mx-auto mt-10 mb-20 flex w-2/5 flex-col items-start gap-y-4">
+      <TransferImage />
+      <div className="flex flex-col gap-y-6">
+        {success && (
+          <>
+            <Heading className="text-xl text-zinc-900" level="h1">
+              ¡Pedido transferido!
+            </Heading>
+            <Text className="text-zinc-600">
+              El pedido {id} se transfirió correctamente al nuevo propietario.
+            </Text>
+          </>
+        )}
+        {!success && (
+          <>
+            <Text className="text-zinc-600">
+              Hubo un error al aceptar la transferencia. Probá de nuevo.
+            </Text>
+            {error && (
+              <Text className="text-red-500">Mensaje de error: {error}</Text>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

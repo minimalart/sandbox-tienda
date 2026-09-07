@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "id": "andreani",
+  "name": "Andreani",
+  "version": "1.4.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "delivery"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:andreani",
+  "environment": [
+    "ANDREANI_AUTO_FULFILL",
+    "ANDREANI_CLIENT_CODE",
+    "ANDREANI_CONTRACT",
+    "ANDREANI_DIMENSION_FALLBACK_ENABLED",
+    "ANDREANI_DIMENSION_FALLBACK_HEIGHT",
+    "ANDREANI_DIMENSION_FALLBACK_LENGTH",
+    "ANDREANI_DIMENSION_FALLBACK_WEIGHT",
+    "ANDREANI_DIMENSION_FALLBACK_WIDTH",
+    "ANDREANI_DOMICILIO_CONTRACT_OVERRIDE",
+    "ANDREANI_HOSTNAME",
+    "ANDREANI_ORIGIN_CITY",
+    "ANDREANI_ORIGIN_NUMBER",
+    "ANDREANI_ORIGIN_POSTAL_CODE",
+    "ANDREANI_ORIGIN_PROVINCE",
+    "ANDREANI_ORIGIN_STREET",
+    "ANDREANI_PASSWORD",
+    "ANDREANI_PUNTO_DE_TERCERO_CONTRACT_OVERRIDE",
+    "ANDREANI_SENDER_DOC_NUMBER",
+    "ANDREANI_SENDER_DOC_TYPE",
+    "ANDREANI_SENDER_EMAIL",
+    "ANDREANI_SENDER_NAME",
+    "ANDREANI_SENDER_PHONE",
+    "ANDREANI_SUCURSAL_CONTRACT_OVERRIDE",
+    "ANDREANI_TEST_MODE",
+    "ANDREANI_TRACKING_BUSINESS_HOURS_ONLY",
+    "ANDREANI_TRACKING_SYNC_SCHEDULE",
+    "ANDREANI_USERNAME"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/andreani-data",
+      "target": "apps/backend/src/modules/andreani-data"
+    },
+    {
+      "source": "payload/apps/backend/src/modules/andreani-fulfillment",
+      "target": "apps/backend/src/modules/andreani-fulfillment"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/andreani",
+      "target": "apps/backend/src/api/admin/andreani"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/andreani",
+      "target": "apps/backend/src/api/store/andreani"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/andreani",
+      "target": "apps/backend/src/admin/routes/andreani"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/andreani.tsx",
+      "target": "apps/backend/src/admin/hooks/api/andreani.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/translations/andreani",
+      "target": "apps/backend/src/admin/translations/andreani"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/widgets/order-andreani-widget.tsx",
+      "target": "apps/backend/src/admin/widgets/order-andreani-widget.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/sync-andreani-tracking-status.ts",
+      "target": "apps/backend/src/jobs/sync-andreani-tracking-status.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/andreani-order.ts",
+      "target": "apps/backend/src/subscribers/andreani-order.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/andreani-ticket-tracking-whatsapp.ts",
+      "target": "apps/backend/src/subscribers/andreani-ticket-tracking-whatsapp.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/andreani-generate-tickets.ts",
+      "target": "apps/backend/src/workflows/andreani-generate-tickets.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/andreani-data/migrations/Migration20260618130000.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/andreani.tsx",
+      "sha256": "fa2f9a210cf2ef34939e5af395f414f6dc96edc8c3940b2ec280d2e2806eaac1"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/andreani/components/box-list.tsx",
+      "sha256": "d68fdc3395a53ee6edad68688c842c7a7103cfb186da1aa49d586a660f640cff"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/andreani/components/fulfillment-list.tsx",
+      "sha256": "ad7a5e064274938edc5895d857c4c5bf426dd696c11ccb17bda489d7248f7ddd"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/andreani/components/tracking-modal.tsx",
+      "sha256": "43b6cfe9b88af88c37badc065aa2b4758f506a76797d800913f3724c456dca4f"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/andreani/configuracion/page.tsx",
+      "sha256": "57be796567d4356e6bd207fd57d88315106a34bdc721811f28eac3ef1be9b7dd"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/andreani/credenciales/page.tsx",
+      "sha256": "aa48bbe4313257244418ac1611489cda91fbe330b373a041aa2b6ef2622c6fdd"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/andreani/envios/page.tsx",
+      "sha256": "6023571edc191d2afe3e9def56f8aa21ece2229febdfba9a130d27220ed64fc1"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/andreani/page.tsx",
+      "sha256": "d41e052a5bd7245e37b6474f933c25892dd2ce6452853360ecfdf54585f4a263"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/andreani/index.ts",
+      "sha256": "3e0c96e4ddee86caf64dcdd2311757d2ccc254b9c87e320c3c7d9f7c98cf8390"
+    },
+    {
+      "path": "apps/backend/src/admin/widgets/order-andreani-widget.tsx",
+      "sha256": "0c695b1fb9d1327cc9515896842669f1b05bd8f9c3b08a396b81dafcc0c18460"
+    },
+    {
+      "path": "apps/backend/src/api/admin/andreani/boxes/[id]/route.ts",
+      "sha256": "af154d1c2b27d93eefa7d8030314bd879cc4ccfb1825220ce30a74a3c51694c9"
+    },
+    {
+      "path": "apps/backend/src/api/admin/andreani/boxes/route.ts",
+      "sha256": "8e1a928092f615abeddd47ab3892edd6874acab6bf6a9a0456c3120e24563d25"
+    },
+    {
+      "path": "apps/backend/src/api/admin/andreani/fulfillments/route.ts",
+      "sha256": "28555fea65295e68a9e59551c87ef03dde889b36d3662eabe032eb195ba9f936"
+    },
+    {
+      "path": "apps/backend/src/api/admin/andreani/labels/[id]/route.ts",
+      "sha256": "135fc72ae36bafc43677e3e990698cab70ae9df98bd022950b60358c99ae4413"
+    },
+    {
+      "path": "apps/backend/src/api/admin/andreani/labels/bulk/route.ts",
+      "sha256": "3bbea4184f90e09af8fc26a11ec7d6313ee08a7d316a07c750855324b846d0b9"
+    },
+    {
+      "path": "apps/backend/src/api/admin/andreani/labels/route.ts",
+      "sha256": "b8a5d8849b74df15885b763265068c47d87e8aa35dd4f40a964d3c32748a9e6c"
+    },
+    {
+      "path": "apps/backend/src/api/admin/andreani/orders/[orderId]/tickets/route.ts",
+      "sha256": "5d245bdaa4d78a3b20d49dfba3ab931eabc245e74d5d959d8b26be5d84d35fb7"
+    },
+    {
+      "path": "apps/backend/src/api/admin/andreani/tickets/bulk/route.ts",
+      "sha256": "ea7699b1a2f0837acc47f13bb8b69e032d03cb44981e3d8c4aabde005dacaef5"
+    },
+    {
+      "path": "apps/backend/src/api/admin/andreani/tracking/[tracking_number]/route.ts",
+      "sha256": "7e469c2693337c585384a913dcbdcfce6cc01ace658fb496283b96472acc5eff"
+    },
+    {
+      "path": "apps/backend/src/api/store/andreani/branches/route.ts",
+      "sha256": "c9cce0021582d43c37cff32e7a5dadb043a0953dd8adcb64924883262f98ec9f"
+    },
+    {
+      "path": "apps/backend/src/api/store/andreani/hop-points/route.ts",
+      "sha256": "9f510711b9e230de8270627916129e990b80cdcea1c4e1669997414cfc45b9b9"
+    },
+    {
+      "path": "apps/backend/src/api/store/andreani/rates/route.ts",
+      "sha256": "a5948d2264ee3c16d147cf8d17977af052bd59c2b9af78a0e1ef405f24b570e7"
+    },
+    {
+      "path": "apps/backend/src/api/store/andreani/tracking/[tracking_number]/route.ts",
+      "sha256": "a570b4ba2bfe987042a3e39fe8e92a0d62419e24cc9348f8c8673697628ff938"
+    },
+    {
+      "path": "apps/backend/src/jobs/sync-andreani-tracking-status.ts",
+      "sha256": "86f7f5a982b47ca224c5dd142c0e876c2f2bba66b80df9857cf3b25799fb3883"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-data/index.ts",
+      "sha256": "2e393d544852d5e262b8accb4a51030ac9d09f072888a012ce9b87504ab4f139"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-data/migrations/Migration20260618130000.ts",
+      "sha256": "3ac0f5f4d1914ab59f9a7f1c3e9730174180e4524827a164d0ee1abc54a0b6ad"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-data/models/andreani-box.ts",
+      "sha256": "51085e68b589ad5a66a01fa3f6adabadb2540815dbf2817ac3202c6a5892ed19"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-data/models/index.ts",
+      "sha256": "fbccd5da72f2eb04f6ac408eac610253052b5b1c15a4241269aa1a854bfb9b7d"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-data/service.ts",
+      "sha256": "abfa996dda1bf26b94c9b07a899b41b715b33e41a096816cd7c65f649e5e37b0"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/client.ts",
+      "sha256": "7c4ce97c1c8f50d67a8adcb3b285dcb003612221f6c96c2dbcafa1512741a90e"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/descriptor.test.ts",
+      "sha256": "87fc4b9b404bc8b7c303e7a03266ef6df24a8173612acf8595c5c9dde718280c"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/env-options.test.ts",
+      "sha256": "9c0b8eb21405c14c2c05fd1331563145ce987c62065c0c290435893b42ba7c25"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/env-options.ts",
+      "sha256": "00d6eb147602d327fbfa1f1197ab6fcdbc53b61d6a403ec3abaaaf7b64b82981"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/get-client.test.ts",
+      "sha256": "aa6ffafe1abc7ef452ac3ad59b3d11b20593ee2af4fb9536de3eca15872d3d7e"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/get-client.ts",
+      "sha256": "6dca2f0a739e60a872be033e45f955ffe314cfe44a755b77609add914f0cc6c4"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/index.ts",
+      "sha256": "22a85fccd9ad8e33046c5c67873d677fc8a03c6f8635c82b723c558b30e1473f"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/label-download.ts",
+      "sha256": "ea9db86c755baa94b87df706e19a4d1e28a86b8740f83b84d959149bd8999d46"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/README.md",
+      "sha256": "c29bd814aad0f5a9ae9dbcbdc086316653c88ace3d2cecee08efcf4c08d9f512"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/service.ts",
+      "sha256": "6935960d3f85b5d6deb12d7e9b0b2a5c05d985e49de3f7972ca7947167ad2394"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/settings.test.ts",
+      "sha256": "3c8d9a162dad3bbc008cba12916bda8e0c89c4d96acbc5596a002f95690c1ff2"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/settings.ts",
+      "sha256": "afb22aff3d56cd2c29b8aa1e6c72b5cc8dd3a101de30c3237646a02c2b2569d0"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/site-credentials.test.ts",
+      "sha256": "30a1651cb403e6e89b278fa7da3a28d6a537d26130bfb8eda5076e69fc0d058d"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/transformers/box-packer.ts",
+      "sha256": "c720760b0143500c28cfc7b6e232b3d1885d2d7d87ad78351e4ec43d86dd21ab"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/transformers/data-transformer.ts",
+      "sha256": "4ab447c1f17286e9e7fcc9ffcbfc4323a303f48009735301bc92373af75f1610"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/types.ts",
+      "sha256": "305f5a25f2f39c511c3dcde401834f97316f20326ef3c8909b4ea3bbd13e2a9d"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/utils/errors.ts",
+      "sha256": "4a8afbd8255eb12876b6202d61f2c60b7e3238f3f8c39364d40bce451456e6f0"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/utils/list-fulfillments.test.ts",
+      "sha256": "9b455ba33ef1208e74a4f0449f3682837636dd1576c52032dc0b588c15cb6437"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/utils/list-fulfillments.ts",
+      "sha256": "3e5ebca30cb493f00129e7a06733635828b4ca562fe64ac125afeb32057ab0a1"
+    },
+    {
+      "path": "apps/backend/src/modules/andreani-fulfillment/utils/tracking-url.ts",
+      "sha256": "4c90f25582c4a79d9b4cddc3749c77e9fde215e1f939a3dbbc1d5a53e864c9f4"
+    },
+    {
+      "path": "apps/backend/src/subscribers/andreani-order.ts",
+      "sha256": "f6e0ebd4eccfde428651975c312ec2d27f4626f2f167ff98aa2057756b898e87"
+    },
+    {
+      "path": "apps/backend/src/subscribers/andreani-ticket-tracking-whatsapp.ts",
+      "sha256": "390b8c37ae90f0a173e6f6e471381bbbdb0c88bc287bf5a2806bc150b66c8673"
+    },
+    {
+      "path": "apps/backend/src/workflows/andreani-generate-tickets.ts",
+      "sha256": "59b405681effc457aa9d691582c1c2893ed4d3526a6b1962c358b8ec6b6b9b69"
+    }
+  ],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": [
+      "andreani"
+    ],
+    "admin_translation": [
+      "andreani",
+      "andreani"
+    ]
+  }
+}

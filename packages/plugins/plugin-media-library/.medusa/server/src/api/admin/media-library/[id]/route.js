@@ -1,0 +1,29 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GET = GET;
+exports.POST = POST;
+exports.DELETE = DELETE;
+const media_library_1 = require("../../../../modules/media-library");
+const validators_1 = require("../validators");
+async function GET(req, res) {
+    const service = req.scope.resolve(media_library_1.MEDIA_LIBRARY_MODULE);
+    const media_asset = await service.retrieveMediaAsset(req.params.id);
+    res.json({ media_asset });
+}
+async function POST(req, res) {
+    const parsed = validators_1.PutUpdateAsset.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({ message: parsed.error.issues[0]?.message ?? 'Datos inválidos' });
+        return;
+    }
+    const service = req.scope.resolve(media_library_1.MEDIA_LIBRARY_MODULE);
+    const media_asset = await service.updateMediaAssets({ id: req.params.id, ...parsed.data });
+    res.json({ media_asset });
+}
+// Borra SOLO el registro del catálogo. No toca el archivo en S3 (puede estar en uso).
+async function DELETE(req, res) {
+    const service = req.scope.resolve(media_library_1.MEDIA_LIBRARY_MODULE);
+    await service.deleteMediaAssets([req.params.id]);
+    res.json({ id: req.params.id, deleted: true });
+}
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoicm91dGUuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi8uLi8uLi8uLi8uLi8uLi9zcmMvYXBpL2FkbWluL21lZGlhLWxpYnJhcnkvW2lkXS9yb3V0ZS50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOztBQUtBLGtCQUlDO0FBRUQsb0JBU0M7QUFHRCx3QkFJQztBQTFCRCxxRUFBeUU7QUFFekUsOENBQStDO0FBRXhDLEtBQUssVUFBVSxHQUFHLENBQUMsR0FBa0IsRUFBRSxHQUFtQjtJQUMvRCxNQUFNLE9BQU8sR0FBRyxHQUFHLENBQUMsS0FBSyxDQUFDLE9BQU8sQ0FBNEIsb0NBQW9CLENBQUMsQ0FBQztJQUNuRixNQUFNLFdBQVcsR0FBRyxNQUFNLE9BQU8sQ0FBQyxrQkFBa0IsQ0FBQyxHQUFHLENBQUMsTUFBTSxDQUFDLEVBQVksQ0FBQyxDQUFDO0lBQzlFLEdBQUcsQ0FBQyxJQUFJLENBQUMsRUFBRSxXQUFXLEVBQUUsQ0FBQyxDQUFDO0FBQzVCLENBQUM7QUFFTSxLQUFLLFVBQVUsSUFBSSxDQUFDLEdBQWtCLEVBQUUsR0FBbUI7SUFDaEUsTUFBTSxNQUFNLEdBQUcsMkJBQWMsQ0FBQyxTQUFTLENBQUMsR0FBRyxDQUFDLElBQUksQ0FBQyxDQUFDO0lBQ2xELElBQUksQ0FBQyxNQUFNLENBQUMsT0FBTyxFQUFFLENBQUM7UUFDcEIsR0FBRyxDQUFDLE1BQU0sQ0FBQyxHQUFHLENBQUMsQ0FBQyxJQUFJLENBQUMsRUFBRSxPQUFPLEVBQUUsTUFBTSxDQUFDLEtBQUssQ0FBQyxNQUFNLENBQUMsQ0FBQyxDQUFDLEVBQUUsT0FBTyxJQUFJLGlCQUFpQixFQUFFLENBQUMsQ0FBQztRQUN4RixPQUFPO0lBQ1QsQ0FBQztJQUNELE1BQU0sT0FBTyxHQUFHLEdBQUcsQ0FBQyxLQUFLLENBQUMsT0FBTyxDQUE0QixvQ0FBb0IsQ0FBQyxDQUFDO0lBQ25GLE1BQU0sV0FBVyxHQUFHLE1BQU0sT0FBTyxDQUFDLGlCQUFpQixDQUFDLEVBQUUsRUFBRSxFQUFFLEdBQUcsQ0FBQyxNQUFNLENBQUMsRUFBRSxFQUFFLEdBQUcsTUFBTSxDQUFDLElBQUksRUFBUyxDQUFDLENBQUM7SUFDbEcsR0FBRyxDQUFDLElBQUksQ0FBQyxFQUFFLFdBQVcsRUFBRSxDQUFDLENBQUM7QUFDNUIsQ0FBQztBQUVELHNGQUFzRjtBQUMvRSxLQUFLLFVBQVUsTUFBTSxDQUFDLEdBQWtCLEVBQUUsR0FBbUI7SUFDbEUsTUFBTSxPQUFPLEdBQUcsR0FBRyxDQUFDLEtBQUssQ0FBQyxPQUFPLENBQTRCLG9DQUFvQixDQUFDLENBQUM7SUFDbkYsTUFBTSxPQUFPLENBQUMsaUJBQWlCLENBQUMsQ0FBQyxHQUFHLENBQUMsTUFBTSxDQUFDLEVBQVksQ0FBQyxDQUFDLENBQUM7SUFDM0QsR0FBRyxDQUFDLElBQUksQ0FBQyxFQUFFLEVBQUUsRUFBRSxHQUFHLENBQUMsTUFBTSxDQUFDLEVBQUUsRUFBRSxPQUFPLEVBQUUsSUFBSSxFQUFFLENBQUMsQ0FBQztBQUNqRCxDQUFDIn0=

@@ -1,0 +1,9 @@
+{
+  "name": "@repo/extension-email-templates",
+  "version": "1.5.0",
+  "private": true,
+  "description": "Plantillas de email component source package",
+  "dependencies": {
+    "@repo/extension-store-config": "workspace:*"
+  }
+}

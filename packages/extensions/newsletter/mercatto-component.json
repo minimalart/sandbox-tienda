@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "id": "newsletter",
+  "name": "Newsletter",
+  "version": "1.0.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:newsletter",
+  "environment": [
+    "BREVO_API_KEY",
+    "BREVO_API_URL",
+    "BREVO_LIST_ID",
+    "NEWSLETTER_ENABLED"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/newsletter",
+      "target": "apps/backend/src/modules/newsletter"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/newsletter-subscriptions",
+      "target": "apps/backend/src/api/admin/newsletter-subscriptions"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/newsletter-subscriptions",
+      "target": "apps/backend/src/api/store/newsletter-subscriptions"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/newsletter-subscriptions",
+      "target": "apps/backend/src/admin/routes/newsletter-subscriptions"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/newsletter-subscriptions.tsx",
+      "target": "apps/backend/src/admin/hooks/api/newsletter-subscriptions.tsx"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/api/store/newsletter",
+      "target": "apps/storefront/src/app/api/store/newsletter"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/newsletter/migrations/Migration20260903120000Newsletter.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/newsletter-subscriptions.tsx",
+      "sha256": "122ca92db11900389d5669d83181307cd837e3c803db59e6deb1063664b0c197"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/newsletter-subscriptions/credenciales/page.tsx",
+      "sha256": "5ab1050dff53794af3b8fcb3766a93d445a24262104ce45e056c1182da0a9995"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/newsletter-subscriptions/page.tsx",
+      "sha256": "3ada23d069347e415ed95e044cd64a8c1d29a7afb3650c5f10383ae2692d460f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/newsletter-subscriptions/[id]/retry/route.ts",
+      "sha256": "94c144d699949b03fb57c07e31d3560e14018693e3baffcde7323288bd120eb0"
+    },
+    {
+      "path": "apps/backend/src/api/admin/newsletter-subscriptions/route.ts",
+      "sha256": "4343541c2b8a7da1eda76b070336137ff36e73577f7cbf1c95e19f4905db582a"
+    },
+    {
+      "path": "apps/backend/src/api/store/newsletter-subscriptions/route.ts",
+      "sha256": "b90c66e4973fec83c77627a0889d91aa8f4f7cc63d73ed02e9e4065369eefdca"
+    },
+    {
+      "path": "apps/backend/src/modules/newsletter/brevo.test.ts",
+      "sha256": "c19e697bc3732667c16dd3f5708cd26a383ecdaf5cd5106566e0a71051fd9bb0"
+    },
+    {
+      "path": "apps/backend/src/modules/newsletter/brevo.ts",
+      "sha256": "24504e6922e0cbee8f59db72af8c0dbbea1cbfb48b5c8fd835be2a7dba65a492"
+    },
+    {
+      "path": "apps/backend/src/modules/newsletter/index.ts",
+      "sha256": "ea3f3b4b96990cac892718629ff6343d19b2ab17e8f68056e01b4d16b37cf15d"
+    },
+    {
+      "path": "apps/backend/src/modules/newsletter/migrations/Migration20260903120000Newsletter.ts",
+      "sha256": "be9004bff3d8274c65662d4b0d0acc7f40fba9b87495c3211174d842c95d2714"
+    },
+    {
+      "path": "apps/backend/src/modules/newsletter/models/newsletter-subscription.ts",
+      "sha256": "096424291b69665376deda3c5f95c5ff1582db910677782aa6ac1ccff67fc5f9"
+    },
+    {
+      "path": "apps/backend/src/modules/newsletter/service.ts",
+      "sha256": "576912986e209cc8e3db8fd3f6846839f79fa0401ee4c74796d956f987b1586d"
+    },
+    {
+      "path": "apps/backend/src/modules/newsletter/settings.test.ts",
+      "sha256": "1f101a972266de629327a43710f5d5c86010fc9afaf30ea364567bc9c865db29"
+    },
+    {
+      "path": "apps/backend/src/modules/newsletter/settings.ts",
+      "sha256": "a68dbc2fd9adbb9522f570bc6bd19c79c16c04bc4fdf93699e8ffb18e30a9a3f"
+    },
+    {
+      "path": "apps/backend/src/modules/newsletter/site-scope.ts",
+      "sha256": "5d70866d16809b71003557b33588d0aab6563b5628ecc49fdf29dd08fd758a6e"
+    },
+    {
+      "path": "apps/backend/src/modules/newsletter/sync.ts",
+      "sha256": "7cf03014e29b9eec386d10fcf7d7256d62a2cffb3451af4621d83f686201e6b4"
+    },
+    {
+      "path": "apps/storefront/src/app/api/store/newsletter/route.ts",
+      "sha256": "32b3d7ec735007829925de85cb5f32036c0bababc74437a291c76d786e89adb3"
+    }
+  ],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": [
+      "newsletter-subscriptions"
+    ],
+    "admin_translation": null
+  }
+}

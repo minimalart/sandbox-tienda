@@ -1,0 +1,55 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.zonedDateTimeToUtc = zonedDateTimeToUtc;
+exports.resolveScheduledAt = resolveScheduledAt;
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+function partsInTimeZone(date, timeZone) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+    }).formatToParts(date);
+    return Object.fromEntries(parts.filter((part) => part.type !== 'literal').map((part) => [part.type, Number(part.value)]));
+}
+/** Converts a store-local wall clock value to an instant without adding a runtime dependency. */
+function zonedDateTimeToUtc(date, time, timeZone) {
+    if (!DATE_ONLY.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+        throw new Error('La fecha o franja de entrega no es válida.');
+    }
+    // This also validates the IANA zone.
+    new Intl.DateTimeFormat('en-US', { timeZone }).format(new Date());
+    const [year, month, day] = date.split('-').map(Number);
+    const [hour, minute] = time.split(':').map(Number);
+    const wantedUtc = Date.UTC(year, month - 1, day, hour, minute, 0);
+    let candidate = new Date(wantedUtc);
+    for (let i = 0; i < 3; i += 1) {
+        const local = partsInTimeZone(candidate, timeZone);
+        const represented = Date.UTC(local.year, local.month - 1, local.day, local.hour, local.minute, local.second);
+        candidate = new Date(candidate.getTime() + (wantedUtc - represented));
+    }
+    const resolved = partsInTimeZone(candidate, timeZone);
+    if (resolved.year !== year || resolved.month !== month || resolved.day !== day ||
+        resolved.hour !== hour || resolved.minute !== minute) {
+        throw new Error('La hora elegida no existe en la zona horaria configurada.');
+    }
+    return candidate;
+}
+function resolveScheduledAt(delivery, settings, now = new Date()) {
+    if (delivery.type === 'now')
+        return null;
+    const time = delivery.window === 'morning'
+        ? settings.morning_time
+        : delivery.window === 'afternoon'
+            ? settings.afternoon_time
+            : settings.evening_time;
+    const scheduledAt = zonedDateTimeToUtc(delivery.date, time, settings.timezone);
+    if (scheduledAt.getTime() <= now.getTime()) {
+        throw new Error('La entrega programada debe ser futura.');
+    }
+    const horizon = now.getTime() + settings.schedule_horizon_days * 86_400_000;
+    if (scheduledAt.getTime() > horizon) {
+        throw new Error(`La entrega no puede programarse a más de ${settings.schedule_horizon_days} días.`);
+    }
+    return scheduledAt;
+}
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoic2NoZWR1bGUuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi8uLi8uLi8uLi9zcmMvbW9kdWxlcy9naWZ0LWNhcmQtZXhwZXJpZW5jZS9zY2hlZHVsZS50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOztBQWlCQSxnREF5QkM7QUFFRCxnREFvQkM7QUE3REQsTUFBTSxTQUFTLEdBQUcscUJBQXFCLENBQUM7QUFFeEMsU0FBUyxlQUFlLENBQUMsSUFBVSxFQUFFLFFBQWdCO0lBQ25ELE1BQU0sS0FBSyxHQUFHLElBQUksSUFBSSxDQUFDLGNBQWMsQ0FBQyxPQUFPLEVBQUU7UUFDN0MsUUFBUTtRQUNSLElBQUksRUFBRSxTQUFTLEVBQUUsS0FBSyxFQUFFLFNBQVMsRUFBRSxHQUFHLEVBQUUsU0FBUztRQUNqRCxJQUFJLEVBQUUsU0FBUyxFQUFFLE1BQU0sRUFBRSxTQUFTLEVBQUUsTUFBTSxFQUFFLFNBQVMsRUFBRSxTQUFTLEVBQUUsS0FBSztLQUN4RSxDQUFDLENBQUMsYUFBYSxDQUFDLElBQUksQ0FBQyxDQUFDO0lBQ3ZCLE9BQU8sTUFBTSxDQUFDLFdBQVcsQ0FDdkIsS0FBSyxDQUFDLE1BQU0sQ0FBQyxDQUFDLElBQUksRUFBRSxFQUFFLENBQUMsSUFBSSxDQUFDLElBQUksS0FBSyxTQUFTLENBQUMsQ0FBQyxHQUFHLENBQUMsQ0FBQyxJQUFJLEVBQUUsRUFBRSxDQUFDLENBQUMsSUFBSSxDQUFDLElBQUksRUFBRSxNQUFNLENBQUMsSUFBSSxDQUFDLEtBQUssQ0FBQyxDQUFDLENBQUMsQ0FDL0YsQ0FBQztBQUNKLENBQUM7QUFFRCxpR0FBaUc7QUFDakcsU0FBZ0Isa0JBQWtCLENBQUMsSUFBWSxFQUFFLElBQVksRUFBRSxRQUFnQjtJQUM3RSxJQUFJLENBQUMsU0FBUyxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLDJCQUEyQixDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsRUFBRSxDQUFDO1FBQ3JFLE1BQU0sSUFB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

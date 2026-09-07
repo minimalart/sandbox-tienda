@@ -1,0 +1,440 @@
+/*
+ * Sports Brand template — scoped design tokens.
+ *
+ * A bold, high-contrast performance identity (Adidas / Puma / Nike): stark
+ * black & white, oversized uppercase display type with tight tracking, sharp
+ * (un-rounded) edges, full-bleed photography and energetic CTAs. Deliberately
+ * distinct from the warm editorial `fashion` template — here it's about
+ * movement and performance, not lifestyle.
+ *
+ * Everything is scoped under `.sports-home` / `.sports-checkout` so it can never
+ * leak into the other templates or the rest of the storefront.
+ */
+.sports-home,
+.sports-checkout {
+  --sp-ink: #0a0a0a; /* near-black */
+  --sp-paper: #ffffff;
+  --sp-canvas: #f4f4f4; /* light gray field */
+  --sp-muted: #5a5a5a;
+  --sp-subtle: #8a8a8a;
+  --sp-hairline: #e4e4e4;
+  --sp-divider: #efefef;
+  --sp-on-dark: #ffffff;
+  --sp-accent: #0a0a0a; /* monochrome by default; demos can override */
+
+  --sp-font: var(--font-inter), Inter, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "Helvetica Neue", sans-serif;
+
+  /* Reused storefront pieces read --primary-color; keep them on the ink tone. */
+  --primary-color: var(--sp-ink);
+
+  font-family: var(--sp-font);
+  color: var(--sp-ink);
+  background-color: var(--sp-paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Oversized uppercase display — the performance headline. */
+.sp-display {
+  font-family: var(--sp-font);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+/* Section title. */
+.sp-section-title {
+  font-family: var(--sp-font);
+  font-size: clamp(1.5rem, 1.1rem + 1.8vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--sp-ink);
+}
+
+.sp-section-subtitle {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--sp-muted);
+}
+
+/* Small uppercase eyebrow / kicker. */
+.sp-eyebrow {
+  font-family: var(--sp-font);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--sp-muted);
+}
+
+/* Solid CTA: black rectangle, white text, sharp edges, flips on hover. */
+.sp-btn-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--sp-font);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background-color: var(--sp-ink);
+  color: var(--sp-on-dark);
+  padding: 0.9rem 2rem;
+  border: 2px solid var(--sp-ink);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.sp-btn-solid:hover {
+  background-color: transparent;
+  color: var(--sp-ink);
+}
+
+/* Underlined arrow CTA — the link-style call to action. */
+.sp-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--sp-font);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--sp-ink);
+  padding-bottom: 3px;
+  border-bottom: 2px solid currentColor;
+  transition: opacity 0.2s ease;
+}
+.sp-cta:hover {
+  opacity: 0.6;
+}
+
+/* On dark imagery the chrome flips to paper. */
+.sp-on-dark .sp-eyebrow,
+.sp-on-dark .sp-cta {
+  color: var(--sp-on-dark);
+}
+
+/* Títulos sobre imágenes (hero, colecciones, categorías, campaña, lookbook):
+ * SIEMPRE blancos, igual que los párrafos. Sobreescribe el color que .sp-display
+ * / .sp-section-title traen por defecto (var(--sp-ink)). */
+.sp-on-dark :is(h1, h2, h3),
+.sp-on-dark .sp-display,
+.sp-on-dark .sp-section-title {
+  color: #fff;
+}
+.sp-on-dark .sp-btn-solid {
+  background-color: var(--sp-on-dark);
+  color: var(--sp-ink);
+  border-color: var(--sp-on-dark);
+}
+.sp-on-dark .sp-btn-solid:hover {
+  background-color: transparent;
+  color: var(--sp-on-dark);
+}
+
+/* Tira de logos de marcas: marquee que se desplaza solo. La pista mide 2x el
+ * set (logos duplicados) y se traslada -50% para que el loop sea continuo. */
+@keyframes sp-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.sp-marquee-track {
+  animation: sp-marquee 35s linear infinite;
+}
+.sp-marquee:hover .sp-marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-marquee-track {
+    animation: none;
+  }
+}
+
+/* Hide scrollbars on the horizontal carousels (mobile swipe rails). */
+.sp-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.sp-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* =========================================================================
+ * Pantallas compartidas (tienda, PDP, cuenta, comparar) cuando sports activo.
+ *
+ * Renderizan dentro del wrapper `.sports-home` (children del layout (main)) y
+ * heredan los tokens `--sp-*` + `--primary-color: var(--sp-ink)`. El minicarrito
+ * (cart-drawer) NO entra acá: se portea a <body>, se tematiza con `.sports-cart`
+ * más abajo.
+ * ========================================================================= */
+
+/* Ancho: tienda y PDP usan `max-w-7xl` (1280px) por defecto. En sports los
+ * alineamos al ancho del header/home (1600px) y a su padding horizontal
+ * (px-4 / sm:px-6 / lg:px-10) para que todo el layout coincida. */
+.sports-home main.max-w-7xl {
+  max-width: 1600px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .sports-home main.max-w-7xl {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .sports-home main.max-w-7xl {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+/* Títulos de producto con el display deportivo. */
+.sports-home [data-testid="product-title"],
+.sports-home #product-info h1 {
+  font-family: var(--sp-font);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* PDP: bordes rectos en los contenedores de acción/precio. */
+.sports-home [data-testid="product-page-cart-controls"],
+.sports-home [data-testid="sticky-cart-bar"] {
+  border-radius: 0;
+  border-color: var(--sp-hairline);
+  box-shadow: none;
+}
+
+/* PDP: botón de agregar al carrito sólido ink, invierte en hover (estilo CTA). */
+.sports-home [data-testid="sticky-cart-button"],
+.sports-home [data-testid="product-page-cart-button"] {
+  border-radius: 0;
+  background: var(--sp-ink);
+  color: var(--sp-on-dark);
+}
+.sports-home [data-testid="sticky-cart-button"]:hover,
+.sports-home [data-testid="product-page-cart-button"]:hover {
+  background: transparent;
+  color: var(--sp-ink);
+  box-shadow: inset 0 0 0 2px var(--sp-ink);
+}
+
+/* PDP: "Comprar ahora" — blanco con línea negra, rectangular; invierte en hover. */
+.sports-home [data-testid="buy-now-button"] {
+  border-radius: 0 !important;
+  background: var(--sp-paper) !important;
+  color: var(--sp-ink) !important;
+  border: 2px solid var(--sp-ink) !important;
+}
+.sports-home [data-testid="buy-now-button"]:hover {
+  background: var(--sp-ink) !important;
+  color: var(--sp-on-dark) !important;
+}
+
+.sports-home .store-template-page [data-filter-chip],
+.sports-home .store-template-page [data-filter-pill],
+.sports-home .store-template-page [data-filter-option],
+.sports-home .store-template-page [data-filter-selected],
+.sports-home .store-template-page [data-mobile-filter-panel],
+.sports-home .store-template-page [data-mobile-sort-panel],
+.sports-home .store-template-page [data-mobile-filter-bar] {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.sports-home .store-template-page [data-filter-chip] {
+  border: 1px solid var(--sp-hairline) !important;
+  background: var(--sp-paper) !important;
+  color: var(--sp-ink) !important;
+}
+
+/* La barra flotante de filtros/orden (mobile) usa el color primario (ink) con
+ * texto blanco, igual que en el resto de templates — no la blanqueamos. */
+.sports-home .store-template-page [data-mobile-filter-bar] {
+  background: var(--primary-color) !important;
+  color: #fff !important;
+}
+
+.sports-home .store-template-page [data-filter-selected],
+.sports-home .store-template-page [data-filter-option]:hover {
+  background: var(--sp-canvas) !important;
+  color: var(--sp-ink) !important;
+}
+
+.sports-home .store-template-page [class*="rounded-"],
+.sports-home [data-testid="cart-container"] :is(button, a, input, textarea, select, section, article, [role="button"], [class*="rounded-"]),
+.sports-home [data-testid="account-page"] :is(button, a, input, textarea, select, section, article, [role="button"], [class*="rounded-"]),
+.sports-home [data-testid="checkout-container"] :is(button, a, input, textarea, select, section, article, [role="button"], [class*="rounded-"]),
+.sports-checkout [data-testid="checkout-container"] :is(button, a, input, textarea, select, section, article, div, ul, li, [role="button"], [class*="rounded-"]) {
+  border-radius: 0 !important;
+}
+
+.sports-home [data-testid="cart-container"] :is([class*="shadow"], [class*="shadow-"]),
+.sports-home [data-testid="account-page"] :is([class*="shadow"], [class*="shadow-"]),
+.sports-home [data-testid="checkout-container"] :is([class*="shadow"], [class*="shadow-"]),
+.sports-home .store-template-page :is([class*="shadow"], [class*="shadow-"]),
+.sports-checkout [data-testid="checkout-container"] :is([class*="shadow"], [class*="shadow-"]) {
+  box-shadow: none !important;
+}
+
+/* Cuenta: el token verde del supermercado (--mc-green-soft) no existe en sports.
+ * Lo mapeamos al gris de campo para que el hover/activo de la nav lateral tengan
+ * un fondo sutil. NO forzamos el fondo de TODOS los botones: eso rompía el
+ * contraste de los CTAs primarios ("Explorar productos") y los tabs activos
+ * (que deben quedar en ink con texto blanco). */
+.sports-home [data-testid="account-page"] {
+  --mc-green-soft: var(--sp-canvas);
+}
+
+/* El item activo de la nav lateral usa el MISMO look que el hover (fondo gris
+ * de campo + texto ink), sin barra extra — el componente ya aplica esas clases
+ * en estado activo, así que no agregamos override. */
+
+/* Textos con #111827 hardcodeado (cards / cuenta / pedidos compartidos): dentro
+ * de sports los pasamos al ink del template para mantener el color de marca. */
+.sports-home .text-\[\#111827\] {
+  color: var(--sp-ink) !important;
+}
+
+.sports-home [data-testid="cart-container"],
+.sports-home [data-testid="account-page"],
+.sports-home [data-testid="checkout-container"],
+.sports-checkout [data-testid="checkout-container"] {
+  color: var(--sp-ink);
+}
+
+.sports-home [data-testid="cart-container"] :is(h1, h2, h3),
+.sports-home [data-testid="account-page"] :is(h1, h2, h3),
+.sports-home [data-testid="checkout-container"] :is(h1, h2, h3),
+.sports-checkout [data-testid="checkout-container"] :is(h1, h2, h3) {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.sports-checkout [data-testid="checkout-container"] :is(button, a)[class*="bg-[--primary-color]"] {
+  border: 2px solid var(--sp-ink);
+  background: var(--sp-ink);
+  color: var(--sp-on-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sports-checkout [data-testid="checkout-container"] :is(input, select, textarea) {
+  border-color: var(--sp-hairline) !important;
+}
+
+.sports-checkout [data-testid="checkout-container"] :is(input, select, textarea):focus {
+  border-color: var(--sp-ink) !important;
+  box-shadow: 0 0 0 1px var(--sp-ink) !important;
+}
+
+body:has(.sports-home) [data-headlessui-portal] :is(button, a, input, textarea, select, section, article, div, [role="button"], [class*="rounded-"]),
+body:has(.sports-checkout) [data-headlessui-portal] :is(button, a, input, textarea, select, section, article, div, [role="button"], [class*="rounded-"]) {
+  border-radius: 0 !important;
+}
+
+body:has(.sports-home) [data-headlessui-portal] :is([class*="shadow"], [class*="shadow-"]),
+body:has(.sports-checkout) [data-headlessui-portal] :is([class*="shadow"], [class*="shadow-"]) {
+  box-shadow: none !important;
+}
+
+.sports-home .store-template-page [data-sports-grid] {
+  border-color: var(--sp-hairline);
+}
+
+.sports-home .store-template-page [data-sports-grid-cell] {
+  border-color: var(--sp-hairline);
+}
+
+/* Página de Sucursales: el template es compartido (bordes redondeados y
+ * sombras del supermercado). En sports lo enderezamos y le sacamos sombras. */
+.sports-home [data-store-locator] :is(
+    button, a, input, select, textarea, section, article, div, li,
+    [role="button"], [class*="rounded-"]
+  ) {
+  border-radius: 0 !important;
+}
+.sports-home [data-store-locator] :is([class*="shadow"], [class*="shadow-"]) {
+  box-shadow: none !important;
+}
+
+/* Manejadores de carruseles ("También te podría interesar", misma categoría,
+ * presentaciones, etc.): el supermercado los dibuja como círculos. En sports
+ * van rectos para respetar la identidad de bordes duros. El contador del
+ * carrito es un <span>, por eso scopeamos a <button> y queda intacto. */
+.sports-home button[class*="rounded-full"] {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.sports-back-to-top {
+  --sp-ink: #0a0a0a;
+  --sp-on-dark: #ffffff;
+  --primary-color: var(--sp-ink);
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* =========================================================================
+ * Minicarrito (cart-drawer) re-tematizado para sports.
+ *
+ * El Dialog se portea a <body>, por eso esta clase (`.sports-cart`, inyectada
+ * vía la prop themeClassName) vive a nivel global, no scopeada a `.sports-home`.
+ * Re-mapeamos --primary-color al ink y enderezamos los bordes redondeados para
+ * que el carrito comparta la identidad del template.
+ * ========================================================================= */
+.sports-cart {
+  --primary-color: #0a0a0a; /* var(--sp-ink) — el Dialog no hereda .sports-home */
+  font-family: var(--font-inter), Inter, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "Helvetica Neue", sans-serif;
+}
+/* Título "Carrito" con peso display. */
+.sports-cart [class*="text-xl"] {
+  letter-spacing: -0.01em;
+}
+/* Bordes rectos: panel, items, controles de cantidad y CTA. */
+.sports-cart [data-testid="cart-item"],
+.sports-cart [data-testid="go-to-cart-button"] {
+  border-radius: 0;
+}
+.sports-cart :is(button, a, input, textarea, select, [role="button"], [class*="rounded-"]) {
+  border-radius: 0 !important;
+}
+.sports-cart :is([class*="shadow"], [class*="shadow-"]) {
+  box-shadow: none !important;
+}
+/* Etiqueta de promo de cada ítem del minicarrito: color de acento + bordes
+ * rectos, igual que en las cards (en vez del naranja del supermercado). */
+.sports-cart [data-promo-badge] {
+  background-color: var(--accent-color, #0a0a0a) !important;
+  color: #0a0a0a !important;
+  border-radius: 0 !important;
+}
+
+/* =========================================================================
+ * Cuenta / login / registro / comparar.
+ *
+ * Renderizan dentro de `.sports-home` y ya heredan `--primary-color: ink`, así
+ * que sus CTAs primarios ya son negros. Reforzamos la identidad deportiva:
+ * CTA primaria con bordes rectos + mayúsculas, y tarjetas principales sin radio.
+ * ========================================================================= */
+.sports-home [data-testid="sign-in-button"],
+.sports-home [data-testid="register-button"],
+.sports-home [data-testid="google-login-button"] {
+  border-radius: 0;
+}
+.sports-home [data-testid="sign-in-button"],
+.sports-home [data-testid="register-button"] {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

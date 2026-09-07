@@ -1,0 +1,30 @@
+{
+  "$schema": "https://mercatto.minimalart.co/schemas/plugin.v1.json",
+  "schema_version": 1,
+  "id": "ga4",
+  "name": "Google Analytics 4",
+  "version": "1.0.1",
+  "kind": "plugin",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:ga4",
+  "environment": [
+    "GA_API_SECRET",
+    "GA_DEBUG",
+    "GA_MEASUREMENT_ID",
+    "GTM_ID",
+    "NEXT_PUBLIC_GA_MEASUREMENT_ID",
+    "NEXT_PUBLIC_GTM_ID"
+  ],
+  "medusaModuleKey": "ga4",
+  "ownedTables": ["ga4_event_mapping", "ga4_builtin_setting", "ga4_settings"],
+  "integrations": {
+    "middlewares": [
+      ["./admin/ga4-mappings/middlewares", "adminGa4MappingsMiddlewares"],
+      ["./admin/ga4-builtins/middlewares", "adminGa4BuiltinsMiddlewares"]
+    ],
+    "admin_hooks": ["ga4-mappings"],
+    "admin_translation": null
+  }
+}

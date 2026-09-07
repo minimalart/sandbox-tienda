@@ -1,0 +1,669 @@
+{
+  "schema_version": 1,
+  "id": "typesense",
+  "name": "Typesense",
+  "version": "1.4.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:typesense",
+  "environment": [
+    "DEFAULT_CURRENCY_CODE",
+    "TYPESENSE_ANALYTICS_API_KEY",
+    "TYPESENSE_ANALYTICS_COLLECTION",
+    "TYPESENSE_API_KEY",
+    "TYPESENSE_COLLECTION_NAME",
+    "TYPESENSE_HOST",
+    "TYPESENSE_PORT",
+    "TYPESENSE_PROTOCOL",
+    "TYPESENSE_RECONCILE_CRON",
+    "TYPESENSE_RECONCILE_ENABLED",
+    "TYPESENSE_SITE_ANALYTICS_COLLECTIONS",
+    "TYPESENSE_SITE_COLLECTIONS",
+    "TYPESENSE_SYNC_LOG_PRUNE_CRON",
+    "TYPESENSE_SYNC_LOG_RETENTION_DAYS"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/typesense",
+      "target": "apps/backend/src/modules/typesense"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/typesense",
+      "target": "apps/backend/src/api/admin/typesense"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/typesense",
+      "target": "apps/backend/src/api/store/typesense"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/custom/typesense-sync",
+      "target": "apps/backend/src/api/store/custom/typesense-sync"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/translations/typesense",
+      "target": "apps/backend/src/admin/translations/typesense"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/typesense",
+      "target": "apps/backend/src/admin/routes/typesense"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/typesense.tsx",
+      "target": "apps/backend/src/admin/hooks/api/typesense.tsx"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/typesense",
+      "target": "apps/storefront/src/lib/typesense"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/whatsapp-advisor/audit/route.ts",
+      "target": "apps/backend/src/api/admin/whatsapp-advisor/audit/route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/whatsapp-advisor/config/route.ts",
+      "target": "apps/backend/src/api/admin/whatsapp-advisor/config/route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/typesense-stock-reconcile.ts",
+      "target": "apps/backend/src/jobs/typesense-stock-reconcile.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/typesense-sync-log-prune.ts",
+      "target": "apps/backend/src/jobs/typesense-sync-log-prune.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/typesense-relevance-eval.ts",
+      "target": "apps/backend/src/scripts/typesense-relevance-eval.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/typesense-sync.ts",
+      "target": "apps/backend/src/scripts/typesense-sync.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/erp-catalog-typesense-sync.ts",
+      "target": "apps/backend/src/subscribers/erp-catalog-typesense-sync.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/product-category-typesense-sync.ts",
+      "target": "apps/backend/src/subscribers/product-category-typesense-sync.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/product-collection-typesense-sync.ts",
+      "target": "apps/backend/src/subscribers/product-collection-typesense-sync.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/product-created-typesense-sync.ts",
+      "target": "apps/backend/src/subscribers/product-created-typesense-sync.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/product-deleted-typesense-sync.ts",
+      "target": "apps/backend/src/subscribers/product-deleted-typesense-sync.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/product-updated-typesense-sync.ts",
+      "target": "apps/backend/src/subscribers/product-updated-typesense-sync.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/product-variant-typesense-sync.ts",
+      "target": "apps/backend/src/subscribers/product-variant-typesense-sync.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/hooks/promotion-changed-typesense.ts",
+      "target": "apps/backend/src/workflows/hooks/promotion-changed-typesense.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/typesense/sync-log/migrations/Migration20260731120000TypesenseSyncLog.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/typesense.tsx",
+      "sha256": "e5691394c044971e4652c445d4056f22f2aca068d1ed896e9599ce358e4fb775"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Analytics/SearchQueriesSection.tsx",
+      "sha256": "9a0e717caa0fc812d98c386ce9dd96d90235c9ae9b9e37b713736075710d7317"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Curations/components/ProductSelector.tsx",
+      "sha256": "48013b1396d526a1bd0cfbf9179bb461771f046b42c228bd300ac93184360ef2"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Curations/Curations.tsx",
+      "sha256": "d3ef8684eaf51b46d3d98cbf0f831fe7e387ad539e013d78db2584230c669e8c"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Curations/forms/ActionsSection.tsx",
+      "sha256": "5c5334b45c06bd43c1dcedc22d486e43a396e0b5172d558bb188cfa3c29ceece"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Curations/forms/CurationForm.tsx",
+      "sha256": "e5496d8aec7fbf9a21f3049fa562316192ae64365fb0c2d83a66596b4deec8a6"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Curations/forms/CurationFormDrawer.tsx",
+      "sha256": "8bb743da8a639dfa53b9601dec8aab78a7b14218e157166da7f2c94ca2c29d14"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Curations/forms/OptionsSection.tsx",
+      "sha256": "a810508a6e3ec52de533b9a2ec00b497dc9cd4b9ec0b2188c4eaec126a84084f"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Curations/forms/RulesSection.tsx",
+      "sha256": "0ea786d8a233c89110072618dc1d7770e9cacb17383f64f6bc39bb38beff9f90"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Presets/PresetFormDrawer.tsx",
+      "sha256": "217390492207d13553a9786f70cb65dd6c8bd3abfdfc750cad51bf7ebe095b0e"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Presets/Presets.tsx",
+      "sha256": "7b2d0df4638c0faf62b6f0b9e7fb8fdfc7c06df559cc9989203f32c7fbe543c4"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Search/FacetResults.tsx",
+      "sha256": "5f5c89df548ecac6ec5a835ac09445a6149692a8ccd58651616b43b224b0f08d"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Search/FilterBuilder.tsx",
+      "sha256": "c2fdbccafb6857d5f94327775ddf178390d173646a9b6590c459cbb0d0a12498"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Search/MultiSelectField.tsx",
+      "sha256": "84ce16ae92e7ae143fa7612a4db753a6816901d8559b6b0cf7269c145c819c92"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Search/ResultsPanel.tsx",
+      "sha256": "b7891727d7b0ffdc4bfd22c2dc8eaaf3e130687d311cb2b4604b1749fb5b8d3e"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Search/Search.tsx",
+      "sha256": "c21984683968c007a513180b5307d630c6c99db84b3a4663592a04b5ddc668c2"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Search/SearchPanel.tsx",
+      "sha256": "19d24626e3486973dbbd5492fab15be39a41f98a40a40a87342588e80d1829ec"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Search/SortBuilder.tsx",
+      "sha256": "3dd0bae105e4e893c4cfd7fd622784f049199ce1c90a0929110a3e85ad8b66d7"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/shared.tsx",
+      "sha256": "d6054cfe77b7fe55e2a232de9bba2804ded28d03b2699c49064c801a1b65e06e"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/StopWords/StopWordFormDrawer.tsx",
+      "sha256": "853a81f9837c7bf754848be763dc4117caf416da0ff778b3d18c89b7aee5c56d"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/StopWords/StopWords.tsx",
+      "sha256": "50e49b1165d4cf35fa880ee0ab9e486331d868c5a116da5ab40892301ab6afe4"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Synonyms/SynonymFormDrawer.tsx",
+      "sha256": "6a7880400cde7b41382a3e0159ed4711de74d166cb25c83600ca5c890b412751"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/components/Synonyms/Synonyms.tsx",
+      "sha256": "51a2008583f0ab5b2abfd89d3a939626ec0f9ec558804ec9ee957e028930a427"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/contexts/SearchContext.tsx",
+      "sha256": "911893a8357bc6eea013cc898acc81026fff965e40a82c397c4cd26324f89c1a"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/credenciales/page.tsx",
+      "sha256": "32b516ac04f02ab12635f0e20c20edde0b85661eefa1b368d34074c82613da21"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/curations/page.tsx",
+      "sha256": "5fda3b818508b1bef401cda7dace8bfc33ee8445c2a1c3b84b72fdb0a836e54e"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/hooks/useCurationForm.tsx",
+      "sha256": "0ab5cf76c0e9783f058aa983e1931fc60fa8d154c87ef5ace5fafbc27cae3507"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/hooks/useCurationsData.tsx",
+      "sha256": "840000c0267c7a3a4cb4aaad415a9928d7e33dbc976de29346dfeb14a79f7164"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/hooks/usePresets.ts",
+      "sha256": "6dbc8a0c8d86f8229d8aeb12e50c9a07f71728d99ab50fd900c93b765713828e"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/hooks/useSearchAnalytics.ts",
+      "sha256": "8da78a9a481c2a6ec4e04e20b4708771f997d7abfc5b025c4ef9bb95aef56d0d"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/hooks/useSearchData.tsx",
+      "sha256": "85df1eb419a1670a8d80c7be97e4a889b6a751e83fa38b696ff41cc3485fd763"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/hooks/useStopWords.ts",
+      "sha256": "c405fc60b0c1f5ce8c57c65576644817a94eb65d6109e04fb0f218bd645cb927"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/hooks/useSynonyms.ts",
+      "sha256": "01a14dd50bebfdddca25d5bbddf61bc6db0b2e37d1ec11c479cde8b9ce0afe88"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/logs/[id]/page.tsx",
+      "sha256": "a0ef401a5f9bf52df23f4224d9c15a85a38e17c049701dc1f38d95a3be6859e5"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/logs/page.tsx",
+      "sha256": "04055350f2c490ee88067ad3d2cbe71e10f0a8e5ebbed91c9776766b46e206ef"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/page.tsx",
+      "sha256": "23485fe2b14aa6910c8ab873a5cf838419a13c08941d1c710b433941c2aff106"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/presets/page.tsx",
+      "sha256": "b83bfd69a72ca3137dc68542d33ecb1da2bd8b9a84b4180fbe9e64e81159f7ca"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/search/page.tsx",
+      "sha256": "82a829545f1286a624cd3ed90426f2c0489ef6289cc9bf3a57fb1ef4d7238a02"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/settings/page.tsx",
+      "sha256": "02d653fe42862bc7482032a5c514c3ed7875e9a5f24a2c6d09d9e64a6ec011bd"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/stopwords/page.tsx",
+      "sha256": "163ad6138f2b3d011f4370c0f8438092d73e0a551471aae5a8b95f08ac364ff1"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/typesense/synonyms/page.tsx",
+      "sha256": "fc30798d3809baeef80fd6a24ec506492fa87ff247393b898d9308007578e66a"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/typesense/analytics/index.ts",
+      "sha256": "ca7253264281ce29ce128081337678ca3366bd625ebc0e4087f7474377030616"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/typesense/curations/index.ts",
+      "sha256": "c3e6e9aa4dc4dd09aa2fd3dad9f9d5e4ca3363ad4838e792dc50e6f90d2f8668"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/typesense/index.ts",
+      "sha256": "ce107eec0b8c1222b48bd7d95596d427617b3ba06aab5d0c379f53071d74b744"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/typesense/presets/index.ts",
+      "sha256": "d3a88cfd441fc9c9f9e872e65efc7a764e7edd439b229da58aa71d8194b3457b"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/typesense/search/index.ts",
+      "sha256": "60fae86fb7085a252ee1281eb4626a502c18b57967ec0697b25370f3191f5653"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/typesense/stopwords/index.ts",
+      "sha256": "33b91a4db71a7a0dc866acec9430421c1c27921eabfa45266039335a6cf62119"
+    },
+    {
+      "path": "apps/backend/src/admin/translations/typesense/synonyms/index.ts",
+      "sha256": "ffd287382c098ef562b0a2344b2cfbbd85e6fd58a9fde3414d4b114498249778"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/analytics/init/route.ts",
+      "sha256": "c7809e0ebbef4d1e5821357abfcaea8b680133500b7d8d19c311c0b857e47e00"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/analytics/reset/route.ts",
+      "sha256": "3712ab8b6b13e81b72a2fa9df7906c709c72e469e927584d344e20977b55d8bd"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/analytics/route.ts",
+      "sha256": "febd6a091f7f2b13a4250572d5115822ab5f760a8cbd2c11471a45b956358938"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/collections/[id]/route.ts",
+      "sha256": "e176c963ebdb59e0355eb19b4c3aafc67e31a38cdec32aedc4972d4bedf24305"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/collections/default/route.ts",
+      "sha256": "27aa490ccc514f8fb4aadc834634caaf0bffbd17fc3c6a327b94225152c3e858"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/collections/route.ts",
+      "sha256": "c306fac1001b70a262cf783fe81669222a0efd87b51350befc292f777b644736"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/config/route.ts",
+      "sha256": "5a5e88fa1a6a9842ed9ea13e2623a02dbc0b5390e73d7866a59b06b3947c477e"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/curations/[id]/route.ts",
+      "sha256": "adf2178e9c197a3af914d59df440c5ffa22c54e192824b74153298939c3529da"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/curations/route.ts",
+      "sha256": "eee024345511b50feec3e3f1306990272d46a13c1ae6a3cc9ed4a19ba27cef6c"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/last-sync/route.ts",
+      "sha256": "15c7f1d7f633629c8de75397b0da7cef18ed4e6ff5cbe1b37a795e1b0e503de4"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/link-reindex-middlewares.ts",
+      "sha256": "d465f0cb9dda72f918d1cb169e881692c6121f183b093ffc05f206bcd088e8cc"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/presets/[id]/route.ts",
+      "sha256": "d6bef50c876af8fecf9a84718574064aedb762a954b6446bdb0c1084e49c5c8d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/presets/route.ts",
+      "sha256": "70cc916c3fa4e7a5883193e7bb2499b55a60d7bd12efe26ab0976d3fddc059ea"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/search/route.ts",
+      "sha256": "e3bc34394f5fbb37e047f0bc5a691e721a03659d05d633a69e542cddb5a75ea1"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/stopwords/[id]/route.ts",
+      "sha256": "bdf2344bbc68c170f41ad82b975447bfcb4012f3c9e6be38005912eb99f3fdb7"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/stopwords/route.ts",
+      "sha256": "b6c03616e66dbbeba40343fbc016ab03ebb8d2c9dcfe0a6f867e0586bd0692f5"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/sync-logs/[id]/items/route.ts",
+      "sha256": "54af765e62efe7375896556cb3989b2e32954ded98129347fc1715ebae85b782"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/sync-logs/[id]/route.ts",
+      "sha256": "904509d7805ce2e7528dbc85608d4277a676ea7467e0b8e2c07cd22f1af1bae2"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/sync-logs/route.ts",
+      "sha256": "03fbbeb8640cd586efe00698cc25d325e45673e78a58b7995571f2a3c2b6b6d3"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/sync/route.ts",
+      "sha256": "b73d985aca8a06c747c2e361b75dc0c5186dcf1b28a08552007481d200c51dc0"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/synonyms/[id]/route.ts",
+      "sha256": "f84acdfdcd1e7abdfe75d0135d68dbff6622d08e61ddf502f7e3d402799352c4"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/synonyms/route.ts",
+      "sha256": "167d860950341d3e8693896b2bbed3a9525cfa61dffcb5115c41976eac31a1c9"
+    },
+    {
+      "path": "apps/backend/src/api/admin/typesense/test/route.ts",
+      "sha256": "4e4c336ff99180b97ac28fac31250f09ef60e2d241a77f4c3696f1fd46bb4bee"
+    },
+    {
+      "path": "apps/backend/src/api/admin/whatsapp-advisor/audit/route.ts",
+      "sha256": "c33acb65fe79fff9744a8e1487fd475109434eab2b415d602cfeb7e1e9aa1897"
+    },
+    {
+      "path": "apps/backend/src/api/admin/whatsapp-advisor/config/route.ts",
+      "sha256": "805eb87aa32061ccd5dee85ffed77b45e45919df3cca5febe8a451a9022f653c"
+    },
+    {
+      "path": "apps/backend/src/api/store/custom/typesense-sync/loader.ts",
+      "sha256": "d442ced5e5d141fb507694dd52cf7dd41ca3ba4c565a6c126ddc8b2f337267e2"
+    },
+    {
+      "path": "apps/backend/src/api/store/custom/typesense-sync/route.ts",
+      "sha256": "a0dad6d2c46aafe0054ea8d3a645d8d9d1c937377624e24e98517368dcdba0a1"
+    },
+    {
+      "path": "apps/backend/src/api/store/typesense/analytics/route.ts",
+      "sha256": "1e2616caf1aa825f4569b69cb1d924d261398788091432c9c2645ad1ee17e798"
+    },
+    {
+      "path": "apps/backend/src/jobs/typesense-stock-reconcile.ts",
+      "sha256": "d2872ec887d6e24d5b5bb5e29a9aff58520e11d1d1007d4dcfc7c02f3abfca5b"
+    },
+    {
+      "path": "apps/backend/src/jobs/typesense-sync-log-prune.ts",
+      "sha256": "ca4f24c95af493d4e31de84d6e86bb1996d37ec8ac9304edc127f9ff0d35070f"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/__fixtures__/relevance-queries.json",
+      "sha256": "bf6f004a4dfc260652bc398c45d54a28caebddf04a66135c247f7d7c324965d5"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/advisor.test.ts",
+      "sha256": "499aa7675e09b84a357db9e64ea374582c8cd7c99989186fb1fa854d6f65b789"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/advisor.ts",
+      "sha256": "ed4d853802d072604b769e0c7af04c5de0e908fbd964dd71c6718583c50f8e30"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/category-descendants.ts",
+      "sha256": "5cc6017cc90867f03a87db295277909a1a158a2cb8ab8191a8fb7cb4ccd18924"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/category-paths.ts",
+      "sha256": "7c88c133a3fbae7c8fe9a11f006e28e468cd9ac7ce45f50825d03e0fab8c5695"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/descriptor.test.ts",
+      "sha256": "2a07f71f90b2540688511c7bb096058ef0f4fc0990ace79211b72391593124d1"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/index.ts",
+      "sha256": "4879f8081c67eb8140c2850dc38c362626231818ead0d45937807623f260d51c"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/product-mapper.ts",
+      "sha256": "ed3922f2631072dcf1fa4a33f0da4c6b7de04666f9635bae9f0bfc241c3a26f6"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/reindex-queue.ts",
+      "sha256": "a7d5416eb888a106927b3a96d76efd3d36391336b20372a7e270903c9184cb19"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/reindex.ts",
+      "sha256": "4c36a1c6d82c8346c381263d13705b1b6b1b3842496aea63e460a33acdbfc73a"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/run-sync.ts",
+      "sha256": "5b297af359f95af55bf6c9001266c68a0fb2b14cae4add22b8a2506a6c2fc11c"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/sanitize.ts",
+      "sha256": "eaee33550c767af17e867a8e98e1698fbfcc05d7bb4c7ec5d4ef04cc203f33bf"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/schema.ts",
+      "sha256": "903f4b327edad8dd355d98cee0d45b6c9fb8eb20e9f2ae1dd968ac675756b84f"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/search-defaults.test.ts",
+      "sha256": "207ce72f1579861bb509df208420cec2c5583ed9bb7d958951264749eadac0c5"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/search-defaults.ts",
+      "sha256": "95dffb4b7fd257366cccf11a0e998f0285e7f7efbf58098a5a8fc7697bd09e7e"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/service.ts",
+      "sha256": "06d8864f679f8d1bd7f3f74386738a6ebef38df127f1961f5bd880b1c84a0e24"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/settings.ts",
+      "sha256": "38f30e0be2b28b95b7f94c4879b84bb74fddad73c85f30f1d5d765dee86cf574"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/site-collection.test.ts",
+      "sha256": "57f92afa3d8fb8f26285d223740de920cb7f7bf1acd5cc61b6e93c8de8d3935b"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/site-collection.ts",
+      "sha256": "d33fe61673047da9b0255654f4490c20d302df74e8e239572d9d83833357fd6e"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/sync-log/index.ts",
+      "sha256": "1bddbf0983c56be6688e6db4b9f42b21958cf1c134fec6d0dac57ea6ee19209c"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/sync-log/migrations/Migration20260731120000TypesenseSyncLog.ts",
+      "sha256": "57a6d15b9db903140665ac658c27d8b9d920414f1e597876c8cc104cb41fe7f9"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/sync-log/models/index.ts",
+      "sha256": "434a64224bdcad65d91cfdf0091f7f984e335276a996ffd01a5d010997e8481c"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/sync-log/models/typesense-sync-log-item.ts",
+      "sha256": "0a5e530d4e7e61823cdf6de2bbfd091c48187e168da5cc778f111736863830b2"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/sync-log/models/typesense-sync-log.ts",
+      "sha256": "dbb23a8fd4be770737631614d021c539f8331bd34b5ba0eeb778b7f4a5475842"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/sync-log/service.ts",
+      "sha256": "cafafd154f0a8879ef030882d887aa3f6ca0b416233430686a352d5a92d7fdee"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/types.ts",
+      "sha256": "d925fe9ea5512af1dac70c643d4d4caae59124b03996ab7b1375b7872876123f"
+    },
+    {
+      "path": "apps/backend/src/scripts/typesense-relevance-eval.ts",
+      "sha256": "8135a6716dd17e4f370b8d15d16725de3c6080946d943a7ec22d9fc48cdf6cbe"
+    },
+    {
+      "path": "apps/backend/src/scripts/typesense-sync.ts",
+      "sha256": "40b9ef481fe3fbf325c99bd60afc1576c21717d912b6a004f7cf66717213a058"
+    },
+    {
+      "path": "apps/backend/src/subscribers/erp-catalog-typesense-sync.ts",
+      "sha256": "93f32d2260ece9d5f2cf461652c64f46e1aeeeb58cdd331a6042b1faeafeb556"
+    },
+    {
+      "path": "apps/backend/src/subscribers/product-category-typesense-sync.ts",
+      "sha256": "d3540b970b517b4b29e2253541e27205186d24172daaecd609667c2e0df07379"
+    },
+    {
+      "path": "apps/backend/src/subscribers/product-collection-typesense-sync.ts",
+      "sha256": "36b6b2124b58814f45e7cec7340ba6e1cb6fa2ad5fc45c5cae98b4b61636afd7"
+    },
+    {
+      "path": "apps/backend/src/subscribers/product-created-typesense-sync.ts",
+      "sha256": "56085c943f891ab047f5dfca81c4d8fe2426d141d6f8a6132814c7a1aea0586f"
+    },
+    {
+      "path": "apps/backend/src/subscribers/product-deleted-typesense-sync.ts",
+      "sha256": "0f3e3f283ce9e4e7fb8d40e31129c6115afa43c315e6f9b9361c6559d558e241"
+    },
+    {
+      "path": "apps/backend/src/subscribers/product-updated-typesense-sync.ts",
+      "sha256": "87d0d19340ba86a5bfa4f57cdb497a39e6d8076ee1962c0859097e21a34f8e21"
+    },
+    {
+      "path": "apps/backend/src/subscribers/product-variant-typesense-sync.ts",
+      "sha256": "2c4292943c00dc846c5e3d78a11cdc01effb031d01e719912ec7747cfee9b640"
+    },
+    {
+      "path": "apps/backend/src/workflows/hooks/promotion-changed-typesense.ts",
+      "sha256": "47395dc0f86b849411ced877ab6466eba38a8c6cf588d53743bbcc8531913eb5"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/active-promotions-client.ts",
+      "sha256": "0b8e97c8851b9553b02e997377d1af79e4fe8f60bc10753babdabc0158f4a992"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/client.ts",
+      "sha256": "83fb94a55304cc5bb532438ea8c20305ea28945faeacddc4be025975553716fa"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/core/enrich.ts",
+      "sha256": "43e2a1ae1fdebcd811f0d7943d2a5640c7a4696119922e6654c75d24a63b8f58"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/core/facets.ts",
+      "sha256": "49609717c57c827ff1bb8592c5449e8e41a45456a0ef8fa4a3d5f386b7c0d652"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/core/filters.ts",
+      "sha256": "9d57e13029f6e957d0f57b9ff08f3e8ec80db9aecf2c23061dd5bab16ffa90d5"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/core/normalize.test.ts",
+      "sha256": "da1677199c319c3e7d84fc79b7c8b94cd3daf6dbbf84b9f2b866bb6786a493a0"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/core/normalize.ts",
+      "sha256": "6becdc4d24a4e0cdcd048c8deae9ceb21394d1142202de45fa49df7c4d532519"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/core/query-by.test.ts",
+      "sha256": "391029ba16834edf92cddb58eea5643e4a3803eb43c83597d94bdb72574ef9fe"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/core/query-by.ts",
+      "sha256": "ee76f6e78dc0663c41b2cfc57294986420e6514bd789bd31c1f9343b0745d75b"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/core/sort.test.ts",
+      "sha256": "d2a6401b97b9314c50d011b10a577e006204dd700c08041a938b59df9fd34d74"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/core/sort.ts",
+      "sha256": "c5f94af474c9efc1766f6eeb831978fc6caf515f88eef5a8e8884541a1585ec0"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/core/timing.ts",
+      "sha256": "1ffa64978321712a59e502bdb80319d6258f06ff798386ce5327a632fbec670e"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/get-product-data.ts",
+      "sha256": "41b0264fed259abeb35d1a1a620712633a160808b446843d21c77113a84db6c7"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/get-product-stock.ts",
+      "sha256": "5cdfc3335b012a16717deccbcdb60a0a069cc593c83df8e919724b0f0097cd21"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/index.ts",
+      "sha256": "f00fabe3d3389521c45b086d5a7b8d3e0a93383461d3a916251f9a4491092cd0"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/products.ts",
+      "sha256": "d069b6063105063877f871311da4bca76eb992e149c9a8b761ee0bc01d5d6fc8"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/search-browser.ts",
+      "sha256": "f8a4f6aafa7956fcfc650b9b91cb73095d577a40d32b3cff99c09601ea981a0c"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/search-core.ts",
+      "sha256": "44e879ee1afb44d25d087049c8176a1c683128acc8c2b77f3e5c442afbcccb7f"
+    },
+    {
+      "path": "apps/storefront/src/lib/typesense/types.ts",
+      "sha256": "34ba64845efa7a54c0fc9f1aaca99d7f50197928ebb0d34c68877fe2211ec4a6"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./admin/typesense/link-reindex-middlewares",
+        "typesenseLinkReindexMiddlewares"
+      ]
+    ],
+    "admin_hooks": [
+      "typesense"
+    ],
+    "admin_translation": [
+      "typesense",
+      "typesense"
+    ]
+  }
+}

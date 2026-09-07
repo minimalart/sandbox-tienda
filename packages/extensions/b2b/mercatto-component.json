@@ -1,0 +1,637 @@
+{
+  "schema_version": 1,
+  "id": "b2b",
+  "name": "B2B",
+  "version": "1.21.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [
+    "dynamic-groups",
+    "email-templates",
+    "fiscal-documentation"
+  ],
+  "incompatibilities": [],
+  "settings_namespace": "extension:b2b",
+  "environment": [
+    "B2B_SALES_CHANNEL_ID"
+  ],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/modules/company",
+      "target": "apps/backend/src/modules/company"
+    },
+    {
+      "source": "payload/apps/backend/src/modules/company-credit",
+      "target": "apps/backend/src/modules/company-credit"
+    },
+    {
+      "source": "payload/apps/backend/src/modules/company-credit-payment",
+      "target": "apps/backend/src/modules/company-credit-payment"
+    },
+    {
+      "source": "payload/apps/backend/src/modules/billing-profile",
+      "target": "apps/backend/src/modules/billing-profile"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/companies",
+      "target": "apps/backend/src/api/admin/companies"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/b2b",
+      "target": "apps/backend/src/api/store/b2b"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/companies",
+      "target": "apps/backend/src/api/store/companies"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/billing-profiles",
+      "target": "apps/backend/src/api/store/billing-profiles"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/companies",
+      "target": "apps/backend/src/admin/routes/companies"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/companies.tsx",
+      "target": "apps/backend/src/admin/hooks/api/companies.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/company-credit.tsx",
+      "target": "apps/backend/src/admin/hooks/api/company-credit.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/hooks/api/billing-profiles.tsx",
+      "target": "apps/backend/src/admin/hooks/api/billing-profiles.tsx"
+    },
+    {
+      "source": "payload/apps/storefront/src/modules/b2b",
+      "target": "apps/storefront/src/modules/b2b"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/api/b2b",
+      "target": "apps/storefront/src/app/api/b2b"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(b2b)",
+      "target": "apps/storefront/src/app/[countryCode]/(b2b)"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/company",
+      "target": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/company"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/credit",
+      "target": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/credit"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/billing",
+      "target": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/billing"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/b2b-cart.ts",
+      "target": "apps/storefront/src/lib/data/b2b-cart.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/company.ts",
+      "target": "apps/storefront/src/lib/data/company.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/company-credit.ts",
+      "target": "apps/storefront/src/lib/data/company-credit.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/billing-profile.ts",
+      "target": "apps/storefront/src/lib/data/billing-profile.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/billing-profile-client.ts",
+      "target": "apps/storefront/src/lib/data/billing-profile-client.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/widgets/customer-billing-profiles-widget.tsx",
+      "target": "apps/backend/src/admin/widgets/customer-billing-profiles-widget.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/customers/[id]/billing-profiles/route.ts",
+      "target": "apps/backend/src/api/admin/customers/[id]/billing-profiles/route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/carts/[id]/billing-profile/route.ts",
+      "target": "apps/backend/src/api/store/carts/[id]/billing-profile/route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/company-invitations/[token]/route.ts",
+      "target": "apps/backend/src/api/store/company-invitations/[token]/route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/company-created-email.ts",
+      "target": "apps/backend/src/subscribers/company-created-email.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/company-credit-order-placed.ts",
+      "target": "apps/backend/src/subscribers/company-credit-order-placed.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/accept-company-invitation.ts",
+      "target": "apps/backend/src/workflows/accept-company-invitation.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/create-company.ts",
+      "target": "apps/backend/src/workflows/create-company.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/invite-company-member.ts",
+      "target": "apps/backend/src/workflows/invite-company-member.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/link-company-customer-group.ts",
+      "target": "apps/backend/src/workflows/link-company-customer-group.ts"
+    }
+  ],
+  "migrations": [
+    "apps/backend/src/modules/billing-profile/migrations/Migration20260614130000.ts",
+    "apps/backend/src/modules/company-credit/migrations/Migration20260705120000CompanyCredit.ts",
+    "apps/backend/src/modules/company/migrations/Migration20260614150000.ts"
+  ],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/admin/hooks/api/billing-profiles.tsx",
+      "sha256": "04f70875deb5991537f7d5a33f8471501de9f77f96369f984d788768fd9dc284"
+    },
+    {
+      "path": "apps/backend/src/admin/hooks/api/companies.tsx",
+      "sha256": "5a86e95c8eef8c45df7ec0f3014ad11b2b4779ca465dc19e0d9e52701a1edfaa"
+    },
+    {
+      "path": "apps/backend/src/admin/hooks/api/company-credit.tsx",
+      "sha256": "eeb280055451d4bec2567ed1186ec3816cb577e13facab40c2bee4639be92ade"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/companies/components/fiscal-docs-tab.tsx",
+      "sha256": "0f5da3454ceb799744ae92607460a2a0c51a555ae57362d17904cde51363746b"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/companies/credenciales/page.tsx",
+      "sha256": "d7bf17995b7f84509cf2742128721882965d914a437dbfe5f213dcb51757d4cf"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/companies/page.tsx",
+      "sha256": "b5a6b0aa840be2db64b164a7982fbca1eb4b03aad1deeb40efb09ce8e57a8aaa"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/companies/settings/page.tsx",
+      "sha256": "b2f6405528f53068b91a4b238ed6455dafe25b0cbf62c55291095925b76260ec"
+    },
+    {
+      "path": "apps/backend/src/admin/widgets/customer-billing-profiles-widget.tsx",
+      "sha256": "ebd086643034009dc6d761223fdd3f77d504edaea7837ea235284ef0f994c66e"
+    },
+    {
+      "path": "apps/backend/src/api/admin/companies/[id]/credit/conditions/route.ts",
+      "sha256": "316de594a6ccf66f12b2b0227852e75989136ae5f74c25e0f579d4bc522108ea"
+    },
+    {
+      "path": "apps/backend/src/api/admin/companies/[id]/credit/route.ts",
+      "sha256": "fdb29d0441dcd47766c6e4b0be172cf4ac79755a306db9f02af7091ebd316c80"
+    },
+    {
+      "path": "apps/backend/src/api/admin/companies/[id]/credit/transactions/route.ts",
+      "sha256": "e42502a7ac69a7edbf489c8215668988bf9bd59614f30e6297905baba28601f3"
+    },
+    {
+      "path": "apps/backend/src/api/admin/companies/[id]/customer-group/route.ts",
+      "sha256": "c925e4135db79c42818657e59ded07bb098bcaa3f16989a57b1f34154d9ca911"
+    },
+    {
+      "path": "apps/backend/src/api/admin/companies/[id]/members/[memberId]/route.ts",
+      "sha256": "9a805c85ec28f44d646e02c59d245fd7379f4013d8d163d17dbeae84830a226e"
+    },
+    {
+      "path": "apps/backend/src/api/admin/companies/[id]/members/route.ts",
+      "sha256": "e6acdb3b033a22aae2921e0e0105a17721410923ceec25c068a9dd81a0c36556"
+    },
+    {
+      "path": "apps/backend/src/api/admin/companies/[id]/route.ts",
+      "sha256": "4b73a8eca556148eee32394662b4e0f7a5608afc729dfe785a6db274ce8eb491"
+    },
+    {
+      "path": "apps/backend/src/api/admin/companies/route.ts",
+      "sha256": "7bf5b9d1561c364b2f6e9670d19bd09a69f3f8d77980ba5e4ae5e0c9fcb08758"
+    },
+    {
+      "path": "apps/backend/src/api/admin/customers/[id]/billing-profiles/route.ts",
+      "sha256": "c5f5ba8d48fc0c5bf210cbb4dc69080aa278e0accc87fe67c7c351df2e9b14ad"
+    },
+    {
+      "path": "apps/backend/src/api/store/b2b/channel-products.ts",
+      "sha256": "8018c048942d6d7a115f8e957937c56b13998772be87fece07a981e4d3b7c843"
+    },
+    {
+      "path": "apps/backend/src/api/store/b2b/import-order/route.ts",
+      "sha256": "e2c12026f9347d613ccce1cc7b0655dc37b19c92952d2fe660e93dd1543cac43"
+    },
+    {
+      "path": "apps/backend/src/api/store/b2b/prices/route.ts",
+      "sha256": "2fecd867004a9c1468073e3f2f7a81bace1682f7a7cab1e385e5e04f868bf122"
+    },
+    {
+      "path": "apps/backend/src/api/store/b2b/pricing-region.ts",
+      "sha256": "e8208836ad057a3ec6dbd5f531d5b118e3e7f0a0ce580b7b6aa31745dce5f1f7"
+    },
+    {
+      "path": "apps/backend/src/api/store/b2b/quick-order/route.ts",
+      "sha256": "5d7797bed3c7e1fa48a9ed157978685f0471ec82e79a96e9c4cc4f201e12ccd7"
+    },
+    {
+      "path": "apps/backend/src/api/store/b2b/reorder/route.ts",
+      "sha256": "b464f9b74374d355063f6806354f653cf4e957a52ea6f90d69045f4f1a743a1b"
+    },
+    {
+      "path": "apps/backend/src/api/store/b2b/resolve-lines.ts",
+      "sha256": "d4361b39a448eb63a5cb1d63e3abd4617a041e1b53bc7274123b57ff4c58c075"
+    },
+    {
+      "path": "apps/backend/src/api/store/billing-profiles/[id]/default/route.ts",
+      "sha256": "ca5f245924db02efe00fb0c552a61efa51d3d5d48ebd5f8032391dc9b27e8e74"
+    },
+    {
+      "path": "apps/backend/src/api/store/billing-profiles/[id]/route.ts",
+      "sha256": "27d035941c0f3f769aa0d4a3a2d841507233820a8861603dd6ebbc665265060a"
+    },
+    {
+      "path": "apps/backend/src/api/store/billing-profiles/middlewares.ts",
+      "sha256": "8b72f54dcb0317d0483a7575e0684ccd1de30f9d55f9002d7390bf363d3f4d08"
+    },
+    {
+      "path": "apps/backend/src/api/store/billing-profiles/route.ts",
+      "sha256": "a495ab5ba687ad59e43a6f48f39dda2646054c94d6dc9f89731e01673bd5e4d2"
+    },
+    {
+      "path": "apps/backend/src/api/store/billing-profiles/validators.ts",
+      "sha256": "69e803bb4f47e4d43c83944adf92c1f7d1be966067d5752d62efbdc95ecd72d2"
+    },
+    {
+      "path": "apps/backend/src/api/store/carts/[id]/billing-profile/route.ts",
+      "sha256": "feecb29fd9eda503a0a4d11a65eb4c2dccdca7f46fc258559f0a2a5befe80e71"
+    },
+    {
+      "path": "apps/backend/src/api/store/companies/invitations/accept/route.ts",
+      "sha256": "3db669feca87aa24c475063759eed2dfb24f771618ac5e42820184f34f638071"
+    },
+    {
+      "path": "apps/backend/src/api/store/companies/me/credit/route.ts",
+      "sha256": "ebbf74c81f4c5669c1c404f54e61e601db7d31242d085fa458736fe79e1f9db5"
+    },
+    {
+      "path": "apps/backend/src/api/store/companies/me/credit/transactions/route.ts",
+      "sha256": "a11dccce0c091d9b80ab40d63ed65dc0d8680ea16769977d75c8f243fd5cd2fa"
+    },
+    {
+      "path": "apps/backend/src/api/store/companies/me/invitations/route.ts",
+      "sha256": "58d3c64bbfdeac0c68047a55dbe7ac564525135dfc9fb1d7ab25683830364952"
+    },
+    {
+      "path": "apps/backend/src/api/store/companies/me/logo/route.ts",
+      "sha256": "56e6ff5cd0e33a87d1a72d4a7c65af7c0567c752cec6b7e9b2c9c909784ef995"
+    },
+    {
+      "path": "apps/backend/src/api/store/companies/me/members/route.ts",
+      "sha256": "fcc71743728c3c0037767ba5c1f08515c52981e0869c745d455bd36577554b98"
+    },
+    {
+      "path": "apps/backend/src/api/store/companies/me/route.ts",
+      "sha256": "649f3b37bad24c7697dd5d1da7de35708c5d802268ba0f690b80580a78842cf4"
+    },
+    {
+      "path": "apps/backend/src/api/store/companies/members/[id]/route.ts",
+      "sha256": "82814aa28132c1694e4031f015f81352420c32c8873e5892d328a82696ee8689"
+    },
+    {
+      "path": "apps/backend/src/api/store/companies/middlewares.ts",
+      "sha256": "ae6474cf8701f1a8a39f81820d7dbb6e72a0bfa22b4326a5558563f90f4cf091"
+    },
+    {
+      "path": "apps/backend/src/api/store/companies/register/route.ts",
+      "sha256": "bf9612b6eeda6c05273a5aeeef75767fdce8cee8d23f96f824d0ca24d5f6e9d0"
+    },
+    {
+      "path": "apps/backend/src/api/store/companies/validators.ts",
+      "sha256": "c39985fdb8d5e8b8fa5756c815c2eda9f395703d1a9d2b5500a64d86255ce3c3"
+    },
+    {
+      "path": "apps/backend/src/api/store/company-invitations/[token]/route.ts",
+      "sha256": "ffe34454dff54089ef57156ec93139bfe72dd54d36f95104d3a433845c041906"
+    },
+    {
+      "path": "apps/backend/src/modules/billing-profile/index.ts",
+      "sha256": "265bfa88db31e6b772fb0c9b7601462a53edc7d6804041bef5b09b7ff73d5704"
+    },
+    {
+      "path": "apps/backend/src/modules/billing-profile/migrations/Migration20260614130000.ts",
+      "sha256": "ad892eed01576d0becf319bca44b6a674d361a7962fea36186ca54331829b578"
+    },
+    {
+      "path": "apps/backend/src/modules/billing-profile/models/billing-profile.ts",
+      "sha256": "213989dac71081dbc5278adc870db0eaa379f9c9828fd0585094529771b45969"
+    },
+    {
+      "path": "apps/backend/src/modules/billing-profile/models/index.ts",
+      "sha256": "2f5b7c6b697d49378a0c68a7e434751a483c6572d9a41ba703de71d23ce91101"
+    },
+    {
+      "path": "apps/backend/src/modules/billing-profile/service.ts",
+      "sha256": "712430c5cd6b1a0d378503678e60b8a460453b375f43249f99bcbe4c91235c4d"
+    },
+    {
+      "path": "apps/backend/src/modules/billing-profile/types.ts",
+      "sha256": "edb2b41c936e0713e26399f834f7db00e372ec4096db114d056e030644472812"
+    },
+    {
+      "path": "apps/backend/src/modules/company-credit-payment/constants.ts",
+      "sha256": "3b4a5811323dde58729e5427e16f03234feb508cdacb703a75a0a1ff2ad4bd28"
+    },
+    {
+      "path": "apps/backend/src/modules/company-credit-payment/index.ts",
+      "sha256": "864deae361fe06edcabf58f467da412cf7bf774489a2fcc24d29a71a0eee5197"
+    },
+    {
+      "path": "apps/backend/src/modules/company-credit-payment/service.ts",
+      "sha256": "3b18a329433df510d1f5c65c7a72eb69484b0bb4bc5bb8014f7be860c6e387a6"
+    },
+    {
+      "path": "apps/backend/src/modules/company-credit/index.ts",
+      "sha256": "ee346a00625cb289c1e893e419baee7df876927b416759a4ef46f02e236d9fc3"
+    },
+    {
+      "path": "apps/backend/src/modules/company-credit/migrations/Migration20260705120000CompanyCredit.ts",
+      "sha256": "35407f7a717169f85ce61a48ce048d362be6a1988f1de6786b615ede6be37a01"
+    },
+    {
+      "path": "apps/backend/src/modules/company-credit/models/company-credit-account.ts",
+      "sha256": "0acbbd0f0294a10104f072727c8d9e6d5c576ac3ea656243516f637f4407c8d0"
+    },
+    {
+      "path": "apps/backend/src/modules/company-credit/models/company-credit-transaction.ts",
+      "sha256": "1baf7ebf7235b080cd034865c4bc6d81d3d5bac600d5a1907fc9c85a96635c9e"
+    },
+    {
+      "path": "apps/backend/src/modules/company-credit/models/index.ts",
+      "sha256": "5da9d41e4eaf9983a970f257620ce8120c6c80cb4deac73cd4503241be63e396"
+    },
+    {
+      "path": "apps/backend/src/modules/company-credit/service.ts",
+      "sha256": "b08c5a38889fd611c1e0e643f3bc24797177c1c90dc8492cb86af8040ff5f337"
+    },
+    {
+      "path": "apps/backend/src/modules/company-credit/types.ts",
+      "sha256": "ba2afbf6d953ad7bd37d53e2f7a3e099eb32a897255346bc98c8ebdfa7ca6036"
+    },
+    {
+      "path": "apps/backend/src/modules/company/index.ts",
+      "sha256": "015f74639764d6394dd08ef20c1457d98c78ced6df801b52cb205b892ec70723"
+    },
+    {
+      "path": "apps/backend/src/modules/company/migrations/Migration20260614150000.ts",
+      "sha256": "75b9c6a83513ea35123c38dce91a1a3f5739a0ee10a3e29be6276d5d104d1b52"
+    },
+    {
+      "path": "apps/backend/src/modules/company/models/company-invitation.ts",
+      "sha256": "63bcbc5252bb363dbaebbc05dd91622b474fe1eb96cfe44b4e378c3af754df7c"
+    },
+    {
+      "path": "apps/backend/src/modules/company/models/company-member.ts",
+      "sha256": "777217cd70b93f445a5e98d7dca3d49939cb0dd4b9428de55926dbe65d8f1534"
+    },
+    {
+      "path": "apps/backend/src/modules/company/models/company.ts",
+      "sha256": "1e1da65cccdb1b52023ae4da3fdfb70274c415bcbf0fae1bb84c9f415757377e"
+    },
+    {
+      "path": "apps/backend/src/modules/company/models/index.ts",
+      "sha256": "de6fb32fe5c9d67ebaf2c764bf8a872f44d8f8252ea2b3255f614a8ff05af39f"
+    },
+    {
+      "path": "apps/backend/src/modules/company/service.ts",
+      "sha256": "ce02a0376dba5c1d9809458dafaecc33ba66bbe41271eeb17b9c34577bb0091e"
+    },
+    {
+      "path": "apps/backend/src/modules/company/settings.test.ts",
+      "sha256": "9a7306cfab90ed6706c89511c778392e8edb65461cf310e335bb5e6c6aee36c4"
+    },
+    {
+      "path": "apps/backend/src/modules/company/settings.ts",
+      "sha256": "fa70f555c63eaa1a9eb12a2e9bd60ecf387041c51e4691f07f4172f4c552deeb"
+    },
+    {
+      "path": "apps/backend/src/modules/company/site-scope.ts",
+      "sha256": "8b10a1a89ad92e95ac1244e19f870f5991e6f3a4ce08355e0b932d83361f808a"
+    },
+    {
+      "path": "apps/backend/src/modules/company/types.ts",
+      "sha256": "e7cd86a09f3168929b1f8b2eedac2cdc5aa9cb7b0549af19e676c88d0e7af35a"
+    },
+    {
+      "path": "apps/backend/src/subscribers/company-created-email.ts",
+      "sha256": "8dd9e5cf0fe6cb76aba95809d1d65a9a84bf5e3e05fe0201105848ae71f7e158"
+    },
+    {
+      "path": "apps/backend/src/subscribers/company-credit-order-placed.ts",
+      "sha256": "5ce8d8dca3b38b5d044c4bc85d3524eaec75ba894a7ace5e009c152c07626854"
+    },
+    {
+      "path": "apps/backend/src/workflows/accept-company-invitation.ts",
+      "sha256": "23a63d11bd4fbe98550d465b1b88fc65c7eb5775b3ceec252c0f8999439b69c6"
+    },
+    {
+      "path": "apps/backend/src/workflows/create-company.ts",
+      "sha256": "a6ca5f420d3309a007f999648bb4d648498a0b9540254d2021d2d1f01162a7a7"
+    },
+    {
+      "path": "apps/backend/src/workflows/invite-company-member.ts",
+      "sha256": "4e20a8663396a29788ffc7467c1767cf280b6e1e1b14707e908a592efd7cc3e6"
+    },
+    {
+      "path": "apps/backend/src/workflows/link-company-customer-group.ts",
+      "sha256": "171c46f58642c6766a2b1fc4b92f2f40674d1222676c3b3e5701fb5abe28fac3"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/checkout/loading.tsx",
+      "sha256": "6b2d061d3230831c19b2a8bde937856852756499a9e9245dda61084f61e40bd7"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/checkout/page.tsx",
+      "sha256": "e069b2e399cdbbacf260718282aa0e36dac1a9fc2bb1da7a72f4eae61478e58d"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/empresa/page.tsx",
+      "sha256": "4846d39da1e21598139bea8db906c21a511ebae4adcefcf599427e29f0dff88d"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/layout.tsx",
+      "sha256": "d685fd42945f134b7c87bcfc6a29259996306a2aa0a40d4db3be9fb119aaff76"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/loading.tsx",
+      "sha256": "c3f43b764fef79aea2ad86e3d3f5446e9e4b997eaf90cb455fd56db6d81adf49"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/page.tsx",
+      "sha256": "e0c45cd1e8459ce7a9b7d8f9a6044cd60ba4ed0ff2f5b1fee5d4a0a1a4f5d12b"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/pedidos/[id]/page.tsx",
+      "sha256": "8ab65801c86a77fc6e2cf305a09e09aaedd1d1b24148688db00eae4d3023a314"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/pedidos/loading.tsx",
+      "sha256": "a5b6f425fd1d5d08a162f94dc30f914503dada5369eed3ba98bf75eeb9b8fdcf"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/pedidos/nuevo/loading.tsx",
+      "sha256": "2d74f407e28673883eb3c06766c82d491452a522e18e971cc92a83420af4e54b"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/pedidos/nuevo/page.tsx",
+      "sha256": "16c7a4fa4b4ff8c381b20836c4293c490293bb39719589480e43538acfe545e0"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/pedidos/page.tsx",
+      "sha256": "ddf5283af1793573a23bd273c4c97dfab06e7895aad20b66da7c54a79dafe80b"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/perfil/page.tsx",
+      "sha256": "2010d2cdcc3b4f436bb3038dbf90ff6a008e1420b8ff66d50893407e5bcd811c"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/login/page.tsx",
+      "sha256": "bb728e3deb99272278ff2606533ef62e8838cd8a4a7a8ac44395dff8a8522694"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/register/page.tsx",
+      "sha256": "2ffc406124a9f1cf38dc7511afaecb7833acf07d2f9eeea3273b2c9eb1d06caa"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/layout.tsx",
+      "sha256": "9449e4149c86731b8820f3fb506ccb8334c3357f8116a03330879748c47540ef"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/billing/page.tsx",
+      "sha256": "57bbb784a3869cea48fd53f5c098646a85689e58e1200f48652dabb23a16a3bd"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/company/page.tsx",
+      "sha256": "9b5341c8016a33e2974f1126882e446e652cadffed9bb60870dedbd8c77cd08a"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/credit/page.tsx",
+      "sha256": "9fd2254f29b3cb229d6e0ad050e60d76b5af986aa754c6c8bdfa94b4de39c1bf"
+    },
+    {
+      "path": "apps/storefront/src/app/api/b2b/cart/route.ts",
+      "sha256": "00bc067af17046aa982a5251db25f0cfc0467cfc7732e1400178e5c71b5e09a6"
+    },
+    {
+      "path": "apps/storefront/src/app/api/b2b/prices/route.ts",
+      "sha256": "698cabefe355b0adb0c779a64e619494afb9699d62f7fb97e0d6b91e04dea033"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/b2b-cart.ts",
+      "sha256": "d3c9611abbeaaedc9d9f54b5f5b584616036d70698c39b5ae44a1ea26fe84c0e"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/billing-profile-client.ts",
+      "sha256": "a2f8a425a7d915bd74ae78922a93ffcff166b1b3507db87bf0c5e79dab25d3a9"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/billing-profile.ts",
+      "sha256": "1c819a60f4b6d4ad22f673c33b85f495165c1a1491caf178ae4d74d81624c650"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/company-credit.ts",
+      "sha256": "83ad10282183a446efe5ea21ddea37cb69a27bb7aa7a09b67a85730dd268a51b"
+    },
+    {
+      "path": "apps/storefront/src/lib/data/company.ts",
+      "sha256": "13a6d48274baefc544deffecb90e5b81abdf7f14b5ff20f3e23a6908b9050138"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/b2b-brand.tsx",
+      "sha256": "40bc1f455e7515c63fc2a630970336a28e68dae6fe5ba0fd61e3bd59e67655d9"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/b2b-checkout-flow.tsx",
+      "sha256": "f477af84a341631b9075ff8e2b50bd3d38a2923bc1b934989b0a7fa31f9798f1"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/b2b-gate-screen.tsx",
+      "sha256": "4a010f4607e15c97fcb96aa64170ec8c310c3c2e8d88ef01ed19df22c59bcc1f"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/b2b-login.tsx",
+      "sha256": "c75a62395935297b5d63214971a552d149b62e00d7ea36d729ee1f9329042e9c"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/b2b-order-builder.tsx",
+      "sha256": "b956940afe16466619ea16e8b210a765b91bbc8ca260754cb88d522a0066c6b4"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/b2b-order-detail.tsx",
+      "sha256": "bef36bdadd7f22f8a5f025e4a18d5f941e22a75c987f31b3876edc024a9d7d87"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/company-users.tsx",
+      "sha256": "b8ddc869f6e61f9b0d9e879acb7d09de6822d8f4ab90113cd10515c33bf3332a"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/order-row-actions.tsx",
+      "sha256": "ffc23cbc59739ac9b03a87c3e313b9ee4d7182127d68e82a62bd292a066783ef"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/portal/app-sidebar.tsx",
+      "sha256": "2d935a67732d1743af46e5a4e5faabe01faad559bdcc190d37137e50739686c4"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/portal/page-header.tsx",
+      "sha256": "f56d9f67ee30ed283fb05ae1a5f27c03a9b7d2004f467ad8a9616f69308cbc6a"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/portal/section-cards.tsx",
+      "sha256": "c9521c83828ada661f9e2740c17298a9ab4e7822946d3a727464bcd128c0a893"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/portal/site-header.tsx",
+      "sha256": "92d29232f3bda07a3a4344a0956786950a92555bbc5a4d13bcc17f830cbc093e"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/portal/theme.tsx",
+      "sha256": "2ed5971d190551835f0f87ce2fde989e8b2aeda73d8f6ddb333865fafe556156"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/register-form.tsx",
+      "sha256": "abc61a581796d6829e621d4f84fdbb35debd4a15f3a63a7aa2f6fdef95fdc9ee"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/lib/order-status.ts",
+      "sha256": "4dea2227d933a98e0e9b28f3b4da7fccef6b7d62dd262a04d77935a92d583153"
+    }
+  ],
+  "integrations": {
+    "middlewares": [
+      [
+        "./store/billing-profiles/middlewares",
+        "storeBillingProfilesMiddlewares"
+      ],
+      [
+        "./store/companies/middlewares",
+        "storeCompaniesMiddlewares"
+      ]
+    ],
+    "admin_hooks": [
+      "billing-profiles",
+      "companies",
+      "company-credit"
+    ],
+    "admin_translation": null
+  }
+}

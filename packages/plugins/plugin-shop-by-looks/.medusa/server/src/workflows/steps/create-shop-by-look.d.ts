@@ -1,0 +1,51 @@
+export type ShopByLookProductInput = {
+    product_id: string;
+    variant_id?: string | null;
+    pos_x?: number;
+    pos_y?: number;
+    sort_order?: number;
+};
+export type CreateShopByLookStepInput = {
+    title: string;
+    subtitle?: string | null;
+    cta_label?: string | null;
+    image_url: string;
+    image_alt?: string | null;
+    is_active?: boolean;
+    sort_order?: number;
+    placement?: string;
+    sales_channel_ids?: string[] | null;
+    region_ids?: string[] | null;
+    metadata?: Record<string, unknown> | null;
+    products?: ShopByLookProductInput[];
+};
+export declare const createShopByLookStep: import("@medusajs/framework/workflows-sdk").StepFunction<CreateShopByLookStepInput, {
+    id: string;
+    title: string;
+    subtitle: string | null;
+    cta_label: string | null;
+    image_url: string;
+    image_alt: string | null;
+    is_active: boolean;
+    sort_order: number;
+    placement: string;
+    sales_channel_ids: Record<string, unknown> | null;
+    region_ids: Record<string, unknown> | null;
+    metadata: Record<string, unknown> | null;
+    products: {
+        id: string;
+        product_id: string;
+        variant_id: string | null;
+        pos_x: number;
+        pos_y: number;
+        sort_order: number;
+        look: /*elided*/ any;
+        created_at: Date;
+        updated_at: Date;
+        deleted_at: Date | null;
+        look_id: string;
+    }[];
+    created_at: Date;
+    updated_at: Date;
+    deleted_at: Date | null;
+}>;

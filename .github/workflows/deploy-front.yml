@@ -1,0 +1,36 @@
+name: Deploy frontend
+
+# Triggers a frontend deploy by pushing an empty commit (the hosting provider
+# watches main/develop). It runs only when a push touches something OUTSIDE the
+# backend app — i.e. the storefront, shared packages, or any root-level files.
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - 'apps/backend/**'
+
+permissions:
+  contents: write # needed to push the empty commit
+
+jobs:
+  trigger-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Use a PAT if your deploy provider listens to GitHub Actions
+          # workflows; pushes made with the default GITHUB_TOKEN do NOT
+          # re-trigger workflows (which conveniently also avoids a loop here).
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push empty commit to trigger deploy
+        run: |
+          git config --local user.name "teamDeploy"
+          git config --local user.email "team.deploy@minimalart.co"
+          git commit --allow-empty -m "chore: trigger frontend deploy [skip ci]"
+          git push origin "HEAD:${{ github.ref_name }}"

@@ -1,0 +1,10 @@
+{
+  "name": "@repo/extension-corporate",
+  "version": "1.10.0",
+  "private": true,
+  "description": "Corporativos component source package",
+  "dependencies": {
+    "@repo/extension-b2b": "workspace:*",
+    "@minimalart/mercatto-plugin-fiscal-documentation": "^1.0.4"
+  }
+}

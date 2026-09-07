@@ -1,0 +1,68 @@
+name: Validate catalog
+
+# Uno de los dos checks bloqueantes de PR (el otro es `quality.yml`, que corre
+# typecheck + tests). Este corre los validadores del catálogo de extensiones, que dan
+# el mismo resultado en cualquier checkout:
+#
+#   site:catalog:validate   catálogo bien formado + espejo commiteado en
+#                           apps/backend/src/lib/platform/catalog.json al día.
+#   site:components:verify  el snapshot de packages/extensions/<id>/payload/ no
+#                           quedó atrás del archivo canónico del working tree
+#                           (un payload viejo hace que el proyecto generado
+#                           arranque con código viejo), más el sha256 de
+#                           managed_files y la identidad catálogo/manifest/package.
+#
+# NO corre site:components:validate a propósito: ese compara el sha256 contra los
+# bytes crudos del working tree y el repo no tiene .gitattributes, así que en un
+# runner Linux (LF) marcaría como stale las ~1992 entradas de managed_files.
+#
+# OJO, LA MISMA TRAMPA AL REVÉS: el baseline de esos sha256 se extrajo en un checkout
+# WINDOWS/CRLF, así que correr `site:components:extract` en macOS o Linux reescribe
+# las ~1992 entradas y mete un diff de ~2000 líneas de ruido ajeno al cambio. El flujo
+# correcto para sincronizar un payload es quirúrgico: editar el canónico, correr
+# `site:components:verify` (que lista exactamente qué quedó stale) y actualizar SÓLO
+# esas entradas con el sha256 normalizado a CRLF.
+#
+# Ninguno de los dos scripts usa dependencias externas (sólo builtins de node y
+# requires locales), así que no hace falta `pnpm install` y el check tarda
+# segundos. Si corepack alguna vez molesta, se pueden invocar directo con
+# `node packages/project-catalog/src/validate.js` y
+# `node packages/project-composer/src/verify-components.js`.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable pnpm
+        run: corepack enable
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+
+      - name: Validate project catalog
+        run: pnpm site:catalog:validate
+
+      - name: Verify extension payloads
+        run: pnpm site:components:verify
+
+      # DigitalOcean corre `npm ci` en apps/backend, que aborta si el lock quedó
+      # atrás del package.json. Sin este chequeo, un lock stale no se ve hasta que
+      # rompe el deploy de producción. Es offline, igual que los de arriba.
+      - name: Verify backend npm lock
+        run: pnpm backend:lock:verify

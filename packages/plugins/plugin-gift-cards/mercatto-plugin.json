@@ -1,0 +1,37 @@
+{
+  "$schema": "https://mercatto.minimalart.co/schemas/plugin.v1.json",
+  "schema_version": 1,
+  "id": "gift-cards",
+  "name": "Gift Card Experience",
+  "version": "1.0.3",
+  "kind": "plugin",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:gift-cards",
+  "environment": [
+    "GIFT_CARD_EXPERIENCE_ENABLED",
+    "SENDGRID_EVENT_WEBHOOK_PUBLIC_KEY",
+    "GIFT_CARD_TOKEN_SECRET",
+    "STOREFRONT_URL",
+    "DEFAULT_COUNTRY_CODE"
+  ],
+  "medusaModuleKey": "gift_card_experience",
+  "ownedTables": [
+    "gift_card_design",
+    "gift_card_settings",
+    "gift_card_delivery",
+    "gift_card_delivery_attempt",
+    "gift_card_webhook_event",
+    "gift_card_event"
+  ],
+  "integrations": {
+    "middlewares": [
+      ["./api/admin/gift-card-experience/middlewares", "adminGiftCardExperienceMiddlewares"],
+      ["./api/store/gift-card-experience/middlewares", "storeGiftCardExperienceMiddlewares"],
+      ["./api/webhooks/sendgrid-gift-cards/middlewares", "sendGridGiftCardWebhookMiddlewares"]
+    ],
+    "admin_hooks": ["gift-cards"],
+    "admin_translation": []
+  }
+}

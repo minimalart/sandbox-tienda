@@ -1,0 +1,41 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/backend/**"
+      - "packages/shared/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "yarn.lock"
+      - "package-lock.json"
+      - ".github/workflows/deploy-backend.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to DigitalOcean
+        uses: digitalocean/app_action/deploy@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          # El AppSpec se administra en DigitalOcean y no se versiona en el repo.
+          # Despliega la configuración vigente de la aplicación por nombre.
+          app_name: mercatto-backend
+          # Imprimir los logs del build y del deploy en el output del job.
+          #
+          # Sin esto, un deploy fallido sólo dice `deployment failed in phase "ERROR"`
+          # y hay que entrar a la consola de DO para saber qué pasó — y los logs de
+          # runtime ni siquiera se pueden traer cuando el deploy no llegó a activarse
+          # ("deploy cluster proxy not ready"). Con los logs acá, la causa queda en el
+          # propio run de Actions.
+          #
+          # Caso que motivó el cambio (2026-07-26): dos deploys seguidos fallaron en
+          # fase BUILDING y el log de Actions no decía nada. En la consola de DO el
+          # error real era `npm error code E429 / 429 Too Many Requests` contra
+          # registry.npmjs.org, disparado por `npm error git dep preparation failed`.
+          print_build_logs: true
+          print_deploy_logs: true

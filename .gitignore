@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Remotion generated artifacts
+apps/mercatto-product-list-video/out/
+apps/mercatto-product-list-video/node_modules/.cache/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Medusa
+apps/backend/.medusa/
+apps/backend/public/
+apps/backend/static/
+
+# DB dumps (nunca commitear data del cliente)
+*.sql
+*.dump
+
+# Testing
+/coverage/
+playwright-report/
+test-results/
+
+# Misc
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# VTEX scraper cache (regenerate with `pnpm vtex:fetch`)
+apps/backend/src/scripts/data/
+
+# Claude Code / agentes + skills (artefactos locales de la herramienta)
+.agents/
+skills-lock.json

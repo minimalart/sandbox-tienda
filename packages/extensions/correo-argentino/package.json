@@ -1,0 +1,9 @@
+{
+  "name": "@repo/extension-correo-argentino",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Correo Argentino component source package",
+  "dependencies": {
+    "@repo/extension-delivery": "workspace:*"
+  }
+}
