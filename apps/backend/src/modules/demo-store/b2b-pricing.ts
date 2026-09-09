@@ -34,6 +34,8 @@ export const WHOLESALE_TIERS = [
 ] as const;
 
 export type ProvisionDemoB2BPricingInput = {
+  /** Existing list to associate without replacing its prices. */
+  priceListId?: string | null;
   demoSlug: string;
   /** The demo's B2C channel — source of the demo's product set. */
   sourceSalesChannelId: string;
@@ -54,7 +56,7 @@ export type ProvisionDemoB2BPricingResult = {
 async function collectDemoProductIds(
   query: any,
   sourceSalesChannelId: string,
-  b2bSalesChannelId: string,
+  b2bSalesChannelId: string
 ): Promise<{ all: string[]; missingFromB2B: string[] }> {
   const all: string[] = [];
   const missingFromB2B: string[] = [];
@@ -87,7 +89,7 @@ async function collectDemoProductIds(
 
 export async function provisionDemoB2BPricing(
   container: any,
-  input: ProvisionDemoB2BPricingInput,
+  input: ProvisionDemoB2BPricingInput
 ): Promise<ProvisionDemoB2BPricingResult> {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
@@ -98,22 +100,35 @@ export async function provisionDemoB2BPricing(
   const { all: productIds, missingFromB2B } = await collectDemoProductIds(
     query,
     input.sourceSalesChannelId,
-    input.b2bSalesChannelId,
+    input.b2bSalesChannelId
   );
   const LINK_BATCH = 200;
   for (let i = 0; i < missingFromB2B.length; i += LINK_BATCH) {
     const add = missingFromB2B.slice(i, i + LINK_BATCH);
-    try {
-      await linkProductsToSalesChannelWorkflow(container).run({
-        input: { id: input.b2bSalesChannelId, add, remove: [] },
-      });
-    } catch (err) {
-      logger.warn(`[demo-store] B2B product link batch skipped: ${(err as Error).message}`);
-    }
+    await linkProductsToSalesChannelWorkflow(container).run({
+      input: { id: input.b2bSalesChannelId, add, remove: [] },
+    });
   }
 
-  if (productIds.length === 0) {
-    return { linkedProducts: 0, priceListId: null, tierPrices: 0 };
+  if (input.priceListId) {
+    const list = await pricing.retrievePriceList(input.priceListId, {
+      relations: ['price_list_rules'],
+    });
+    if (input.customerGroupId) {
+      const rules = Object.fromEntries(
+        (list.price_list_rules ?? []).map((rule: any) => [rule.attribute, rule.value])
+      );
+      const groups = Array.isArray(rules['customer.groups.id']) ? rules['customer.groups.id'] : [];
+      // An unrestricted list already applies to wholesale customers. Restricting
+      // it here would silently remove its prices from existing retail buyers.
+      if (Object.hasOwn(rules, 'customer.groups.id')) {
+        await pricing.setPriceListRules({
+          price_list_id: input.priceListId,
+          rules: { ...rules, 'customer.groups.id': [...new Set([...groups, input.customerGroupId])] },
+        });
+      }
+    }
+    return { linkedProducts: missingFromB2B.length, priceListId: input.priceListId, tierPrices: 0 };
   }
 
   // ── 2. Base prices of the demo's published variants ────────────────────────
@@ -127,7 +142,10 @@ export async function provisionDemoB2BPricing(
       filters: { id: chunk },
       context: {
         variants: {
-          calculated_price: QueryContext({ currency_code: currency, region_id: input.regionId ?? undefined }),
+          calculated_price: QueryContext({
+            currency_code: currency,
+            region_id: input.regionId ?? undefined,
+          }),
         },
       },
     });
@@ -156,10 +174,6 @@ export async function provisionDemoB2BPricing(
       });
     }
   }
-  if (prices.length === 0) {
-    logger.warn(`[demo-store] B2B: no priced variants for "${input.demoSlug}"; price list skipped.`);
-    return { linkedProducts: missingFromB2B.length, priceListId: null, tierPrices: 0 };
-  }
 
   // ── 4. (Re)create the price list (idempotent by title) ─────────────────────
   const title = `Mayorista Demo ${input.demoSlug}`;
@@ -178,7 +192,7 @@ export async function provisionDemoB2BPricing(
         {
           title,
           description: `Precios mayoristas del demo con escalas por cantidad (${WHOLESALE_TIERS.map(
-            (t) => `${t.minQty}+ -${Math.round(t.discount * 100)}%`,
+            (t) => `${t.minQty}+ -${Math.round(t.discount * 100)}%`
           ).join(' · ')}).`,
           type: 'override',
           status,
@@ -193,7 +207,7 @@ export async function provisionDemoB2BPricing(
   const priceListId = (result?.[0]?.id as string | undefined) ?? null;
 
   logger.info(
-    `[demo-store] B2B pricing for "${input.demoSlug}": linked ${missingFromB2B.length} products, price list ${priceListId} (${status}) with ${prices.length} tier prices over ${variantPrices.size} variants.`,
+    `[demo-store] B2B pricing for "${input.demoSlug}": linked ${missingFromB2B.length} products, price list ${priceListId} (${status}) with ${prices.length} tier prices over ${variantPrices.size} variants.`
   );
 
   return { linkedProducts: missingFromB2B.length, priceListId, tierPrices: prices.length };

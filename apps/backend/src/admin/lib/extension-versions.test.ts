@@ -63,13 +63,14 @@ test('el badge del admin y el catálogo dicen la misma versión', (t) => {
 
   const shared = catalogExtensions().filter((e) => e.id in EXTENSION_VERSIONS);
 
+  // store-importer se integró en multistore: el conjunto compartido baja de 19 a 18.
   // Piso: sin esto, renombrar el archivo del catálogo o cambiar la forma del JSON
   // dejaría el test en verde por vacío, que es la trampa que ya documentan
   // `manifest-drift.test.ts` y `route-collisions.test.ts`.
   assert.ok(
-    shared.length >= 19,
+    shared.length >= 18,
     `sólo ${shared.length} extensiones en común entre el catálogo y el badge; ` +
-      'se esperaban >= 19. Si de verdad bajaron, actualizá este piso a mano.',
+      'se esperaban >= 18. Si de verdad bajaron, actualizá este piso a mano.',
   );
 
   const problems = shared

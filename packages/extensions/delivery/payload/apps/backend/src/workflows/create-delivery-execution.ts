@@ -1,3 +1,5 @@
+import type { Link } from '@medusajs/framework/modules-sdk';
+import type { Logger, RemoteQueryFunction } from '@medusajs/framework/types';
 /**
  * create-delivery-execution — crea el sidecar operativo de un Fulfillment.
  *
@@ -351,7 +353,7 @@ export const resolveChosenStoreLocationId = (
 const resolveFulfillmentContextStep = createStep(
   'resolve-fulfillment-context',
   async (input: CreateDeliveryExecutionInput, { container }) => {
-    const query = container.resolve(ContainerRegistrationKeys.QUERY);
+    const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
 
     const { data: fulfillments } = await query.graph({
       entity: 'fulfillment',
@@ -404,7 +406,7 @@ const resolveFulfillmentContextStep = createStep(
       null;
 
     // ── store_location: precedencia ────────────────────────────────────────
-    const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
+    const logger = container.resolve<Logger>(ContainerRegistrationKeys.LOGGER);
     const storeLocationService = () =>
       container.resolve<StoreLocationModuleService>(STORE_LOCATION_MODULE);
 
@@ -585,7 +587,7 @@ const linkExecutionStep = createStep(
       return new StepResponse({ links: [] as CreatedLink[] }, [] as CreatedLink[]);
     }
 
-    const link = container.resolve(ContainerRegistrationKeys.LINK);
+    const link = container.resolve<Link>(ContainerRegistrationKeys.LINK);
     const links: CreatedLink[] = [];
 
     links.push({
@@ -613,7 +615,7 @@ const linkExecutionStep = createStep(
   },
   async (links: CreatedLink[] | undefined, { container }) => {
     if (!links?.length) return;
-    const link = container.resolve(ContainerRegistrationKeys.LINK);
+    const link = container.resolve<Link>(ContainerRegistrationKeys.LINK);
     await link.dismiss(links);
   },
 );
@@ -673,7 +675,7 @@ const refineWithRulesStep = createStep(
       return new StepResponse(unchanged);
     }
 
-    const query = container.resolve(ContainerRegistrationKeys.QUERY);
+    const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
     const delivery = container.resolve<DeliveryModuleService>(DELIVERY_MODULE);
 
     // Contexto de evaluación derivado de la orden (peso, total, items, skus,
@@ -747,7 +749,7 @@ const refineWithRulesStep = createStep(
     // metadata.geocoded de la EXECUTION (merge no destructivo) para no volver a
     // geocodificar y para que create-route tenga coords aunque el address no las
     // tenga.
-    const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
+    const logger = container.resolve<Logger>(ContainerRegistrationKeys.LOGGER);
 
     let coverageId: string | null = null;
     let storeLocationId: string | null = null;

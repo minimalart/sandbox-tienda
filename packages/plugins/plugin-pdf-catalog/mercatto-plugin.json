@@ -3,7 +3,7 @@
   "schema_version": 1,
   "id": "pdf-catalog",
   "name": "Catálogos PDF",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "kind": "plugin",
   "status": "ready",
   "dependencies": ["store-config"],

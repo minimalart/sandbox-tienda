@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "mercadopago",
   "name": "Mercado Pago",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -19,10 +19,6 @@
     "MERCADOPAGO_WEBHOOK_SECRET"
   ],
   "files": [
-    {
-      "source": "payload/apps/backend/src/admin/routes/mercadopago",
-      "target": "apps/backend/src/admin/routes/mercadopago"
-    },
     {
       "source": "payload/apps/backend/src/modules/mercado-pago",
       "target": "apps/backend/src/modules/mercado-pago"
@@ -70,14 +66,6 @@
   ],
   "migrations": [],
   "managed_files": [
-    {
-      "path": "apps/backend/src/admin/routes/mercadopago/credenciales/page.tsx",
-      "sha256": "c1fdcfd9f7c198e2057af89572075dd3ee8a415602bfbe471b71de1e4658c75f"
-    },
-    {
-      "path": "apps/backend/src/admin/routes/mercadopago/page.tsx",
-      "sha256": "14a87e90fa612a85250d13e70ab562798fe0f84b63d2928dac765d0ff0929c1a"
-    },
     {
       "path": "apps/backend/src/api/mercado-pago-api/route.ts",
       "sha256": "403e72f66b11de5d4b40c355b8cd1300e5bae586f40772adcf187ea85d9195c5"
@@ -144,11 +132,11 @@
     },
     {
       "path": "apps/backend/src/modules/mercado-pago-api/workflows/steps/create-payment-method.ts",
-      "sha256": "da09951402df5a2f18f654f396d63a68fd0dd6c90271d1345a5b5fa8e2091cd1"
+      "sha256": "3279125b5f95e8d6dec616285894427b7d25f5adfe87f1b6078163d877f24c80"
     },
     {
       "path": "apps/backend/src/modules/mercado-pago-api/workflows/steps/create-payment.ts",
-      "sha256": "5b1fa8736b62649d7e9001aa0ce611218f7c3d3d0af75a176519fb7a6f9aea25"
+      "sha256": "fc6f2e2b73f92a8bf4064a56293487cac864bc9406c6c9922789fb307e35e213"
     },
     {
       "path": "apps/backend/src/modules/mercado-pago-api/workflows/steps/validate-transaction-amount.ts",

@@ -23,6 +23,7 @@ export type BannerFieldId =
   | 'card_color'
   | 'icon_color'
   | 'text_color'
+  | 'cta_text_color'
   | 'splash_bg'
   | 'countdown_seconds'
   | 'show_logo'
@@ -59,6 +60,14 @@ export const ALL_FIELDS: BannerFieldId[] = [
   'cta_label',
   'cta_target',
   'card_color',
+  // `text_color` (título/subtítulo del banner) y `cta_text_color` (solo texto
+  // del botón CTA) son campos SEPARADOS: el título va sobre la imagen (que
+  // suele reservar zona con fondo oscuro), el CTA va sobre `card_color`
+  // (posiblemente claro). Un único color para ambos deja a uno invisible
+  // cuando los fondos difieren. Antes: solo texto blanco hardcoded en el
+  // storefront + `text_color` únicamente para top_bar/splash/sticky.
+  'text_color',
+  'cta_text_color',
   'start_at',
   'end_at',
 ];
@@ -99,6 +108,7 @@ const STICKY_FOOTER_FIELDS: BannerFieldId[] = [
   'content_subtitle',
   'card_color',
   'text_color',
+  'cta_text_color',
   'sticky_links',
   // CTA opcional: si no hay enlaces, es obligatorio (botón + link).
   'cta_label',

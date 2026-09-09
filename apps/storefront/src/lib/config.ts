@@ -11,7 +11,9 @@ if (process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL) {
 // SDK por defecto (para compatibilidad hacia atrás)
 export const sdk = new Medusa({
   baseUrl: NEXT_PUBLIC_MEDUSA_BACKEND_URL,
-  debug: process.env.NODE_ENV === "development",
+  debug: false, // Request headers include private checkout capabilities.
+  // Authentication is request-scoped in httpOnly cookies; never reuse browser-global SDK tokens.
+  auth: { type: "jwt", jwtTokenStorageMethod: "nostore" },
   publishableKey: process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
 });
 
@@ -22,7 +24,7 @@ export const sdk = new Medusa({
 export function getAdminSDK() {
   return new Medusa({
     baseUrl: NEXT_PUBLIC_MEDUSA_BACKEND_URL,
-    debug: process.env.NODE_ENV === "development",
+    debug: false, // Request headers include private checkout capabilities.
     apiKey: process.env.MEDUSA_ADMIN_API_KEY,
   });
 }
@@ -39,7 +41,8 @@ export async function getMedusaSDK() {
 
   return new Medusa({
     baseUrl: NEXT_PUBLIC_MEDUSA_BACKEND_URL,
-    debug: process.env.NODE_ENV === "development",
+    debug: false, // Request headers include private checkout capabilities.
+    auth: { type: "jwt", jwtTokenStorageMethod: "nostore" },
     publishableKey,
   });
 }

@@ -1,3 +1,4 @@
+import type { ICustomerModuleService, IEventBusModuleService } from '@medusajs/framework/types';
 import {
   createStep,
   createWorkflow,
@@ -67,7 +68,7 @@ const acceptStep = createStep(
     // Si la empresa ya tiene un customer group vinculado, sumamos al nuevo miembro.
     const corporate = await service.retrieveCorporate(invitation.corporate_id);
     if (corporate?.customer_group_id) {
-      const customerService = container.resolve(Modules.CUSTOMER);
+      const customerService = container.resolve<ICustomerModuleService>(Modules.CUSTOMER);
       await customerService.addCustomerToGroup({
         customer_id: input.customer_id,
         customer_group_id: corporate.customer_group_id as string,
@@ -98,7 +99,7 @@ const acceptStep = createStep(
 const emitJoinedEventStep = createStep(
   'emit-corporate-member-joined',
   async (data: { corporateId: string }, { container }) => {
-    const eventBus = container.resolve(Modules.EVENT_BUS);
+    const eventBus = container.resolve<IEventBusModuleService>(Modules.EVENT_BUS);
     await eventBus.emit({
       name: 'corporate.member.joined',
       data: { id: data.corporateId },

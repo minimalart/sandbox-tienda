@@ -296,6 +296,11 @@ export const DEFAULT_TITLE_DICTIONARY: Record<string, string> = {
   lapiz: 'lápiz',
   escalon: 'escalón',
   marron: 'marrón',
+  // DESDEELSUR-48: `Semi mascara 6200/07025 sin filtro` era el único título del
+  // catálogo con una palabra que el diccionario de categorías ya acentuaba y el
+  // del título no.
+  mascara: 'máscara',
+  mascaras: 'máscaras',
   espatula: 'espátula',
   espatulas: 'espátulas',
   plasticas: 'plásticas',

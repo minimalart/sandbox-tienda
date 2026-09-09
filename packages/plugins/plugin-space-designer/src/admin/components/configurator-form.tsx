@@ -19,6 +19,7 @@ const newConfigurator = (): SpaceConfiguratorInput => ({
     products: [],
     templates: [],
     allow_custom: true,
+    checkout_mode: 'cart',
     surface_options: { floors: [], walls: [] },
   },
 });
@@ -218,7 +219,7 @@ export function ConfiguratorForm({
     const product = input.config.products.find((item) => item.id === id);
     if (
       !window.confirm(
-        `¿Quitar “${product?.label ?? 'este producto'}” del diseñador y de todos sus templates?`
+        `¿Quitar “${product?.label ?? 'este producto'}” del espacio y de todos sus predefinidos?`
       )
     )
       return;
@@ -299,7 +300,7 @@ export function ConfiguratorForm({
     setError('');
     try {
       await saveConfigurator(configurator?.id, parsed.data);
-      toast.success('Diseñador guardado');
+      toast.success('Espacio guardado');
       onSaved();
     } catch (error) {
       setError(errorMessage(error));
@@ -396,7 +397,7 @@ export function ConfiguratorForm({
         <FocusModal.Header>
           <FocusModal.Title asChild>
             <Heading>
-              {configurator ? `Editar ${configurator.title}` : 'Nuevo diseñador de espacios'}
+              {configurator ? `Editar ${configurator.title}` : 'Nuevo espacio'}
             </Heading>
           </FocusModal.Title>
           <div className="flex items-center gap-2">
@@ -404,7 +405,7 @@ export function ConfiguratorForm({
               Cancelar
             </Button>
             <Button isLoading={saving} disabled={saving} onClick={save}>
-              Guardar diseñador
+              Guardar espacio
             </Button>
           </div>
         </FocusModal.Header>
@@ -412,13 +413,13 @@ export function ConfiguratorForm({
           <div
             className="flex shrink-0 flex-wrap gap-1 border-b border-ui-border-base px-6 pt-3"
             role="tablist"
-            aria-label="Configuración del diseñador"
+            aria-label="Configuración del espacio"
           >
             {(
               [
                 { id: 'settings', label: 'Configuración' },
                 { id: 'products', label: `Productos (${input.config.products.length})` },
-                { id: 'templates', label: `Templates (${input.config.templates.length})` },
+                { id: 'templates', label: `Predefinidos (${input.config.templates.length})` },
               ] as const
             ).map((item) => (
               <button
@@ -459,7 +460,7 @@ export function ConfiguratorForm({
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Nombre">
                       <Input
-                        aria-label="Nombre del diseñador"
+                        aria-label="Nombre del espacio"
                         value={input.title}
                         onChange={(event) => {
                           const title = event.target.value;
@@ -475,9 +476,9 @@ export function ConfiguratorForm({
                         placeholder="Diseñá tu espacio"
                       />
                     </Field>
-                    <Field label="Slug" help="Se usa en la dirección pública del diseñador.">
+                    <Field label="Slug" help="Se usa en la dirección pública del espacio.">
                       <Input
-                        aria-label="Slug del diseñador"
+                        aria-label="Slug del espacio"
                         value={input.slug}
                         onChange={(event) =>
                           setInput((current) => ({ ...current, slug: event.target.value }))
@@ -488,7 +489,7 @@ export function ConfiguratorForm({
                   </div>
                   <Field label="Descripción">
                     <Textarea
-                      aria-label="Descripción del diseñador"
+                      aria-label="Descripción del espacio"
                       value={input.config.description ?? ''}
                       onChange={(event) => configPatch({ description: event.target.value })}
                       rows={3}
@@ -497,7 +498,7 @@ export function ConfiguratorForm({
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Estado" help="Solo los publicados aparecen en la tienda.">
                       <select
-                        aria-label="Estado del diseñador"
+                        aria-label="Estado del espacio"
                         className={selectClass}
                         value={input.status}
                         onChange={(event) =>
@@ -546,6 +547,29 @@ export function ConfiguratorForm({
                       )}
                     </Field>
                   </div>
+                  <Field
+                    label="Cómo cierra el cliente"
+                    help={
+                      input.config.checkout_mode === 'quote'
+                        ? 'El cliente envía el diseño y sus datos como pedido de cotización. No se muestran precios ni se agrega nada al carrito, y la consulta llega a Espacios → Consultas.'
+                        : 'El cliente agrega todos los productos del diseño al carrito y compra como en cualquier producto de la tienda.'
+                    }
+                  >
+                    <select
+                      aria-label="Cómo cierra el cliente"
+                      className={selectClass}
+                      value={input.config.checkout_mode ?? 'cart'}
+                      onChange={(event) =>
+                        configPatch({
+                          checkout_mode: event.target
+                            .value as SpaceConfiguratorInput['config']['checkout_mode'],
+                        })
+                      }
+                    >
+                      <option value="cart">Agregar al carrito</option>
+                      <option value="quote">Pedir cotización</option>
+                    </select>
+                  </Field>
                   <label className="flex items-start gap-3 rounded-lg border border-ui-border-base p-4 text-sm">
                     <input
                       type="checkbox"
@@ -556,15 +580,16 @@ export function ConfiguratorForm({
                     <span>
                       <span className="block font-medium">Permitir personalizar espacios</span>
                       <span className="text-ui-fg-subtle">
-                        El cliente puede modificar los templates o comenzar con sus propias medidas.
-                        Si lo desactivás, se utilizan las predefinidas tal como las publicaste.
+                        El cliente puede modificar los espacios predefinidos o comenzar con sus
+                        propias medidas. Si lo desactivás, se usan las predefinidas tal como las
+                        publicaste.
                       </span>
                     </span>
                   </label>
                   <div>
                     <Heading level="h2">Terminaciones</Heading>
                     <Text size="small" className="text-ui-fg-subtle">
-                      Opciones que el cliente puede elegir. Cada template conserva su piso y sus
+                      Opciones que el cliente puede elegir. Cada predefinido conserva su piso y sus
                       paredes iniciales.
                     </Text>
                   </div>

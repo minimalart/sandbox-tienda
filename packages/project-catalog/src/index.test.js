@@ -2,6 +2,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { resolveProjectSelection, validateCatalog } = require('./index');
 
+test('legacy importer selection resolves to Tiendas without a separate extension', () => {
+  const legacy = resolveProjectSelection({ template: 'grocery', extensions: ['store-importer'] });
+  const current = resolveProjectSelection({ template: 'grocery', extensions: ['multistore'] });
+  assert.deepEqual(legacy, current);
+  assert.ok(!legacy.extensions.some(extension => extension.id === 'store-importer'));
+});
+
 test('catalog has no missing dependencies or cycles', () => {
   assert.deepEqual(validateCatalog(), { valid: true, errors: [] });
 });

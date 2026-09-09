@@ -56,7 +56,7 @@ export default function AppSidebar({
 }: {
   userName?: string;
   email?: string;
-  /** Logo de la tienda del demo. Ausente = logo de Mercatto (store principal). */
+  /** Logo configurado de la tienda activa, incluida la principal. */
   storeLogo?: string;
   /** Ícono cuadrado (favicon) de la tienda del demo, para el sidebar colapsado. */
   storeIcon?: string;
@@ -69,7 +69,7 @@ export default function AppSidebar({
   const { dark, toggle } = usePortalTheme();
 
   const onLogout = async () => {
-    await logout();
+    if (!(await logout())) return;
     // Preservar el prefijo /demo/{slug} para no salir del contexto del demo.
     window.location.href = siteHref("/b2b/login");
   };

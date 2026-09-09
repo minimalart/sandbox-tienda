@@ -8,6 +8,7 @@ import {
   redisEventBusExpected,
   type EventBusQueueLike,
   type EventBusVerdict,
+  type EventBusRedisClientLike,
   type EventBusWorkerLike,
 } from '../lib/event-bus-health';
 
@@ -187,7 +188,10 @@ function resolveQueue(
  * cae a `ADMIN_EMAIL` a secas. El `logger.error` no depende de nada de esto y sale
  * igual: es el piso del aviso, no el mail.
  */
-async function resolveRecipient(container: MedusaContainer): Promise<string | null> {
+async function resolveRecipient(
+  container: MedusaContainer,
+  logger: Logger,
+): Promise<string | null> {
   try {
     /**
      * El `.js` no es un descuido: el paquete es CommonJS (`package.json` sin
@@ -202,8 +206,31 @@ async function resolveRecipient(container: MedusaContainer): Promise<string | nu
     const { getAdminNotificationEmail } = await import('../modules/email/admin-recipient.js');
     const to = await getAdminNotificationEmail(container);
     if (to) return to;
-  } catch {
-    // La extensión de email no está instalada, o su helper falló. Seguimos.
+    logger.warn(
+      '[event-bus-monitor] el módulo de email resolvió SIN destinatario: ni la fila de ' +
+        '`email_branding` (la global, o la de la única tienda) ni el `ADMIN_EMAIL` de ' +
+        '`app-settings` tienen `admin_notification_email`. Se sigue con la env.',
+    );
+  } catch (error) {
+    /**
+     * ESTE `catch` ESTABA VACÍO, Y ES POR QUÉ EL MONITOR SE QUEDÓ MUDO.
+     *
+     * El 2026-09-09 el event bus de desdeelsur estuvo caído ~50 minutos. El monitor
+     * lo detectó en cada tick de 5 minutos y dejó `no hay destinatario de aviso
+     * configurado` — pero `getAdminNotificationEmail(container)` SIN hint resuelve
+     * `singleSite`, y esa instalación es mono-tienda con `info@desdelsur.com.ar` en la
+     * fila de su tienda. O sea que había destinatario y algo falló acá adentro: el
+     * `import()` dinámico, `resolveSite`, o `getEmailBranding`. No se puede saber cuál,
+     * porque esto no dejaba rastro.
+     *
+     * Un `catch` que devuelve lo mismo que el camino de al lado no maneja el error: lo
+     * entierra. Nos enteramos del bus caído por una compra de prueba, no por el
+     * vigilante que existe para avisarlo.
+     */
+    logger.warn(
+      '[event-bus-monitor] no se pudo resolver el destinatario por el módulo de email ' +
+        `(${error instanceof Error ? error.message : String(error)}). Se sigue con la env.`,
+    );
   }
   return process.env.ADMIN_EMAIL?.trim() || null;
 }
@@ -227,11 +254,14 @@ async function mailAdmin(
 ): Promise<void> {
   if (process.env.EVENT_BUS_MONITOR_EMAIL === 'false') return;
 
-  const to = await resolveRecipient(container);
+  const to = await resolveRecipient(container, logger);
   if (!to) {
     logger.warn(
       '[event-bus-monitor] no hay destinatario de aviso configurado ' +
-        '(`admin_notification_email` ni `ADMIN_EMAIL`): el aviso queda sólo en el log.',
+        '(`admin_notification_email` ni `ADMIN_EMAIL`): el aviso queda sólo en el log. ' +
+        'Se arregla seteando `ADMIN_EMAIL` en el entorno del backend — es la mejora más ' +
+        'barata que existe acá: convierte "nos enteramos por una compra" en "nos ' +
+        'enteramos en 5 minutos". Los warnings de arriba dicen por qué no se resolvió.',
     );
     return;
   }
@@ -293,6 +323,107 @@ async function mailAdmin(
  * rearme solo, y eso es de Medusa. Mientras tanto esto convierte "tres días muertos"
  * en "cinco minutos", sin que nadie tenga que estar mirando.
  */
+/**
+ * Techo de tiempo para todo lo que le pedimos a la conexión.
+ *
+ * 5 segundos: la conexión está sana o está rechazada, no hay término medio que
+ * justifique esperar más dentro de un job que corre cada 5 minutos.
+ */
+const CONNECTION_DEADLINE_MS = 5_000;
+
+/**
+ * Mensajes que dicen "el otro lado no me deja conectar", no "el código está mal".
+ *
+ * La distinción no es cosmética: decide a quién le sirve el log. Un
+ * `Connection is closed.` en el re-arme significa que reintentar es inútil hasta que
+ * alguien mire la infra, y decirlo ahorra el paseo entero por el código.
+ */
+const CONNECTION_LEVEL_ERROR =
+  /connection is closed|econnrefused|etimedout|econnreset|enotfound|max number of clients|ready check failed/i;
+
+const messageOf = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+/**
+ * Espera una promesa AJENA con techo de tiempo.
+ *
+ * Existe por `worker.client`: BullMQ lo deja pendiente para siempre si la conexión
+ * nunca se establece, y awaitearlo sin techo colgaría este job — la misma falla que
+ * el monitor vino a detectar.
+ */
+async function withDeadline<T>(promise: Promise<T>, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${label} no respondió en ${CONNECTION_DEADLINE_MS} ms`)),
+          CONNECTION_DEADLINE_MS,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+/**
+ * Reabre la conexión del worker si quedó cerrada, y devuelve en una frase qué pasó.
+ *
+ * ── POR QUÉ REVIVIR Y NO CONSTRUIR ───────────────────────────────────────────
+ *
+ * `run()` a secas no alcanza y está MEDIDO: el 2026-09-09, con el bus caído, el
+ * re-arme falló con `Connection is closed.` en cada tick. BullMQ consume con un
+ * comando bloqueante; cuando su conexión muere, `run()` intenta reestablecerla y
+ * rechaza con lo mismo, para siempre. Reintentar sobre la conexión muerta es
+ * pedirle a un teléfono desconectado que vuelva a marcar.
+ *
+ * La tentación es construir un Worker nuevo: se puede, sin agregar `bullmq` como
+ * dependencia, porque `event-bus-redis.js:127` lo crea con
+ * `new Worker(this.queueName_, this.worker_, ...)` y las dos cosas son propiedades
+ * del service. NO SE HACE, y el motivo es la causa raíz observada: un Worker nuevo
+ * necesita una CONEXIÓN nueva, y el `Connection is closed.` de desdeelsur sale del
+ * handshake — o sea que el Valkey está rechazando conexiones, con el tope de
+ * conexiones del plan como principal sospechoso (ver la nota de `redisOptions` en
+ * `medusa-config.ts`, donde ese tope ya causó un boot de minutos). Un monitor que
+ * abre clientes nuevos cada cinco minutos contra un Valkey al límite convierte una
+ * caída de una hora en una permanente: sería el vigilante empujando en la dirección
+ * del incendio.
+ *
+ * `connect()` de ioredis, en cambio, reabre el MISMO socket cuando quedó en `end`.
+ * Cero clientes nuevos. Cubre el caso "el objeto quedó envenenado y el servidor
+ * está sano", que es el que el código sí puede curar — y para el otro caso deja
+ * dicho, en el log, que no lo puede curar nadie desde acá.
+ */
+async function reviveConnection(worker: EventBusWorkerLike, logger: Logger): Promise<string> {
+  if (!worker.client) return 'no la expone el worker';
+
+  let client: EventBusRedisClientLike;
+  try {
+    client = await withDeadline(Promise.resolve(worker.client), 'el cliente de Redis del worker');
+  } catch (error) {
+    // Que el `client` no resuelva ES el síntoma: la conexión no logra establecerse.
+    return `ilegible (${messageOf(error)})`;
+  }
+
+  const status = client.status ?? 'desconocido';
+  // `connect()` sobre una conexión viva o en curso RECHAZA ("Redis is already
+  // connecting/connected"), así que estos estados se dejan en paz.
+  if (['ready', 'connect', 'connecting', 'reconnecting'].includes(status)) {
+    return `en \`${status}\`, no hace falta tocarla`;
+  }
+  if (typeof client.connect !== 'function') return `en \`${status}\`, sin \`connect()\``;
+
+  try {
+    await withDeadline(Promise.resolve(client.connect()), 'la reconexión');
+    logger.error(`[event-bus-monitor] Conexión del worker reabierta desde \`${status}\`.`);
+    return `estaba en \`${status}\` y se reabrió`;
+  } catch (error) {
+    return `estaba en \`${status}\` y reabrirla falló (${messageOf(error)})`;
+  }
+}
+
 async function tryRearmWorker(
   worker: EventBusWorkerLike | null,
   logger: Logger,
@@ -305,18 +436,37 @@ async function tryRearmWorker(
   // true adentro de `run()`, así que en el tick siguiente esta condición ya no entra.
   if (worker.isRunning()) return 'unsupported';
 
+  // ANTES de `run()`, y no después: `run()` sobre una conexión cerrada rechaza con
+  // `Connection is closed.` sin intentar nada. Esto sí está acotado en tiempo.
+  const connection = await reviveConnection(worker, logger);
+
   logger.error(
     '[event-bus-monitor] Reintentando arrancar el worker del event bus. ' +
+      `Conexión: ${connection}. ` +
       'Si prende, el tick siguiente lo va a reportar como RECUPERADO.',
   );
 
   void Promise.resolve()
     .then(() => worker.run!())
     .catch((error: unknown) => {
+      const message = messageOf(error);
+      if (CONNECTION_LEVEL_ERROR.test(message)) {
+        logger.error(
+          `[event-bus-monitor] El reintento falló CONTRA LA CONEXIÓN: ${message}\n\n` +
+            'Esto NO se arregla desde el código y reiniciar el backend TAMPOCO va a ' +
+            'alcanzar: el Redis/Valkey no está aceptando la conexión. Mirar, en orden:\n' +
+            '  1. conexiones activas del Valkey contra el tope del plan (un deploy que ' +
+            'deja dos instancias vivas duplica las conexiones);\n' +
+            '  2. mantenimiento, failover o resize del Valkey en la ventana de la caída;\n' +
+            '  3. si el plan está al límite, subirlo.\n' +
+            'Mientras la conexión sea rechazada, la cola sigue creciendo y NO salen los ' +
+            'mails de orden, ni el WhatsApp, ni se drena el outbox del ERP.',
+        );
+        return;
+      }
       logger.error(
-        `[event-bus-monitor] El reintento de arranque falló: ${
-          error instanceof Error ? error.message : String(error)
-        }. Se vuelve a intentar en el próximo tick.`,
+        `[event-bus-monitor] El reintento de arranque falló: ${message}. ` +
+          'Se vuelve a intentar en el próximo tick.',
       );
     });
 

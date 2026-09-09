@@ -3,7 +3,7 @@
   "schema_version": 1,
   "id": "comments",
   "name": "Comentarios",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "kind": "plugin",
   "status": "ready",
   "dependencies": [],

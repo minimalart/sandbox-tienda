@@ -125,6 +125,7 @@ export function resolveSiteFromParts(parts: SiteResolutionParts): SiteResolution
   const pathname = stripTrailingSlash(parts.pathname || "/")
   const segments = pathname.split("/")
   const isRootHome = pathname === "/"
+  const isRootB2B = /^\/(?:[a-z]{2}\/)?b2b(?:\/|$)/.test(pathname)
   const exitRequested = Boolean(parts.exitRequested)
 
   const prefixSegment = segments[1]
@@ -171,7 +172,7 @@ export function resolveSiteFromParts(parts: SiteResolutionParts): SiteResolution
   // 3. La cookie: mantiene el sitio mientras se navega una sub-ruta sin prefijo.
   //    La HOME RAÍZ y un `?exit_*` siempre terminan la sesión.
   const cookieSlug = parts.cookieSlug || null
-  if (cookieSlug && !isRootHome && !exitRequested && isValidSlugShape(cookieSlug)) {
+  if (cookieSlug && !isRootHome && !isRootB2B && !exitRequested && isValidSlugShape(cookieSlug)) {
     return {
       slug: cookieSlug,
       source: "cookie",
@@ -191,7 +192,7 @@ export function resolveSiteFromParts(parts: SiteResolutionParts): SiteResolution
     pathPrefix: "",
     rewritePath: pathname,
     isLegacyPath,
-    isExit: isRootHome || exitRequested,
+    isExit: isRootHome || isRootB2B || exitRequested,
   }
 }
 

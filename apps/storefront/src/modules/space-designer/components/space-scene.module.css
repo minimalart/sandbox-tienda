@@ -1,13 +1,32 @@
+/* Derived from the tenant's --primary-color. space-scene.tsx mixes the same
+   ratios in three.js for the 3D background and the selection box. */
 .root {
+  --sc-accent: var(--primary-color, #2e7d32);
+  --sc-ink: color-mix(in srgb, var(--sc-accent) 25%, #14211a);
+  --sc-muted: color-mix(in srgb, var(--sc-accent) 18%, #6b7280);
+  --sc-border: color-mix(in srgb, var(--sc-accent) 16%, #e5e7eb);
+  --sc-tint: color-mix(in srgb, var(--sc-accent) 10%, white);
+  --sc-canvas: color-mix(in srgb, var(--sc-accent) 7%, #f2f3ef);
+  --sc-shadow: color-mix(in srgb, var(--sc-accent) 8%, transparent);
   position: relative;
   width: 100%;
   height: 100%;
   min-height: 360px;
   overflow: hidden;
   border-radius: 12px;
-  background: #edf0e9;
-  color: #294236;
+  background: var(--sc-canvas);
+  color: var(--sc-ink);
   isolation: isolate;
+}
+.dropTarget::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  z-index: 4;
+  pointer-events: none;
+  border: 2px dashed var(--sc-accent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sc-accent) 8%, transparent);
 }
 .root:fullscreen {
   width: 100vw;
@@ -39,32 +58,32 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid #d2dbd0;
-  background: #fffffff0;
+  border: 1px solid var(--sc-border);
+  background: rgba(255, 255, 255, 0.94);
   border-radius: 7px;
   min-width: 34px;
   height: 34px;
   padding: 0 9px;
-  box-shadow: 0 2px 8px #2b402b0a;
+  box-shadow: 0 2px 8px var(--sc-shadow);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
 }
 .controls button:hover,
 .rotate:hover {
-  background: #f0f6ed;
+  background: var(--sc-tint);
 }
 .controls button:focus-visible,
 .rotate:focus-visible,
 .objectList button:focus-visible,
 .objectList summary:focus-visible {
-  outline: 2px solid #447c53;
+  outline: 2px solid var(--sc-accent);
   outline-offset: 2px;
 }
 .controls button[aria-pressed='true'] {
-  background: #284d3a;
+  background: var(--sc-accent);
   color: white;
-  border-color: #284d3a;
+  border-color: var(--sc-accent);
 }
 .viewButtons {
   display: flex;
@@ -78,7 +97,7 @@
   text-align: center;
   font-size: 10px;
   line-height: 1.4;
-  color: #5b6c60;
+  color: var(--sc-muted);
   pointer-events: none;
 }
 .objectList {
@@ -88,10 +107,10 @@
   z-index: 3;
   max-width: calc(100% - 28px);
   width: 248px;
-  border: 1px solid #d6dfd2;
+  border: 1px solid var(--sc-border);
   border-radius: 8px;
-  background: #fffffff5;
-  box-shadow: 0 3px 15px #243c2310;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 3px 15px var(--sc-shadow);
   font-size: 11px;
 }
 .objectList summary {
@@ -116,7 +135,7 @@
 }
 .listContent p {
   font-size: 10px;
-  color: #728073;
+  color: var(--sc-muted);
   line-height: 1.5;
   margin: 2px 3px 9px;
 }
@@ -134,11 +153,11 @@
 }
 .listContent button:hover,
 .listContent button[aria-pressed='true'] {
-  background: #edf4e9;
+  background: var(--sc-tint);
 }
 .listContent button span {
   display: block;
-  color: #788575;
+  color: var(--sc-muted);
   font-size: 9px;
   padding-top: 3px;
 }
@@ -163,10 +182,10 @@
   left: 14px;
   right: 14px;
   top: 60px;
-  border: 1px solid #d9dfcf;
+  border: 1px solid var(--sc-border);
   border-radius: 7px;
   padding: 9px 12px;
-  background: #fffffff2;
+  background: rgba(255, 255, 255, 0.95);
   font-size: 11px;
   line-height: 1.5;
 }
@@ -184,7 +203,7 @@
   justify-content: center;
   gap: 15px;
   flex-direction: column;
-  background: #eef1e9;
+  background: var(--sc-canvas);
   text-align: center;
   padding: 30px;
   font-size: 13px;
@@ -194,7 +213,7 @@
   line-height: 1.6;
 }
 .error button {
-  background: #294f3a;
+  background: var(--sc-accent);
   color: white;
   padding: 10px 14px;
   border-radius: 8px;

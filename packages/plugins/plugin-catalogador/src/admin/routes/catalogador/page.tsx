@@ -1,5 +1,5 @@
 import { defineRouteConfig } from '@medusajs/admin-sdk';
-import { SparklesSolid } from '@medusajs/icons';
+import { SparklesSolid, Trash } from '@medusajs/icons';
 import {
   Button,
   Container,
@@ -15,6 +15,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { type CatalogingExecution, type CatalogingExecutionStatus, useExecutions } from '../../hooks/api';
+import { ExecutionActionsMenu } from '../../components/catalogador/execution-actions-menu';
 import { registerCatalogadorTranslations } from '../../translations/catalogador';
 // TODO Fase B: <ExtensionVersion extension="catalogador" /> vive en el host
 // bajo apps/backend/src/admin/components/common/extension-version. Cuando ese
@@ -58,6 +59,9 @@ const Catalogador = () => {
   registerCatalogadorTranslations(i18n);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  // La papelera es un MODO de esta misma pantalla, no otra ruta: el operador viene
+  // a "limpiar el listado" y tiene que poder ir y volver sin perder el contexto.
+  const [trash, setTrash] = useState(false);
   const [pagination, setPagination] = useState<DataTablePaginationState>({ pageIndex: 0, pageSize: PAGE_SIZE });
 
   const offset = pagination.pageIndex * pagination.pageSize;
@@ -65,6 +69,7 @@ const Catalogador = () => {
     limit: pagination.pageSize,
     offset,
     q: search || undefined,
+    deleted: trash ? 'only' : undefined,
   });
 
   const executions = data?.executions ?? [];
@@ -132,8 +137,37 @@ const Catalogador = () => {
           <span className="text-ui-fg-subtle">{new Date(getValue()).toLocaleDateString()}</span>
         ),
       }),
+      // En la papelera la fecha que importa es la del borrado, no la de creación:
+      // es por la que se ordena y la que contesta "¿esto lo tiré yo hoy?".
+      ...(trash
+        ? [
+            columnHelper.display({
+              id: 'deleted_at',
+              header: 'Eliminada',
+              cell: ({ row }) => {
+                const at = row.original.deleted_at;
+                return (
+                  <span className="text-ui-fg-subtle">
+                    {at ? new Date(at).toLocaleDateString() : '—'}
+                  </span>
+                );
+              },
+            }),
+          ]
+        : []),
+      columnHelper.display({
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => (
+          // `stopPropagation` porque la fila entera navega al detalle: sin esto,
+          // abrir el menú te saca de la pantalla.
+          <div onClick={(e) => e.stopPropagation()}>
+            <ExecutionActionsMenu execution={row.original} trash={trash} />
+          </div>
+        ),
+      }),
     ],
-    []
+    [trash]
   );
 
   const table = useDataTable({
@@ -144,7 +178,19 @@ const Catalogador = () => {
     isLoading: isPending,
     pagination: { state: pagination, onPaginationChange: setPagination },
     search: { state: search, onSearchChange: setSearch },
-    onRowClick: (_e, row) => navigate(`/catalogador/${row.id}`),
+    // En la papelera la fila no navega: `GET /executions/:id` resuelve con el
+    // repositorio de MikroORM, que filtra las borradas, así que abrir el detalle de
+    // una corrida de la papelera daría un 404 sin explicación. Se restaura primero.
+    onRowClick: trash
+      ? undefined
+      : (_e, row) => {
+          // El tipo de `onRowClick` dice `TData` pero `@medusajs/ui` entrega el `Row`
+          // de TanStack (`{ id, index, original, … }`). `row.id` andaba de casualidad
+          // —`getRowId` mapea al id de la corrida—, así que sacar ese `getRowId`
+          // rompería la navegación con el compilador en verde.
+          const item = (row as CatalogingExecution & { original?: CatalogingExecution }).original ?? row;
+          navigate(`/catalogador/${item.id}`);
+        },
   });
 
   return (
@@ -153,25 +199,57 @@ const Catalogador = () => {
         <DataTable.Toolbar className="flex flex-col items-start justify-between gap-2 md:flex-row md:items-center">
           <div>
             <div className="flex items-center gap-2">
-              <Heading>Catalogador</Heading>
+              <Heading>{trash ? 'Catalogador · Papelera' : 'Catalogador'}</Heading>
               {/* TODO Fase B: <ExtensionVersion extension="catalogador" /> */}
             </div>
+            {trash ? (
+              <Text size="small" className="text-ui-fg-subtle">
+                Corridas eliminadas del listado. Restaurar las devuelve intactas — no
+                se tocó ningún producto del catálogo.
+              </Text>
+            ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <DataTable.Search placeholder="Buscar ejecuciones" />
-            <Button variant="primary" size="small" onClick={() => navigate('/catalogador/new')}>
-              Nueva ejecución
+            <DataTable.Search placeholder={trash ? 'Buscar en la papelera' : 'Buscar ejecuciones'} />
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={() => {
+                setTrash((v) => !v);
+                // Volver a la página 1: la papelera y el listado tienen conteos
+                // distintos, y quedarse en la página 4 de una lista de 2 páginas
+                // muestra una tabla vacía que parece un bug.
+                setPagination((p) => ({ ...p, pageIndex: 0 }));
+              }}
+            >
+              {trash ? (
+                'Volver al listado'
+              ) : (
+                <>
+                  <Trash className="text-ui-fg-subtle" />
+                  Papelera
+                </>
+              )}
             </Button>
+            {trash ? null : (
+              <Button variant="primary" size="small" onClick={() => navigate('/catalogador/new')}>
+                Nueva ejecución
+              </Button>
+            )}
           </div>
         </DataTable.Toolbar>
         {count === 0 && !isPending ? (
           <div className="flex flex-col items-center justify-center gap-2 py-12">
             <Text className="text-ui-fg-subtle">
-              Todavía no hay ejecuciones. Creá una para empezar a mejorar tu catálogo.
+              {trash
+                ? 'La papelera está vacía.'
+                : 'Todavía no hay ejecuciones. Creá una para empezar a mejorar tu catálogo.'}
             </Text>
-            <Button variant="secondary" size="small" onClick={() => navigate('/catalogador/new')}>
-              Nueva ejecución
-            </Button>
+            {trash ? null : (
+              <Button variant="secondary" size="small" onClick={() => navigate('/catalogador/new')}>
+                Nueva ejecución
+              </Button>
+            )}
           </div>
         ) : (
           <>

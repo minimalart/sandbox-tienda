@@ -1,30 +1,34 @@
 import "server-only";
+import { createHash } from 'node:crypto';
 import { cookies as nextCookies, headers as nextHeaders } from "next/headers";
 
-export const getAuthHeaders = async (): Promise<
-  { authorization: string } | {}
-> => {
+import { SESSION_HEADER, sessionCookieName, type CustomerSession } from '../util/customer-session';
+
+export async function getCustomerSession(): Promise<CustomerSession> {
+  const raw = (await nextHeaders()).get(SESSION_HEADER);
+  if (!raw) throw new Error('Missing storefront session context');
+  const session = JSON.parse(raw);
+  if (!['b2b', 'b2c'].includes(session.mode) || (session.site !== null && typeof session.site !== 'string'))
+    throw new Error('Invalid storefront session context');
+  return session;
+}
+
+export async function getAuthToken(): Promise<string | undefined> {
   try {
-    // Primero intentar obtener el token del header inyectado por el proxy
-    const headersList = await nextHeaders();
-    const tokenFromHeader = headersList.get("x-medusa-jwt");
-    
-    if (tokenFromHeader) {
-      return { authorization: `Bearer ${tokenFromHeader}` };
-    }
+    return (await nextCookies()).get(sessionCookieName(await getCustomerSession()))?.value;
+  } catch { return undefined; }
+}
 
-    // Fallback: intentar leer directamente de las cookies
-    const cookies = await nextCookies();
-    const token = cookies.get("_medusa_jwt")?.value;
-
-    if (!token) {
-      return {};
-    }
-
-    return { authorization: `Bearer ${token}` };
-  } catch {
-    return {};
-  }
+export const getAuthHeaders = async (): Promise<{ authorization?: string; 'x-checkout-access'?: string }> => {
+  const token = await getAuthToken();
+  let checkoutToken: string | undefined;
+  try {
+    const context = await getCustomerSession();
+    const jar = await nextCookies();
+    const cartId = jar.get(sessionCookieName(context, 'cart'))?.value;
+    if (cartId) checkoutToken = jar.get(`_checkout_${createHash('sha256').update(JSON.stringify([context.mode, context.site, cartId])).digest('hex').slice(0, 24)}`)?.value;
+  } catch { /* Calls outside a storefront request have no checkout capability. */ }
+  return { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(checkoutToken ? { 'x-checkout-access': checkoutToken } : {}) };
 };
 
 export const getCacheTag = async (tag: string): Promise<string> => {
@@ -36,7 +40,7 @@ export const getCacheTag = async (tag: string): Promise<string> => {
       return "";
     }
 
-    return `${tag}-${cacheId}`;
+    return `${tag}-${sessionCookieName(await getCustomerSession())}-${cacheId}`;
   } catch (error) {
     return "";
   }
@@ -60,7 +64,9 @@ export const getCacheOptions = async (
 
 export const setAuthToken = async (token: string) => {
   const cookies = await nextCookies();
-  cookies.set("_medusa_jwt", token, {
+  cookies.set(sessionCookieName(await getCustomerSession(), "present"), "1", { path: "/", maxAge: 60 * 60 * 24 * 7, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
+  cookies.set(sessionCookieName(await getCustomerSession()), token, {
+    path: "/",
     maxAge: 60 * 60 * 24 * 7,
     httpOnly: true,
     sameSite: "strict",
@@ -70,19 +76,21 @@ export const setAuthToken = async (token: string) => {
 
 export const removeAuthToken = async () => {
   const cookies = await nextCookies();
-  cookies.set("_medusa_jwt", "", {
+  cookies.set(sessionCookieName(await getCustomerSession(), "present"), "", { path: "/", maxAge: 0 });
+  cookies.set(sessionCookieName(await getCustomerSession()), "", {
+    path: "/",
     maxAge: -1,
   });
 };
 
 export const getCartId = async () => {
   const cookies = await nextCookies();
-  return cookies.get("_medusa_cart_id")?.value;
+  return cookies.get(sessionCookieName({ ...(await getCustomerSession()), mode: "b2c" }, "cart"))?.value;
 };
 
 export const setCartId = async (cartId: string) => {
   const cookies = await nextCookies();
-  cookies.set("_medusa_cart_id", cartId, {
+  cookies.set(sessionCookieName({ ...(await getCustomerSession()), mode: "b2c" }, "cart"), cartId, {
     maxAge: 60 * 60 * 24 * 7,
     httpOnly: true,
     sameSite: "strict",
@@ -92,7 +100,7 @@ export const setCartId = async (cartId: string) => {
 
 export const removeCartId = async () => {
   const cookies = await nextCookies();
-  cookies.set("_medusa_cart_id", "", {
+  cookies.set(sessionCookieName({ ...(await getCustomerSession()), mode: "b2c" }, "cart"), "", {
     maxAge: -1,
   });
 };
@@ -102,12 +110,12 @@ export const removeCartId = async () => {
 // mayorista usa su propio carrito (en el sales channel Wholesale) y su checkout.
 export const getB2BCartId = async () => {
   const cookies = await nextCookies();
-  return cookies.get("_b2b_cart_id")?.value;
+  return cookies.get(sessionCookieName({ ...(await getCustomerSession()), mode: "b2b" }, "cart"))?.value;
 };
 
 export const setB2BCartId = async (cartId: string) => {
   const cookies = await nextCookies();
-  cookies.set("_b2b_cart_id", cartId, {
+  cookies.set(sessionCookieName({ ...(await getCustomerSession()), mode: "b2b" }, "cart"), cartId, {
     maxAge: 60 * 60 * 24 * 7,
     httpOnly: true,
     // Lax (no Strict) + path "/" para que viaje en la navegación al checkout.
@@ -121,7 +129,7 @@ export const removeB2BCartId = async () => {
   const cookies = await nextCookies();
   // path "/" explícito: sin él la cookie se borra en el scope de la request
   // (p.ej. /api/b2b) y no en "/", quedando una huérfana.
-  cookies.set("_b2b_cart_id", "", { maxAge: -1, path: "/" });
+  cookies.set(sessionCookieName({ ...(await getCustomerSession()), mode: "b2b" }, "cart"), "", { maxAge: -1, path: "/" });
 };
 
 // ── Sucursal (Branch) + canal resuelto ───────────────────────────────────────

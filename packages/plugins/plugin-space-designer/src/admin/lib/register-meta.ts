@@ -1,3 +1,3 @@
 import { registerPluginMeta } from '@minimalart/mercatto-plugin-runtime/admin';
 
-registerPluginMeta('space-designer', { version: '1.0.0' });
+registerPluginMeta('space-designer', { version: '1.1.0' });

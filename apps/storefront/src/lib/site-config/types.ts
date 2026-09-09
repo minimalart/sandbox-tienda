@@ -442,6 +442,13 @@ export type PromoBannerConfig = {
   cta?: { text: string; href: string }
 }
 
+/**
+ * Ids que la tienda puede poner en el lugar flexible de la barra inferior
+ * mobile (`TenantAssets.mobileNav`). El registro con label/href/ícono y la
+ * regla de disponibilidad de cada uno vive en `bottom-nav/slots.ts`.
+ */
+export type MobileNavSlotId = 'promos' | 'colores' | 'sucursales' | 'blog' | 'contacto'
+
 export type TenantAssets = {
   logos: {
     main: string
@@ -538,6 +545,21 @@ export type TenantAssets = {
    *  - 'button': pill sólido en el color de marca + acordeón de subcategorías
    */
   categoriesMenuLayout?: 'hamburger' | 'button'
+  /**
+   * Orden de preferencia del LUGAR FLEXIBLE de la barra inferior mobile (el
+   * cuarto ítem, entre el carrito y el menú). La barra gana el primer id de
+   * esta lista que esté realmente disponible en la tienda.
+   *
+   * Existe porque ese lugar era `Promos` hardcodeado, y `Promos` se apaga solo
+   * cuando el canal no tiene promociones activas: la barra caía a 4 columnas y
+   * el carrito — que es el FAB del centro — quedaba descentrado. Con una lista
+   * ordenada, cuando Promos no aplica entra el siguiente candidato y la barra
+   * se queda en 5.
+   *
+   * Ausente = el orden por defecto (`DEFAULT_MOBILE_NAV_ORDER` en
+   * `bottom-nav/slots.ts`). Los ids desconocidos se ignoran.
+   */
+  mobileNav?: MobileNavSlotId[]
   /**
    * Override del nombre de la sección de blog: reemplaza el label del nav
    * ("Recetas") y el título de la página `/blog`. Ausente = default del blog.
@@ -1205,6 +1227,11 @@ export type CampaignChromeConfig = {
   poweredByLabel?: string
   /** Link del pill "Powered by". */
   poweredByHref?: string
+  /**
+   * Fondo del header (hex). Vacío = blanco por preset. El texto/borders del
+   * header eligen contraste automáticamente sobre este color.
+   */
+  backgroundColor?: string
 }
 
 /** Hero principal (protagonista de la landing). */
@@ -1220,6 +1247,20 @@ export type CampaignHeroConfig = {
   imageAlt?: string
   /** Trust badges bajo el CTA. */
   trustBadges?: CampaignTrustBadge[]
+  /**
+   * Fondo del hero (hex). Vacío = blanco. Deja override manual porque el hero
+   * es el elemento más visible del template y a veces la institución quiere un
+   * color específico que NO es el primario de la marca.
+   */
+  backgroundColor?: string
+  /** Fondo del botón CTA (hex). Vacío = --primary-color del tenant. */
+  ctaBackgroundColor?: string
+  /** Color del texto del botón CTA (hex). Vacío = white. */
+  ctaTextColor?: string
+  /** Fondo del pill eyebrow (hex). Vacío = --secondary-color del tenant. */
+  eyebrowBackgroundColor?: string
+  /** Color del texto del pill eyebrow (hex). Vacío = white. */
+  eyebrowTextColor?: string
 }
 
 /** Sección grid de kits (productos featured). */
@@ -1246,6 +1287,8 @@ export type CampaignFooterConfig = {
   email?: string
   copyright?: string
   poweredBy?: { label: string; href: string }
+  /** Fondo del footer (hex). Vacío = blanco. */
+  backgroundColor?: string
 }
 
 /** Config completa de la home del template Campaña. */

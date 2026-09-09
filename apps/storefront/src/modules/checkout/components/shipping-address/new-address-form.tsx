@@ -1,5 +1,6 @@
 "use client";
 
+import { GOOGLE_MAPS_LIBRARIES } from "@lib/util/google-maps-loader";
 import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 import type { HttpTypes } from "@medusajs/types";
 import FormInput from "@modules/common/components/form-input";
@@ -9,7 +10,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const IC =
   "h-11 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-[--primary-color] focus:ring-1 focus:ring-[--primary-color]";
 
-const LIBRARIES: ("places" | "marker")[] = ["places", "marker"];
 const DEFAULT_CENTER = { lat: -34.6037, lng: -58.3816 };
 const DEBOUNCE_MS = 600;
 const MIN_QUERY_LENGTH = 3;
@@ -90,7 +90,7 @@ export default function ShippingAddressNewForm(props: ShippingAddressNewFormProp
 function ShippingAddressNewFormWithLoader(props: ShippingAddressNewFormProps) {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: props.googleMapsApiKey,
-    libraries: LIBRARIES,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
   return <ShippingAddressNewFormImpl {...props} isLoaded={isLoaded} />;
 }

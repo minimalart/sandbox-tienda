@@ -522,14 +522,14 @@ const DemoStoreDetail = () => {
           {/* B2B / Mayorista */}
           {demo.b2b_enabled && (
             <Section title={t('B2B_SECTION_TITLE')}>
-              <Row label={t('B2B_PORTAL_URL')} title={`${publicUrlLabel(demo)}/b2b`}>
+              <Row label={t('B2B_PORTAL_URL')} title={`${publicUrlLabel(demo).replace(/\/$/, '')}/b2b`}>
                 <a
                   href={`${publicUrl(demo)}/b2b`}
                   target="_blank"
                   rel="noreferrer"
                   className="text-ui-fg-interactive"
                 >
-                  {publicUrlLabel(demo)}/b2b
+                  {publicUrlLabel(demo).replace(/\/$/, '')}/b2b
                 </a>
               </Row>
               <Row label={t('B2B_TEST_EMAIL')} title={demo.b2b_test_email ?? undefined}>

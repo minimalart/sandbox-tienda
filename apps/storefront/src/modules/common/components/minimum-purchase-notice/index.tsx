@@ -9,6 +9,12 @@ type MinimumPurchaseNoticeProps = {
   hasMinimumPurchase: boolean;
   progress: number;
   remaining: number;
+  /**
+   * Umbral configurado. Cuando es 0 o falta, la tienda no tiene mínimo — no
+   * hay nada que "alcanzar", así que el aviso NO se renderiza (evita el
+   * "¡Alcanzaste el mínimo!" falso positivo con carrito vacío o casi vacío).
+   */
+  minimumPurchaseAmount?: number;
   className?: string;
   showTopBorder?: boolean;
 };
@@ -19,9 +25,11 @@ export default function MinimumPurchaseNotice({
   hasMinimumPurchase,
   progress,
   remaining,
+  minimumPurchaseAmount = 0,
   className,
   showTopBorder = true,
 }: MinimumPurchaseNoticeProps) {
+  if (minimumPurchaseAmount <= 0) return null;
   const wrapperClass = compact ? "px-4 py-3" : "px-5 py-4";
   const textClass = compact ? "text-xs" : "text-sm";
   const barClass = compact ? "h-1.5" : "h-2";

@@ -1,3 +1,5 @@
+import type { Link } from '@medusajs/framework/modules-sdk';
+import type { ISalesChannelModuleService, Logger, RemoteQueryFunction } from '@medusajs/framework/types';
 import {
   createWorkflow,
   createStep,
@@ -84,7 +86,7 @@ const stepFailure = (container: MedusaContainer, step: string, error: unknown): 
   const detail = error instanceof Error ? error.message : String(error);
   const message = `${step}: ${detail}`;
 
-  const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
+  const logger = container.resolve<Logger>(ContainerRegistrationKeys.LOGGER);
   logger.error(`[provision-branch] ${message}`);
   if (error instanceof Error && error.stack) logger.error(error.stack);
 
@@ -156,9 +158,9 @@ const syncBranchSalesChannelsStep = createStep(
     { container },
   ) => {
     try {
-      const link = container.resolve(ContainerRegistrationKeys.LINK);
-      const query = container.resolve(ContainerRegistrationKeys.QUERY);
-      const scService = container.resolve(Modules.SALES_CHANNEL);
+      const link = container.resolve<Link>(ContainerRegistrationKeys.LINK);
+      const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
+      const scService = container.resolve<ISalesChannelModuleService>(Modules.SALES_CHANNEL);
 
       const salesChannels = input.sales_channels ?? [];
 
@@ -201,8 +203,8 @@ const syncBranchSalesChannelsStep = createStep(
   },
   async (prev, { container }) => {
     if (!prev) return;
-    const link = container.resolve(ContainerRegistrationKeys.LINK);
-    const scService = container.resolve(Modules.SALES_CHANNEL);
+    const link = container.resolve<Link>(ContainerRegistrationKeys.LINK);
+    const scService = container.resolve<ISalesChannelModuleService>(Modules.SALES_CHANNEL);
 
     if (prev.added.length) {
       await link.dismiss(prev.added.map((id) => buildBranchChannelLink(prev.store_location_id, id)));
@@ -239,8 +241,8 @@ const linkChannelsToStockLocationStep = createStep(
         return new StepResponse({ added: [] as string[] }, empty);
       }
       const stockLocationId = input.stock_location_id;
-      const link = container.resolve(ContainerRegistrationKeys.LINK);
-      const query = container.resolve(ContainerRegistrationKeys.QUERY);
+      const link = container.resolve<Link>(ContainerRegistrationKeys.LINK);
+      const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
 
       const { data: locRows } = await query.graph({
         entity: 'stock_location',
@@ -265,7 +267,7 @@ const linkChannelsToStockLocationStep = createStep(
   async (prev: LinkStockCompensation | undefined, { container }) => {
     if (!prev?.added.length || !prev.stock_location_id) return;
     const stockLocationId = prev.stock_location_id;
-    const link = container.resolve(ContainerRegistrationKeys.LINK);
+    const link = container.resolve<Link>(ContainerRegistrationKeys.LINK);
     await link.dismiss(prev.added.map((id) => buildChannelStockLink(id, stockLocationId)));
   },
 );

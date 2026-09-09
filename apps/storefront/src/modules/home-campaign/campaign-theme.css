@@ -1,27 +1,48 @@
 /*
  * Tokens del template Campaña (landing institucional).
  * Se scopean a `.campaign-home` para no filtrar al chrome de otros templates.
+ *
+ * `--campaign-bg` toma por default el color primario del tenant (inyectado por
+ * `getTenantThemeStyles()` en <body>). Si el tenant configuró `headerBackground`
+ * o `footerBackground`, esos ganan sobre el primario en su chrome respectivo.
+ * El fallback hex (#0f1114 negro) solo aplica si NO hay tenant resuelto.
  */
 .campaign-home {
-  --campaign-bg: #0f1114;
-  --campaign-bg-alt: #191b1f;
+  --campaign-bg: var(--primary-color, #0f1114);
+  --campaign-bg-alt: var(
+    --header-bg,
+    color-mix(in srgb, var(--primary-color, #191b1f) 88%, #000 12%)
+  );
   --campaign-fg: #f5f6f8;
   --campaign-fg-muted: #a4a8b0;
-  --campaign-accent: #22c55e;
-  --campaign-border: #2a2d33;
+  /* Iconos de trust badges + acentos secundarios: heredan del `--accent-color`
+     que inyecta `getTenantThemeStyles()`; caen al primary y por último al
+     verde histórico si nada está configurado. Antes era verde fijo — desalineado
+     de la marca de la institución. */
+  --campaign-accent: var(--accent-color, var(--primary-color, #22c55e));
+  --campaign-border: rgba(255, 255, 255, 0.12);
   --campaign-card-bg: #ffffff;
   --campaign-card-fg: #0f1114;
   --campaign-radius: 14px;
 }
 
+/*
+ * Pill del eyebrow del hero. Los tokens (`--campaign-eyebrow-bg`,
+ * `--campaign-eyebrow-fg`) los pinta el hero via inline style cuando el
+ * operador setea overrides desde Puck; sin overrides caen a los defaults
+ * del template: fondo = secondary del tenant, texto = blanco.
+ */
 .campaign-home .campaign-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(34, 197, 94, 0.12);
-  color: var(--campaign-accent);
+  background: var(
+    --campaign-eyebrow-bg,
+    var(--secondary-color, rgba(34, 197, 94, 0.12))
+  );
+  color: var(--campaign-eyebrow-fg, #ffffff);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;

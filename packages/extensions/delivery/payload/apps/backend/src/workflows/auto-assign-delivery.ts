@@ -1,3 +1,4 @@
+import type { RemoteQueryFunction } from '@medusajs/framework/types';
 /**
  * auto-assign-delivery (F5) — asignación AUTOMÁTICA de flota propia a una
  * DeliveryExecution. Resuelve los recursos elegibles, elige driver (+ vehicle)
@@ -107,7 +108,7 @@ const resolveAutoAssignContextStep = createStep(
   'resolve-auto-assign-context',
   async (input: AutoAssignDeliveryInput, { container }) => {
     const service = container.resolve<DeliveryModuleService>(DELIVERY_MODULE);
-    const query = container.resolve(ContainerRegistrationKeys.QUERY);
+    const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
 
     // El agregado de la orden (peso/conteo/temperatura/volumen) se computa acá
     // con query.graph porque el module container NO tiene QUERY registrado.

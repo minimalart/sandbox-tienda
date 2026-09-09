@@ -1,6 +1,6 @@
 {
   "name": "@minimalart/mercatto-plugin-gift-cards",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Mercatto plugin — Gift Card Experience (designs, deliveries, secure landing, SendGrid webhook + admin CRUD). Owns issuance, delivery orchestration and store-facing landing/claim/wallet. Migrated from packages/extensions/gift-cards.",
   "main": ".medusa/server/src/index.js",
   "types": ".medusa/server/src/index.d.ts",

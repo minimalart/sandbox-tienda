@@ -3,7 +3,7 @@
   "schema_version": 1,
   "id": "gift-cards",
   "name": "Gift Card Experience",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "kind": "plugin",
   "status": "ready",
   "dependencies": [],

@@ -3,7 +3,7 @@ import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 import { z } from 'zod';
 import { CATALOGADOR_MODULE } from '../../../../../modules/catalogador';
 import type CatalogadorModuleService from '../../../../../modules/catalogador/service';
-import { cleanupExecutionFiles } from '../../../../../modules/catalogador/asset-cleanup';
+import { deleteBlockReason, isDeletableStatus } from '../../../../../modules/catalogador/deletable';
 import type { ExecutionStatus } from '../../../../../modules/catalogador/models';
 
 import { siteFromRequest } from '../../../../../lib/multistore/request';
@@ -71,9 +71,19 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
     }));
   }
 
-  res
-    .status(200)
-    .json({ execution, products: productsEnriched, operations, activity, asset_proposals: assetProposals });
+  // Mismo contrato que el listado: el gate de borrado viaja calculado, así el
+  // detalle no tiene que reimplementarlo sobre `status`.
+  res.status(200).json({
+    execution: {
+      ...execution,
+      deletable: isDeletableStatus(execution.status as ExecutionStatus),
+      delete_block_reason: deleteBlockReason(execution.status as ExecutionStatus),
+    },
+    products: productsEnriched,
+    operations,
+    activity,
+    asset_proposals: assetProposals,
+  });
 }
 
 /** PATCH /admin/catalogador/executions/:id — renombrar (u otros metadatos livianos). */
@@ -97,7 +107,24 @@ export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<voi
   res.status(200).json({ execution });
 }
 
-/** DELETE /admin/catalogador/executions/:id — sólo borradores/canceladas/error (PRD §9.5). */
+/**
+ * DELETE /admin/catalogador/executions/:id — borrado LÓGICO (papelera).
+ *
+ * Antes esto era un `deleteCatalogingExecutions` + un barrido de archivos del
+ * storage: irreversible, y por eso sólo se admitía desde `draft`/`cancelled`/
+ * `error`. Ahora sólo escribe `deleted_at`, así que la corrida sale del listado y
+ * vuelve entera desde la papelera (`POST /:id/undelete`). Los archivos NO se
+ * barren: barrerlos haría que "restaurar" devolviera una corrida con las propuestas
+ * de imagen apuntando a blobs que ya no existen, y el borrado dejaría de ser
+ * reversible justo en el caso en que alguien se arrepiente.
+ *
+ * Los hijos (`cataloging_execution_product` y compañía) tampoco se tocan: cuelgan
+ * por FK de texto, no por relación de MikroORM, así que no cascadean —y no hace
+ * falta que lo hagan, porque siempre se listan filtrando por `execution_id` y sin
+ * su padre no aparecen en ninguna pantalla—.
+ *
+ * El gate ampliado vive en `modules/catalogador/deletable.ts`, con tests.
+ */
 export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<void> {
   // Todos los handlers: cancelar o reanudar la corrida de otra tienda le corta un
   // proceso que no lanzó.
@@ -105,6 +132,8 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<v
 
   const service = req.scope.resolve<CatalogadorModuleService>(CATALOGADOR_MODULE);
   const id = req.params.id as string;
+  const actorId =
+    (req as unknown as { auth_context?: { actor_id?: string } }).auth_context?.actor_id ?? null;
 
   let execution;
   try {
@@ -114,19 +143,22 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<v
     return;
   }
 
-  if (!service.isDeletable(execution.status as ExecutionStatus)) {
-    res.status(409).json({
-      type: 'not_allowed',
-      message: 'Una ejecución aplicada o en proceso no se puede eliminar.',
-    });
+  const blocked = deleteBlockReason(execution.status as ExecutionStatus);
+  if (blocked) {
+    res.status(409).json({ type: 'not_allowed', message: blocked });
     return;
   }
 
-  // Antes de borrar la fila: `deleteCatalogingExecutions` no cascadea (los hijos
-  // cuelgan por FK de texto, no por relación MikroORM), así que sin este barrido los
-  // archivos quedaban en el storage sin nada en la base que los nombrara.
-  // `isDeletable` sólo admite draft/cancelled/error, así que nada está aplicado.
-  await cleanupExecutionFiles(req.scope, id, { deleteRows: true });
-  await service.deleteCatalogingExecutions([id]);
-  res.status(200).json({ id, deleted: true });
+  // La actividad se registra ANTES del soft delete: `logActivity` escribe en
+  // `cataloging_activity`, que no se borra, y así la papelera conserva quién la
+  // mandó ahí y desde qué estado.
+  await service.logActivity({
+    execution_id: id,
+    type: 'deleted',
+    actor_id: actorId,
+    metadata: { status: execution.status },
+  });
+  await service.softDeleteCatalogingExecutions([id]);
+
+  res.status(200).json({ id, object: 'cataloging_execution', deleted: true });
 }

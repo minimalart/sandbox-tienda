@@ -52,8 +52,23 @@ const STATUS_COLORS: Record<string, BadgeColor> = {
   not_published: 'grey',
 };
 
-/** Clave i18n del estado (ST_RUNNING, ST_SENT, ...). */
-export function statusLabelKey(status: string): string {
+/**
+ * Clave i18n del estado (ST_RUNNING, ST_SENT, ...).
+ *
+ * La guarda no es defensa por si acaso: sin ella, un `status` ausente tira
+ * `Cannot read properties of undefined (reading 'toUpperCase')` y se lleva la
+ * PANTALLA ENTERA, no la celda — porque esto se llama desde el render de las
+ * columnas y del header. Pasó en producción con el drawer del log: `onRowClick`
+ * de `@medusajs/ui` entrega el `Row` de TanStack en lugar del item (su propio
+ * tipo dice `TData`), así que `status` venía undefined y el detalle del sync
+ * quedó inaccesible.
+ *
+ * `ST_UNKNOWN` está definido en las dos traducciones: el fallback de i18next
+ * pinta el NOMBRE de la clave cuando no existe, y "ST_UNKNOWN" en un badge es
+ * casi tan malo como el crash.
+ */
+export function statusLabelKey(status: string | null | undefined): string {
+  if (!status) return 'ST_UNKNOWN';
   return `ST_${status.toUpperCase()}`;
 }
 

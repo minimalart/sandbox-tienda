@@ -1,3 +1,5 @@
+import { registerCartValidation } from '@minimalart/mercatto-plugin-runtime';
+import { StepResponse } from '@medusajs/framework/workflows-sdk';
 import { completeCartWorkflow } from '@medusajs/medusa/core-flows';
 import { ContainerRegistrationKeys, MedusaError } from '@medusajs/framework/utils';
 import {
@@ -26,14 +28,14 @@ type Cart = {
   promotions?: Array<{ id: string; metadata?: Record<string, unknown> | null }> | null;
 };
 
-completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
+registerCartValidation(completeCartWorkflow, 'gift-cards', async ({ cart }, { container }) => {
   const typedCart = cart as Cart;
   const giftItems = (typedCart.items ?? []).filter(
     (item) => item.product?.is_giftcard === true || item.variant?.product?.is_giftcard === true,
   );
   if (giftItems.length === 0) return;
 
-  const service = container.resolve<GiftCardExperienceModuleService>(GIFT_CARD_EXPERIENCE_MODULE);
+  const service = container.resolve(GIFT_CARD_EXPERIENCE_MODULE) as GiftCardExperienceModuleService;
   /**
    * La MISMA configuración con la que `createGiftCardIntentsForOrder` va a sellar la
    * entrega, y por eso se resuelve la tienda acá también.
@@ -84,4 +86,4 @@ completeCartWorkflow.hooks.validate(async ({ cart }, { container }) => {
       }
     }
   }
-});
+}, undefined, (data) => new StepResponse(undefined, data));

@@ -64,12 +64,15 @@ export type SpaceTemplate = Omit<SpaceSnapshot, 'version'> & {
   image_url?: string;
   sort_order?: number;
 };
+/** `cart` adds the whole design to the native cart; `quote` collects a contact request instead. */
+export type SpaceCheckoutMode = 'cart' | 'quote';
 export type SpaceConfigV1 = {
   version: 1;
   description?: string;
   products: SpaceProduct[];
   templates: SpaceTemplate[];
   allow_custom: boolean;
+  checkout_mode?: SpaceCheckoutMode;
   surface_options?: {
     floors?: { label: string; color: string; texture_url?: string }[];
     walls?: { label: string; color: string; texture_url?: string }[];
@@ -101,6 +104,32 @@ export type SpaceCatalogProduct = {
   }[];
 };
 export type SpacePublicConfigurator = SpaceConfigurator & { catalog: SpaceCatalogProduct[] };
+export type SpaceQuoteStatus = 'new' | 'contacted' | 'closed';
+export type SpaceQuoteItem = {
+  product_ref: string;
+  variant_id: string;
+  title: string;
+  sku: string | null;
+  quantity: number;
+};
+export type SpaceQuote = {
+  id: string;
+  configurator_id: string;
+  configurator_title: string;
+  sales_channel_id: string | null;
+  customer_id: string | null;
+  name: string;
+  email: string;
+  phone: string | null;
+  message: string | null;
+  template_id: string | null;
+  template_name: string | null;
+  snapshot: SpaceSnapshot;
+  items: SpaceQuoteItem[];
+  status: SpaceQuoteStatus;
+  created_at?: string;
+  updated_at?: string;
+};
 export type SpaceDesign = {
   id: string;
   configurator_id: string;

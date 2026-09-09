@@ -1,3 +1,28 @@
+## 1.0.4 - text_color + cta_text_color separados, ambos visibles en hero y cards
+
+- Fix: `ALL_FIELDS` en `placement-config.ts` no incluía `text_color`, entonces
+  el campo no se renderizaba en la UI del admin para hero (`banner_1`) ni
+  cards (`banner_2..6`). En 1.0.3 el mapper ya lo persistía si venía, pero
+  como no había input en el form el operador no podía cargarlo.
+- Feature: nuevo campo `cta_text_color` (persistido como
+  `metadata.cta_color_font`), separado del `text_color` general. El texto del
+  banner (título/subtítulo) va sobre la imagen (fondo oscuro/reservado);
+  el CTA va sobre `card_color` (posiblemente claro). Un único campo acoplaba
+  los dos: seteabas oscuro para arreglar el CTA y el título quedaba invisible.
+  Ambos son opcionales; sin config el consumer usa `#FFFFFF` para los dos
+  (comportamiento previo preservado).
+- Aplica a placements `banner_1..6` (hero + cards) y `sticky_footer`.
+
+## 1.0.3 - text_color persiste en todos los placements
+
+- Fix: el mapper del form admin persistía `metadata.color_font` sólo cuando el
+  placement era `top_bar`, `welcome_splash` o `sticky_footer` — dejaba fuera
+  al hero (`banner_1`) y otros, aunque el field estaba visible en la UI. Si
+  el operador ponía un `card_color` claro y el consumer del storefront
+  hardcodeaba texto blanco (era el caso del `hero-banners`), el texto quedaba
+  invisible sobre el fondo. Ahora `text_color` se guarda para cualquier
+  placement; el consumer decide si respetarlo o no (fallback a su default).
+
 ## 1.0.1 - Fase B: consumir `ExtensionVersion`, `SiteScopeBar` y `SalesChannelMultiSelect` desde el runtime contract.
 
 - Reemplaza los TODOs Fase B en `src/admin/routes/banners/page.tsx` por imports concretos desde `@minimalart/mercatto-plugin-runtime@^0.4.0/admin`. La overview recupera `<SiteScopeBar screen="banners" />` arriba y el badge `<ExtensionVersion extension="banners" />` junto al título.

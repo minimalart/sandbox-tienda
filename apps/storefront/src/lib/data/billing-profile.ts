@@ -55,7 +55,7 @@ const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 /** Perfiles del customer autenticado (vacío si guest). */
 export async function listBillingProfiles(): Promise<BillingProfile[]> {
   const authHeaders = await getAuthHeaders();
-  if (!authHeaders || Object.keys(authHeaders).length === 0) return [];
+  if (!authHeaders || !authHeaders.authorization) return [];
   try {
     const { billing_profiles } = await sdk.client.fetch<{
       billing_profiles: BillingProfile[];

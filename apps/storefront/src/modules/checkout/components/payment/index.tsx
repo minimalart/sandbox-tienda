@@ -54,7 +54,7 @@ const Payment = ({
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  const isOpen = searchParams.get('step') === 'payment'
+  const isOpen = searchParams.get('step')?.replace(/^edit-/, '') === 'payment'
 
   const currentSelectedMethod =
     selectedPaymentMethod ||

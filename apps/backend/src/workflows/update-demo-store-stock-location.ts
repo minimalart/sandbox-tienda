@@ -1,3 +1,4 @@
+import type { IRegionModuleService, IStockLocationService } from '@medusajs/framework/types';
 /**
  * Reasigna el stock location (y opcionalmente la region) de una demo store
  * existente. Reconstituye el link SC↔stock-location: desliga el viejo (si había)
@@ -55,7 +56,7 @@ const validateInputStep = createStep(
     }
 
     if (input.stock_location_id) {
-      const stockLocationService = container.resolve(Modules.STOCK_LOCATION);
+      const stockLocationService = container.resolve<IStockLocationService>(Modules.STOCK_LOCATION);
       const [sl] = await stockLocationService.listStockLocations({
         id: input.stock_location_id,
       });
@@ -68,7 +69,7 @@ const validateInputStep = createStep(
     }
 
     if (input.region_id) {
-      const regionService = container.resolve(Modules.REGION);
+      const regionService = container.resolve<IRegionModuleService>(Modules.REGION);
       const [region] = await regionService.listRegions({ id: input.region_id });
       if (!region) {
         throw new MedusaError(

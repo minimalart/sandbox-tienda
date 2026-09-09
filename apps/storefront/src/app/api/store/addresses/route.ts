@@ -3,12 +3,8 @@ import { resolveAndSetBranch } from "@lib/data/branch";
 import { getStoreSettings } from "@lib/data/store-settings";
 import { withMirroredAddressName } from "@lib/util/address-name";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { getAuthToken } from "@lib/data/cookies";
 
-async function getAuthToken() {
-  const cookieStore = await cookies();
-  return cookieStore.get("_medusa_jwt")?.value;
-}
 
 /**
  * The saved address determines the user's branch: geocoded lat/lng → polygon →

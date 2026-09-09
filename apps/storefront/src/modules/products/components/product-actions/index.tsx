@@ -614,6 +614,8 @@ export default function ProductActions({
         </div>
       )}
 
+      {(selectedVariant?.metadata as any)?.catalog_commercial?.presentation?.label && <p className="text-sm text-muted-foreground">{(selectedVariant?.metadata as any).catalog_commercial.presentation.label}{(selectedVariant?.metadata as any).catalog_commercial.presentation.unitsPerPackage ? ` × ${(selectedVariant?.metadata as any).catalog_commercial.presentation.unitsPerPackage}` : ""}</p>}
+      {(selectedVariant?.metadata as any)?.catalog_commercial?.measurementUnit && <p className="text-sm text-muted-foreground">{(selectedVariant?.metadata as any).catalog_commercial.unitMultiplier} {(selectedVariant?.metadata as any).catalog_commercial.measurementUnit}</p>}
       {/* Sticky footer — always visible */}
       <MobileActions
         addButtonRef={addButtonRef}

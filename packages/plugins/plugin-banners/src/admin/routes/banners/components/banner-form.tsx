@@ -87,6 +87,7 @@ export type FormState = {
   card_color: string;
   icon_color: string;
   text_color: string;
+  cta_text_color: string;
   countdown_seconds: string;
   show_logo: boolean;
   splash_bg: string;
@@ -115,6 +116,7 @@ const EMPTY_FORM: FormState = {
   card_color: '',
   icon_color: '',
   text_color: '',
+  cta_text_color: '',
   countdown_seconds: '8',
   show_logo: false,
   splash_bg: 'color',
@@ -144,6 +146,7 @@ function bannerToForm(banner: Banner): FormState {
     card_color: (banner.metadata?.card_color as string | null) ?? '',
     icon_color: (banner.metadata?.icon_color as string | null) ?? '',
     text_color: (banner.metadata?.color_font as string | null) ?? '',
+    cta_text_color: (banner.metadata?.cta_color_font as string | null) ?? '',
     countdown_seconds:
       banner.metadata?.countdown_seconds != null
         ? String(banner.metadata.countdown_seconds)
@@ -191,8 +194,17 @@ function formToInput(
   if (form.card_color) metadata.card_color = form.card_color;
   if (isTopBar && form.icon) metadata.icon = form.icon;
   if (isTopBar && form.icon_color) metadata.icon_color = form.icon_color;
-  if ((isTopBar || isSplash || isSticky) && form.text_color) {
+  // Text colors del banner. `color_font` gobierna titulo/subtitulo, que van
+  // sobre la imagen (fondo oscuro/reservado). `cta_color_font` gobierna SOLO
+  // el texto del boton CTA, que va sobre `card_color` (posiblemente claro).
+  // Antes eran un unico campo y quedaban acoplados: seteabas oscuro para
+  // arreglar el CTA sobre bg blanco y el titulo se hacia invisible sobre la
+  // imagen. Ahora son independientes; ambos con fallback white en el consumer.
+  if (form.text_color) {
     metadata.color_font = form.text_color;
+  }
+  if (form.cta_text_color) {
+    metadata.cta_color_font = form.cta_text_color;
   }
   if (isSplash && form.countdown_seconds) {
     metadata.countdown_seconds = form.countdown_seconds;
@@ -253,6 +265,7 @@ const FIELD_GROUPS: Array<{ titleKey: string; fields: BannerFieldId[] }> = [
       'card_color',
       'icon_color',
       'text_color',
+      'cta_text_color',
       'show_logo',
       'countdown_seconds',
     ],
@@ -387,7 +400,7 @@ export function BannerFormDrawer({ open, onClose, placement, banner, initialForm
     setForm((prev) => ({ ...prev, sticky_links: links }));
 
   const renderColorField = (
-    field: 'card_color' | 'icon_color' | 'text_color',
+    field: 'card_color' | 'icon_color' | 'text_color' | 'cta_text_color',
     labelKey: string,
     placeholderKey: string,
   ) => {
@@ -811,6 +824,8 @@ export function BannerFormDrawer({ open, onClose, placement, banner, initialForm
         return renderColorField('icon_color', 'FIELD_ICON_COLOR', 'PLACEHOLDER_ICON_COLOR');
       case 'text_color':
         return renderColorField('text_color', 'FIELD_TEXT_COLOR', 'PLACEHOLDER_TEXT_COLOR');
+      case 'cta_text_color':
+        return renderColorField('cta_text_color', 'FIELD_CTA_TEXT_COLOR', 'PLACEHOLDER_CTA_TEXT_COLOR');
       case 'start_at':
         return (
           <div key={field} className="flex flex-col gap-1">

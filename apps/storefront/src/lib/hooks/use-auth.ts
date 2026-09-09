@@ -2,6 +2,8 @@
 
 import { useWishlistStore } from "@lib/stores/wishlist.store";
 import { useCallback, useState } from "react";
+import { browserCustomerSession } from "@lib/util/customer-session";
+import { siteHomeFromPathname } from "@lib/site-config/site-path";
 import { getUtmParams } from "@lib/util/utm";
 
 // ============================================================================
@@ -42,6 +44,7 @@ export interface LoginResult {
   tenantMismatch?: boolean;
   originalTenant?: string;
   needsMigrationReset?: boolean;
+  redirectTo?: string;
   message?: string;
 }
 
@@ -74,7 +77,12 @@ const authApi = {
   ): Promise<T> {
     const response = await fetch("/api/store/auth", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-storefront-page": action === "googleCallback"
+          ? sessionStorage.getItem("mercatto_oauth_path") || window.location.pathname
+          : window.location.pathname,
+      },
       body: JSON.stringify({ action, ...data }),
     });
     return response.json();
@@ -113,14 +121,6 @@ function translateAuthError(message?: string): string {
 // COOKIE HELPERS
 // ============================================================================
 
-function setAuthCookie(token: string) {
-  document.cookie = `_medusa_jwt=${token}; path=/; max-age=${60 * 60 * 24 * 7}; samesite=lax`;
-}
-
-function removeAuthCookie() {
-  document.cookie = "_medusa_jwt=; path=/; max-age=0; samesite=lax";
-}
-
 // ============================================================================
 // HOOK
 // ============================================================================
@@ -149,13 +149,8 @@ export function useAuth(): UseAuthReturn {
           return result;
         }
 
-        if (result.success && result.customer) {
-          // Guardar cookie desde el cliente
-          const token = (result as any).token;
-          if (token) {
-            setAuthCookie(token);
-            await useWishlistStore.getState().syncGuestWishlist();
-          }
+        if (result.customer && browserCustomerSession().mode === 'b2c') {
+          await useWishlistStore.getState().syncGuestWishlist();
         }
 
         return result;
@@ -188,6 +183,7 @@ export function useAuth(): UseAuthReturn {
 
     try {
       const callbackUrl = `${window.location.origin}/google-callback`;
+      sessionStorage.setItem("mercatto_oauth_path", window.location.pathname);
 
       const result = await authApi.post<{
         success: boolean;
@@ -233,15 +229,12 @@ export function useAuth(): UseAuthReturn {
           return result;
         }
 
-        if (result.customer) {
-          const sessionToken = (result as any).token;
-          if (sessionToken) {
-            setAuthCookie(sessionToken);
-            await useWishlistStore.getState().syncGuestWishlist();
-          }
-        }
+        const sourcePath = sessionStorage.getItem("mercatto_oauth_path");
+        const home = siteHomeFromPathname(sourcePath || "/");
+        sessionStorage.removeItem("mercatto_oauth_path");
+        // The callback keeps the registered URL; restore this tab's original shop.
+        return { ...result, redirectTo: `${home === "/" ? "" : home}/store` };
 
-        return result;
       } catch (err) {
         const message = "Error de conexión. Intentá de nuevo.";
         setError(message);
@@ -265,12 +258,7 @@ export function useAuth(): UseAuthReturn {
         });
 
         if (result.success) {
-          // Guardar cookie desde el cliente
-          const token = (result as any).token;
-          if (token) {
-            setAuthCookie(token);
-            await useWishlistStore.getState().syncGuestWishlist();
-          }
+          if (browserCustomerSession().mode === 'b2c') await useWishlistStore.getState().syncGuestWishlist();
         } else {
           // Si es el error especial de email en otro tenant, no mostrar error genérico
           if (result.emailExistsInOtherTenant) {
@@ -397,19 +385,11 @@ export function useAuth(): UseAuthReturn {
 
     try {
       const response = await authApi.post("signout");
-      useWishlistStore.getState().reset();
-      // Borrar cookie desde el cliente - múltiples intentos para asegurar
-      document.cookie = "_medusa_jwt=; path=/; max-age=0";
-      document.cookie =
-        "_medusa_jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      if (response.success !== false && browserCustomerSession().mode === 'b2c') useWishlistStore.getState().reset();
       return response.success !== false;
     } catch (err) {
-      useWishlistStore.getState().reset();
-      // Igual borramos la cookie aunque falle la API
-      document.cookie = "_medusa_jwt=; path=/; max-age=0";
-      document.cookie =
-        "_medusa_jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      return true; // Retornamos true para que redirija
+      setError('No se pudo cerrar la sesión. Intentá de nuevo.');
+      return false;
     } finally {
       setIsLoading(false);
     }

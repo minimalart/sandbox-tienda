@@ -8,26 +8,23 @@ import {
   ChevronDown,
   LayoutGrid,
   LockKeyhole,
+  MessageSquareQuote,
   Minus,
   Move,
   Package,
   Plus,
   RotateCw,
-  Save,
   ShoppingBag,
   Trash2,
-  Undo2,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useCartStore } from '@lib/stores/cart.store';
 import {
   fitObject,
-  readSavedDesign,
   resizeRoom,
   snapshotFromTemplate,
   summarizeDesign,
-  type SavedSpaceDesign,
 } from '@lib/space-designer/design';
 import type {
   SpaceObject,
@@ -37,6 +34,7 @@ import type {
   SpaceTemplate,
 } from '@lib/space-designer/types';
 import LocalizedClientLink from '@modules/common/components/localized-client-link';
+import { SPACE_PRODUCT_MIME } from '../drag';
 import styles from './space-designer.module.css';
 
 const SpaceScene = dynamic(() => import('./space-scene'), {
@@ -48,6 +46,7 @@ const SpaceScene = dynamic(() => import('./space-scene'), {
   ),
 });
 
+const EMAIL = /^[^@ ]+@[^@ ]+[.][^@ ]+$/;
 const money = (amount: number, currency = 'ars') =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency, maximumFractionDigits: 0 }).format(
     amount
@@ -69,11 +68,13 @@ export default function SpaceDesigner({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [category, setCategory] = useState('all');
   const [search, setSearch] = useState('');
-  const [draft, setDraft] = useState<SavedSpaceDesign | null>(null);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(false);
-  const storageKey = `space-design:v1:${configurator.id}:${countryCode}`;
+  const [quoteOpen, setQuoteOpen] = useState(false);
+  const [quoteSent, setQuoteSent] = useState(false);
+  const [contact, setContact] = useState({ name: '', email: '', phone: '', message: '' });
+  const quoteMode = config.checkout_mode === 'quote';
   const templates = [...config.templates].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const currentTemplate = templates.find((entry) => entry.id === templateId);
   const categories = Array.from(new Set(config.products.map((product) => product.category)));
@@ -87,24 +88,16 @@ export default function SpaceDesigner({
   );
   const units = summary.reduce((count, item) => count + item.quantity, 0);
   const currencies = new Set(summary.map((item) => item.variant?.currency_code).filter(Boolean));
-  const unavailable = summary.some(
-    (item) => !item.variant?.available || item.variant.calculated_amount === null
-  );
+  // A quote is a question, not a sale: stock and price must never gate it.
+  const unavailable =
+    !quoteMode &&
+    summary.some((item) => !item.variant?.available || item.variant.calculated_amount === null);
   const total = summary.reduce(
     (amount, item) => amount + (item.variant?.calculated_amount ?? 0) * item.quantity,
     0
   );
   const currency =
     summary.find((item) => item.variant?.currency_code)?.variant?.currency_code || 'ars';
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) setDraft(readSavedDesign(raw, configurator));
-    } catch {
-      /* Private browsing can disable local storage. */
-    }
-  }, [storageKey, configurator]);
 
   useEffect(() => {
     if (previousView.current === showTemplates) return;
@@ -126,33 +119,8 @@ export default function SpaceDesigner({
     setSelectedId(null);
     setShowTemplates(false);
     setError('');
+    setQuoteSent(false);
     setNotice('El espacio ya está equipado. Podés revisar todo lo incluido.');
-  };
-  const save = () => {
-    if (!snapshot || !templateId) return;
-    const saved = {
-      configurator_id: configurator.id,
-      template_id: templateId,
-      snapshot,
-      saved_at: new Date().toISOString(),
-    };
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(saved));
-      setDraft(saved);
-      setNotice('Diseño guardado en este navegador. Podés recuperarlo cuando vuelvas.');
-      setError('');
-    } catch {
-      setError('Este navegador no permite guardar el diseño. Podés seguir y agregarlo al carrito.');
-    }
-  };
-  const restore = () => {
-    if (!draft) return;
-    setSnapshot(JSON.parse(JSON.stringify(draft.snapshot)) as SpaceSnapshot);
-    setTemplateId(draft.template_id);
-    setSelectedId(null);
-    setShowTemplates(false);
-    setNotice('Recuperamos tu diseño guardado.');
-    setError('');
   };
   const edit = (next: SpaceSnapshot) => {
     setSnapshot(next);
@@ -192,7 +160,7 @@ export default function SpaceDesigner({
     if (fitted) move(fitted);
     else setError('El objeto no entra en el espacio con esa orientación.');
   };
-  const addProduct = (product: SpaceProduct) => {
+  const addProduct = (product: SpaceProduct, at?: { x: number; z: number }) => {
     if (!snapshot || !config.allow_custom) return;
     if (
       summary
@@ -228,8 +196,8 @@ export default function SpaceDesigner({
       {
         id: crypto.randomUUID(),
         product_ref: product.id,
-        x: snapshot.room.width / 2,
-        z: snapshot.room.depth / 2,
+        x: at?.x ?? snapshot.room.width / 2,
+        z: at?.z ?? snapshot.room.depth / 2,
         rotation: product.allowed_rotations?.[0] ?? 0,
       },
       product,
@@ -241,6 +209,11 @@ export default function SpaceDesigner({
     }
     edit({ ...snapshot, objects: [...snapshot.objects, object] });
     setSelectedId(object.id);
+  };
+  /** Drop from the catalogue list: the product lands where the pointer released. */
+  const dropProduct = (productId: string, point: { x: number; z: number }) => {
+    const product = config.products.find((entry) => entry.id === productId);
+    if (product) addProduct(product, point);
   };
   const changeIncluded = (ref: string, delta: number) => {
     if (!snapshot || !config.allow_custom) return;
@@ -271,6 +244,42 @@ export default function SpaceDesigner({
       'Usá una medida de 1 a 100 m en la que entren todos los objetos, incluidos los fijos.'
     );
     return false;
+  };
+  const requestQuote = async () => {
+    if (!snapshot || adding || units === 0) return;
+    if (!contact.name.trim() || !EMAIL.test(contact.email.trim())) {
+      setError('Completá tu nombre y un email válido para que podamos responderte.');
+      return;
+    }
+    setAdding(true);
+    setError('');
+    try {
+      const response = await fetch('/api/store/space-designer/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          configurator_id: configurator.id,
+          template_id: templateId,
+          snapshot,
+          name: contact.name.trim(),
+          email: contact.email.trim(),
+          phone: contact.phone.trim() || undefined,
+          message: contact.message.trim() || undefined,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.requested)
+        throw new Error(result.message || 'No pudimos enviar tu consulta.');
+      setQuoteOpen(false);
+      setQuoteSent(true);
+      setNotice('Recibimos tu consulta. Te vamos a contactar con la cotización.');
+    } catch (failure) {
+      setError(
+        (failure as Error).message || 'No pudimos conectar con la tienda. Intentá de nuevo.'
+      );
+    } finally {
+      setAdding(false);
+    }
   };
   const addToCart = async () => {
     if (!snapshot || adding || unavailable || currencies.size > 1 || units === 0) return;
@@ -308,10 +317,11 @@ export default function SpaceDesigner({
       <header className={styles.header}>
         <div>
           <LocalizedClientLink href="/espacios" className={styles.back}>
-            <ArrowLeft size={15} /> Diseñadores de espacios
+            <ArrowLeft size={15} /> Espacios
           </LocalizedClientLink>
-          <h1>{configurator.title}</h1>
-          <p>{config.description || 'Un espacio pensado por vos, con todo lo que necesitás.'}</p>
+          {/* The name and the pitch already live on the listing and on each
+              proposal, so the detail view only keeps the breadcrumb. */}
+          <h1 className={styles.srOnly}>{configurator.title}</h1>
         </div>
         {!showTemplates && (
           <div className={styles.headerActions}>
@@ -322,9 +332,8 @@ export default function SpaceDesigner({
             >
               <LayoutGrid size={16} /> Ver espacios
             </button>
-            <button type="button" className={styles.secondaryButton} onClick={save}>
-              <Save size={16} /> Guardar diseño
-            </button>
+            {/* "Guardar diseño" is parked until the flow is defined: the designer
+                keeps no local draft, so there is nothing to restore either. */}
           </div>
         )}
       </header>
@@ -359,20 +368,6 @@ export default function SpaceDesigner({
               </button>
             )}
           </div>
-          {draft && (
-            <div className={styles.draft}>
-              <div>
-                <strong>Tenés un diseño guardado</strong>
-                <span>
-                  Guardado en este navegador el{' '}
-                  {new Date(draft.saved_at).toLocaleDateString('es-AR')}.
-                </span>
-              </div>
-              <button type="button" className={styles.secondaryButton} onClick={restore}>
-                <Undo2 size={16} /> Recuperar diseño
-              </button>
-            </div>
-          )}
           <div className={styles.templateGrid}>
             {templates.map((template) => {
               const count =
@@ -440,7 +435,7 @@ export default function SpaceDesigner({
                 <h2>Productos y equipamiento</h2>
                 <p>
                   {config.allow_custom
-                    ? 'Agregá lo que necesitás a tu diseño.'
+                    ? 'Arrastrá un producto al plano o usá el + para agregarlo.'
                     : 'Conocé los productos de esta propuesta.'}
                 </p>
               </div>
@@ -490,10 +485,29 @@ export default function SpaceDesigner({
                       definition.asset?.kind === 'image'
                         ? definition.asset.url
                         : product?.thumbnail;
+                    const draggable = config.allow_custom && definition.placement === 'scene';
                     return (
-                      <article key={definition.id} className={styles.productCard}>
+                      <article
+                        key={definition.id}
+                        className={`${styles.productCard} ${draggable ? styles.productCardDraggable : ''}`}
+                        draggable={draggable}
+                        onDragStart={(event) => {
+                          if (!draggable) return;
+                          event.dataTransfer.setData(SPACE_PRODUCT_MIME, definition.id);
+                          event.dataTransfer.effectAllowed = 'copy';
+                          event.currentTarget.classList.add(styles.productCardDragging!);
+                        }}
+                        onDragEnd={(event) =>
+                          event.currentTarget.classList.remove(styles.productCardDragging!)
+                        }
+                      >
                         <div className={styles.productImage}>
-                          {img ? <img src={img} alt="" loading="lazy" /> : <Package size={26} />}
+                          {/* Let the card be the drag source instead of the image. */}
+                          {img ? (
+                            <img src={img} alt="" loading="lazy" draggable={false} />
+                          ) : (
+                            <Package size={26} />
+                          )}
                         </div>
                         <div className={styles.productInfo}>
                           <span className={styles.productCategory}>{definition.category}</span>
@@ -505,25 +519,27 @@ export default function SpaceDesigner({
                           </p>
                           <div className={styles.productBottom}>
                             <strong>
-                              {variant?.calculated_amount != null
-                                ? money(
-                                    variant.calculated_amount,
-                                    variant.currency_code || currency
-                                  )
-                                : 'Sin precio'}
+                              {quoteMode
+                                ? 'A cotizar'
+                                : variant?.calculated_amount != null
+                                  ? money(
+                                      variant.calculated_amount,
+                                      variant.currency_code || currency
+                                    )
+                                  : 'Sin precio'}
                             </strong>
                             {config.allow_custom && (
                               <button
                                 type="button"
                                 aria-label={`Agregar ${title}`}
-                                disabled={!variant?.available}
+                                disabled={!quoteMode && !variant?.available}
                                 onClick={() => addProduct(definition)}
                               >
                                 <Plus size={17} />
                               </button>
                             )}
                           </div>
-                          {!variant?.available && (
+                          {!quoteMode && !variant?.available && (
                             <span className={styles.unavailable}>No disponible</span>
                           )}
                         </div>
@@ -554,6 +570,7 @@ export default function SpaceDesigner({
                   onMove={move}
                   onRotate={rotate}
                   onDelete={remove}
+                  onDropProduct={config.allow_custom ? dropProduct : undefined}
                 />
                 {snapshot.objects.length === 0 && (
                   <div className={styles.canvasEmpty}>
@@ -801,49 +818,152 @@ export default function SpaceDesigner({
                           ? ` · ${item.variant.title}`
                           : ''}
                       </small>
-                      {!item.variant?.available && (
+                      {!quoteMode && !item.variant?.available && (
                         <span className={styles.unavailable}>No disponible</span>
                       )}
                     </div>
-                    <b>
-                      {item.variant?.calculated_amount != null
-                        ? money(
-                            item.variant.calculated_amount * item.quantity,
-                            item.variant.currency_code || currency
-                          )
-                        : '—'}
-                    </b>
+                    {!quoteMode && (
+                      <b>
+                        {item.variant?.calculated_amount != null
+                          ? money(
+                              item.variant.calculated_amount * item.quantity,
+                              item.variant.currency_code || currency
+                            )
+                          : '—'}
+                      </b>
+                    )}
                   </div>
                 ))}
               </div>
               <div className={styles.summaryFooter}>
-                <div className={styles.total}>
-                  <span>Subtotal</span>
-                  <strong>
-                    {currencies.size <= 1 ? money(total, currency) : 'Revisar monedas'}
-                  </strong>
-                </div>
-                <p>El envío y los descuentos se calculan en el carrito.</p>
-                {unavailable && (
-                  <p className={styles.checkoutIssue}>
-                    Hay productos sin disponibilidad o precio.{' '}
-                    {config.allow_custom
-                      ? 'Quitalos o elegí otra propuesta para continuar.'
-                      : 'Elegí otra propuesta para continuar.'}
-                  </p>
+                {quoteMode ? (
+                  <>
+                    <div className={styles.total}>
+                      <span>Presupuesto</span>
+                      <strong>A cotizar</strong>
+                    </div>
+                    <p>
+                      Enviá tu diseño y te respondemos con el precio y la disponibilidad de cada
+                      producto.
+                    </p>
+                    {quoteSent && !quoteOpen ? (
+                      <p className={styles.quoteSent}>
+                        <Check size={15} /> Consulta enviada. Te vamos a escribir por email.
+                      </p>
+                    ) : quoteOpen ? (
+                      <form
+                        className={styles.quoteForm}
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void requestQuote();
+                        }}
+                      >
+                        <label>
+                          Nombre y apellido
+                          <input
+                            required
+                            value={contact.name}
+                            autoComplete="name"
+                            onChange={(event) =>
+                              setContact((current) => ({ ...current, name: event.target.value }))
+                            }
+                          />
+                        </label>
+                        <label>
+                          Email
+                          <input
+                            required
+                            type="email"
+                            value={contact.email}
+                            autoComplete="email"
+                            onChange={(event) =>
+                              setContact((current) => ({ ...current, email: event.target.value }))
+                            }
+                          />
+                        </label>
+                        <label>
+                          Teléfono (opcional)
+                          <input
+                            value={contact.phone}
+                            autoComplete="tel"
+                            onChange={(event) =>
+                              setContact((current) => ({ ...current, phone: event.target.value }))
+                            }
+                          />
+                        </label>
+                        <label>
+                          Mensaje (opcional)
+                          <textarea
+                            rows={3}
+                            value={contact.message}
+                            onChange={(event) =>
+                              setContact((current) => ({ ...current, message: event.target.value }))
+                            }
+                          />
+                        </label>
+                        <button
+                          type="submit"
+                          className={styles.primaryButton}
+                          disabled={adding || units === 0}
+                        >
+                          <MessageSquareQuote size={17} />
+                          {adding ? 'Enviando consulta…' : 'Enviar consulta'}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.secondaryButton}
+                          disabled={adding}
+                          onClick={() => setQuoteOpen(false)}
+                        >
+                          Cancelar
+                        </button>
+                      </form>
+                    ) : (
+                      <button
+                        type="button"
+                        className={styles.primaryButton}
+                        disabled={units === 0}
+                        onClick={() => setQuoteOpen(true)}
+                      >
+                        <MessageSquareQuote size={17} />
+                        Solicitar cotización
+                      </button>
+                    )}
+                    <span className={styles.secureNote}>
+                      <Check size={14} /> Sin compromiso: primero te pasamos el presupuesto
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div className={styles.total}>
+                      <span>Subtotal</span>
+                      <strong>
+                        {currencies.size <= 1 ? money(total, currency) : 'Revisar monedas'}
+                      </strong>
+                    </div>
+                    <p>El envío y los descuentos se calculan en el carrito.</p>
+                    {unavailable && (
+                      <p className={styles.checkoutIssue}>
+                        Hay productos sin disponibilidad o precio.{' '}
+                        {config.allow_custom
+                          ? 'Quitalos o elegí otra propuesta para continuar.'
+                          : 'Elegí otra propuesta para continuar.'}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      disabled={adding || unavailable || currencies.size > 1 || units === 0}
+                      onClick={addToCart}
+                    >
+                      <ShoppingBag size={17} />
+                      {adding ? 'Agregando al carrito…' : 'Agregar todo al carrito'}
+                    </button>
+                    <span className={styles.secureNote}>
+                      <Check size={14} /> Los mismos productos y precios de la tienda
+                    </span>
+                  </>
                 )}
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  disabled={adding || unavailable || currencies.size > 1 || units === 0}
-                  onClick={addToCart}
-                >
-                  <ShoppingBag size={17} />
-                  {adding ? 'Agregando al carrito…' : 'Agregar todo al carrito'}
-                </button>
-                <span className={styles.secureNote}>
-                  <Check size={14} /> Los mismos productos y precios de la tienda
-                </span>
               </div>
             </aside>
           </div>

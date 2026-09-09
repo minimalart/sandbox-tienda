@@ -26,9 +26,9 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
 const jsxRuntime = require("react/jsx-runtime");
 const adminSdk = require("@medusajs/admin-sdk");
 const icons = require("@medusajs/icons");
-const ui = require("@medusajs/ui");
 const admin = require("@minimalart/mercatto-plugin-runtime/admin");
 const reactI18next = require("react-i18next");
+const ui = require("@medusajs/ui");
 const react = require("react");
 const reactQuery = require("@tanstack/react-query");
 const core = require("@dnd-kit/core");
@@ -1476,20 +1476,7 @@ const VideosPage = () => {
   registerVideosTranslations(i18n);
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "flex flex-col gap-y-4", children: [
     /* @__PURE__ */ jsxRuntime.jsx(admin.SiteScopeBar, { screen: "videos", variant: "card" }),
-    /* @__PURE__ */ jsxRuntime.jsx(VideosTable, {}),
-    /* @__PURE__ */ jsxRuntime.jsxs(ui.Container, { children: [
-      /* @__PURE__ */ jsxRuntime.jsx(ui.Heading, { level: "h2", className: "mb-2", children: "Ajustes por sitio" }),
-      /* @__PURE__ */ jsxRuntime.jsxs(ui.Text, { className: "text-ui-fg-subtle", children: [
-        "Los campos editables (destino del callback de OAuth, credenciales de la app de Vimeo) se administran desde la card de ",
-        /* @__PURE__ */ jsxRuntime.jsx("code", { children: "app-settings" }),
-        "del host, con el namespace ",
-        /* @__PURE__ */ jsxRuntime.jsx("code", { children: "extension:videos" }),
-        ". El plugin lee ese snapshot vía",
-        " ",
-        /* @__PURE__ */ jsxRuntime.jsx("code", { children: "@minimalart/mercatto-plugin-runtime" }),
-        " y cae a las variables de entorno cuando no hay override."
-      ] })
-    ] })
+    /* @__PURE__ */ jsxRuntime.jsx(VideosTable, {})
   ] });
 };
 const VideosIcon = () => /* @__PURE__ */ jsxRuntime.jsx(icons.PlaySolid, { style: { color: "#FF4F51" } });

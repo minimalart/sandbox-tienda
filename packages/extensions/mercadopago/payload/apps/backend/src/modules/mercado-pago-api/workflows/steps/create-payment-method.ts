@@ -1,3 +1,4 @@
+import type { IPaymentModuleService } from '@medusajs/framework/types';
 import type { CreatePaymentMethodDTO, PaymentMethodDTO } from '@medusajs/framework/types';
 import { Modules } from '@medusajs/framework/utils';
 import { createStep, StepResponse } from '@medusajs/framework/workflows-sdk';
@@ -11,7 +12,7 @@ export const createMercadopagoApiPaymentMethodStep = createStep<
   PaymentMethodDTO | null,
   undefined
 >('create-mercadopago-api-payment-method', async (data, { container }) => {
-  const service = container.resolve(Modules.PAYMENT);
+  const service = container.resolve<IPaymentModuleService>(Modules.PAYMENT);
   const paymentMethod = await service.createPaymentMethods(data);
   return new StepResponse(paymentMethod);
 });

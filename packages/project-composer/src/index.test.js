@@ -71,7 +71,7 @@ test('generates repeatable independent folders without Git or platform code', as
       assert.equal(extensionPackages.includes('fiscal-documentation'), false);
       assert.equal(extensionPackages.includes('ai-assistant'), false);
       assert.ok(extensionPackages.includes('multistore'), 'multistore es required: tiene que llegar siempre');
-      assert.equal(extensionPackages.includes('store-importer'), false, 'store-importer es opcional y no se pidió');
+      assert.equal(extensionPackages.includes('store-importer'), false, 'el importador pertenece a Tiendas, sin paquete adicional');
       const modules = fs.readdirSync(path.join(output, 'apps/backend/src/modules'));
       // site-manager se desmanteló: su módulo ya no existe y no debe reaparecer.
       assert.equal(modules.includes('site-manager'), false);
@@ -83,12 +83,11 @@ test('generates repeatable independent folders without Git or platform code', as
       assert.ok(modules.includes('demo-store'), 'el módulo de tiendas tiene que llegar al proyecto del cliente');
       assert.ok(fs.existsSync(path.join(output, 'apps/backend/src/api/admin/sites')), 'faltan las rutas admin de tiendas');
 
-      // Pero el IMPORTADOR no: es opcional y no se pidió. Si esto aparece, la
-      // partición multistore / store-importer se rompió y todo cliente se lleva los
-      // importadores de tres plataformas que no usa.
-      assert.equal(fs.existsSync(path.join(output, 'apps/backend/src/modules/demo-store/importers')), false);
-      assert.equal(fs.existsSync(path.join(output, 'apps/backend/src/modules/demo-store/run-import.ts')), false);
-      assert.equal(fs.existsSync(path.join(output, 'apps/backend/src/jobs/process-demo-store-imports.ts')), false);
+      // Tiendas incluye el flujo de alta y de importación en tiendas existentes.
+      assert.ok(fs.existsSync(path.join(output, 'apps/backend/src/modules/store-importer/index.ts')));
+      assert.ok(fs.existsSync(path.join(output, 'apps/backend/src/jobs/process-demo-store-imports.ts')));
+      assert.ok(fs.existsSync(path.join(output, 'apps/backend/src/jobs/process-catalog-imports.ts')));
+      assert.ok(fs.existsSync(path.join(output, 'apps/backend/src/admin/routes/sites/components/store-catalog.tsx')));
 
       // Infraestructura de plataforma: es CORE, así que tiene que llegar al proyecto
       // del cliente ELIJA LAS EXTENSIONES QUE ELIJA. `resolve-ownership.js` nunca

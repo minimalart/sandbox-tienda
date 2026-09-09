@@ -33,6 +33,8 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useCheckoutPolicy, checkoutRequest } from '@lib/hooks/use-checkout-policy';
+import Recipients from '@modules/checkout/components/recipients';
 
 type ShippingOption = { id: string; name: string; amount?: number };
 type Provider = { id: string; is_enabled?: boolean };
@@ -122,6 +124,7 @@ export default function B2BCheckoutFlow({
   const router = useRouter();
   const searchParams = useSearchParams();
   const demoHref = useDemoHref();
+  const checkout = useCheckoutPolicy(cart);
 
   const items = cart.items ?? [];
   const currencyCode = cart.currency_code ?? "ars";
@@ -136,33 +139,40 @@ export default function B2BCheckoutFlow({
     });
 
   // ── Estado de completitud, derivado del carrito ────────────────────────────
-  const addressComplete = !!cart.shipping_address?.address_1;
-  const deliveryComplete = (cart.shipping_methods?.length ?? 0) > 0;
+  const addressComplete = (checkout.state?.configured && !checkout.state.flow.address_required) || !!cart.shipping_address?.address_1;
+  const deliveryComplete = checkout.state?.configured ? !!checkout.state.flow.blocks.find(b => b.id === 'delivery')?.complete : (cart.shipping_methods?.length ?? 0) > 0;
   const paymentSessions =
     (cart.payment_collection as { payment_sessions?: Array<{ status?: string; provider_id?: string }> } | null)
       ?.payment_sessions ?? [];
   const activeSession = paymentSessions.find((s) => s.status === "pending");
   const paymentComplete = !!activeSession;
 
-  const allStepsComplete = addressComplete && deliveryComplete && paymentComplete;
+  const recipientsComplete = !checkout.state?.configured || checkout.state.recipients_complete;
+  const allStepsComplete = !checkout.loading && !checkout.error && (!checkout.state?.configured || checkout.state.flow.ready) && addressComplete && deliveryComplete && recipientsComplete && (paymentComplete || Number(cart.total) === 0);
 
   // ── Navegación por pasos (?step=) ──────────────────────────────────────────
   const stepAllowed = (s: string): boolean => {
     if (s === "personal" || s === "address") return true;
     if (s === "delivery") return addressComplete;
+    if (s === 'payment' && !recipientsComplete) return false;
     return deliveryComplete; // benefits + payment
   };
   const defaultStep = !addressComplete
     ? "address"
     : !deliveryComplete
       ? "delivery"
-      : "payment";
-  const rawStep = searchParams.get("step") ?? "";
-  const currentStep =
-    rawStep && STEP_ORDER.includes(rawStep as (typeof STEP_ORDER)[number]) && stepAllowed(rawStep)
+      : !recipientsComplete ? 'recipients' : "payment";
+  const rawStep = (searchParams.get("step") ?? "").replace(/^edit-/, "");
+  const visible = (id: string) => !checkout.state?.configured || (id === 'payment' ? Number(cart.total) !== 0 : !!checkout.state.flow.blocks.find(b => b.id === id)?.visible) || searchParams.get('step') === 'edit-' + id;
+  const visibleOrder = checkout.state?.configured ? checkout.state.flow.blocks.filter(b => visible(b.id)).map(b => b.id) : [...STEP_ORDER];
+  const firstIncomplete = checkout.state?.configured ? checkout.state.flow.blocks.find(b => b.applicable && !b.complete && b.id !== 'payment') : null;
+  const currentStep = firstIncomplete && (!rawStep || checkout.state!.flow.blocks.findIndex(b => b.id === firstIncomplete.id) < checkout.state!.flow.blocks.findIndex(b => b.id === rawStep))
+    ? firstIncomplete.id
+    : rawStep && visibleOrder.includes(rawStep) && stepAllowed(rawStep)
       ? rawStep
-      : defaultStep;
+      : firstIncomplete?.id ?? (visibleOrder.includes(defaultStep) ? defaultStep : visibleOrder.at(-1) ?? 'personal');
   const goToStep = (s: string) => goToCheckoutStep(s);
+  useEffect(() => { if (checkout.state?.cart_changed) router.refresh(); }, [checkout.state, router]);
 
   // ── Estado local de UI ─────────────────────────────────────────────────────
   const [busy, setBusy] = useState(false);
@@ -273,6 +283,7 @@ export default function B2BCheckoutFlow({
   };
 
   const pickProvider = async (id: string) => {
+    if (!recipientsComplete) { goToStep('recipients'); return; }
     setSelectedProvider(id);
     setBusy(true);
     setError(null);
@@ -289,6 +300,7 @@ export default function B2BCheckoutFlow({
     setBusy(true);
     setError(null);
     try {
+      if (checkout.state?.configured) await checkoutRequest({ action: 'prepare', revision: checkout.state.revision });
       const r = await cartAction({ action: "place-order" });
       if (!r.ok) {
         setError(r.error || "No se pudo finalizar la compra.");
@@ -313,13 +325,14 @@ export default function B2BCheckoutFlow({
   const promotions =
     (cart as HttpTypes.StoreCart & { promotions?: HttpTypes.StorePromotion[] }).promotions ?? [];
 
-  const stepIndex = (s: string) => STEP_ORDER.indexOf(s as (typeof STEP_ORDER)[number]) + 1;
+  const stepIndex = (s: string) => Math.max(1, visibleOrder.indexOf(s) + 1);
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="min-w-0 flex-1 space-y-3">
+        {checkout.error && <p role="alert" className="text-sm text-red-700">{checkout.error}<button type="button" onClick={() => checkout.refresh()}>Volver a intentar</button></p>}
         {/* 1 — Datos personales (solo lectura) */}
-        <CheckoutStep
+        {visible("personal") && <CheckoutStep
           stepNumber={stepIndex("personal")}
           title="Datos personales"
           icon={<User />}
@@ -355,10 +368,10 @@ export default function B2BCheckoutFlow({
               Continuar
             </button>
           </div>
-        </CheckoutStep>
+        </CheckoutStep>}
 
         {/* 2 — Datos de envío */}
-        <CheckoutStep
+        {visible("address") && <CheckoutStep
           stepNumber={stepIndex("address")}
           title="Datos de envío"
           icon={<MapPin />}
@@ -451,10 +464,10 @@ export default function B2BCheckoutFlow({
               <p className="mt-2 text-xs text-destructive">{error}</p>
             ) : null}
           </div>
-        </CheckoutStep>
+        </CheckoutStep>}
 
         {/* 3 — Tipo de envío */}
-        <CheckoutStep
+        {visible("delivery") && <CheckoutStep
           stepNumber={stepIndex("delivery")}
           title="Tipo de envío"
           icon={<Truck />}
@@ -505,10 +518,17 @@ export default function B2BCheckoutFlow({
               </button>
             ) : null}
           </div>
-        </CheckoutStep>
+        </CheckoutStep>}
 
+        {checkout.state?.configured && visible('billing') && <CheckoutStep stepNumber={stepIndex('billing')} title="Facturación" icon={<Building2 />} isOpen={currentStep === 'billing'} isCompleted={!!checkout.state.flow.blocks.find(b => b.id === 'billing')?.complete} onEdit={() => goToStep('billing')}>
+          <p className="text-sm">La facturación utiliza los datos de tu empresa. Revisalos antes de continuar.</p>
+          <LocalizedClientLink href="/b2b/empresa" className="text-sm underline">Revisar datos de facturación</LocalizedClientLink>
+        </CheckoutStep>}
         {/* 4 — Beneficios (códigos de promoción) */}
-        <CheckoutStep
+        {checkout.state?.configured && checkout.state.policy.recipients.enabled && <CheckoutStep stepNumber={stepIndex('recipients')} title={checkout.state.policy.recipients.title} icon={<User />} isOpen={currentStep === 'recipients'} isCompleted={recipientsComplete} onEdit={() => goToStep('recipients')}>
+          <Recipients state={checkout.state} items={items} onSaved={checkout.setState} onContinue={() => goToStep('benefits')} />
+        </CheckoutStep>}
+        {visible("benefits") && <CheckoutStep
           stepNumber={stepIndex("benefits")}
           title="Beneficios"
           icon={<Tag />}
@@ -544,10 +564,10 @@ export default function B2BCheckoutFlow({
               Continuar
             </button>
           </div>
-        </CheckoutStep>
+        </CheckoutStep>}
 
         {/* 5 — Forma de pago */}
-        <CheckoutStep
+        {visible("payment") && <CheckoutStep
           stepNumber={stepIndex("payment")}
           title="Forma de pago"
           icon={<CreditCard />}
@@ -633,7 +653,7 @@ export default function B2BCheckoutFlow({
               })
             )}
           </div>
-        </CheckoutStep>
+        </CheckoutStep>}
       </div>
 
       {/* Resumen — estilo B2C (impuestos incluidos) */}
@@ -670,6 +690,11 @@ export default function B2BCheckoutFlow({
             ))}
           </div>
 
+          {checkout.state?.configured && <div className="my-3 space-y-2 border-t pt-3 text-sm" aria-label="Revisión de la compra">
+            <p>{email}</p>
+            {checkout.state.flow.blocks.filter(b => b.applicable && ['personal', 'address', 'delivery', 'recipients', 'payment'].includes(b.id)).map(b => <button key={b.id} type="button" className="mr-3 underline" onClick={() => goToStep('edit-' + b.id)}>Editar {{personal: 'contacto', address: 'dirección', delivery: 'entrega', recipients: 'destinatarios', payment: 'pago'}[b.id]}</button>)}
+            {checkout.state.policy.recipients.enabled && <p>{checkout.state.units.length} unidades · {checkout.state.people.length} destinatarios</p>}
+          </div>}
           <CartTotals
             totals={{
               total: cart.total,

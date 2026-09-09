@@ -20,6 +20,19 @@ type Banner = {
   subtitle: string;
   image: string;
   cardColor?: string;
+  /**
+   * Color del texto del banner: título + subtítulo (van sobre la imagen).
+   * Ausente = default previo (blanco). Se setea desde el form del plugin
+   * banners (metadata.color_font).
+   */
+  textColor?: string;
+  /**
+   * Color del texto DEL BOTÓN CTA, separado del `textColor` general porque
+   * el CTA va sobre `cardColor` (posiblemente claro) mientras el título va
+   * sobre la imagen (fondo oscuro/reservado). Un único color acoplaba los
+   * dos y dejaba a uno invisible cuando los fondos difieren.
+   */
+  ctaTextColor?: string;
   cta: {
     text: string;
     href: string;
@@ -107,19 +120,31 @@ type HeroSlide = Banner & {
   isExternal: boolean;
   titleColor: string;
   textColor: string;
+  ctaTextColor: string;
   dotColor: "dark" | "white";
 };
 
 const toHeroSlide = (banner: Banner): HeroSlide => {
   const href = banner.cta.href;
+  // Título / subtítulo van sobre la imagen (fondo oscuro/reservado). Default
+  // blanco preserva el treatment histórico. El operador puede pisarlo con
+  // `metadata.color_font` del plugin banners.
+  const textColor = banner.textColor?.trim() || "#FFFFFF";
+  // CTA va sobre `cardColor` (el fondo del botón, ver style en el JSX). Si
+  // el operador seteó `cta_color_font` gana; sino cae al `textColor` general
+  // (cuando ambos son el mismo la UX previa no cambia). Antes usaba
+  // `textColor` directo y quedaba acoplado al color del título.
+  const ctaTextColor =
+    banner.ctaTextColor?.trim() || banner.textColor?.trim() || "#FFFFFF";
   return {
     ...banner,
     isExternal: href.startsWith("http://") || href.startsWith("https://"),
-    // El banner de medusa no transporta colores por slide; el texto va en
-    // blanco sobre la imagen (las imágenes del hero reservan la zona del copy).
-    titleColor: "#FFFFFF",
-    textColor: "#FFFFFF",
-    dotColor: "white",
+    titleColor: textColor,
+    textColor,
+    ctaTextColor,
+    // Dots del carrusel: cuando el texto del hero es oscuro (bg claro), los
+    // dots blancos desaparecen; usamos dark en ese caso.
+    dotColor: textColor.toLowerCase() === "#ffffff" ? "white" : "dark",
   };
 };
 
@@ -138,6 +163,8 @@ const HeroCarousel = () => {
           subtitle: b.subtitle ?? "",
           image: b.image as string,
           cardColor: b.card_color,
+          textColor: b.color_font,
+          ctaTextColor: b.cta_color_font,
           cta: { text: b.cta_text ?? "", href: b.cta_href ?? "" },
         }));
       const validMapped = mapped.filter(isRenderableHeroBanner);
@@ -270,6 +297,18 @@ const HeroCarousel = () => {
                         className="cursor-pointer overflow-hidden border-0 px-[14px] py-[12px] text-base leading-none no-underline"
                         size="storefront"
                         variant="storefront"
+                        style={{
+                          ...(slide.cardColor
+                            ? { backgroundColor: slide.cardColor }
+                            : {}),
+                          // El variant 'storefront' del Button viene con
+                          // `text-white` hardcoded; si el operador puso un
+                          // cardColor claro, el CTA quedaba blanco sobre
+                          // blanco. Usa `ctaTextColor` (dedicado al CTA) y
+                          // no `textColor` (que gobierna título/subtítulo)
+                          // para poder ajustar cada uno independiente.
+                          color: slide.ctaTextColor,
+                        }}
                       >
                         <span>{slide.cta.text}</span>
                       </Button>

@@ -2,7 +2,11 @@
 
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import type { NavigationLink } from "@lib/data/navigation-links";
-import { useSiteHref, useTenant } from "@lib/site-config/context";
+import {
+  useSiteHref,
+  useTenant,
+  useTenantSections,
+} from "@lib/site-config/context";
 import { useGhostCompletion } from "@lib/hooks/use-ghost-completion";
 import { SEARCH_HINTS, useRotatingHint } from "@lib/hooks/use-rotating-hint";
 import ShoppingListModal from "@modules/shopping-list/components/shopping-list-modal";
@@ -23,6 +27,7 @@ const HeaderSearchBar = () => {
   const searchParams = useSearchParams();
   const tenant = useTenant();
   const siteHref = useSiteHref();
+  const { isShoppingListVisible } = useTenantSections();
   // Per-demo "Explorar:" quick suggestions; fall back to the hardcoded set when
   // the demo doesn't override them (and on the main store).
   const quickSuggestions = tenant.assets.searchSuggestions?.length
@@ -228,18 +233,23 @@ const HeaderSearchBar = () => {
         )}
       </div>
 
-      <button
-        aria-label="Abrir lista de compras"
-        className="group relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:border-[--primary-color] hover:text-[--primary-color]"
-        data-testid="shopping-list-open-button"
-        onClick={() => setShoppingListOpen(true)}
-        type="button"
-      >
-        <ListPlus className="h-5 w-5" />
-        <span className="pointer-events-none absolute top-full left-1/2 z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition duration-150 before:absolute before:-top-1 before:left-1/2 before:h-2 before:w-2 before:-translate-x-1/2 before:rotate-45 before:bg-gray-900 group-hover:opacity-100 group-focus-visible:opacity-100">
-          Lista de compras
-        </span>
-      </button>
+      {/* Botón "Lista de compras": respeta el toggle sectionVisibility.shoppingList
+          igual que el link del nav. Antes se renderizaba siempre — el toggle
+          apagaba el link pero dejaba el botón del search bar visible. */}
+      {isShoppingListVisible && (
+        <button
+          aria-label="Abrir lista de compras"
+          className="group relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:border-[--primary-color] hover:text-[--primary-color]"
+          data-testid="shopping-list-open-button"
+          onClick={() => setShoppingListOpen(true)}
+          type="button"
+        >
+          <ListPlus className="h-5 w-5" />
+          <span className="pointer-events-none absolute top-full left-1/2 z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition duration-150 before:absolute before:-top-1 before:left-1/2 before:h-2 before:w-2 before:-translate-x-1/2 before:rotate-45 before:bg-gray-900 group-hover:opacity-100 group-focus-visible:opacity-100">
+            Lista de compras
+          </span>
+        </button>
+      )}
 
       {/* Quick suggestions - hidden on smaller screens */}
       <div className="hidden items-center gap-1 xl:flex">
@@ -257,10 +267,12 @@ const HeaderSearchBar = () => {
           </button>
         ))}
       </div>
-      <ShoppingListModal
-        open={shoppingListOpen}
-        onClose={() => setShoppingListOpen(false)}
-      />
+      {isShoppingListVisible && (
+        <ShoppingListModal
+          open={shoppingListOpen}
+          onClose={() => setShoppingListOpen(false)}
+        />
+      )}
     </div>
   );
 };

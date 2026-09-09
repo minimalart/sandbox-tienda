@@ -406,7 +406,7 @@
     },
     {
       "path": "apps/storefront/src/lib/site-config/site-gate.ts",
-      "sha256": "2bef40927572105ba7e95c5f411f4b443ee47c07e72e0f1bd9109bda1ab4d883"
+      "sha256": "2addf7232d0fc5ad6d04e2720f83dda01776bd01904063a5c08c7ec3fff94ba9"
     },
     {
       "path": "apps/storefront/src/modules/legal/anchors.test.ts",

@@ -98,6 +98,8 @@ function resolveProjectSelection({ template, extensions = [] }) {
     catalog.extensions.filter((item) => item.required).map((item) => item.id),
   );
   const add = (id) => {
+    // Los blueprints anteriores conservan compatibilidad; Tiendas ahora incluye el importador.
+    if (id === 'store-importer') id = 'multistore';
     const extension = byId.get(id);
     if (!extension) throw new Error(`Unknown extension: ${id}`);
     if (extension.status === 'experimental' || extension.status === 'deprecated') {

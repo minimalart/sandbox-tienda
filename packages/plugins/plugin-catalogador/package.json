@@ -1,6 +1,6 @@
 {
   "name": "@minimalart/mercatto-plugin-catalogador",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Mercatto plugin — mass AI-assisted product catalog enrichment (reviewable, resumable executions) with barcode + web scraping enrichment, image generation and lifestyle composition. Migrated from packages/extensions/catalogador.",
   "main": ".medusa/server/src/index.js",
   "types": ".medusa/server/src/index.d.ts",

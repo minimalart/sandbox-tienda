@@ -66,8 +66,22 @@ export const CATEGORY_DICTIONARY_EXTRA: Record<string, string> = {
   nauticos: 'náuticos',
   perfileria: 'perfilería',
   perfilerias: 'perfilerías',
-  // Sigla del rubro que el diccionario de títulos no tiene.
+  // Términos que sólo aparecen en la carta de FAMILIAS de Zeus (DESDEELSUR-48).
+  // Salen de medir las 36 familias reales de desdeelsur, no de inventario.
+  explosion: 'explosión',
+  proteccion: 'protección',
+  construccion: 'construcción',
+  clasico: 'clásico',
+  clasica: 'clásica',
+  clasicos: 'clásicos',
+  clasicas: 'clásicas',
+  // El diccionario de títulos tiene `acrilico`/`acrilica` pero no los plurales,
+  // y las familias los usan (`ARTISTICA ACRILICOS`, `… BASES ACRILICAS`).
+  acrilicos: 'acrílicos',
+  acrilicas: 'acrílicas',
+  // Siglas del rubro que el diccionario de títulos no tiene.
   pu: 'PU',
+  spc: 'SPC',
 };
 
 /**
@@ -119,46 +133,67 @@ export function sameCategoryName(a: string, b: string): boolean {
 }
 
 /**
- * Aplica el diccionario palabra por palabra sobre un nombre ya en minúsculas.
+ * Aplica el diccionario sobre un nombre ya en minúsculas.
  *
- * Matchea por token PLEGADO, igual que el diccionario del título: así un término
- * ya corregido ("eléctricas") vuelve a matchear y mapea a sí mismo, que es lo que
- * sostiene la idempotencia. Los separadores del ERP (`-`) no son letras, así que
- * pasan de largo sin tocarse.
+ * Matchea por PALABRA plegada, igual que el diccionario del título: así un
+ * término ya corregido ("eléctricas") vuelve a matchear y mapea a sí mismo, que
+ * es lo que sostiene la idempotencia.
+ *
+ * Recorre las palabras con un regex y NO partiendo por espacios. La diferencia
+ * importa: el ERP separa enumeraciones con comas y sin espacio antes, así que
+ * partir por espacios deja el token `espatulas,` —con la coma pegada— que no
+ * matchea la clave `espatulas` y la palabra se queda sin tilde. Es el mismo
+ * motivo por el que `product-description.ts` procesa la prosa por tramos en vez
+ * de una sola pasada. Los separadores (`-`, `,`, `:`) quedan intactos porque el
+ * regex sólo toca corridas de letras y dígitos.
  */
-function applyCategoryDictionary(name: string): string {
-  return name
-    .split(' ')
-    .map((token) => CATEGORY_DICTIONARY[fold(token)] ?? token)
-    .join(' ');
+function applyGroupingDictionary(name: string): string {
+  return name.replace(/[\p{L}\p{N}]+/gu, (word) => CATEGORY_DICTIONARY[fold(word)] ?? word);
 }
 
 /**
- * Nombre listo para mostrar. Si el ERP ya mandó algo con minúsculas se respeta
- * tal cual (alguien se tomó el trabajo de escribirlo bien); si vino en
- * mayúsculas sostenidas se pasa a mayúscula inicial, con las tildes y las siglas
- * que el diccionario conozca.
+ * Motor de formato de una etiqueta de agrupación del ERP: casing de lectura más
+ * tildes y siglas del diccionario.
+ *
+ * Lo comparten las CATEGORÍAS y las FAMILIAS (`product-family.ts`). Las dos son
+ * lo mismo desde acá: una etiqueta que Zeus manda en mayúsculas sostenidas y sin
+ * tildes, y que el storefront muestra tal cual en un filtro o un breadcrumb. Lo
+ * que NO comparten son los overrides de nombre completo, que son por eje.
+ *
+ * Si el ERP ya mandó algo con minúsculas se respeta tal cual: alguien se tomó el
+ * trabajo de escribirlo bien.
  */
-export function normalizeCategoryName(raw: string): string {
+export function normalizeErpGroupingLabel(raw: string): string {
   const name = collapse(raw);
   if (!name) return name;
-
-  // Reescritura editorial declarada: gana sobre todo lo demás, incluido el
-  // early-return de abajo. Se consulta por forma plegada para que dé igual cómo
-  // venga escrito el nombre del ERP.
-  const override = CATEGORY_NAME_OVERRIDES[fold(name)];
-  if (override) return override;
 
   // Tiene minúsculas → ya viene con un formato intencional, no se toca.
   if (name !== name.toUpperCase()) return name;
 
-  const lowered = applyCategoryDictionary(name.toLowerCase());
+  const lowered = applyGroupingDictionary(name.toLowerCase());
 
   // Mayúscula en la primera letra del nombre (no de cada palabra: en español
   // "Lacas y barnices" es correcto y "Lacas Y Barnices" no).
   const first = lowered.search(/[\p{L}\p{N}]/u);
   if (first === -1) return lowered;
   return lowered.slice(0, first) + lowered[first]!.toUpperCase() + lowered.slice(first + 1);
+}
+
+/**
+ * Nombre de CATEGORÍA listo para mostrar: el override editorial si hay uno, y si
+ * no el motor de arriba.
+ */
+export function normalizeCategoryName(raw: string): string {
+  const name = collapse(raw);
+  if (!name) return name;
+
+  // Reescritura editorial declarada: gana sobre todo lo demás, incluido el
+  // early-return por minúsculas del motor. Se consulta por forma plegada para
+  // que dé igual cómo venga escrito el nombre del ERP.
+  const override = CATEGORY_NAME_OVERRIDES[fold(name)];
+  if (override) return override;
+
+  return normalizeErpGroupingLabel(name);
 }
 
 /**

@@ -26,7 +26,22 @@ export async function GET(request: Request) {
       { method: 'GET' },
     )
     return NextResponse.json({ order_id: result.order_id ?? null })
-  } catch {
+  } catch (error) {
+    /**
+     * `order_id: null` se mantiene: para el que hace polling, "todavía no está"
+     * y "no pude preguntar" se manejan igual — sigue intentando.
+     *
+     * Lo que NO se mantiene es tragarse el error sin dejar rastro. Este `catch`
+     * vacío escondió durante meses que la ruta del backend no existía: devolvía
+     * un 400 ("Unrecognized fields: 'cart_id'") en CADA intento de CADA compra,
+     * el proxy lo convertía en un null indistinguible de "el webhook todavía no
+     * terminó", y el único síntoma visible era el cartel de los 60 segundos.
+     * Un error que no se loguea no es un error manejado.
+     */
+    console.error(
+      `[orders/by-cart] backend lookup failed for cart ${cartId}:`,
+      error instanceof Error ? error.message : error,
+    )
     return NextResponse.json({ order_id: null })
   }
 }

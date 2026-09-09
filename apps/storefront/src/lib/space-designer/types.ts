@@ -56,12 +56,15 @@ export type SpaceTemplate = Omit<SpaceSnapshot, 'version'> & {
   image_url?: string;
   sort_order?: number;
 };
+/** `cart` adds the whole design to the native cart; `quote` collects a contact request instead. */
+export type SpaceCheckoutMode = 'cart' | 'quote';
 export type SpaceConfigV1 = {
   version: 1;
   description?: string;
   products: SpaceProduct[];
   templates: SpaceTemplate[];
   allow_custom: boolean;
+  checkout_mode?: SpaceCheckoutMode;
   surface_options?: {
     floors?: { label: string; color: string; texture_url?: string }[];
     walls?: { label: string; color: string; texture_url?: string }[];

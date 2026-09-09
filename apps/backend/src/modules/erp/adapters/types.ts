@@ -1,5 +1,12 @@
 import type { Logger } from '@medusajs/framework/types';
 import type { ErpSalePayload } from '../types';
+import type { ErpConfigLookups } from './config-lookups';
+
+export type {
+  ErpConfigLookupKind,
+  ErpConfigLookupOption,
+  ErpConfigLookups,
+} from './config-lookups';
 
 /**
  * Contrato común de los adapters ERP. El core de la extensión pregunta por
@@ -56,6 +63,17 @@ export type ErpCapabilities = {
    * este flujo, así que declaran `false`.
    */
   invoice_fetch: boolean;
+  /**
+   * Puede listar las opciones válidas de los campos de configuración cuyo valor
+   * es un código de la cuenta del ERP (sucursal, depósito, condición de venta,
+   * vendedor, categoría de IVA, tarjeta) — habilita los selectores de la
+   * pantalla de configuración en lugar de inputs de texto libre.
+   *
+   * Zeus: `true`. Los demás declaran `false` y su pantalla sigue igual que hoy:
+   * la capability existe justamente para que un ERP sin estos listados no
+   * quede con seis selectores vacíos.
+   */
+  config_lookups: boolean;
 };
 
 /** Contexto por llamada: credenciales ya descifradas + settings + país. Los adapters son stateless. */
@@ -302,6 +320,17 @@ export interface ErpAdapter {
     args: { externalRef: string; sucursal?: number | null; tipoComp: string },
     ctx: AdapterContext
   ): Promise<ErpInvoicePdf | null>;
+  /**
+   * Opciones válidas de los campos de configuración que son un código de la
+   * cuenta del ERP. Opcional: los adapters que no lo implementan declaran
+   * `config_lookups: false` y nadie los llama.
+   *
+   * **No lanza si un listado falla**: devuelve los que pudo y el motivo de cada
+   * uno en `errors`. Un listado caído tiene que degradar SU campo a texto libre
+   * —que es el estado actual— y no tumbar la pantalla de configuración entera,
+   * que es desde donde se arregla el problema.
+   */
+  fetchConfigLookups?(ctx: AdapterContext): Promise<ErpConfigLookups>;
 }
 
 /** El ERP no respondió / red caída. El stock sync aborta sin escribir nada. */

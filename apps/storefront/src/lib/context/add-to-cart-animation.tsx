@@ -36,8 +36,15 @@ const AnimationContext = createContext<AnimationContextType | undefined>(
   undefined,
 );
 
-/** Duración del vuelo al carrito, en segundos. */
-const FLIGHT_DURATION = 0.38;
+/**
+ * Duración del vuelo al carrito, en segundos.
+ *
+ * Historia: 0.6 (original, muy lento) → 0.38 (sensación de "no arranca") → 0.55
+ * (equilibrio: se ve el arco completo, arranca al toque, no cansa al repetir).
+ * La curva easeOutQuint del transition compensa: arranca rápido y desacelera
+ * cerca del carrito.
+ */
+const FLIGHT_DURATION = 0.55;
 const FLIGHT_MS = FLIGHT_DURATION * 1000;
 
 type AnimationDropProps = {

@@ -26,6 +26,21 @@ export type WaEventInput = {
 };
 
 /**
+ * Orden de emisión dentro del proceso.
+ *
+ * `created_at` NO alcanza para reconstruir un recorrido: los eventos son
+ * fire-and-forget (`void logWaEvent(...)`), se escriben en paralelo y varios de un
+ * mismo turno caen en el mismo milisegundo, así que el timeline salía con las
+ * decisiones invertidas. Con esto se ordena por `(created_at, seq)`.
+ *
+ * Es un contador por PROCESO, no global, y alcanza: entre dos procesos nunca hay
+ * eventos de la misma conversación en el mismo milisegundo —WhatsApp serializa los
+ * mensajes de un teléfono y el webhook atiende un turno por vez—, así que ahí
+ * desempata `created_at`.
+ */
+let emissionSeq = 0;
+
+/**
  * Registra un paso del embudo comercial de WhatsApp.
  *
  * **Best-effort por diseño**: la analítica NUNCA puede voltear un turno de venta,
@@ -40,9 +55,13 @@ export async function logWaEvent(
   container: MedusaContainer,
   event: WaEventInput,
 ): Promise<void> {
+  // Se toma ANTES del await: lo que importa es el orden en que el bot decidió,
+  // no el orden en que Postgres alcanzó a escribir.
+  const seq = ++emissionSeq;
   try {
     const svc = container.resolve<WhatsappEventLogService>(WHATSAPP_EVENT_LOG_MODULE);
     await svc.createWhatsappEvents({
+      seq,
       phone: event.phone,
       session_id: event.sessionId ?? null,
       type: event.type,

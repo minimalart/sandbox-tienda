@@ -1,3 +1,4 @@
+import { requireB2BStore } from "@lib/site-config/require-b2b-store";
 import { ChannelProvider } from "@lib/context/channel-context";
 import { retrieveCart } from "@lib/data/cart";
 import { TenantProvider } from "@lib/site-config/context";
@@ -25,6 +26,7 @@ export default async function B2BSectionLayout({
 }: {
   children: React.ReactNode;
 }) {
+  await requireB2BStore();
   const [tenant, themeStyles, darkThemeStyles, cart, demoSlug, sitePrefix] = await Promise.all([
     getActiveTenant(),
     getB2BPortalThemeStyles(),

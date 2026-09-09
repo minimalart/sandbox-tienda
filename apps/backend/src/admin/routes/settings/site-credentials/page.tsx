@@ -172,27 +172,17 @@ const Content = ({ siteId, isMainSite }: { siteId: string | null; isMainSite: bo
         : [];
     });
   });
-  // Cada namespace conserva su configuración junto a sus credenciales.
-  for (const ns of settingsNamespaces) {
-    const id = credentialIntegrationId(ns.namespace);
-    const config = ns.settings.filter((d) => !isCredentialSetting(d));
-    if (config.length && !globals.some((e) => e.id === id)) {
-      globals.push({ id, label: ns.title, namespace: ns.namespace, keys: [] });
-    }
-  }
-  globals.sort((a, b) => a.label.localeCompare(b.label, 'es'));
-  const allEntries = globalSelected ? globals : entries;
-  const selectedEntry =
-    allEntries.find((e) => e.id === selected) ??
-    (selected && !globalSelected
-      ? { id: selected, label: 'Credenciales', namespace: '', keys: [] }
-      : undefined);
+  const allEntries = [...new Map([...entries, ...globals].map((entry) => [entry.id, entry])).values()]
+    .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+  const canAccess = (entry: (typeof entries)[number]) =>
+    isGlobalIntegration(entry.id) === globalSelected;
+  const selectedEntry = allEntries.find((entry) => entry.id === selected && canAccess(entry));
   const integration = globalSelected
     ? undefined
     : data?.integrations.find((e) => e.integration === selected);
   const configKeys = (entry: (typeof entries)[number]) =>
     ['openrouter', 'embeddings'].includes(entry.id) ? [] : settingsNamespaces.find((ns) => ns.namespace === entry.namespace)?.settings
-      .filter((d) => !isCredentialSetting(d) && (globalSelected || d.scope !== 'instance'))
+      .filter((d) => !isCredentialSetting(d) && (!globalSelected || d.scope === 'instance'))
       .map((d) => d.key) ?? [];
   const selectedConfigKeys = selectedEntry ? configKeys(selectedEntry) : [];
   const stateOf = (entry: (typeof entries)[number]) => {
@@ -263,7 +253,7 @@ const Content = ({ siteId, isMainSite }: { siteId: string | null; isMainSite: bo
       ? 'Conectada'
       : 'Sin conectar';
   };
-  const visible = (globalSelected ? globals : entries).filter((e) =>
+  const visible = allEntries.filter((e) =>
     [e.label, ...(settingsNamespaces.find((ns) => ns.namespace === e.namespace)?.settings
       .filter((d) => e.keys.includes(d.key) || configKeys(e).includes(d.key))
       .flatMap((d) => [d.label, d.key, d.help ?? '']) ?? [])]
@@ -291,7 +281,7 @@ const Content = ({ siteId, isMainSite }: { siteId: string | null; isMainSite: bo
           </div>
           {globalSelected && (
             <Text size="small" className="text-ui-fg-subtle">
-              Servicios compartidos de Minimalart y configuración general. Los ajustes propios de cada tienda se administran seleccionándola.
+              Con «Todas» podés administrar los servicios globales. Elegí una tienda para acceder a sus integraciones.
             </Text>
           )}
         </div>
@@ -300,14 +290,16 @@ const Content = ({ siteId, isMainSite }: { siteId: string | null; isMainSite: bo
         ) : (
           <div className="divide-y border-t">
             {visible.map((entry) => {
-              const status = stateOf(entry);
+              const accessible = canAccess(entry);
+              const status = accessible ? stateOf(entry) : isGlobalIntegration(entry.id) ? 'Seleccioná Todas' : 'Seleccioná una tienda';
               return (
                 <button
                   key={entry.id}
                   id={entry.id}
                   type="button"
+                  disabled={!accessible}
                   onClick={() => open(entry.id)}
-                  className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left text-ui-fg-base transition-colors hover:bg-ui-bg-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-border-interactive"
+                  className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left text-ui-fg-base transition-colors enabled:hover:bg-ui-bg-subtle disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ui-border-interactive"
                   aria-label={`Configurar ${entry.label}`}
                 >
                   <span className="flex min-w-0 items-center gap-3">
@@ -327,7 +319,7 @@ const Content = ({ siteId, isMainSite }: { siteId: string | null; isMainSite: bo
                     >
                       {status}
                     </Badge>
-                    <span aria-hidden="true">›</span>
+                    <span aria-hidden="true">{accessible ? '›' : '—'}</span>
                   </span>
                 </button>
               );

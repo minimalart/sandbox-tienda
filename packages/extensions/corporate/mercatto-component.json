@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "corporate",
   "name": "Corporativos",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -40,10 +40,6 @@
     {
       "source": "payload/apps/backend/src/admin/hooks/api/corporates.tsx",
       "target": "apps/backend/src/admin/hooks/api/corporates.tsx"
-    },
-    {
-      "source": "payload/apps/storefront/src/lib/data/corporate.ts",
-      "target": "apps/storefront/src/lib/data/corporate.ts"
     },
     {
       "source": "payload/apps/storefront/src/app/[countryCode]/(main)/corporate",
@@ -105,7 +101,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/corporates/credenciales/page.tsx",
-      "sha256": "53d172f885781193c367a86257a014aaf17e70cdc1a6f5c926d435725feff478"
+      "sha256": "6e9b031ef4dcb61b90f6acd7bcfd670575e130b75219e12fa78a8f1347422c0b"
     },
     {
       "path": "apps/backend/src/admin/routes/corporates/page.tsx",
@@ -261,23 +257,23 @@
     },
     {
       "path": "apps/backend/src/workflows/accept-corporate-invitation.ts",
-      "sha256": "f0829315cfbd1b212edb10c01806f896029cab6a973afd91ceaa209544e328a1"
+      "sha256": "5c302ec399d67d3ab4031f580b9d9d995e9cd1c92ddb5ef805713e1be77bbbea"
     },
     {
       "path": "apps/backend/src/workflows/create-corporate.ts",
-      "sha256": "641d43862275cb6da2cc5ad58afe6ed1d5b0a2808077d81418563b37bd21df9f"
+      "sha256": "a347355622d56cf90782262fea1002186d7f59c68ec3ad23c20a412ca4712c6c"
     },
     {
       "path": "apps/backend/src/workflows/invite-corporate-member.ts",
-      "sha256": "d4bfae7e40681c1e211d43bbf5f4de5d0b2c729667b5c182c350a4cb5b911ee5"
+      "sha256": "b1548e18f5363f151a91684d564acb54b1752ddccc9785bdd3d341beff48c695"
     },
     {
       "path": "apps/backend/src/workflows/link-corporate-customer-group.ts",
-      "sha256": "847237b4596cd3420c174548c6d3e8de3ffda699a22ded0769d3dc2784032ffa"
+      "sha256": "aed8e80f8d424b91e065288375fe801131ee357e1b3a29c9c7e6f94284ba0b39"
     },
     {
       "path": "apps/backend/src/workflows/set-corporate-status.ts",
-      "sha256": "78d2ec28358c75b859402087971d12e037f7ca8c2bd8c0c399480344782f167a"
+      "sha256": "ef2f57fac0951eae2ac650064ac58ed8a9c8c51a42064dcf1716bda99a0850de"
     },
     {
       "path": "apps/storefront/src/app/[countryCode]/(main)/corporate/invite/[token]/page.tsx",
@@ -286,10 +282,6 @@
     {
       "path": "apps/storefront/src/app/[countryCode]/(main)/corporate/register/page.tsx",
       "sha256": "8360b36e5acb854c5140b9910e43a5fd2bb018a01935e25799aa2ff916e042b6"
-    },
-    {
-      "path": "apps/storefront/src/lib/data/corporate.ts",
-      "sha256": "26ec2d7aa3cdb51182e82f73f033e2d3541de47347de1a1a8ba175cc5caf6cd8"
     },
     {
       "path": "apps/storefront/src/modules/account/components/corporate/accept-invitation.tsx",

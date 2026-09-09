@@ -1,9 +1,0 @@
-{
-  "name": "@repo/extension-store-importer",
-  "version": "1.0.0",
-  "private": true,
-  "description": "Importador de catalogo component source package",
-  "dependencies": {
-    "@repo/extension-multistore": "workspace:*"
-  }
-}

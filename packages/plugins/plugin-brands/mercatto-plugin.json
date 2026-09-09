@@ -3,7 +3,7 @@
   "schema_version": 1,
   "id": "brands",
   "name": "Marcas",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "kind": "plugin",
   "status": "ready",
   "dependencies": [],

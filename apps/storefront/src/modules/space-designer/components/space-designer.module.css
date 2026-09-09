@@ -1,8 +1,20 @@
+/* Every colour is derived from the tenant's --primary-color so the designer
+   follows the store's branding instead of a hardcoded green. */
 .root {
-  --sd-ink: #22352a;
-  --sd-muted: #718074;
-  --sd-border: #e1e6df;
-  --sd-accent: #234b36;
+  --sd-accent: var(--primary-color, #2e7d32);
+  --sd-accent-dark: color-mix(in srgb, var(--sd-accent) 82%, black);
+  --sd-accent-soft: color-mix(in srgb, var(--sd-accent) 42%, white);
+  --sd-accent-shadow: color-mix(in srgb, var(--sd-accent) 15%, transparent);
+  --sd-shadow: color-mix(in srgb, var(--sd-accent) 8%, transparent);
+  --sd-ink: color-mix(in srgb, var(--sd-accent) 22%, #14211a);
+  --sd-muted: color-mix(in srgb, var(--sd-accent) 18%, #6b7280);
+  --sd-border: color-mix(in srgb, var(--sd-accent) 11%, #e5e7eb);
+  --sd-border-strong: color-mix(in srgb, var(--sd-accent) 22%, #e5e7eb);
+  --sd-tint-faint: color-mix(in srgb, var(--sd-accent) 3%, white);
+  --sd-tint: color-mix(in srgb, var(--sd-accent) 7%, white);
+  --sd-tint-strong: color-mix(in srgb, var(--sd-accent) 12%, white);
+  --sd-tint-hover: color-mix(in srgb, var(--sd-accent) 20%, white);
+  --sd-canvas: color-mix(in srgb, var(--sd-accent) 6%, #f7f7f4);
   width: 100%;
   max-width: 1680px;
   margin: 0 auto;
@@ -23,7 +35,7 @@
 .root button:focus-visible,
 .root input:focus-visible,
 .root select:focus-visible {
-  outline: 2px solid #447c53;
+  outline: 2px solid var(--sd-accent);
   outline-offset: 3px;
 }
 .root button:disabled {
@@ -82,8 +94,8 @@
   color: white;
 }
 .primaryButton:hover:not(:disabled) {
-  background: #173f29;
-  box-shadow: 0 4px 14px #234b3626;
+  background: var(--sd-accent-dark);
+  box-shadow: 0 4px 14px var(--sd-accent-shadow);
 }
 .secondaryButton {
   border: 1px solid var(--sd-border);
@@ -91,7 +103,7 @@
   background: white;
 }
 .secondaryButton:hover {
-  background: #f4f6f1;
+  background: var(--sd-tint);
 }
 .notice,
 .error {
@@ -104,8 +116,8 @@
   margin-bottom: 16px;
 }
 .notice {
-  background: #edf5e9;
-  color: #3e6736;
+  background: var(--sd-tint);
+  color: var(--sd-accent-dark);
 }
 .error {
   background: #fff2eb;
@@ -162,13 +174,13 @@
 }
 .templateCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 14px 36px #263c2310;
-  border-color: #9aaf93;
+  box-shadow: 0 14px 36px var(--sd-shadow);
+  border-color: var(--sd-accent-soft);
 }
 .templatePreview {
   position: relative;
   height: 245px;
-  background: #f2f3ed;
+  background: var(--sd-tint);
   padding: 20px 22px;
 }
 .templatePreview > img {
@@ -185,9 +197,9 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  background: #fffffff0;
-  border: 1px solid #e4e9df;
-  color: #3d6546;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--sd-border);
+  color: var(--sd-accent-dark);
   padding: 5px 9px;
   border-radius: 20px;
   font-size: 10px;
@@ -208,7 +220,7 @@
   letter-spacing: -0.035em;
 }
 .templateTitle svg {
-  color: #68866a;
+  color: var(--sd-accent);
 }
 .templateBody > p {
   color: var(--sd-muted);
@@ -222,7 +234,7 @@
   gap: 14px;
   margin-top: 19px;
   font-size: 11px;
-  color: #5b6c5a;
+  color: var(--sd-muted);
 }
 .templateFacts span + span {
   border-left: 1px solid var(--sd-border);
@@ -243,7 +255,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 20px;
-  background: #f3f6ef;
+  background: var(--sd-tint);
   border-radius: 11px;
   margin-bottom: 24px;
   padding: 17px 20px;
@@ -264,7 +276,7 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  background: #f6f7f3;
+  background: var(--sd-tint);
   border-radius: 14px;
   text-align: center;
 }
@@ -316,8 +328,8 @@
   border-radius: 6px;
   padding: 9px 10px;
   font-size: 11px;
-  color: #536652;
-  background: #fcfdfb;
+  color: var(--sd-ink);
+  background: var(--sd-tint-faint);
   min-width: 0;
   width: 100%;
 }
@@ -329,18 +341,28 @@
   max-height: 800px;
   overflow-y: auto;
 }
+/* The list is a scrolling flex column: without flex-shrink:0 a long catalogue
+   squeezes every card into an unreadable strip instead of scrolling. */
 .productCard {
+  flex: 0 0 auto;
   border: 1px solid var(--sd-border);
   border-radius: 9px;
   overflow: hidden;
 }
+.productCardDraggable {
+  cursor: grab;
+}
+.productCardDragging {
+  opacity: 0.5;
+}
 .productImage {
   height: 116px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f6f7f2;
-  color: #aab6a4;
+  background: var(--sd-tint);
+  color: var(--sd-accent-soft);
   padding: 12px;
 }
 .productImage img {
@@ -353,7 +375,7 @@
   padding: 12px;
 }
 .productCategory {
-  color: #7a8975;
+  color: var(--sd-muted);
   font-size: 9px;
 }
 .productInfo h3 {
@@ -379,8 +401,8 @@
   font-weight: 500;
 }
 .productBottom button {
-  background: #edf1e8;
-  border: 1px solid #dbe4d5;
+  background: var(--sd-tint-strong);
+  border: 1px solid var(--sd-border-strong);
   border-radius: 6px;
   height: 28px;
   width: 28px;
@@ -388,11 +410,11 @@
   place-items: center;
 }
 .productBottom button:hover {
-  background: #dce8d2;
+  background: var(--sd-tint-hover);
 }
 .workspace {
   min-width: 0;
-  background: #f4f5ef;
+  background: var(--sd-canvas);
 }
 .canvasToolbar {
   display: flex;
@@ -414,11 +436,11 @@
 }
 .canvasPill {
   white-space: nowrap;
-  border: 1px solid #dce2d5;
+  border: 1px solid var(--sd-border);
   border-radius: 20px;
   font-size: 10px;
   padding: 5px 9px;
-  color: #72806a;
+  color: var(--sd-muted);
 }
 .canvas {
   position: relative;
@@ -435,7 +457,7 @@
   min-height: 180px;
   color: var(--sd-muted);
   font-size: 13px;
-  background: #f4f5ef;
+  background: var(--sd-canvas);
 }
 .canvasEmpty {
   position: absolute;
@@ -447,7 +469,7 @@
   gap: 9px;
   text-align: center;
   pointer-events: none;
-  color: #87917f;
+  color: var(--sd-muted);
 }
 .canvasEmpty p {
   font-size: 12px;
@@ -455,8 +477,8 @@
 .objectToolbar {
   margin: 0 20px 19px;
   min-height: 53px;
-  border: 1px solid #e0e5d9;
-  background: #ffffffd4;
+  border: 1px solid var(--sd-border);
+  background: rgba(255, 255, 255, 0.83);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -495,15 +517,15 @@
   width: 31px;
   height: 31px;
   border-radius: 6px;
-  border: 1px solid #dfe5d9;
+  border: 1px solid var(--sd-border);
   background: white;
 }
 .iconButton:hover {
-  background: #e9f0e3;
+  background: var(--sd-tint-strong);
 }
 .roomSettings {
-  border-top: 1px solid #e0e5d9;
-  background: #ffffff70;
+  border-top: 1px solid var(--sd-border);
+  background: rgba(255, 255, 255, 0.44);
 }
 .roomSettings > summary {
   display: flex;
@@ -571,14 +593,14 @@
 .finishes button {
   width: 31px;
   height: 31px;
-  border: 1px solid #bec8b8;
+  border: 1px solid var(--sd-border-strong);
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: #334329;
+  color: var(--sd-accent-dark);
 }
 .finishes button[aria-pressed='true'] {
-  outline: 2px solid #718468;
+  outline: 2px solid var(--sd-accent-soft);
   outline-offset: 2px;
 }
 .finishValue {
@@ -640,9 +662,9 @@
   flex-shrink: 0;
   width: 45px;
   height: 45px;
-  background: #f6f7f3;
+  background: var(--sd-tint);
   border-radius: 6px;
-  color: #8b9b84;
+  color: var(--sd-accent-soft);
 }
 .includedImage img {
   height: 100%;
@@ -696,11 +718,11 @@
   align-items: start;
   gap: 8px;
   padding: 14px 0;
-  border-bottom: 1px solid #eef0ea;
+  border-bottom: 1px solid var(--sd-border);
 }
 .summaryQuantity {
   font-size: 11px;
-  color: #70836a;
+  color: var(--sd-muted);
   padding-top: 1px;
   min-width: 18px;
 }
@@ -755,6 +777,50 @@
   padding: 13px 8px;
   font-size: 12px !important;
 }
+.quoteForm {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-top: 16px;
+}
+.quoteForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--sd-muted);
+}
+.quoteForm input,
+.quoteForm textarea {
+  border: 1px solid var(--sd-border);
+  border-radius: 7px;
+  padding: 9px 10px;
+  font-size: 12px;
+  color: var(--sd-ink);
+  background: var(--sd-tint-faint);
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+}
+.quoteForm .primaryButton,
+.quoteForm .secondaryButton {
+  width: 100%;
+  margin-top: 0;
+}
+.quoteSent {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 16px;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  background: var(--sd-tint);
+  color: var(--sd-accent-dark);
+}
+.quoteSent svg {
+  flex-shrink: 0;
+}
 .secureNote {
   display: flex;
   align-items: start;
@@ -797,8 +863,7 @@
   }
   .productImage {
     width: 90px;
-    height: auto;
-    min-height: 105px;
+    height: 105px;
     flex-shrink: 0;
     padding: 8px;
   }

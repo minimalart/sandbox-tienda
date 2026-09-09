@@ -1,27 +1,15 @@
 import { model } from '@medusajs/framework/utils';
 
-/**
- * Estados funcionales de una ejecución (PRD §8). La transición la controla el
- * service; la UI y los workflows sólo leen/escriben estados válidos.
- */
-export const EXECUTION_STATUSES = [
-  'draft', // borrador: selección/config sin enviar a procesar (o revisión parcial)
-  'generating', // obteniendo/generando propuestas
-  'pending_review', // generación terminada, hay resultados para validar
-  'partially_reviewed', // parte revisada, quedan propuestas pendientes
-  'ready_to_apply', // todo revisado o decisión explícita de aplicar por lote
-  'applying', // actualizando productos en Medusa
-  'applied', // cambios aplicados correctamente
-  'partially_applied', // una parte aplicada, otra falló
-  'error', // no pudo completar generación o aplicación
-  'cancelled', // cancelada antes de aplicar
-  'restored', // sus cambios fueron revertidos por una restauración
-] as const;
-
-export type ExecutionStatus = (typeof EXECUTION_STATUSES)[number];
-
-/** Tipo de ejecución: normal (enriquecimiento) o restauración de otra. */
-export const EXECUTION_KINDS = ['enrichment', 'restoration'] as const;
+// El enum de estados vive en `../statuses.ts`, sin imports del framework: este
+// archivo trae `@medusajs/framework/utils` para el `model.define`, y eso dejaba la
+// lista de estados —y cualquier regla escrita sobre ella— fuera de `node --test`.
+// Se re-exporta acá para que los call sites de siempre no cambien.
+export {
+  EXECUTION_STATUSES,
+  EXECUTION_KINDS,
+  type ExecutionStatus,
+} from '../statuses';
+import { EXECUTION_KINDS, EXECUTION_STATUSES } from '../statuses';
 
 /**
  * CatalogingExecution — un proceso completo de enriquecimiento (PRD §7). Guarda

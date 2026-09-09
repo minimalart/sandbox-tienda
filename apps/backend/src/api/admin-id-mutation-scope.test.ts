@@ -124,6 +124,8 @@ const MAX_SIN_GUARD = 0;
  * `siteFromRequest` ni directo ni por un helper, la exención se cae—.
  */
 const EXENTAS: Record<string, string> = {
+  'admin/sites/[id]/checkout':
+    'El parámetro identifica la tienda misma, no un recurso hijo. authorizeCheckoutAdmin resuelve siteFromRequest, compara scope.site.id con el parámetro y aplica checkout_site_ids del usuario antes de leer o escribir; writePolicy actualiza únicamente demo_store.id con revisión CAS.',
   'admin/kapso/bindings/[key]':
     '`:key` no es una PK: es el nombre de un evento, una clave DENTRO del JSON de una ' +
     'fila de `store_setting`. La fila sobre la que se opera la elige `siteOf(req)` ' +

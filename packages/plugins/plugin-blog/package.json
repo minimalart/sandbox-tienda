@@ -1,6 +1,6 @@
 {
   "name": "@minimalart/mercatto-plugin-blog",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Mercatto plugin — blog comprable con posts, categorías, configuración y linkeo a productos. Migrado desde packages/extensions/blog.",
   "main": ".medusa/server/src/index.js",
   "types": ".medusa/server/src/index.d.ts",

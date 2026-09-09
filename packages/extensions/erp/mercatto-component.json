@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "erp",
   "name": "ERP",
-  "version": "2.21.0",
+  "version": "2.24.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [],
@@ -102,8 +102,20 @@
       "sha256": "3e7e1736c6ea0c9680fc7227ab0922637db35f9db2daf0761f18ec1e35981011"
     },
     {
+      "path": "apps/backend/src/admin/routes/erp/components/log-item-payload.test.ts",
+      "sha256": "02c9678e8eeeb9d3641e6537b3af67274db587acd5b2f684471e2ce2c295be1d"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/components/log-item-payload.ts",
+      "sha256": "543f957394e5be1eb86641e3eb86426c6e2d5ba21c473e2c70f5d380c81c2a3d"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/components/log-status-contract.test.ts",
+      "sha256": "7535f117026bf14306f0324feba3f3afea8d60234ce5bbe0b25262f86c716360"
+    },
+    {
       "path": "apps/backend/src/admin/routes/erp/components/shared.tsx",
-      "sha256": "c4de213d67be2660d7d4403f8efb348bb2ba4f8d45a86c5f6116d3e069f796fa"
+      "sha256": "3c2fb8b22c0411a57d7a6ce7c8b0fdcb42855268292c435bcc6c86c9b689e583"
     },
     {
       "path": "apps/backend/src/admin/routes/erp/configuracion/page.tsx",
@@ -115,7 +127,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/erp/logs/[id]/page.tsx",
-      "sha256": "363104c0a48eca4ef1830715b56618118d865bfd508f3cb56d885884fef2bb8c"
+      "sha256": "64cd5d98ca15bf37c06a686a620e04913ad5c395e3d628897f01acd89f9d0d87"
     },
     {
       "path": "apps/backend/src/admin/routes/erp/logs/page.tsx",
@@ -135,7 +147,7 @@
     },
     {
       "path": "apps/backend/src/admin/translations/erp/index.ts",
-      "sha256": "5b29d4630fdea8796897dc7fab1515c53ed16b160dfb0525fbde22c9b2b9f8d8"
+      "sha256": "1c5ae6c2c8400fa959d7a07484e247f6e866009ced8fbae2c87f107e72ac79e9"
     },
     {
       "path": "apps/backend/src/admin/widgets/order-erp-widget.tsx",
@@ -144,6 +156,10 @@
     {
       "path": "apps/backend/src/api/admin/erp/catalog-sync/run/route.ts",
       "sha256": "fccf3219064b08b0f0a96b267fe4cf09520832a8ad0d2069caedd49b9da2a966"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/config/lookups/route.ts",
+      "sha256": "db16a2647945a57c383d98b281c4ae7bb9ef68c2dfca6debe9777adfd863b3ab"
     },
     {
       "path": "apps/backend/src/api/admin/erp/config/route.ts",
@@ -303,7 +319,15 @@
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/bsale.ts",
-      "sha256": "c1c151964d5f2daa1dd9f3a183bc93ccc46210e4ab737b158f5ba9ae66a5a518"
+      "sha256": "352e757045605276281b1ddea9fd8678cb402734e9437d755423e5baae1c1401"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/config-lookups.test.ts",
+      "sha256": "e0c5070c462b17c538efb5634dd25877564d642b0ee8c2090b07cbc924da2a9e"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/config-lookups.ts",
+      "sha256": "a97c8d508a1235c4b53125f063f5585c74a7d8d416973609968c14c133ec1e14"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/contabilium.test.ts",
@@ -311,7 +335,7 @@
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/contabilium.ts",
-      "sha256": "e827715a6dfcf47c5044506b02f642ee3a34ae1f6346d0137a4cc3ebf2fa93a2"
+      "sha256": "850ba9c0f81d37091425da76ba052cf1027bb8a4d4a012e47dddd43600ced18b"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/odoo-rpc-client.ts",
@@ -319,11 +343,11 @@
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/odoo.test.ts",
-      "sha256": "6fde293da1957660b01a9d77c9dbfdd9a199ca3ebb2229dd2a875f70d9dd5309"
+      "sha256": "a06997914cafafeb8e4fd7f4d28c98fd901750d3ec4f4bdb0cb72c57d5cb2b7c"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/odoo.ts",
-      "sha256": "f2604f2a73b3ecb3d6dedafa0dc92adae35d7eae9953ec4d23a1bb47c5e746aa"
+      "sha256": "5949b379ad0468d5126bca0326827043a1bc1ea0c5cc0bfe2422396696120595"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/registry.ts",
@@ -331,7 +355,7 @@
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/types.ts",
-      "sha256": "15a3687407a9b4bfb2cd9ae42110199996f681bc48e8beeed5eb6835915d18f9"
+      "sha256": "17ea4f4503717b18eb140a875178eb591e55e0ec574687fbfbdf1f3bc245a61a"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/zeus.test.ts",
@@ -339,7 +363,7 @@
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/zeus.ts",
-      "sha256": "e7cedf0cbfa568213efa0107115405518459d141e64b24566c162e292b7f7f09"
+      "sha256": "bb0367e70de90e2d2336df70608eb040ef4fe134755f3a0a92601fbce0448fc1"
     },
     {
       "path": "apps/backend/src/modules/erp/barcode.test.ts",
@@ -539,11 +563,11 @@
     },
     {
       "path": "apps/backend/src/modules/erp/sync/category-name.test.ts",
-      "sha256": "363c21e85ab009d6f393b560a611d3ec0a0e12340e87dc518f69d515979c7502"
+      "sha256": "72c9ec4be64e8e1504faefd14ca0c3758b3108d91fb019b71699e08eb1492fa6"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/category-name.ts",
-      "sha256": "8336e669b2495efc99899d2afc327070e2d2643514c900b67542721fb170a917"
+      "sha256": "1aef88c375ac7a1f89413199aec6324e8215a13ecb4a81991ecc349a7dd7335d"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/color-option.test.ts",
@@ -563,11 +587,11 @@
     },
     {
       "path": "apps/backend/src/modules/erp/sync/full-sweep-scope.test.ts",
-      "sha256": "6c4949abe92d51f9f17f7d9ca193f8e6cbd108587ccfe0f64a380cdbd78c0094"
+      "sha256": "132de5da1388b8fc9a10392a456c44e8de2669f6b1fe102f27ce6069fbc48f48"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/full-sweep-scope.ts",
-      "sha256": "0aa0bef69c3a5f2193ebe382027c5f5c6cfd5933336cfdb0cd261d470565ac74"
+      "sha256": "425880a67f85b82abc2b7c92f66cf98e0f2855b00e7f092c5f6e9a2f989d604d"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/image-failures.test.ts",
@@ -619,7 +643,7 @@
     },
     {
       "path": "apps/backend/src/modules/erp/sync/plan-product-images.ts",
-      "sha256": "3afcc3f2eb28125293d329bec3eff6057f2ef82206327ee24fd90791733a426f"
+      "sha256": "150a8637e7fecae1883ff119a3de5963aeb24c893af179f3c82c942690f11c7b"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/plan-product-status.test.ts",
@@ -631,11 +655,11 @@
     },
     {
       "path": "apps/backend/src/modules/erp/sync/plan-product-updates.test.ts",
-      "sha256": "79392543f3efc8ad9697a3e9b25d757e3888aaede234543a5f5b7611ad927056"
+      "sha256": "f3c65d8606135650375dbb69fd84b96c8f3d72d1c1ffb1d1c4bb9a1152fa4165"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/plan-product-updates.ts",
-      "sha256": "8431bd2d7310b40f077853a27a863ade7abf12edc17b2c51b4fce696862ed0bb"
+      "sha256": "5e8fcbdf62a7709f6f57ae72fabef8e6bbb08a1c9d13ab71e62a7f2c6f05d3fb"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/plan-stock-updates.test.ts",
@@ -662,12 +686,20 @@
       "sha256": "7d4e8242276ab8183d0939738d7159e5f24ad21aeb80248e7853b714d0826f6e"
     },
     {
+      "path": "apps/backend/src/modules/erp/sync/product-family.test.ts",
+      "sha256": "221843d3cb036376f8e1199d284d1f6aa94cb081b94f8755d630a321572beb15"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/product-family.ts",
+      "sha256": "1a88cb75b04b90cf2a90bdcae6e81bf929b5cd9024ff2d0e44f012bccd661300"
+    },
+    {
       "path": "apps/backend/src/modules/erp/sync/product-title.test.ts",
       "sha256": "abe263b27d3d5c785490b52646409c6709a63cffcff962608410ffe923c2ffdb"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/product-title.ts",
-      "sha256": "d9c5ba56d43154ed7bf57efd9c1e15542b0acfb4133d2493b0f02ed1c62e401d"
+      "sha256": "c2bbb6ebb6d12928991367338f5bc86e214b95fa451299646254aff1c7d7a696"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/quantity-for-target.test.ts",
@@ -683,7 +715,7 @@
     },
     {
       "path": "apps/backend/src/modules/erp/sync/run-catalog-sync.ts",
-      "sha256": "8c4b615977e3ca4a715a99456c2fc21f1dc2a4ae11c7af276c687103829cd292"
+      "sha256": "89022577f68a68dfe43790cf4e0ae1ce282fc8ce085ad36ceb7f4e921dd56eb8"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/run-stock-sync.ts",

@@ -39,6 +39,13 @@ export type ContentConfigForm = {
   blogSectionName: string;
   /** Variante visual del menú de categorías (hamburger | button). */
   categoriesMenuLayout: 'hamburger' | 'button';
+  /**
+   * Orden del LUGAR FLEXIBLE de la barra inferior mobile. Siempre los 5 ids, en
+   * el orden que eligió la tienda: el formulario reordena, no selecciona. Qué
+   * candidato gana lo decide el storefront con el gate de cada uno (promociones
+   * activas, tintometría con carta, el switch de la sección).
+   */
+  mobileNav: MobileNavSlotId[];
   /** Subtítulo de /sucursales. Vacío = no se muestra (se persiste como ''). */
   sucursalesSubtitle: string;
   sucursalesShowLocationFilters: boolean;
@@ -81,12 +88,54 @@ export type ContentConfigForm = {
   campaignChromeSubtitle: string;
   campaignChromePoweredByLabel: string;
   campaignChromePoweredByHref: string;
+  campaignChromeBackgroundColor: string;
   campaignFooterDescription: string;
   campaignFooterAddress: string;
   campaignFooterEmail: string;
   campaignFooterCopyright: string;
   campaignFooterPoweredByLabel: string;
   campaignFooterPoweredByHref: string;
+  campaignFooterBackgroundColor: string;
+};
+
+/**
+ * Ids que pueden ocupar el lugar flexible de la barra inferior mobile (el cuarto
+ * ítem, entre el carrito y el menú). Espejo del union del storefront.
+ */
+export type MobileNavSlotId = 'promos' | 'colores' | 'sucursales' | 'blog' | 'contacto';
+
+/**
+ * Orden por defecto. `promos` primero para no cambiarle la barra a ninguna
+ * tienda existente: con promociones activas se sigue viendo lo de antes.
+ * Espejo de `DEFAULT_MOBILE_NAV_ORDER` del storefront.
+ */
+export const DEFAULT_MOBILE_NAV: MobileNavSlotId[] = [
+  'promos',
+  'colores',
+  'sucursales',
+  'blog',
+  'contacto',
+];
+
+/**
+ * Normaliza la lista guardada a los 5 ids: descarta desconocidos y repetidos, y
+ * COMPLETA con el default lo que falte. Así el form siempre muestra la lista
+ * entera aunque la fila venga de una versión anterior (o vacía).
+ */
+const normalizeMobileNav = (saved?: readonly string[] | null): MobileNavSlotId[] => {
+  const seen = new Set<string>();
+  const out: MobileNavSlotId[] = [];
+  for (const id of saved ?? []) {
+    if (!DEFAULT_MOBILE_NAV.includes(id as MobileNavSlotId) || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id as MobileNavSlotId);
+  }
+  for (const id of DEFAULT_MOBILE_NAV) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
 };
 
 const SUGGESTION_ROWS = 3;
@@ -116,6 +165,7 @@ export function emptyContentForm(): ContentConfigForm {
     },
     blogSectionName: '',
     categoriesMenuLayout: 'hamburger',
+    mobileNav: [...DEFAULT_MOBILE_NAV],
     sucursalesSubtitle: DEFAULT_SUCURSALES_SUBTITLE,
     sucursalesShowLocationFilters: true,
     sucursalesShowCategoryFilters: true,
@@ -141,12 +191,14 @@ export function emptyContentForm(): ContentConfigForm {
     campaignChromeSubtitle: '',
     campaignChromePoweredByLabel: '',
     campaignChromePoweredByHref: '',
+    campaignChromeBackgroundColor: '',
     campaignFooterDescription: '',
     campaignFooterAddress: '',
     campaignFooterEmail: '',
     campaignFooterCopyright: '',
     campaignFooterPoweredByLabel: '',
     campaignFooterPoweredByHref: '',
+    campaignFooterBackgroundColor: '',
   };
 }
 
@@ -166,6 +218,7 @@ export function contentConfigToForm(cfg?: DemoContentConfig | null): ContentConf
     },
     blogSectionName: cfg.blogSectionName ?? '',
     categoriesMenuLayout: cfg.categoriesMenuLayout ?? 'hamburger',
+    mobileNav: normalizeMobileNav(cfg.mobileNav),
     // Ausente = todavía no se configuró: sembramos el copy por defecto para no
     // "apagar" el subtítulo al guardar. '' guardado = el usuario lo ocultó.
     sucursalesSubtitle: cfg.sucursales?.subtitle ?? DEFAULT_SUCURSALES_SUBTITLE,
@@ -198,12 +251,14 @@ export function contentConfigToForm(cfg?: DemoContentConfig | null): ContentConf
     campaignChromeSubtitle: cfg.campaign?.chrome?.subtitle ?? '',
     campaignChromePoweredByLabel: cfg.campaign?.chrome?.poweredByLabel ?? '',
     campaignChromePoweredByHref: cfg.campaign?.chrome?.poweredByHref ?? '',
+    campaignChromeBackgroundColor: cfg.campaign?.chrome?.backgroundColor ?? '',
     campaignFooterDescription: cfg.campaign?.footer?.description ?? '',
     campaignFooterAddress: cfg.campaign?.footer?.address ?? '',
     campaignFooterEmail: cfg.campaign?.footer?.email ?? '',
     campaignFooterCopyright: cfg.campaign?.footer?.copyright ?? '',
     campaignFooterPoweredByLabel: cfg.campaign?.footer?.poweredBy?.label ?? '',
     campaignFooterPoweredByHref: cfg.campaign?.footer?.poweredBy?.href ?? '',
+    campaignFooterBackgroundColor: cfg.campaign?.footer?.backgroundColor ?? '',
   };
 }
 
@@ -301,6 +356,16 @@ export function formToContentConfig(
     cfg.categoriesMenuLayout = form.categoriesMenuLayout;
   }
   /**
+   * Barra inferior mobile: sólo se persiste si el orden NO es el default, y
+   * nunca vacío. `mobileNav: []` presente ganaría entero sobre el default del
+   * storefront (el merge de `assets` es shallow por clave) y dejaría la barra
+   * en 4 columnas con el carrito descentrado — el bug que este campo arregla.
+   */
+  const mobileNav = normalizeMobileNav(form.mobileNav);
+  if (mobileNav.join(',') !== DEFAULT_MOBILE_NAV.join(',')) {
+    cfg.mobileNav = mobileNav;
+  }
+  /**
    * Campaign — sólo se emite si el template lo usa. Cada sub-clave (announcement,
    * chrome, hero, kits, footer) se emite SOLO si tiene contenido; y dentro, cada
    * campo strings.trim() || undefined. El backend además hace `cleanCampaignOverride`
@@ -332,13 +397,16 @@ function buildCampaignPayload(
     subtitle?: string;
     poweredByLabel?: string;
     poweredByHref?: string;
+    backgroundColor?: string;
   } = {};
   const cs = nonEmpty(form.campaignChromeSubtitle);
   const cpl = nonEmpty(form.campaignChromePoweredByLabel);
   const cph = nonEmpty(form.campaignChromePoweredByHref);
+  const cbg = nonEmpty(form.campaignChromeBackgroundColor);
   if (cs) chrome.subtitle = cs;
   if (cpl) chrome.poweredByLabel = cpl;
   if (cph) chrome.poweredByHref = cph;
+  if (cbg) chrome.backgroundColor = cbg;
 
   const footer: NonNullable<
     NonNullable<DemoContentConfig['campaign']>['footer']
@@ -349,12 +417,14 @@ function buildCampaignPayload(
   const fcp = nonEmpty(form.campaignFooterCopyright);
   const fpl = nonEmpty(form.campaignFooterPoweredByLabel);
   const fph = nonEmpty(form.campaignFooterPoweredByHref);
+  const fbg = nonEmpty(form.campaignFooterBackgroundColor);
   if (fd) footer.description = fd;
   if (fa) footer.address = fa;
   if (fe) footer.email = fe;
   if (fcp) footer.copyright = fcp;
   // poweredBy necesita AMBOS label y href.
   if (fpl && fph) footer.poweredBy = { label: fpl, href: fph };
+  if (fbg) footer.backgroundColor = fbg;
 
   const out: NonNullable<DemoContentConfig['campaign']> = {};
   if (Object.keys(announcement).length) out.announcement = announcement;

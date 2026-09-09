@@ -3,7 +3,7 @@
   "schema_version": 1,
   "id": "catalogador",
   "name": "Catalogador",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "kind": "plugin",
   "status": "ready",
   "dependencies": ["storeConfig", "media_library"],

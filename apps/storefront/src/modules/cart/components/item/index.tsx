@@ -1,5 +1,6 @@
 "use client";
 
+import { presentationSummary } from "@lib/util/catalog-commercial";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import {
   CheckIcon,
@@ -110,6 +111,7 @@ const Item = ({
               <DisneyBadge productId={item.product_id} />
             </div>
             <TransportConditionBadge className="mt-1.5" item={item} />
+            {presentationSummary(item.metadata, item.quantity) && <p className="mt-1 text-xs text-muted-foreground">{presentationSummary(item.metadata, item.quantity)}</p>}
             <div className="mt-1 !hidden flex text-sm">
               <LineItemOptions
                 data-testid="product-variant"

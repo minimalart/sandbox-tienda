@@ -1,5 +1,5 @@
 import { sdk } from '@lib/config'
-import { cookies } from 'next/headers'
+import { getAuthToken } from '@lib/data/cookies'
 import { NextResponse } from 'next/server'
 
 function validToken(token: string): boolean {
@@ -21,7 +21,7 @@ export async function GET(_request: Request, context: { params: Promise<{ token:
 
 export async function POST(_request: Request, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params
-  const authToken = (await cookies()).get('_medusa_jwt')?.value
+  const authToken = await getAuthToken()
   if (!authToken) return NextResponse.json({ message: 'No autenticado.' }, { status: 401 })
   if (!validToken(token)) return NextResponse.json({ message: 'No disponible.' }, { status: 404 })
   try {

@@ -7,7 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import { useAddToCartAnimation } from "@lib/context/add-to-cart-animation";
-import { useSiteHref } from "@lib/site-config/context";
+import { useSiteHref, useTenantSections } from "@lib/site-config/context";
 import { SEARCH_HINTS, useRotatingHint } from "@lib/hooks/use-rotating-hint";
 import { useWishlist } from "@lib/hooks/use-wishlist";
 import { useWishlistDrawerStore } from "@lib/stores/wishlist-drawer.store";
@@ -28,6 +28,7 @@ export default function CollapsedHeaderMobile({
   const router = useRouter();
   const searchParams = useSearchParams();
   const siteHref = useSiteHref();
+  const { isShoppingListVisible } = useTenantSections();
   const openWishlistDrawer = useWishlistDrawerStore((s) => s.open);
   const { items: wishlistItems } = useWishlist();
   const { registerWishlistIcon, wishlistBounce } = useAddToCartAnimation();
@@ -154,15 +155,17 @@ export default function CollapsedHeaderMobile({
           </button>
         )}
       </div>
-      <button
-        aria-label="Abrir lista de compras"
-        data-testid="shopping-list-open-button"
-        className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:border-[--primary-color] hover:text-[--primary-color]"
-        onClick={() => setShoppingListOpen(true)}
-        type="button"
-      >
-        <ListPlus aria-hidden="true" className="h-4 w-4" />
-      </button>
+      {isShoppingListVisible && (
+        <button
+          aria-label="Abrir lista de compras"
+          data-testid="shopping-list-open-button"
+          className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:border-[--primary-color] hover:text-[--primary-color]"
+          onClick={() => setShoppingListOpen(true)}
+          type="button"
+        >
+          <ListPlus aria-hidden="true" className="h-4 w-4" />
+        </button>
+      )}
       <button
         aria-label="Favoritos"
         className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:border-[--primary-color] hover:text-[--primary-color]"
@@ -187,10 +190,12 @@ export default function CollapsedHeaderMobile({
         )}
       </button>
     </div>
-    <ShoppingListModal
-      open={shoppingListOpen}
-      onClose={() => setShoppingListOpen(false)}
-    />
+    {isShoppingListVisible && (
+      <ShoppingListModal
+        open={shoppingListOpen}
+        onClose={() => setShoppingListOpen(false)}
+      />
+    )}
     </>
   );
 }

@@ -68,7 +68,7 @@ export async function getOrSetB2BCart(countryCode: string): Promise<HttpTypes.St
   // `has_account: false` y lo ata al cart. Ver @lib/util/cart-customer-transfer.
   if (
     cart &&
-    Object.keys(headers).length > 0 &&
+    !!headers.authorization &&
     shouldTransferCartToCustomer(cart)
   ) {
     try {
@@ -104,14 +104,18 @@ export async function getOrSetB2BCart(countryCode: string): Promise<HttpTypes.St
 /** Agrega líneas al carrito B2B y lo etiqueta con la empresa. */
 export async function addB2BLineItems(
   countryCode: string,
-  lines: Array<{ variant_id: string; quantity: number }>,
+  lines: Array<{ variant_id: string; quantity: number; presentation_mode?: "unit" | "package" }>,
   company?: { id?: string; name?: string; placed_by_id?: string; placed_by_email?: string },
 ): Promise<{ ok: true; cartId: string } | { ok: false; error: string }> {
   try {
     const cart = await getOrSetB2BCart(countryCode);
     const headers = { ...(await getAuthHeaders()) };
     for (const l of lines) {
-      if (l.quantity <= 0) continue;
+      if (!Number.isSafeInteger(l.quantity) || l.quantity < 1) throw new Error("Ingresá una cantidad entera positiva.");
+      if (l.presentation_mode) {
+        await sdk.client.fetch(`/store/b2b/carts/${cart.id}/presentations`, { method: "POST", headers, body: { variant_id: l.variant_id, quantity: l.quantity, mode: l.presentation_mode } });
+        continue;
+      }
       // eslint-disable-next-line no-await-in-loop
       await sdk.store.cart.createLineItem(
         cart.id,
@@ -125,10 +129,10 @@ export async function addB2BLineItems(
       {
         metadata: {
           context: "b2b",
-          company_id: company?.id ?? "",
-          company_name: company?.name ?? "",
-          placed_by_customer_id: company?.placed_by_id ?? "",
-          placed_by_email: company?.placed_by_email ?? "",
+          ...(company?.id ? { company_id: company.id } : {}),
+          ...(company?.name ? { company_name: company.name } : {}),
+          ...(company?.placed_by_id ? { placed_by_customer_id: company.placed_by_id } : {}),
+          ...(company?.placed_by_email ? { placed_by_email: company.placed_by_email } : {}),
         },
       },
       {},
@@ -148,7 +152,7 @@ export async function addB2BLineItems(
  */
 export async function syncB2BCartLines(
   countryCode: string,
-  lines: Array<{ variant_id: string; quantity: number }>,
+  lines: Array<{ variant_id: string; quantity: number; presentation_mode?: "unit" | "package" }>,
   company?: { id?: string; name?: string; placed_by_id?: string; placed_by_email?: string },
 ): Promise<{ ok: true; cartId: string } | { ok: false; error: string }> {
   try {
@@ -156,7 +160,10 @@ export async function syncB2BCartLines(
     const headers = { ...(await getAuthHeaders()) };
 
     const desired = new Map<string, number>();
-    for (const l of lines) if (l.quantity > 0) desired.set(l.variant_id, Math.floor(l.quantity));
+    for (const l of lines) {
+      if (!Number.isSafeInteger(l.quantity) || l.quantity < 1) throw new Error("Ingresá una cantidad entera positiva.");
+      desired.set(l.variant_id, l.quantity);
+    }
 
     // Ítems actuales (getOrSetB2BCart puede devolver un carrito recién creado sin
     // items expandidos → releer con los CART_FIELDS).
@@ -169,6 +176,11 @@ export async function syncB2BCartLines(
     // Crear / actualizar.
     for (const [variant_id, quantity] of Array.from(desired.entries())) {
       const ex = existing.get(variant_id);
+      const presentationMode = lines.find(l => l.variant_id === variant_id)?.presentation_mode;
+      if (presentationMode) {
+        await sdk.client.fetch(`/store/b2b/carts/${base.id}/presentations`, { method: "POST", headers, body: { variant_id, quantity, mode: presentationMode, replace: true } });
+        continue;
+      }
       if (ex) {
         if (ex.quantity !== quantity) {
           // eslint-disable-next-line no-await-in-loop
@@ -192,10 +204,10 @@ export async function syncB2BCartLines(
       {
         metadata: {
           context: "b2b",
-          company_id: company?.id ?? "",
-          company_name: company?.name ?? "",
-          placed_by_customer_id: company?.placed_by_id ?? "",
-          placed_by_email: company?.placed_by_email ?? "",
+          ...(company?.id ? { company_id: company.id } : {}),
+          ...(company?.name ? { company_name: company.name } : {}),
+          ...(company?.placed_by_id ? { placed_by_customer_id: company.placed_by_id } : {}),
+          ...(company?.placed_by_email ? { placed_by_email: company.placed_by_email } : {}),
         },
       },
       {},

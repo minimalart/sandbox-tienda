@@ -1,5 +1,6 @@
 import { MedusaService } from '@medusajs/framework/utils';
 import { emptyAiUsage, mergeAiUsage, type AiUsageBreakdown } from './ai/openrouter';
+import { isDeletableStatus } from './deletable';
 import {
   CatalogingActivity,
   CatalogingAssetProposal,
@@ -11,11 +12,6 @@ import {
   type OperationStatus,
 } from './models';
 
-/**
- * Estados desde los que se puede eliminar (sólo borradores; una ejecución
- * aplicada nunca se elimina — PRD §9.5).
- */
-const DELETABLE_STATUSES: ExecutionStatus[] = ['draft', 'cancelled', 'error'];
 
 /** Progreso agregado que la lista/detalle muestran (PRD §14.2). */
 export type ExecutionProgress = {
@@ -36,9 +32,12 @@ class CatalogadorModuleService extends MedusaService({
   CatalogingSnapshot,
   CatalogingActivity,
 }) {
-  /** ¿La ejecución puede eliminarse? (sólo borradores/canceladas/error) */
+  /**
+   * ¿La ejecución puede mandarse a la papelera? La regla y el porqué de cada
+   * estado viven en `deletable.ts`, que es puro y tiene tests.
+   */
   isDeletable(status: ExecutionStatus): boolean {
-    return DELETABLE_STATUSES.includes(status);
+    return isDeletableStatus(status);
   }
 
   /**

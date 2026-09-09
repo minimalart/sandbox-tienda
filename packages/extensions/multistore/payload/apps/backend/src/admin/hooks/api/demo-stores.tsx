@@ -60,6 +60,13 @@ export interface DemoContentConfig {
    */
   categoriesMenuLayout?: 'hamburger' | 'button';
   /**
+   * Orden de preferencia del lugar FLEXIBLE de la barra inferior mobile (el
+   * cuarto ítem, entre el carrito y el menú). El storefront toma el primero que
+   * esté disponible; una lista parcial se completa con el default. Ausente = el
+   * default del storefront (`promos` primero).
+   */
+  mobileNav?: ('promos' | 'colores' | 'sucursales' | 'blog' | 'contacto')[];
+  /**
    * Descripción de la tienda → `metadata.description` (meta description + social
    * card). NO la edita la ficha: está tipada acá para que `formToContentConfig`
    * pueda ARRASTRARLA, porque reconstruir el objeto desde los campos del
@@ -243,6 +250,8 @@ export interface AdminCreateDemoStore {
   target_count?: number;
   /** Provision a dedicated wholesale (B2B) setup for the demo. */
   b2b_enabled?: boolean;
+  b2b_sales_channel_id?: string | null;
+  b2b_price_list_id?: string | null;
   /** Enable recurring purchases (compras recurrentes) for the demo. */
   recurring_enabled?: boolean;
   /** Enable the color-first tinting page for the demo. */
@@ -287,7 +296,7 @@ export const demoStoreQueryKey = queryKeysFactory('demo-store');
 
 export const useDemoStores = (
   query?: Record<string, any>,
-  options?: UseQueryOptions<AdminDemoStoresResponse, FetchError, AdminDemoStoresResponse, QueryKey>,
+  options?: UseQueryOptions<AdminDemoStoresResponse, FetchError, AdminDemoStoresResponse, QueryKey>
 ) => {
   const filterQuery = toQueryString(query);
   return useQuery({
@@ -295,7 +304,7 @@ export const useDemoStores = (
     queryFn: async () =>
       sdk.client.fetch<AdminDemoStoresResponse>(
         `/admin/sites${filterQuery ? `?${filterQuery}` : ''}`,
-        { method: 'GET' },
+        { method: 'GET' }
       ),
     ...options,
   });
@@ -303,7 +312,7 @@ export const useDemoStores = (
 
 export const useDemoStore = (
   id: string,
-  options?: UseQueryOptions<AdminDemoStoreResponse, FetchError, AdminDemoStoreResponse, QueryKey>,
+  options?: UseQueryOptions<AdminDemoStoreResponse, FetchError, AdminDemoStoreResponse, QueryKey>
 ) => {
   return useQuery({
     queryKey: demoStoreQueryKey.detail(id),
@@ -324,7 +333,7 @@ export const useSourceSalesChannels = () =>
     queryFn: async () =>
       sdk.client.fetch<{ sales_channels: { id: string; name: string }[] }>(
         '/admin/sales-channels?limit=200&fields=id,name',
-        { method: 'GET' },
+        { method: 'GET' }
       ),
   });
 
@@ -335,7 +344,7 @@ export const useDemoStoreStockLocationOptions = () =>
     queryFn: async () =>
       sdk.client.fetch<{ stock_locations: { id: string; name: string }[] }>(
         '/admin/stock-locations?limit=100&fields=id,name',
-        { method: 'GET' },
+        { method: 'GET' }
       ),
   });
 
@@ -365,7 +374,7 @@ export const useSalesChannelName = (id?: string | null) =>
     queryFn: async () =>
       sdk.client.fetch<{ sales_channel: { id: string; name: string } }>(
         `/admin/sales-channels/${id}`,
-        { method: 'GET' },
+        { method: 'GET' }
       ),
     enabled: !!id,
   });
@@ -386,18 +395,25 @@ export const useStockLocationName = (id?: string | null) =>
     queryFn: async () =>
       sdk.client.fetch<{ stock_location: { id: string; name: string } }>(
         `/admin/stock-locations/${id}`,
-        { method: 'GET' },
+        { method: 'GET' }
       ),
     enabled: !!id,
   });
 
 export const useDemoTemplates = (
-  options?: UseQueryOptions<{ demo_templates: DemoTemplate[] }, FetchError, { demo_templates: DemoTemplate[] }, QueryKey>,
+  options?: UseQueryOptions<
+    { demo_templates: DemoTemplate[] },
+    FetchError,
+    { demo_templates: DemoTemplate[] },
+    QueryKey
+  >
 ) => {
   return useQuery({
     queryKey: ['demo-template', 'list'],
     queryFn: async () =>
-      sdk.client.fetch<{ demo_templates: DemoTemplate[] }>('/admin/site-templates', { method: 'GET' }),
+      sdk.client.fetch<{ demo_templates: DemoTemplate[] }>('/admin/site-templates', {
+        method: 'GET',
+      }),
     ...options,
   });
 };
@@ -405,7 +421,12 @@ export const useDemoTemplates = (
 /** Polls the latest import job; pass refetchInterval while status is running. */
 export const useDemoStoreImportJob = (
   id: string,
-  options?: UseQueryOptions<{ import_job: ImportJob | null }, FetchError, { import_job: ImportJob | null }, QueryKey>,
+  options?: UseQueryOptions<
+    { import_job: ImportJob | null },
+    FetchError,
+    { import_job: ImportJob | null },
+    QueryKey
+  >
 ) => {
   return useQuery({
     queryKey: [...demoStoreQueryKey.detail(id), 'import-job'],
@@ -419,7 +440,7 @@ export const useDemoStoreImportJob = (
 };
 
 export const useCreateDemoStore = (
-  options?: UseMutationOptions<AdminDemoStoreResponse, FetchError, AdminCreateDemoStore>,
+  options?: UseMutationOptions<AdminDemoStoreResponse, FetchError, AdminCreateDemoStore>
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -439,7 +460,7 @@ export const useCreateDemoStore = (
 
 export const useUpdateDemoStore = (
   id: string,
-  options?: UseMutationOptions<{ demo_store: DemoStore }, FetchError, AdminUpdateDemoStore>,
+  options?: UseMutationOptions<{ demo_store: DemoStore }, FetchError, AdminUpdateDemoStore>
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -460,7 +481,7 @@ export const useUpdateDemoStore = (
 
 export const useDeleteDemoStore = (
   id: string,
-  options?: UseMutationOptions<{ deleted: boolean }, FetchError, void>,
+  options?: UseMutationOptions<{ deleted: boolean }, FetchError, void>
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -481,14 +502,14 @@ export const useCreateDemoStorePromotions = (
     { totalProducts: number; promotedProducts: number; promotions: number },
     FetchError,
     void
-  >,
+  >
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () =>
       sdk.client.fetch<{ totalProducts: number; promotedProducts: number; promotions: number }>(
         `/admin/sites/${id}/promotions`,
-        { method: 'POST' },
+        { method: 'POST' }
       ),
     onSuccess: (data: any, variables: any, context: any) => {
       queryClient.invalidateQueries({ queryKey: demoStoreQueryKey.detail(id) });
@@ -501,7 +522,7 @@ export const useCreateDemoStorePromotions = (
 /** Re-provision (if needed) and re-run the catalog import for a demo. */
 export const useRetryDemoStoreImport = (
   id: string,
-  options?: UseMutationOptions<AdminDemoStoreResponse, FetchError, void>,
+  options?: UseMutationOptions<AdminDemoStoreResponse, FetchError, void>
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -517,3 +538,14 @@ export const useRetryDemoStoreImport = (
     ...options,
   });
 };
+
+/** Core pricing options for wholesale setup; independent of ERP. */
+export const useB2BPriceListOptions = () =>
+  useQuery({
+    queryKey: ['demo-store', 'b2b-price-lists'],
+    queryFn: () =>
+      sdk.client.fetch<{ price_lists: { id: string; title: string }[] }>(
+        '/admin/price-lists?limit=200&fields=id,title',
+        { method: 'GET' }
+      ),
+  });

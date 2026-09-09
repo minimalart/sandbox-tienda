@@ -112,7 +112,11 @@ const CategoriesPage = () => {
     getRowId: (row) => row.id,
     rowCount: data?.count ?? 0,
     isLoading: isPending,
-    onRowClick: (_e, row) => setEditing(row),
+    // `useDataTable` tipa el segundo argumento como el registro, pero en runtime
+    // entrega la Row de TanStack. Sin `.original` el drawer abre en blanco y, al
+    // guardar, pisa description/image/sort_order de la categoría real.
+    onRowClick: (_e, row) =>
+      setEditing((row as unknown as { original?: BlogCategory }).original ?? row),
   });
 
   return (

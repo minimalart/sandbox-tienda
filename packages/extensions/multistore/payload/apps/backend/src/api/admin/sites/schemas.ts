@@ -72,6 +72,16 @@ export const ContentConfigSchema = z
     blogSectionName: z.string().optional(),
     // Variante visual del menú de categorías (hamburguesa | botón).
     categoriesMenuLayout: z.enum(['hamburger', 'button']).optional(),
+    /**
+     * Orden del lugar flexible de la barra inferior mobile (el cuarto ítem,
+     * entre el carrito y el menú). El storefront toma el primer id disponible.
+     *
+     * `z.enum` y no `z.string()`: un id que el storefront no conoce se ignora
+     * en silencio, así que dejarlo pasar acá sería guardar config muerta.
+     */
+    mobileNav: z
+      .array(z.enum(['promos', 'colores', 'sucursales', 'blog', 'contacto']))
+      .optional(),
     contact: z
       .object({
         address: z.string().optional(),
@@ -196,6 +206,7 @@ export const ContentConfigSchema = z
             subtitle: z.string().optional(),
             poweredByLabel: z.string().optional(),
             poweredByHref: z.string().optional(),
+            backgroundColor: z.string().optional(),
           })
           .partial()
           .optional(),
@@ -208,6 +219,7 @@ export const ContentConfigSchema = z
             poweredBy: z
               .object({ label: z.string(), href: z.string() })
               .optional(),
+            backgroundColor: z.string().optional(),
           })
           .partial()
           .optional(),
@@ -331,6 +343,8 @@ export const UpdateDemoStoreSchema = z.object({
   home_puck_data: z.record(z.string(), z.any()).nullish(),
   // Enable B2B on an existing demo (provisioned inline on the transition to true).
   b2b_enabled: z.boolean().optional(),
+  b2b_sales_channel_id: z.string().min(1).nullable().optional(),
+  b2b_price_list_id: z.string().min(1).nullable().optional(),
   // Toggle recurring purchases (no provisioning needed: it's a pure feature flag).
   recurring_enabled: z.boolean().optional(),
   // Toggle la página de tintometría (color → bases). También es feature flag pura:

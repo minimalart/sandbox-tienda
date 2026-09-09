@@ -51,11 +51,7 @@ export default async function CampaignHome({
     <main className="campaign-home bg-white">
       <CampaignHero hero={campaign.hero} />
       <Suspense fallback={null}>
-        <CampaignKits
-          config={campaign.kits}
-          ctaLabel={campaign.kits.ctaLabel ?? "Agregar"}
-          countryCode={countryCode}
-        />
+        <CampaignKits config={campaign.kits} countryCode={countryCode} />
       </Suspense>
     </main>
   );

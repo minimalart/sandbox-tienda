@@ -1,12 +1,13 @@
-import { Badge, Button, Container, Drawer, Heading, StatusBadge, Table, Text, Textarea, toast } from '@medusajs/ui';
+import { Badge, Button, Container, Drawer, Heading, StatusBadge, Table, Text, Textarea, toast, usePrompt } from '@medusajs/ui';
 import { ChevronLeftMini, ChevronRightMini } from '@medusajs/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   useAdminCategories,
   useApplyExecution,
   useCancelExecution,
   useCatalogadorConfig,
+  useDeleteExecution,
   useDuplicateExecution,
   useExecution,
   useGenerateExecution,
@@ -25,6 +26,7 @@ import {
   EditableLifestyleEditor,
   readEditableMeta,
 } from '../../../components/catalogador/editable-lifestyle-editor';
+import { resolveProposalView, type Proposal } from './lib';
 
 export const handle = { breadcrumb: () => 'Ejecución' };
 
@@ -277,6 +279,9 @@ const ExecutionDetail = () => {
   const duplicate = useDuplicateExecution();
   const refloat = useRefloatExecution();
   const restore = useRestoreExecution();
+  const remove = useDeleteExecution();
+  const prompt = usePrompt();
+  const navigate = useNavigate();
   const reviewProduct = useReviewProduct(id);
   const reviewAsset = useReviewAsset(id);
   const updateComposition = useUpdateComposition(id);
@@ -322,6 +327,31 @@ const ExecutionDetail = () => {
     fn()
       .then(() => toast.success(ok))
       .catch((e) => toast.error(e instanceof Error ? e.message : 'Error'));
+
+  /**
+   * Borrado lógico desde el detalle. Navega al listado al terminar: quedarse acá
+   * mostraría el detalle de una corrida que el listado ya no tiene, y refrescar
+   * daría 404.
+   */
+  const handleDelete = async () => {
+    const confirmed = await prompt({
+      title: 'Eliminar corrida',
+      description:
+        `¿Eliminar "${execution.name}"? Sale del listado y queda en la papelera, ` +
+        'desde donde la podés recuperar. No se toca ningún producto del catálogo.',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+    });
+    if (!confirmed) return;
+    remove.mutate(id, {
+      onSuccess: () => {
+        toast.success('Corrida enviada a la papelera');
+        navigate('/catalogador');
+      },
+      onError: (e: unknown) =>
+        toast.error((e as { message?: string })?.message ?? 'No se pudo eliminar'),
+    });
+  };
 
   /** Texto de éxito según la decisión: el toast tiene que decir QUÉ se guardó. */
   const reviewSuccessMessage = (body: Record<string, unknown>): string => {
@@ -406,6 +436,18 @@ const ExecutionDetail = () => {
           <Button size="small" variant="secondary" onClick={() => act(() => duplicate.mutateAsync({ id }), 'Duplicada')}>Duplicar</Button>
           <Button size="small" variant="secondary" onClick={() => act(() => refloat.mutateAsync({ id, body: { use_current_config: true } }), 'Reflotada')}>Reflotar</Button>
           {canRestore && <Button size="small" variant="danger" onClick={() => act(() => restore.mutateAsync({ id }), 'Restauración creada')}>Restaurar</Button>}
+          {/*
+            Sólo aparece cuando SE PUEDE. Acá, a diferencia del menú del listado, un
+            botón gris entre siete habilitados no informa: ocupa lugar y se lee como
+            un bug. El listado es el que tiene que explicar por qué no se puede,
+            porque es el que muestra todas las corridas juntas.
+            `deletable` lo calcula el backend; esta pantalla no conoce la regla.
+          */}
+          {execution.deletable && (
+            <Button size="small" variant="secondary" disabled={remove.isPending} onClick={handleDelete}>
+              Eliminar
+            </Button>
+          )}
         </div>
       </Container>
 
@@ -612,6 +654,8 @@ const ProductReviewDrawer = ({
 
   const [editField, setEditField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  // Confirmación de "usar la propuesta de la IA", que descarta una edición.
+  const prompt = usePrompt();
 
   const tabDefs = [
     ...fields.map((f) => ({ id: f, label: `${FIELD_LABELS[f] ?? f}${f in accepted ? ' ✓' : ''}` })),
@@ -720,9 +764,19 @@ const ProductReviewDrawer = ({
                 : (() => {
                     const f = currentTab;
                     const prop = proposed[f];
-                    const isAccepted = f in accepted;
                     const editable = FREETEXT_FIELDS.includes(f);
                     const isEditing = editField === f;
+                    /*
+                      El valor que el APPLY va a escribir: la decisión del usuario le
+                      gana a la propuesta. Mostrar `prop.value` a secas era el bug
+                      reportado — la regla, y el porqué, viven en `./lib.ts` con tests.
+                    */
+                    const { effective, shownText, aiText, isAccepted, isEdited } = resolveProposalView({
+                      field: f,
+                      proposed: proposed as Record<string, Proposal>,
+                      accepted,
+                      format: displayVal,
+                    });
                     return (
                       <div className="flex flex-col gap-4 py-2">
                         <div className="flex flex-col gap-1">
@@ -734,9 +788,21 @@ const ProductReviewDrawer = ({
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
                             <Text size="xsmall" weight="plus" className="text-ui-fg-muted">
-                              Propuesta
+                              {isEdited ? 'Tu edición' : 'Propuesta'}
                             </Text>
-                            {typeof prop?.confidence === 'number' && (
+                            {isEdited && (
+                              <Badge size="2xsmall" color="blue">
+                                Editado
+                              </Badge>
+                            )}
+                            {/*
+                              Los badges de confianza describen a la propuesta de la IA,
+                              no a lo que escribió el humano. Con el campo editado bajan
+                              al bloque de la propuesta original: dejar "Requiere
+                              revisión" al lado del texto propio decía que falta revisar
+                              algo que la persona acaba de escribir.
+                            */}
+                            {!isEdited && typeof prop?.confidence === 'number' && (
                               <Badge
                                 size="2xsmall"
                                 color={prop.confidence < lowConfidenceThreshold ? 'orange' : 'green'}
@@ -744,7 +810,8 @@ const ProductReviewDrawer = ({
                                 Confianza {pct(prop.confidence)}
                               </Badge>
                             )}
-                            {typeof prop?.confidence === 'number' &&
+                            {!isEdited &&
+                              typeof prop?.confidence === 'number' &&
                               prop.confidence < lowConfidenceThreshold &&
                               requireReviewLowConfidence && (
                                 <Badge size="2xsmall" color="orange">
@@ -755,11 +822,36 @@ const ProductReviewDrawer = ({
                           {isEditing ? (
                             <Textarea value={editValue} onChange={(e) => setEditValue(e.target.value)} rows={5} />
                           ) : (
-                            <div className={`rounded-lg border p-2 text-sm ${isAccepted ? 'bg-ui-tag-green-bg ring-1 ring-ui-tag-green-border' : ''}`}>
-                              {displayVal(f, prop?.value)}
+                            <div className={`whitespace-pre-wrap rounded-lg border p-2 text-sm ${isAccepted ? 'bg-ui-tag-green-bg ring-1 ring-ui-tag-green-border' : ''}`}>
+                              {shownText}
                             </div>
                           )}
                         </div>
+                        {/*
+                          Con el campo editado, la propuesta de la IA sigue a la vista
+                          pero abajo y en gris: es el histórico contra el que la persona
+                          compara, y es lo que el botón de descartar devuelve.
+                        */}
+                        {isEdited && !isEditing && (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <Text size="xsmall" weight="plus" className="text-ui-fg-muted">
+                                Propuesta original de la IA
+                              </Text>
+                              {typeof prop?.confidence === 'number' && (
+                                <Badge
+                                  size="2xsmall"
+                                  color={prop.confidence < lowConfidenceThreshold ? 'orange' : 'green'}
+                                >
+                                  Confianza {pct(prop.confidence)}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="whitespace-pre-wrap rounded-lg border border-dashed p-2 text-sm text-ui-fg-subtle">
+                              {aiText}
+                            </div>
+                          </div>
+                        )}
                         {!applied && (
                           <div className="flex gap-2">
                             {isEditing ? (
@@ -779,19 +871,52 @@ const ProductReviewDrawer = ({
                               </>
                             ) : (
                               <>
-                                <Button size="small" variant={isAccepted ? 'primary' : 'secondary'} onClick={() => onField({ action: 'field', field: f, decision: 'accept' })}>
-                                  {isAccepted ? 'Aceptado' : 'Aceptar'}
-                                </Button>
+                                {/*
+                                  Con el campo editado, "Aceptar" NO se ofrece como un
+                                  botón más: `decision: 'accept'` hace
+                                  `accepted[f] = proposed[f].value` y pisa la edición con
+                                  el texto de la IA, sin aviso. Antes decía "Aceptado" en
+                                  primary —o sea, se leía como el estado actual— y un
+                                  click de más borraba el trabajo. Ahora es una acción
+                                  explícita, con nombre y con confirmación.
+                                */}
+                                {isEdited ? (
+                                  <Button
+                                    size="small"
+                                    variant="transparent"
+                                    onClick={async () => {
+                                      const ok = await prompt({
+                                        title: 'Descartar tu edición',
+                                        description:
+                                          'Se reemplaza tu texto por la propuesta original de la IA. Tu edición se pierde.',
+                                        confirmText: 'Descartar mi edición',
+                                        cancelText: 'Cancelar',
+                                      });
+                                      if (!ok) return;
+                                      onField({ action: 'field', field: f, decision: 'accept' });
+                                    }}
+                                  >
+                                    Usar la propuesta de la IA
+                                  </Button>
+                                ) : (
+                                  <Button size="small" variant={isAccepted ? 'primary' : 'secondary'} onClick={() => onField({ action: 'field', field: f, decision: 'accept' })}>
+                                    {isAccepted ? 'Aceptado' : 'Aceptar'}
+                                  </Button>
+                                )}
                                 <Button size="small" variant="transparent" onClick={() => onField({ action: 'field', field: f, decision: 'reject' })}>
                                   Rechazar
                                 </Button>
                                 {editable && (
                                   <Button
                                     size="small"
-                                    variant="transparent"
+                                    variant={isEdited ? 'secondary' : 'transparent'}
                                     onClick={() => {
                                       setEditField(f);
-                                      setEditValue(String((prop?.value as string) ?? ''));
+                                      // Arranca del valor EFECTIVO, no del de la IA:
+                                      // partir de `prop.value` hacía que reeditar un
+                                      // campo ya editado descartara la edición anterior
+                                      // en cuanto se apretaba Guardar.
+                                      setEditValue(String((effective as string) ?? ''));
                                     }}
                                   >
                                     Editar

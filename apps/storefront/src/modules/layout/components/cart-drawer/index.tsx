@@ -1713,7 +1713,13 @@ const CartDrawer = ({ open, onClose, themeClassName }: CartDrawerProps) => {
 
   const hasOutOfStockItems = items.some((item) => !isLineItemInStock(item));
   const backendMinimumPurchase = useMinimumPurchaseAmount();
-  const { canCheckout, hasMinimumPurchase, progress, remaining } = useMemo(
+  const {
+    canCheckout,
+    hasMinimumPurchase,
+    progress,
+    remaining,
+    minimumPurchaseAmount,
+  } = useMemo(
     () =>
       getCartCheckoutEligibility({
         items,
@@ -1920,6 +1926,7 @@ const CartDrawer = ({ open, onClose, themeClassName }: CartDrawerProps) => {
                             hasMinimumPurchase={hasMinimumPurchase}
                             progress={progress}
                             remaining={remaining}
+                            minimumPurchaseAmount={minimumPurchaseAmount}
                           />
                         )}
                         {/*

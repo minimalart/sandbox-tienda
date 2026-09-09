@@ -33,7 +33,7 @@ export default async function SpacesPage() {
               href={`/espacios/${configurator.slug}`}
               className="group overflow-hidden rounded-2xl border border-gray-200 bg-white transition-shadow hover:shadow-lg"
             >
-              <div className="flex h-60 items-center justify-center overflow-hidden bg-[#f0f3eb]">
+              <div className="flex h-60 items-center justify-center overflow-hidden bg-[color-mix(in_srgb,var(--primary-color)_8%,white)]">
                 {image ? (
                   <img
                     src={image}
@@ -41,16 +41,17 @@ export default async function SpacesPage() {
                     className="h-full w-full object-cover transition-transform group-hover:scale-105"
                   />
                 ) : (
-                  <Layers3 className="h-16 w-16 text-[#8ca183]" strokeWidth={1} />
+                  <Layers3 className="h-16 w-16 text-[--primary-color] opacity-40" strokeWidth={1} />
                 )}
               </div>
               <div className="p-6">
                 <h2 className="text-xl font-medium tracking-tight">{configurator.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-gray-500">
-                  {configurator.config.description ||
-                    'Elegí una propuesta y hacela tuya con productos reales de la tienda.'}
-                </p>
-                <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4 text-xs font-medium text-[#345139]">
+                {configurator.config.description && (
+                  <p className="mt-3 text-sm leading-6 text-gray-500">
+                    {configurator.config.description}
+                  </p>
+                )}
+                <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4 text-xs font-medium text-[--primary-color]">
                   <span>{configurator.config.templates.length} espacios equipados</span>
                   <span className="flex items-center gap-2">
                     Explorar <ArrowRight size={16} />

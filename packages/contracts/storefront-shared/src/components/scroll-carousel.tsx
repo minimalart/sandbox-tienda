@@ -195,7 +195,13 @@ export default function ScrollCarousel({
       <div
         ref={scrollRef}
         className={[
-          isStaticMode ? "flex flex-wrap" : "no-scrollbar flex overflow-x-auto",
+          // En modo estático (≤4 items en pantalla ancha, disableScrollForFew)
+          // centramos la fila: con 1-3 productos el flex-wrap sin justify los
+          // deja pegados a la izquierda con hueco a la derecha. Con 4 exactos
+          // ocupan toda la fila y el center es no-op.
+          isStaticMode
+            ? "flex flex-wrap justify-center"
+            : "no-scrollbar flex overflow-x-auto",
           // Mandatory snap on coarse pointers (touch) so each swipe lands on
           // the next item; opt-in everywhere else via the `snap` prop.
           !isStaticMode && snap ? "snap-x snap-mandatory" : "",

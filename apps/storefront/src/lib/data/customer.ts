@@ -66,7 +66,7 @@ export const retrieveCustomer =
   async (): Promise<HttpTypes.StoreCustomer | null> => {
     const authHeaders = await getAuthHeaders();
 
-    if (!authHeaders || Object.keys(authHeaders).length === 0) {
+    if (!authHeaders || !authHeaders.authorization) {
       return null;
     }
 

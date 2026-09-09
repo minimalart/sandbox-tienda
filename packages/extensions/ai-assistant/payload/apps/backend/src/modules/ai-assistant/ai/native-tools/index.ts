@@ -61,6 +61,11 @@ export type NativeToolContext = {
    * embudo (la fila de conversación es única por teléfono y vive para siempre). */
   waSessionId?: string | null;
   /**
+   * Tienda que recibió el mensaje (`?site=` del webhook). Sin esto los eventos que
+   * emiten las tools quedan sin `site_id` y el embudo por tienda mezcla todo.
+   */
+  waSiteId?: string | null;
+  /**
    * Artefactos creados por tools nativas durante el turno. El mismo ctx viaja por
    * todo el workflow (start_workflow → motor → subagentes → execTool), así que el
    * motor puede RESCATAR de acá el borrador creado aunque el subagente se olvide

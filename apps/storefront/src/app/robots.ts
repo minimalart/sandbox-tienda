@@ -1,4 +1,5 @@
 import { SITE_PATH_SEGMENT } from "@lib/site-config/resolve-site";
+import { isSiteGateEnabled } from "@lib/site-config/site-gate";
 import { getCanonicalOrigin, isCanonicalForm } from "@lib/util/site-url";
 import type { MetadataRoute } from "next";
 
@@ -42,11 +43,32 @@ const PRIVATE_PATHS = [
  * `true` y el origen es `getBaseURL()`.
  */
 export default async function robots(): Promise<MetadataRoute.Robots> {
-  const [canonical, isCanonical] = await Promise.all([
+  const [canonical, isCanonical, gated] = await Promise.all([
     getCanonicalOrigin(),
     isCanonicalForm(),
+    isSiteGateEnabled(),
   ]);
   const baseUrl: string = canonical.replace(/\/$/, "");
+
+  /**
+   * Sitio detrás del password gate: NO se indexa, y tampoco se declara el sitemap.
+   *
+   * Con el gate prendido toda URL responde 200 con la pantalla "Sitio en preparación"
+   * (~120 caracteres visibles) y el `<title>` correcto, porque `generateMetadata`
+   * corre igual. Declarar `Allow: /` más un sitemap ahí es invitar a Google a indexar
+   * N copias casi idénticas de un muro de contraseña: entra como thin content y
+   * contenido duplicado, y el sitio arranca su vida indexada desde ese pozo.
+   *
+   * Es la MISMA política que el bloque de abajo aplica a un host no canónico: si el
+   * contenido real no está servible, no se pide crawl. El gate es temporal; lo que
+   * queda en el índice, no. Al apagarlo desde el admin esto se da vuelta solo.
+   */
+  if (gated) {
+    return {
+      rules: [{ userAgent: "*", disallow: "/" }],
+      host: baseUrl,
+    };
+  }
 
   // Host NO canónico (una tienda alcanzada por `/tienda/<slug>` en el host principal,
   // un preview, un host desconocido): se bloquea la indexación ENTERA. Si no, Google

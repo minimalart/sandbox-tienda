@@ -1,3 +1,5 @@
+import { getCustomerSession } from "@lib/data/cookies";
+import { sessionCookieName } from "@lib/util/customer-session";
 import { sdk } from "@lib/config";
 import {
   EMAIL_EXISTS_IN_OTHER_TENANT,
@@ -72,16 +74,21 @@ async function createResponseWithAuthCookie(
   token: string,
   status: number = 200,
 ) {
-  const response = NextResponse.json(data, { status });
+  const session = await getCustomerSession();
+  const { token: _privateToken, ...publicData } = data as Record<string, unknown>;
+  const response = NextResponse.json(publicData, { status });
+  response.cookies.set(sessionCookieName(session, "present"), "1", { path: "/", maxAge: 60 * 60 * 24 * 7, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
   // Configuración mínima para desarrollo local con dominios .local
-  response.cookies.set("_medusa_jwt", token, {
+  response.cookies.set(sessionCookieName(session), token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 7,
     path: "/",
     sameSite: "lax",
   });
   // Multi-sucursal: hidratar el canal desde la dirección por defecto del cliente
   // (la sucursal lo sigue entre dispositivos / aunque se haya borrado la cookie).
-  const channelId = await resolveBranchChannelForToken(token);
+  const channelId = session.mode === "b2c" ? await resolveBranchChannelForToken(token) : null;
   if (channelId) {
     response.cookies.set("_sales_channel_id", channelId, {
       maxAge: 60 * 60 * 24 * 30,
@@ -94,9 +101,12 @@ async function createResponseWithAuthCookie(
 }
 
 // Helper para crear respuesta removiendo cookie de auth
-function createResponseRemovingAuthCookie(data: object, status: number = 200) {
+async function createResponseRemovingAuthCookie(data: object, status: number = 200) {
   const response = NextResponse.json(data, { status });
-  response.cookies.set("_medusa_jwt", "", {
+  const session = await getCustomerSession();
+  response.cookies.set(sessionCookieName(session, "cart"), "", { maxAge: 0, path: "/" });
+  response.cookies.set(sessionCookieName(session, "present"), "", { maxAge: 0, path: "/" });
+  response.cookies.set(sessionCookieName(session), "", {
     maxAge: 0,
     path: "/",
   });

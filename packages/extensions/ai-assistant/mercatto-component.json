@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "ai-assistant",
   "name": "Asistente IA",
-  "version": "1.32.16",
+  "version": "1.32.18",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -424,7 +424,7 @@
     },
     {
       "path": "apps/backend/src/api/mcp/oauth/authorize/route.ts",
-      "sha256": "108238fbc8c5c922478af12f9d502536fa61eb339ee1b5b4acde0166627e0176"
+      "sha256": "a3e5cf7f599a5b823fa7a9e3845502579579edd56a6d57fdac6801299d266d0d"
     },
     {
       "path": "apps/backend/src/api/mcp/oauth/middlewares.ts",
@@ -444,7 +444,7 @@
     },
     {
       "path": "apps/backend/src/api/webhooks/kapso/route.ts",
-      "sha256": "8fabe74acfdd3f4376574e03fdb00d3576a313ba9432018995545add2dabde73"
+      "sha256": "b3b89497d49f9d974a315e886b3d49f59af5afb0b10736a4845c1f618bcd4522"
     },
     {
       "path": "apps/backend/src/jobs/embed-pending-memories.ts",
@@ -596,7 +596,7 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/index.ts",
-      "sha256": "736b684da00a45a9adb9b828d8bee620609ff1f09676125960e6bf33c6a02ce9"
+      "sha256": "d9e0247d4bf1ff893e1b5b3b5ebff2d21dd32dfdbef15859eb9db823ef3ae555"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/loyalty-tools.ts",
@@ -608,7 +608,7 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/whatsapp-tools.ts",
-      "sha256": "228cbab28823f1b785b24b736e76efe1deb56cd79fea250c10c4d92b4e37127c"
+      "sha256": "fa5c34ebea6f858ab523533965372d502b4a4f36ad901b882b93e45254c9d928"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/policy.test.ts",

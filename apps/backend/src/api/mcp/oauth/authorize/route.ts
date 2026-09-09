@@ -27,25 +27,32 @@ function esc(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
-// Logo + favicon de Mercatto para la pantalla de conexión del MCP. Se sirve
-// públicamente desde el storefront; así el conector (claude.ai/ChatGPT) y la tab
-// del navegador muestran la marca Mercatto en vez del favicon por defecto.
-function storefrontUrl(): string {
-  return (process.env.STOREFRONT_URL || 'https://mercatto.minimalart.studio').replace(/\/+$/, '');
-}
-function logoUrl(): string {
-  return `${storefrontUrl()}/logos-mercatto/logo-verde.svg`;
-}
+/**
+ * Marca de ESTA instalación para la pantalla de conexión del MCP: la sirve el propio
+ * backend, que es el mismo origen del que se carga esta página.
+ *
+ * ⚠ Antes eran `${STOREFRONT_URL}/logos-mercatto/logo-verde.svg`, con el dominio de
+ * Mercatto como default. O sea que el conector de IA de cualquier cliente mostraba el
+ * isotipo verde de Mercatto, en la tab del navegador y arriba del formulario donde el
+ * admin pone su contraseña. Se ve bien, así que nadie lo reporta.
+ *
+ * Son constantes y no valores leídos porque `loginPage()` es SÍNCRONA y leer la marca
+ * es async. La prioridad (logotipo -> isotipo -> generado) la deciden esas rutas.
+ *
+ * El `<link rel="icon">` va SIN `type`: la ruta redirige a lo que haya cargado la
+ * marca —png, webp o svg—, y declarar un tipo que no es hace que el ícono no cargue.
+ */
+const INSTANCE_LOGO = '/instance-logo';
+const INSTANCE_FAVICON = '/favicon.ico';
 
 function loginPage(p: AuthzParams, error?: string): string {
   const hidden = (Object.keys(p) as (keyof AuthzParams)[])
     .map((k) => `<input type="hidden" name="${k}" value="${esc(p[k])}" />`)
     .join('\n');
-  const logo = logoUrl();
   return `<!doctype html><html lang="es"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Conectar asistente — login</title>
-<link rel="icon" type="image/svg+xml" href="${logo}" />
+<link rel="icon" href="${INSTANCE_FAVICON}" />
 <style>
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f3f4f6;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center}
   .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px;width:100%;max-width:380px;box-shadow:0 10px 30px rgba(0,0,0,.06)}
@@ -57,7 +64,7 @@ function loginPage(p: AuthzParams, error?: string): string {
   .err{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:13px;padding:8px 10px;border-radius:8px;margin-bottom:12px}
 </style></head><body>
 <form class="card" method="post" action="${baseUrl()}/mcp/oauth/authorize">
-  <img class="logo" src="${logo}" alt="Mercatto" />
+  <img class="logo" src="${INSTANCE_LOGO}" alt="" />
   <h1>Conectar asistente IA</h1>
   <p>Iniciá sesión con tu usuario administrador para autorizar el acceso al MCP de la tienda.</p>
   ${error ? `<div class="err">${esc(error)}</div>` : ''}

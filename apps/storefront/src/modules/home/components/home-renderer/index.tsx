@@ -89,6 +89,11 @@ export default async function HomeRenderer({
                 p.ctaText && p.ctaHref
                   ? { text: p.ctaText, href: p.ctaHref }
                   : undefined,
+              backgroundColor: p.backgroundColor || undefined,
+              ctaBackgroundColor: p.ctaBackgroundColor || undefined,
+              ctaTextColor: p.ctaTextColor || undefined,
+              eyebrowBackgroundColor: p.eyebrowBackgroundColor || undefined,
+              eyebrowTextColor: p.eyebrowTextColor || undefined,
               trustBadges: nonEmpty(p.trustBadges)
                 ? p.trustBadges
                     .filter((b: any) => b?.label)

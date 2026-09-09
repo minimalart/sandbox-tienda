@@ -4,9 +4,9 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
 import { defineRouteConfig } from "@medusajs/admin-sdk";
 import { DotsSix, Trash, EllipsisHorizontal, PencilSquare, ArrowPath, PlaySolid } from "@medusajs/icons";
-import { Label, Text, Checkbox, Drawer, Heading, Tabs, StatusBadge, Input, Button, Badge, Textarea, clx, Switch, createDataTableColumnHelper, usePrompt, DropdownMenu, IconButton, useDataTable, Container, DataTable } from "@medusajs/ui";
 import { SiteScopeBar } from "@minimalart/mercatto-plugin-runtime/admin";
 import { useTranslation } from "react-i18next";
+import { Label, Text, Checkbox, Drawer, Heading, Tabs, StatusBadge, Input, Button, Badge, Textarea, clx, Switch, createDataTableColumnHelper, usePrompt, DropdownMenu, IconButton, useDataTable, Container, DataTable } from "@medusajs/ui";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useSensors, useSensor, PointerSensor, DndContext, closestCenter } from "@dnd-kit/core";
@@ -1454,20 +1454,7 @@ const VideosPage = () => {
   registerVideosTranslations(i18n);
   return /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-y-4", children: [
     /* @__PURE__ */ jsx(SiteScopeBar, { screen: "videos", variant: "card" }),
-    /* @__PURE__ */ jsx(VideosTable, {}),
-    /* @__PURE__ */ jsxs(Container, { children: [
-      /* @__PURE__ */ jsx(Heading, { level: "h2", className: "mb-2", children: "Ajustes por sitio" }),
-      /* @__PURE__ */ jsxs(Text, { className: "text-ui-fg-subtle", children: [
-        "Los campos editables (destino del callback de OAuth, credenciales de la app de Vimeo) se administran desde la card de ",
-        /* @__PURE__ */ jsx("code", { children: "app-settings" }),
-        "del host, con el namespace ",
-        /* @__PURE__ */ jsx("code", { children: "extension:videos" }),
-        ". El plugin lee ese snapshot vía",
-        " ",
-        /* @__PURE__ */ jsx("code", { children: "@minimalart/mercatto-plugin-runtime" }),
-        " y cae a las variables de entorno cuando no hay override."
-      ] })
-    ] })
+    /* @__PURE__ */ jsx(VideosTable, {})
   ] });
 };
 const VideosIcon = () => /* @__PURE__ */ jsx(PlaySolid, { style: { color: "#FF4F51" } });

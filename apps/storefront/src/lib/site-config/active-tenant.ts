@@ -1,3 +1,4 @@
+import { enabledStoreB2B } from "./b2b-access";
 import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
@@ -143,6 +144,7 @@ const describeRejection = async (res: Response): Promise<string> => {
 async function fetchSiteConfig(
   path: string,
   tag: string,
+  fresh = false,
 ): Promise<{ config: TenantConfig } | null> {
   const pk = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
   /**
@@ -165,7 +167,7 @@ async function fetchSiteConfig(
           Accept: "application/json",
           ...(pk ? { "x-publishable-api-key": pk } : {}),
         },
-        next: { revalidate: 60, tags: [tag] },
+        ...(fresh ? { cache: "no-store" as const } : { next: { revalidate: 60, tags: [tag] } }),
       });
       if (res.ok) return (await res.json()) as { config: TenantConfig };
       // 404 en la ruta nueva = backend viejo: se prueba la legacy. Cualquier otro
@@ -368,13 +370,14 @@ export const getActiveDemoB2B = cache(
     { salesChannelId: string; tiers?: { minQty: number; discount: number }[] } | undefined
   > => {
     const slug = await getActiveDemoSlug();
-    if (!slug) return undefined;
-    const demo = await getTenantBySlug(slug);
-    const b2b = demo?.medusa.b2b;
-    if (b2b?.enabled && b2b.salesChannelId) {
-      return { salesChannelId: b2b.salesChannelId, tiers: b2b.tiers };
-    }
-    return undefined;
+    // Read the explicit store record on each request so disabling B2B takes effect
+    // immediately and missing child config cannot inherit main-store defaults.
+    const data = await fetchSiteConfig(
+      slug ? `${slug}/config` : "main/config",
+      slug ? `site-${slug}` : "site-main",
+      true,
+    );
+    return enabledStoreB2B(data?.config);
   },
 );
 

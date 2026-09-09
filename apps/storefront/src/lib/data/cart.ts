@@ -96,7 +96,7 @@ export async function ensureCartCustomer(cartId?: string): Promise<void> {
   const id = cartId || (await getCartId());
   if (!id) return;
   const headers = { ...(await getAuthHeaders()) };
-  if (Object.keys(headers).length === 0) return; // guest: nada que reparar
+  if (!headers.authorization) return; // guest: nada que reparar
   try {
     const { cart } = await sdk.client.fetch<HttpTypes.StoreCartResponse>(
       `/store/carts/${id}`,
@@ -140,7 +140,7 @@ export async function getOrSetCart(countryCode: string) {
   // colgando del invitado. Ver cart-customer-transfer.ts.
   if (
     cart &&
-    Object.keys(headers).length > 0 &&
+    !!headers.authorization &&
     shouldTransferCartToCustomer(cart)
   ) {
     try {

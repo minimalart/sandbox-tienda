@@ -3,7 +3,7 @@
   "schema_version": 1,
   "id": "videos",
   "name": "Videos",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "kind": "plugin",
   "status": "ready",
   "dependencies": ["blog"],

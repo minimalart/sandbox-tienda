@@ -92,3 +92,93 @@ test('`run` es opcional en el tipo: sin él el monitor sigue midiendo', () => {
   const fn = SRC.slice(SRC.indexOf('async function tryRearmWorker'));
   assert.match(fn, /typeof worker\.run !== 'function'/, 'no chequea que `run` exista');
 });
+
+/**
+ * ── LO QUE SE APRENDIÓ EL 2026-09-09, Y POR QUÉ SE FIJA ACÁ ──────────────────
+ *
+ * El re-arme corrió y NO sirvió. Log de producción, cada 5 minutos:
+ *
+ *   [event-bus-monitor] El reintento de arranque falló: Connection is closed.
+ *
+ * `run()` sobre un Worker cuya conexión está cerrada rechaza con el mismo error sin
+ * intentar nada: reintentarlo así es pedirle a un teléfono desconectado que marque.
+ * Los tests de abajo fijan las tres decisiones que salieron de ese incidente.
+ */
+
+test('revive la conexión ANTES de llamar a `run()`', () => {
+  const body = SRC.slice(SRC.indexOf('async function tryRearmWorker'));
+  const fn = body.slice(0, body.indexOf('\n}\n'));
+  const revive = fn.indexOf('reviveConnection(worker');
+  const run = fn.indexOf('worker.run!()');
+  assert.ok(revive > -1, 'no revive la conexión: vuelve el bug del 09/09');
+  assert.ok(run > -1);
+  assert.ok(revive < run, '`run()` antes de revivir la conexión rechaza sin intentar nada');
+});
+
+test('nada le espera a la conexión sin techo de tiempo', () => {
+  /**
+   * `worker.client` es una promesa que BullMQ deja PENDIENTE PARA SIEMPRE si la
+   * conexión no se establece. Awaitearla pelada cuelga el job — o sea que el monitor
+   * se convierte en la falla que vigila, que es el único error imperdonable acá.
+   */
+  const body = SRC.slice(SRC.indexOf('async function reviveConnection'));
+  const fn = body.slice(0, body.indexOf('\n}\n'));
+  assert.doesNotMatch(fn, /await\s+Promise\.resolve\(worker\.client\)\s*;/);
+  assert.match(fn, /withDeadline\(/, 'consume la conexión sin deadline');
+  const deadline = SRC.slice(SRC.indexOf('async function withDeadline'));
+  assert.match(deadline.slice(0, deadline.indexOf('\n}\n')), /Promise\.race/);
+});
+
+test('un error DE CONEXIÓN se reporta distinto de un error de código', () => {
+  /**
+   * No es cosmética: decide a quién le sirve el log. Un `Connection is closed.` en el
+   * re-arme significa que reintentar es inútil y que reiniciar el backend tampoco
+   * alcanza — decirlo ahorra el paseo entero por el código, que es el que nos comió
+   * la tarde del 09/09.
+   */
+  assert.match(SRC, /CONNECTION_LEVEL_ERROR/);
+  assert.match(SRC, /connection is closed/i);
+  assert.match(SRC, /max number of clients/i, 'el tope de conexiones del plan es el sospechoso principal');
+  const body = SRC.slice(SRC.indexOf('async function tryRearmWorker'));
+  const fn = body.slice(0, body.indexOf('\n}\n'));
+  assert.match(fn, /CONNECTION_LEVEL_ERROR\.test\(message\)/);
+  assert.match(fn, /reiniciar el backend TAMPOCO/i);
+});
+
+test('NO construye un Worker ni una conexión nueva', () => {
+  /**
+   * Se PUEDE (event-bus-redis.js:127 crea el Worker con `new Worker(this.queueName_,
+   * this.worker_, ...)`, y las dos son propiedades del service). No se hace: un Worker
+   * nuevo pide una CONEXIÓN nueva, y la causa raíz observada es un Valkey que está
+   * RECHAZANDO conexiones. Un monitor que abre clientes cada cinco minutos contra un
+   * Valkey al límite convierte una caída de una hora en una permanente.
+   *
+   * Este test existe para que el próximo que lea "el re-arme no cura" no lo
+   * "mejore" por ese lado sin leer el porqué.
+   */
+  /**
+   * SIN COMENTARIOS, y no es un detalle: el porqué de esta decisión está escrito en
+   * el fuente y NOMBRA `new Worker(this.queueName_, this.worker_, ...)` como la
+   * tentación que se descarta. Buscar sobre el fuente crudo hacía fallar el test
+   * contra su propia explicación.
+   */
+  const CODE = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  assert.doesNotMatch(CODE, /new\s+Worker\s*\(/);
+  assert.doesNotMatch(CODE, /from\s+'bullmq'/);
+  assert.doesNotMatch(CODE, /from\s+'ioredis'/);
+});
+
+test('el destinatario del aviso ya no se resuelve en silencio', () => {
+  /**
+   * El monitor detectó la caída del 09/09 en cada tick y el aviso murió en el log
+   * porque `resolveRecipient` no encontró destinatario — con `info@desdelsur.com.ar`
+   * configurado en la fila de la única tienda, o sea que algo falló adentro del
+   * `try` y el `catch` vacío se lo comió. Un `catch` que devuelve lo mismo que el
+   * camino de al lado no maneja el error: lo entierra.
+   */
+  const body = SRC.slice(SRC.indexOf('async function resolveRecipient'));
+  const fn = body.slice(0, body.indexOf('\n}\n'));
+  assert.doesNotMatch(fn, /\}\s*catch\s*\{/, 'volvió el catch que se traga el motivo');
+  assert.match(fn, /catch\s*\(error\)/);
+  assert.match(fn, /logger\.warn/);
+});

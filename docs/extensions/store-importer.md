@@ -9,7 +9,15 @@
 
 Trae el catálogo de WooCommerce, VTEX o Shopify a una tienda, o adopta un canal de venta que ya vive en esta instancia.
 
-## Cuatro orígenes, y uno no importa nada
+## Importar en la tienda principal o en una tienda existente
+
+Abrí Tiendas, elegí Editar en la tienda de destino y entrá en Catálogo. El destino es siempre la tienda que estás editando, incluida la principal. La importación está incluida en Tiendas.
+
+Elegí Importar catálogo, cargá el origen HTTPS público, proveedor y moneda. Activá la conexión y guardá. Previsualizar recupera hasta cinco productos sin escribir catálogo. Revisá precios y presentaciones, y luego usá Confirmar e importar. Importaciones recientes muestra avance y resultado.
+
+Las conexiones nuevas están desactivadas. La ejecución se procesa cada minuto en segundo plano. Reimportar desde la misma conexión conserva los identificadores; una fuente parcial no elimina productos existentes. La activación B2B es independiente y no importa productos por sí misma.
+
+## Orígenes del flujo anterior de creación de tiendas
 
 WooCommerce, VTEX y Shopify son plataformas EXTERNAS: se leen por sus endpoints públicos y sus productos se normalizan a la forma de Medusa.
 

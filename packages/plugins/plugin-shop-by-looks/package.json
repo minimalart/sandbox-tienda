@@ -1,6 +1,6 @@
 {
   "name": "@minimalart/mercatto-plugin-shop-by-looks",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Mercatto plugin — shoppable editorial looks for the home (hotspot image + product list) with admin CRUD, per-store segmentation and a public store endpoint. Migrated from packages/extensions/shop-by-looks.",
   "main": ".medusa/server/src/index.js",
   "types": ".medusa/server/src/index.d.ts",

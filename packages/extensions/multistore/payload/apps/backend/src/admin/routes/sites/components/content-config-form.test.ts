@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import type { DemoContentConfig } from '../../../hooks/api';
 import {
   contentConfigToForm,
+  DEFAULT_MOBILE_NAV,
   emptyContentForm,
   formToContentConfig,
 } from './content-config-form';
@@ -104,5 +105,71 @@ describe('contentConfigToForm', () => {
     const out = formToContentConfig(contentConfigToForm(cfg), 'main', cfg);
     assert.deepEqual(out.contact, cfg.contact);
     assert.deepEqual(out.footer, cfg.footer);
+  });
+});
+
+/**
+ * Barra inferior mobile. El único lugar flexible (el 4º ítem) era `Promos` fijo,
+ * y `Promos` se apaga solo sin promociones activas: la barra caía a 4 columnas y
+ * el carrito, que es el botón del centro, quedaba descentrado. La lista ordenada
+ * es el arreglo, y estos tests cuidan las dos formas de re-romperlo: persistir un
+ * array vacío (ganaría entero sobre el default del storefront) y persistir una
+ * lista corta (dejaría a la barra sin candidatos de reserva).
+ */
+describe('formToContentConfig — barra inferior mobile', () => {
+  it('no persiste el orden por defecto: ausente = el default del storefront', () => {
+    const cfg = formToContentConfig(emptyContentForm(), 'main', {});
+    assert.equal('mobileNav' in cfg, false);
+  });
+
+  it('persiste un orden distinto tal cual', () => {
+    const form = { ...emptyContentForm(), mobileNav: ['blog', 'promos'] as const };
+    const cfg = formToContentConfig({ ...form, mobileNav: [...form.mobileNav] }, 'main', {});
+    assert.deepEqual(cfg.mobileNav?.slice(0, 2), ['blog', 'promos']);
+  });
+
+  it('COMPLETA una lista parcial con el default en vez de recortarla', () => {
+    const cfg = formToContentConfig(
+      { ...emptyContentForm(), mobileNav: ['contacto'] },
+      'main',
+      {},
+    );
+    assert.equal(cfg.mobileNav?.length, DEFAULT_MOBILE_NAV.length);
+    assert.equal(cfg.mobileNav?.[0], 'contacto');
+  });
+
+  it('nunca emite una lista vacía: ganaría entera sobre el default y volvería a 4 columnas', () => {
+    const cfg = formToContentConfig({ ...emptyContentForm(), mobileNav: [] }, 'main', {});
+    assert.equal('mobileNav' in cfg, false);
+  });
+
+  it('descarta ids que el storefront no conoce', () => {
+    const cfg = formToContentConfig(
+      { ...emptyContentForm(), mobileNav: ['inventado', 'blog'] as never },
+      'main',
+      {},
+    );
+    assert.equal(cfg.mobileNav?.includes('inventado' as never), false);
+    assert.equal(cfg.mobileNav?.[0], 'blog');
+  });
+});
+
+describe('contentConfigToForm — barra inferior mobile', () => {
+  it('sin config siembra el orden por defecto completo', () => {
+    const form = contentConfigToForm({} as DemoContentConfig);
+    assert.deepEqual(form.mobileNav, DEFAULT_MOBILE_NAV);
+  });
+
+  it('una fila vieja sin la clave igual llega con los 5 ids al formulario', () => {
+    const form = contentConfigToForm(null);
+    assert.equal(form.mobileNav.length, DEFAULT_MOBILE_NAV.length);
+  });
+
+  it('ida y vuelta: guardar sin tocar nada no cambia el orden guardado', () => {
+    const cfg = {
+      mobileNav: ['sucursales', 'promos', 'colores', 'blog', 'contacto'],
+    } as DemoContentConfig;
+    const out = formToContentConfig(contentConfigToForm(cfg), 'main', cfg);
+    assert.deepEqual(out.mobileNav, cfg.mobileNav);
   });
 });

@@ -47,6 +47,7 @@ jobs:
           fi
 
           PLUGIN_DIR="packages/plugins/plugin-$PLUGIN_ID"
+          if [ "$PLUGIN_ID" = "runtime" ]; then PLUGIN_DIR="packages/contracts/plugin-runtime"; fi
           PACKAGE_JSON="$PLUGIN_DIR/package.json"
           test -f "$PACKAGE_JSON"
 
@@ -69,6 +70,7 @@ jobs:
           NODE
 
       - name: Install
+        if: inputs.plugin-id != 'runtime'
         run: pnpm install --frozen-lockfile
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -77,6 +79,11 @@ jobs:
         env:
           PLUGIN_ID: ${{ inputs.plugin-id }}
         run: |
+          if [ "$PLUGIN_ID" = "runtime" ]; then
+            npm install --prefix packages/contracts/plugin-runtime --ignore-scripts --legacy-peer-deps --package-lock=false
+            npm run build --prefix packages/contracts/plugin-runtime
+            exit 0
+          fi
           pnpm --filter "@minimalart/mercatto-plugin-${PLUGIN_ID}^..." build
           pnpm --dir "packages/plugins/plugin-$PLUGIN_ID" build
 
@@ -87,6 +94,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ github.token }}
         run: |
           PLUGIN_DIR="packages/plugins/plugin-$PLUGIN_ID"
+          if [ "$PLUGIN_ID" = "runtime" ]; then PLUGIN_DIR="packages/contracts/plugin-runtime"; fi
           PACK_DIR="$RUNNER_TEMP/plugin-package"
           mkdir -p "$PACK_DIR"
           cd "$PLUGIN_DIR"

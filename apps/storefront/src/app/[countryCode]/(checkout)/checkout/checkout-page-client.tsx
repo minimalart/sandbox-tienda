@@ -22,6 +22,7 @@ import {
   useState,
 } from 'react'
 import CheckoutFormClient from './checkout-form-client'
+import { useCheckoutPolicy, checkoutRequest } from '@lib/hooks/use-checkout-policy'
 
 /* ── Skeleton blocks ────────────────────────────────── */
 
@@ -280,6 +281,9 @@ export default function CheckoutPageClient({
     [cart, hydrateCart],
   )
 
+  const checkout = useCheckoutPolicy(cart)
+  const [checkoutError, setCheckoutError] = useState('')
+  useEffect(() => { if (checkout.state?.cart_changed) void handleCartUpdate(); }, [checkout.state?.revision, checkout.state?.cart_changed])
   // Derive step completion from cart
   const allStepsComplete = useMemo(() => {
     if (!cart) {
@@ -291,8 +295,10 @@ export default function CheckoutPageClient({
     const hasPayment = !!cart.payment_collection?.payment_sessions?.find(
       (s: PaymentSession) => s.status === 'pending',
     )
+    if (checkout.loading || checkout.error) return false
+    if (checkout.state?.configured) return checkout.state.flow.ready && (hasPayment || Number(cart.total) === 0)
     return hasEmail && hasAddress && hasShipping && hasPayment
-  }, [cart])
+  }, [cart, checkout.state, checkout.loading, checkout.error])
 
   const handlePlaceOrder = useCallback(async () => {
     if (!cart) {
@@ -313,8 +319,10 @@ export default function CheckoutPageClient({
     }
     isPlacingRef.current = true
     setIsPlacingOrder(true)
+    setCheckoutError('')
     let redirecting = false
     try {
+      if (checkout.state?.configured) await checkoutRequest({ action: 'prepare', revision: checkout.state.revision })
       const session = cart.payment_collection?.payment_sessions?.find(
         (s: PaymentSession) => s.status === 'pending',
       ) as PaymentSession | undefined
@@ -340,7 +348,7 @@ export default function CheckoutPageClient({
         }
       }
     } catch (error) {
-      console.error('Error placing order:', error)
+      setCheckoutError((error as Error).message || 'No se pudo completar la compra. Revisá los datos y volvé a intentar.')
     } finally {
       // Only release the guard if we aren't navigating away — otherwise a
       // very fast user could click again during bfcache window and re-enter.
@@ -349,9 +357,9 @@ export default function CheckoutPageClient({
         setIsPlacingOrder(false)
       }
     }
-  }, [cart, checkoutEligibility.canCheckout, clearCart, router])
+  }, [cart, checkoutEligibility.canCheckout, clearCart, router, checkout.state])
 
-  if (loading) {
+  if (loading || (cart && !checkout.state && checkout.loading)) {
     return <CheckoutSkeleton />
   }
 
@@ -416,6 +424,8 @@ export default function CheckoutPageClient({
                   }
                 >
                   <CheckoutFormClient
+                    checkout={checkout.state}
+                    onCheckoutUpdate={checkout.setState}
                     cart={cart}
                     customer={initialCustomer}
                     googleMapsApiKey={googleMapsApiKey}
@@ -427,6 +437,7 @@ export default function CheckoutPageClient({
 
             {/* Right: order summary (sticky) */}
             <div className="lg:sticky lg:top-24 lg:self-start">
+              {(checkout.error || checkoutError) && <div role="alert" className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">{checkout.error || checkoutError}<button type="button" className="ml-2 underline" onClick={() => checkout.refresh()}>Volver a intentar</button></div>}
               <CheckoutSummary
                 checkoutEligibility={checkoutEligibility}
                 allStepsComplete={allStepsComplete}

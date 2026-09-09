@@ -67,6 +67,9 @@ alter table if exists "demo_store" add column if not exists "target_count" integ
 alter table if exists "demo_store" add column if not exists "content_config" jsonb null;
 alter table if exists "demo_store" add column if not exists "home_puck_data" jsonb null;
 alter table if exists "demo_store" add column if not exists "b2b_enabled" boolean not null default false;
+alter table if exists "demo_store" add column if not exists "b2b_pricing_tiers" jsonb null;
+alter table if exists "demo_store" add column if not exists "b2b_sales_channel_owned" boolean not null default true;
+alter table if exists "demo_store" add column if not exists "b2b_price_list_owned" boolean not null default true;
 alter table if exists "demo_store" add column if not exists "b2b_sales_channel_id" text null;
 alter table if exists "demo_store" add column if not exists "b2b_customer_group_id" text null;
 alter table if exists "demo_store" add column if not exists "b2b_price_list_id" text null;

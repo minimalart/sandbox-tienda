@@ -3,6 +3,7 @@ import {
   createDataTableColumnHelper,
   DataTable,
   type DataTablePaginationState,
+  Drawer,
   Heading,
   Input,
   Select,
@@ -20,38 +21,46 @@ import {
   statusLabelKey,
   useErpTranslationsReady,
 } from '../../components/shared';
+import { describeItemPayload, summarizeItemPayload } from '../../components/log-item-payload';
 
 const PAGE_SIZE = 50;
 const ALL = '__all__';
 
 const columnHelper = createDataTableColumnHelper<ErpSyncLogItem>();
 
-/** Serializa el response_payload del item a una línea legible. */
-function payloadSummary(payload: Record<string, unknown> | null): string {
-  if (!payload) return '—';
-  const parts: string[] = [];
-  if (payload.erp_quantity !== undefined) parts.push(`ERP: ${String(payload.erp_quantity)}`);
-  if (payload.normalized_quantity !== undefined && payload.normalized_quantity !== payload.erp_quantity) {
-    parts.push(`→ ${String(payload.normalized_quantity)}`);
-  }
-  if (payload.previous_stocked !== undefined) parts.push(`antes: ${String(payload.previous_stocked)}`);
-  if (payload.reserved_quantity !== undefined) parts.push(`reservado: ${String(payload.reserved_quantity)}`);
-  if (payload.reason) parts.push(String(payload.reason));
-  // Normalización de título: el "recibido → normalizado" por SKU es lo que se
-  // revisa en el dry-run antes de habilitar la escritura sobre el catálogo.
-  const title = payload.title_rules as
-    | { received?: string; normalized?: string; written?: boolean; warnings?: string[] }
-    | undefined;
-  if (title?.received) {
-    parts.push(
-      `${title.written ? 'título' : 'título (sin escribir)'}: ${title.received} → ${title.normalized ?? '—'}`
-    );
-    if (title.warnings?.length) parts.push(...title.warnings);
-  }
-  if (payload.barcode_warning) parts.push(`código de barras: ${String(payload.barcode_warning)}`);
-  if (payload.warning) parts.push(String(payload.warning));
-  return parts.length ? parts.join(' · ') : '—';
-}
+/**
+ * Resultados que un log puede traer, por tipo de sync. La lista vieja era la de
+ * `stock_sync` para los dos, así que en un `catalog_sync` el filtro no ofrecía
+ * ninguno de sus estados reales: `price_unchanged` (2463 items de una corrida
+ * medida), `variant_not_found` (723) ni `not_published` (251).
+ */
+const CATALOG_ITEM_STATUSES = [
+  'created',
+  'updated',
+  'price_unchanged',
+  'variant_not_found',
+  'not_published',
+  'no_price_set',
+  'duplicate_sku',
+  'invalid_quantity',
+  'skipped',
+  'failed',
+] as const;
+
+const STOCK_ITEM_STATUSES = [
+  'updated',
+  'not_found',
+  'duplicate_sku',
+  'invalid_quantity',
+  'skipped',
+  'failed',
+] as const;
+
+const TONE_CLASS = {
+  default: 'text-ui-fg-base',
+  muted: 'text-ui-fg-subtle',
+  error: 'text-ui-fg-error',
+} as const;
 
 /**
  * Detalle de una sincronización: cabecera con estado/resumen (+ barra de
@@ -69,6 +78,12 @@ const ErpLogDetailPage = () => {
   });
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [skuSearch, setSkuSearch] = useState('');
+  /**
+   * El item abierto en el drawer. Se guarda el OBJETO y no el id porque la tabla
+   * se repuebla sola mientras la corrida está viva (`refetchInterval`), y buscar
+   * por id dejaría el drawer en blanco justo cuando cambia de página.
+   */
+  const [openItem, setOpenItem] = useState<ErpSyncLogItem | null>(null);
 
   const { data: logData } = useErpSyncLog(id, { refetchInterval: 3000 });
   const log = logData?.sync_log ?? null;
@@ -105,15 +120,17 @@ const ErpLogDetailPage = () => {
         id: 'detail',
         header: t('COL_ITEM_DETAIL'),
         cell: ({ row }) => (
-          <Text size="small" className="text-ui-fg-subtle">
-            {payloadSummary(row.original.response_payload)}
+          // Dos líneas y corta: el resumen de un item de catálogo con precios y
+          // price lists no entra en una, y el resto está a un clic en el drawer.
+          <Text size="small" className="line-clamp-2 text-ui-fg-subtle">
+            {summarizeItemPayload(row.original.response_payload)}
           </Text>
         ),
       }),
       columnHelper.accessor('error', {
         header: t('COL_ERROR'),
         cell: ({ getValue }) => (
-          <Text size="small" className="text-ui-fg-error">
+          <Text size="small" className="line-clamp-2 text-ui-fg-error">
             {getValue() ?? ''}
           </Text>
         ),
@@ -129,6 +146,25 @@ const ErpLogDetailPage = () => {
     rowCount: itemsData?.count ?? 0,
     isLoading: isPending,
     pagination: { state: pagination, onPaginationChange: setPagination },
+    /**
+     * OJO CON EL SEGUNDO ARGUMENTO. El tipo de `@medusajs/ui` 4.2.0 lo declara
+     * `row: TData`, pero la implementación pasa el `Row` de TanStack:
+     *
+     *     onClick: (e) => instance.onRowClick?.call(instance, e, row)
+     *
+     * sobre `getRowModel().rows` (`data-table-table.js`). O sea que acá llega
+     * `{ id, index, original, … }` y NO el item. El tipo MIENTE, así que `tsc`
+     * pasa limpio y el error aparece recién en runtime: `row.status` es
+     * undefined, `statusLabelKey` le hacía `.toUpperCase()` y se llevaba la
+     * PANTALLA ENTERA (`Cannot read properties of undefined`).
+     *
+     * Se acepta cualquiera de las dos formas por si una versión futura de
+     * `@medusajs/ui` hace honor a su propio tipo.
+     */
+    onRowClick: (_event, row) => {
+      const candidate = row as ErpSyncLogItem & { original?: ErpSyncLogItem };
+      setOpenItem(candidate.original ?? candidate);
+    },
   });
 
   const summary = log?.summary ?? null;
@@ -304,7 +340,12 @@ const ErpLogDetailPage = () => {
       <Container className="p-0">
         <DataTable instance={table}>
           <DataTable.Toolbar className="flex items-center justify-between gap-3 px-6 py-4">
-            <Heading level="h2">{t('ITEMS_TITLE')}</Heading>
+            <div className="flex flex-col gap-0.5">
+              <Heading level="h2">{t('ITEMS_TITLE')}</Heading>
+              <Text size="xsmall" className="text-ui-fg-muted">
+                {t('ITEM_DRAWER_HINT')}
+              </Text>
+            </div>
             <div className="flex items-center gap-2">
               <Input
                 size="small"
@@ -329,12 +370,11 @@ const ErpLogDetailPage = () => {
                   </Select.Trigger>
                   <Select.Content>
                     <Select.Item value={ALL}>{t('FILTER_ALL')}</Select.Item>
-                    <Select.Item value="updated">{t('ST_UPDATED')}</Select.Item>
-                    <Select.Item value="not_found">{t('ST_NOT_FOUND')}</Select.Item>
-                    <Select.Item value="duplicate_sku">{t('ST_DUPLICATE_SKU')}</Select.Item>
-                    <Select.Item value="invalid_quantity">{t('ST_INVALID_QUANTITY')}</Select.Item>
-                    <Select.Item value="skipped">{t('ST_SKIPPED')}</Select.Item>
-                    <Select.Item value="failed">{t('ST_FAILED')}</Select.Item>
+                    {(isCatalog ? CATALOG_ITEM_STATUSES : STOCK_ITEM_STATUSES).map((status) => (
+                      <Select.Item key={status} value={status}>
+                        {t(statusLabelKey(status))}
+                      </Select.Item>
+                    ))}
                   </Select.Content>
                 </Select>
               </div>
@@ -348,6 +388,98 @@ const ErpLogDetailPage = () => {
           <DataTable.Pagination />
         </DataTable>
       </Container>
+
+      {/*
+        El drawer es el único lugar donde el payload se ve COMPLETO. La tabla
+        recorta a dos líneas y la columna "Error" sólo tiene contenido cuando el
+        item falló de verdad — el motivo de un item que no falló pero tampoco
+        hizo nada (los 723 `variant_not_found` de un barrido, por ejemplo) vive
+        en el payload y nunca tuvo dónde mostrarse.
+      */}
+      <Drawer open={Boolean(openItem)} onOpenChange={(open) => !open && setOpenItem(null)}>
+        <Drawer.Content>
+          <Drawer.Header>
+            <Drawer.Title>{t('ITEM_DRAWER_TITLE', { code: openItem?.entity_id ?? '' })}</Drawer.Title>
+          </Drawer.Header>
+          <Drawer.Body className="flex flex-col gap-6 overflow-y-auto">
+            {openItem ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <ErpStatusBadge
+                    status={openItem.status}
+                    label={t(statusLabelKey(openItem.status))}
+                  />
+                  <Text size="small" className="text-ui-fg-subtle">
+                    {openItem.entity_type}
+                  </Text>
+                </div>
+
+                {openItem.error ? (
+                  <div className="rounded-lg bg-ui-bg-subtle p-3">
+                    <Text size="small" weight="plus" className="text-ui-fg-error">
+                      {t('COL_ERROR')}
+                    </Text>
+                    <Text size="small" className="whitespace-pre-wrap text-ui-fg-error">
+                      {openItem.error}
+                    </Text>
+                  </div>
+                ) : null}
+
+                {describeItemPayload(openItem.response_payload).map((section) => (
+                  <div key={section.title} className="flex flex-col gap-2">
+                    <Text size="small" weight="plus">
+                      {section.title}
+                    </Text>
+                    <div className="flex flex-col gap-1.5">
+                      {section.fields.map((field) => (
+                        <div
+                          key={`${section.title}-${field.label}`}
+                          className="flex flex-col gap-0.5 border-b border-ui-border-base pb-1.5 last:border-0"
+                        >
+                          <Text size="xsmall" className="text-ui-fg-muted">
+                            {field.label}
+                          </Text>
+                          <Text
+                            size="small"
+                            className={`break-words ${TONE_CLASS[field.tone ?? 'default']}`}
+                          >
+                            {field.value}
+                          </Text>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {openItem.response_payload || openItem.request_payload ? (
+                  // El volcado crudo se queda: las formas del payload cambian con
+                  // cada fase nueva del sync y el resumen siempre va un paso
+                  // atrás. Sin esto, un campo nuevo es invisible hasta que
+                  // alguien se acuerde de agregarlo acá.
+                  <details className="flex flex-col gap-2">
+                    <summary className="cursor-pointer text-ui-fg-muted txt-small">
+                      {t('ITEM_RAW_PAYLOAD')}
+                    </summary>
+                    <pre className="mt-2 overflow-x-auto rounded-lg bg-ui-bg-subtle p-3 text-xs text-ui-fg-subtle">
+                      {JSON.stringify(
+                        openItem.request_payload
+                          ? { request: openItem.request_payload, response: openItem.response_payload }
+                          : openItem.response_payload,
+                        null,
+                        2
+                      )}
+                    </pre>
+                  </details>
+                ) : (
+                  <Text size="small" className="text-ui-fg-muted">
+                    {t('ITEM_NO_PAYLOAD')}
+                  </Text>
+                )}
+              </>
+            ) : null}
+          </Drawer.Body>
+        </Drawer.Content>
+      </Drawer>
     </div>
   );
 };

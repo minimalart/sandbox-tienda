@@ -110,6 +110,9 @@ export class ContabiliumErpAdapter implements ErpAdapter {
       tinting_price: false,
       product_images: false,
       invoice_fetch: false,
+      // No expone listados de sus códigos de configuración: la pantalla
+      // sigue con inputs de texto libre, igual que hasta ahora.
+      config_lookups: false,
     };
   }
 

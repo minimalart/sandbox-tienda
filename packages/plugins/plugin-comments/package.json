@@ -1,6 +1,6 @@
 {
   "name": "@minimalart/mercatto-plugin-comments",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Mercatto plugin — comentarios y reseñas por producto, con moderación admin, rating y multi-tenant por site.",
   "main": ".medusa/server/src/index.js",
   "types": ".medusa/server/src/index.d.ts",

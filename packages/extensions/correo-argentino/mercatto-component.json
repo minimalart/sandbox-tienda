@@ -460,7 +460,7 @@
     },
     {
       "path": "apps/backend/src/workflows/correo-generate-tickets.ts",
-      "sha256": "aab15d62e13b4f59fd1a3652d5fa8bdbcc3485d1bd88a7c531998a59a70d2a45"
+      "sha256": "77b6e900913374e8e77e2523457cbb1c51df204bd24e75e5e0de81e670247733"
     }
   ],
   "integrations": {

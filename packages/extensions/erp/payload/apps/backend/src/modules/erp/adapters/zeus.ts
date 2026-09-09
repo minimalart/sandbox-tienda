@@ -2,6 +2,7 @@ import type { ErpSalePayload, ErpZeusSettings } from '../types';
 import { checkBarcode } from '../barcode';
 import { classifyTintingError } from '../tinting/classify-error';
 import { normalizeFormulaCode } from '../tinting/formula-code';
+import { ERP_CONFIG_LOOKUP_KINDS, normalizeLookupRows } from './config-lookups';
 import {
   ErpAuthError,
   ErpConnectionError,
@@ -11,6 +12,7 @@ import {
   type ErpCapabilities,
   type ErpCatalogRow,
   type ErpCategoryNode,
+  type ErpConfigLookups,
   type ErpInvoicePdf,
   type ErpInvoiceStatus,
   type ErpProductImage,
@@ -122,6 +124,14 @@ const MAX_CATEGORY_DEPTH = 6;
  * puede frenar la cola.
  */
 const IMAGE_TIMEOUT_MS = 20_000;
+
+/**
+ * Los listados de configuración son cortos (decenas de filas) y se piden con
+ * una persona esperando la pantalla, así que un timeout largo no aporta: si un
+ * listado tarda más que esto, es mejor degradar ESE campo a texto libre que
+ * dejar la configuración colgada.
+ */
+const LOOKUP_TIMEOUT_MS = 10_000;
 /**
  * Tope por imagen. La corrida real promedió 128 KB (1669 imágenes, 213,8 MB);
  * esto es un cinturón contra una respuesta degenerada, no un límite de negocio.
@@ -442,6 +452,7 @@ export class ZeusErpAdapter implements ErpAdapter {
       tinting_price: true,
       product_images: true,
       invoice_fetch: true,
+      config_lookups: true,
     };
   }
 
@@ -1307,5 +1318,47 @@ export class ZeusErpAdapter implements ErpAdapter {
     );
     if (!buffer || !isPdf(buffer)) return null;
     return { content: buffer, mime_type: 'application/pdf' };
+  }
+
+  /**
+   * Los seis listados de códigos que la configuración necesita.
+   *
+   * El path de cada uno sale del docblock de `ErpZeusSettings`, que los nombra
+   * desde el primer día ("código de /sucursales"). Sondeados sin credencial
+   * devuelven **401, no 404**: los seis existen. Lo que NO está verificado es el
+   * nombre de sus campos — de eso se encarga `normalizeLookupRows`, que prueba
+   * los candidatos habituales y conserva la fila cruda.
+   *
+   * **Cada listado se pide por separado y falla por separado.** Un `Promise.all`
+   * habría dejado la pantalla sin ningún selector porque uno de los seis
+   * respondió mal, y son seis campos independientes: el que falla degrada a
+   * texto libre y los otros cinco siguen siendo selectores.
+   *
+   * `allow404: true` para que un endpoint que esta cuenta no tenga aparezca como
+   * listado vacío y no como error rojo: no todas las cuentas de Zeus usan
+   * tarjetas o vendedores.
+   */
+  async fetchConfigLookups(ctx: AdapterContext): Promise<ErpConfigLookups> {
+    const options: ErpConfigLookups['options'] = {};
+    const errors: ErpConfigLookups['errors'] = {};
+
+    for (const kind of ERP_CONFIG_LOOKUP_KINDS) {
+      try {
+        const rows = await this.request<unknown[]>(ctx, 'GET', `/${kind}`, {
+          allow404: true,
+          timeoutMs: LOOKUP_TIMEOUT_MS,
+        });
+        // `request` devuelve el símbolo DUPLICATE sólo en POST con
+        // `duplicateOn409`; acá cualquier cosa que no sea array es "sin datos".
+        options[kind] = normalizeLookupRows(rows);
+      } catch (error) {
+        errors[kind] = error instanceof Error ? error.message : String(error);
+        ctx.logger.warn(
+          `[zeus] no se pudo leer el listado /${kind} para la configuración: ${errors[kind]}`
+        );
+      }
+    }
+
+    return { options, errors };
   }
 }

@@ -6,6 +6,7 @@ import {
   normalizeProductDescription,
   type NormalizedDescription,
 } from './product-description';
+import { normalizeFamilyName } from './product-family';
 import { normalizeProductTitle, titleRulesFingerprint, type TitleRules } from './product-title';
 
 /**
@@ -176,9 +177,16 @@ export function erpVariantMetadata(
  * catálogo y un update masivo inútil.
  */
 export function erpProductMetadata(row: ErpCatalogRow): Record<string, unknown> {
+  // `family` se NORMALIZA (DESDEELSUR-48): es el filtro "familia" del PLP, así
+  // que copiar el crudo publicaba `ARTISTICA PINCELES` en la cara del cliente.
+  // `brand` sigue crudo a propósito: son nombres propios con casing de marca
+  // (`OH MY CHALK!`, `WD-40`, `VENIER DrOx`) y bajarlos a caso de lectura es una
+  // decisión de identidad, no de ortografía. El crudo de la familia queda en
+  // `variant.metadata.zeus_familia`, que es la fuente para recalcular.
+  const family = normalizeFamilyName(row.family);
   return {
     ...(row.brand ? { brand: row.brand } : {}),
-    ...(row.family ? { family: row.family } : {}),
+    ...(family ? { family } : {}),
     // Código crudo del ERP, para soporte: "¿por qué este producto cayó acá?".
     ...(row.category_code ? { erp_category_code: row.category_code.toUpperCase() } : {}),
   };

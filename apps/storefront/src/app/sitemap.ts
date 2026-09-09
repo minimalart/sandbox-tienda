@@ -1,7 +1,8 @@
 import { listBlogCategories, listBlogPosts } from "@lib/data/blog";
 import { listCollections } from "@lib/data/collections";
-import { listProducts } from "@lib/data/products";
+import { listProductsForSeo } from "@lib/data/products";
 import { getCanonicalOrigin, getCanonicalPath } from "@lib/util/site-url";
+import { withTimeout } from "@lib/util/with-timeout";
 import type { MetadataRoute } from "next";
 
 /**
@@ -31,39 +32,20 @@ import type { MetadataRoute } from "next";
  * crawlers lo justifica.
  */
 
-// El presupuesto de fetch (abajo) puede llegar a ~42s, que supera el timeout por
-// default de una función serverless ahora que esto dejó de ser build-time.
+// El peor caso sigue pudiendo llegar a ~42s (el presupuesto de `listProductsForSeo`,
+// 30s, más un último request en vuelo de 12s), que supera el timeout por default de una
+// función serverless ahora que esto dejó de ser build-time. El caso MEDIDO es mucho más
+// bajo: 2.696 productos en 6 páginas de 500 ≈ 5,5s.
 export const maxDuration = 60;
 
-// Contra un backend remoto/frío los fetches pueden colgarse. Estos límites convierten
+// Contra un backend remoto/frío los fetches pueden colgarse. Este límite convierte
 // un fetch colgado en una respuesta parcial acotada en vez de un timeout: ya hubo un
-// deploy roto por el sitemap colgado. Se conservan TAL CUAL.
-// Worst caso: presupuesto (30s) + un último request en vuelo (12s) ≈ 42s.
+// deploy roto por el sitemap colgado.
+//
+// El presupuesto acumulado de PRODUCTOS ya no vive acá: se lo lleva
+// `listProductsForSeo()`, que es quien pagina. Este timeout cubre los fetches de una
+// sola página (colecciones, posts, categorías del blog).
 const PER_REQUEST_TIMEOUT_MS: number = 12_000;
-const FETCH_BUDGET_MS: number = 30_000;
-
-async function withTimeout<T>(
-  promise: Promise<T>,
-  ms: number,
-  label: string
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error(`[sitemap] ${label} timed out after ${ms}ms`)),
-          ms
-        );
-        // No mantener vivo el proceso del build por este timer.
-        (timer as { unref?: () => void }).unref?.();
-      }),
-    ]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
 
 type StaticRoute = {
   path: string;
@@ -84,59 +66,6 @@ const STATIC_ROUTES: StaticRoute[] = [
   { path: "/legal/legals", changeFrequency: "yearly", priority: 0.3 },
 ];
 
-const PRODUCT_PAGE_LIMIT: number = 100;
-const MAX_PRODUCT_PAGES: number = 50; // hard cap: up to 5,000 products
-
-async function fetchAllProducts(countryCode: string) {
-  const products: { handle: string; updatedAt?: string | null }[] = [];
-  let page: number = 1;
-  const startedAt: number = Date.now();
-
-  for (let i: number = 0; i < MAX_PRODUCT_PAGES; i++) {
-    // Presupuesto acumulado: si paginar todo el catálogo se acerca al timeout
-    // del build, cortamos con lo que tengamos (el ISR completa el resto luego).
-    if (Date.now() - startedAt > FETCH_BUDGET_MS) {
-      console.warn(
-        `[sitemap] product fetch budget (${FETCH_BUDGET_MS}ms) exceeded at page ${page}; returning ${products.length} products`
-      );
-      break;
-    }
-
-    let response: Awaited<ReturnType<typeof listProducts>>["response"];
-    let nextPage: Awaited<ReturnType<typeof listProducts>>["nextPage"];
-    try {
-      const result = await withTimeout(
-        listProducts({
-          pageParam: page,
-          queryParams: { limit: PRODUCT_PAGE_LIMIT },
-          countryCode,
-        }),
-        PER_REQUEST_TIMEOUT_MS,
-        `products page ${page}`
-      );
-      response = result.response;
-      nextPage = result.nextPage;
-    } catch (error) {
-      console.warn(
-        `[sitemap] product fetch failed/timed out at page ${page}; returning ${products.length} products:`,
-        error
-      );
-      break;
-    }
-
-    for (const p of response.products) {
-      if (p.handle) {
-        products.push({ handle: p.handle, updatedAt: p.updated_at });
-      }
-    }
-
-    if (!nextPage) break;
-    page = nextPage;
-  }
-
-  return products;
-}
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Origen canónico + prefijo de tienda: las URLs del sitemap tienen que ser LAS MISMAS
   // que el `<link rel="canonical">` de cada página, o el sitemap declara URLs que se
@@ -145,27 +74,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // hacerlo en cuanto el sitio se resuelva por host.
   const origin: string = (await getCanonicalOrigin()).replace(/\/$/, "");
   const baseUrl: string = `${origin}${await getCanonicalPath()}`;
-  const countryCode: string =
-    process.env.NEXT_PUBLIC_COUNTRY_CODE ||
-    process.env.NEXT_PUBLIC_DEFAULT_REGION ||
-    "ar";
   const now = new Date();
 
-  const [products, collectionsResult, blogPostsResult, blogCategories] =
+  // `countryCode` ya NO se lee acá.
+  //
+  // Era `NEXT_PUBLIC_COUNTRY_CODE || NEXT_PUBLIC_DEFAULT_REGION || 'ar'` **sin
+  // `.toLowerCase()`**, al revés de `proxy.ts` y `site-config/site-path.ts`, que sí lo
+  // bajan. Con la env en `AR` el proxy rewriteaba a `/ar/...` (PDP perfecto) mientras
+  // este archivo le pasaba `AR` a `listProducts()` → `getRegion()` devolvía `undefined`
+  // → catálogo vacío SIN error. Así publicó desdeelsur 12 URLs y ninguno de sus 2.696
+  // productos (DESDEELSUR-50).
+  //
+  // `listProductsForSeo()` no pide región: el sitemap no muestra precios. El país deja
+  // de ser una dependencia en vez de quedar "arreglado" con un lowercase que el próximo
+  // archivo se vuelve a olvidar.
+  const [productsResult, collectionsResult, blogPostsResult, blogCategories] =
     await Promise.all([
-      fetchAllProducts(countryCode).catch((error) => {
+      listProductsForSeo().catch((error) => {
         console.error("[sitemap] Failed to fetch products:", error);
-        return [] as { handle: string; updatedAt?: string | null }[];
+        return { products: [], total: 0, complete: false, truncated: false };
       }),
-      withTimeout(listCollections({ limit: "200" }), PER_REQUEST_TIMEOUT_MS, "collections").catch((error) => {
+      withTimeout(listCollections({ limit: "200" }), PER_REQUEST_TIMEOUT_MS, "sitemap: collections").catch((error) => {
         console.error("[sitemap] Failed to fetch collections:", error);
         return { collections: [], count: 0 };
       }),
-      withTimeout(listBlogPosts({ limit: 1000 }), PER_REQUEST_TIMEOUT_MS, "blog posts").catch((error) => {
+      withTimeout(listBlogPosts({ limit: 1000 }), PER_REQUEST_TIMEOUT_MS, "sitemap: blog posts").catch((error) => {
         console.error("[sitemap] Failed to fetch blog posts:", error);
         return { posts: [], count: 0 };
       }),
-      withTimeout(listBlogCategories(), PER_REQUEST_TIMEOUT_MS, "blog categories").catch((error) => {
+      withTimeout(listBlogCategories(), PER_REQUEST_TIMEOUT_MS, "sitemap: blog categories").catch((error) => {
         console.error("[sitemap] Failed to fetch blog categories:", error);
         return [] as Awaited<ReturnType<typeof listBlogCategories>>;
       }),
@@ -178,13 +115,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route.priority,
   }));
 
-  for (const product of products) {
+  for (const product of productsResult.products) {
     entries.push({
       url: `${baseUrl}/products/${product.handle}`,
       lastModified: product.updatedAt ? new Date(product.updatedAt) : now,
       changeFrequency: "weekly",
       priority: 0.8,
     });
+  }
+
+  // Un sitemap incompleto se sirve igual —mejor 2.000 URLs que ninguna— pero NO en
+  // silencio. Que esto no existiera es la razón por la que un sitemap con CERO
+  // productos respondió 200 durante semanas sin que nada lo levantara.
+  if (!productsResult.complete) {
+    console.error(
+      `[sitemap] productos INCOMPLETOS: ${productsResult.products.length} publicados de ` +
+        `${productsResult.total}. Ver los logs de [seo-products] para la causa.`
+    );
+  }
+
+  // El techo de seguridad no es una configuración: si un catálogo lo toca, el problema
+  // no es subirlo sino que un sitemap tiene un máximo de 50.000 URLs y 50 MB. A partir
+  // de ahí hace falta un índice de sitemaps, que es su propio PR.
+  if (productsResult.truncated) {
+    console.error(
+      `[sitemap] el catálogo (${productsResult.total}) supera el techo de productos: ` +
+        `se publican ${productsResult.products.length}. Hace falta un sitemap indexado.`
+    );
   }
 
   // Las CATEGORÍAS no se publican.

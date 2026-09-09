@@ -18,7 +18,7 @@ import {
   PRODUCT_IMAGE_SIZES_GRID_CARD,
 } from "@lib/util/product-image-presets";
 import ProductImage from "@modules/common/components/product-image";
-import { ShoppingCart } from "lucide-react";
+import CircularAddToCart from "@modules/common/components/circular-add-to-cart";
 import { useCallback, useState } from "react";
 
 type CompactProductCardProps = {
@@ -169,33 +169,14 @@ export default function CompactProductCard({
 
           {inStock && (
             <div ref={buttonRef}>
-              <button
-                aria-label="Agregar al carrito"
-                className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-[--primary-color] bg-[--primary-color] text-white transition hover:opacity-90"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  void handleIncrement();
-                }}
-                // NO deshabilitar durante isLoading: handleIncrement ya encola /
-                // deltea los clicks rápidos (useCartQuantityForVariant), y el
-                // sync está debounced. Deshabilitar bloqueaba el clickeo rápido.
-                // Sí lo deshabilitamos en el techo de stock: seguir clickeando
-                // no suma nada y antes terminaba en un rollback al valor inicial.
+              <CircularAddToCart
+                quantity={quantity}
+                onIncrement={handleIncrement}
+                isLoading={isLoading}
                 disabled={!canAdd || !canIncrement}
-                title={!canIncrement ? "No hay más stock disponible" : undefined}
-                type="button"
-              >
-                {quantity > 0 ? (
-                  <span className="flex h-full w-full items-center justify-center rounded-full bg-[--primary-color] font-bold text-white text-xs">
-                    {quantity}
-                  </span>
-                ) : isLoading ? (
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-r-transparent" />
-                ) : (
-                  <ShoppingCart className="h-4 w-4 text-white" />
-                )}
-              </button>
+                canIncrement={canIncrement}
+                size="sm"
+              />
             </div>
           )}
         </div>

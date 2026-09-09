@@ -401,6 +401,7 @@ module.exports = {
   },
   multistore: {
     environment: [
+      'APPLY', 'DEFAULT_CURRENCY_CODE', 'DEMO_IMPORT_CRON', 'DEMO_IMPORT_STALE_MS', 'DEMO_SLUG',
       'DEMO_IMPORT_BACKOFF_BASE_MS',
       'DEMO_IMPORT_THROTTLE_MS',
       'MERCADOPAGO_ACCOUNTS',
@@ -478,15 +479,6 @@ module.exports = {
       'IN_PERSON_SC_NAME',
       'LANDING_AI_MAX_RETRIES',
       'OPENROUTER_MODEL',
-    ],
-  },
-  'store-importer': {
-    environment: [
-      'APPLY',
-      'DEFAULT_CURRENCY_CODE',
-      'DEMO_IMPORT_CRON',
-      'DEMO_IMPORT_STALE_MS',
-      'DEMO_SLUG',
     ],
   },
 };

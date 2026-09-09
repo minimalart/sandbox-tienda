@@ -58,6 +58,8 @@ import type { RouteScopeState } from './scoped-routes';
 
 /** Clave: la ruta relativa a `src/api`, sin `route.ts`. Ej: `store/banners/[id]`. */
 export const STORE_ROUTE_SCOPE: Record<string, RouteScopeState> = {
+  'store/b2b/carts/[id]/presentations': { state: 'not-applicable', reason: 'carrito del cliente autenticado; valida customer_id, canal autorizado por publishable key y pertenencia del SKU a ese canal' },
+  'store/carts/[id]/checkout': { state: 'not-applicable', reason: 'cart capability plus authenticated customer and publishable channel checked by assertCartAccess; the site is resolved from the authorized cart' },
 
   // ── health ──────────────────────────────────────────────────────
   'store': { state: 'not-applicable', reason: 'healthcheck: devuelve un timestamp y no toca ninguna tabla' },

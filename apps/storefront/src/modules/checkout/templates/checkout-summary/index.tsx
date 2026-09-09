@@ -270,6 +270,7 @@ const CheckoutSummary = ({
               hasMinimumPurchase={checkoutEligibility.hasMinimumPurchase}
               progress={checkoutEligibility.progress}
               remaining={checkoutEligibility.remaining}
+              minimumPurchaseAmount={checkoutEligibility.minimumPurchaseAmount}
               showTopBorder={false}
             />
           </div>
@@ -362,6 +363,9 @@ const CheckoutSummary = ({
                       }
                       progress={checkoutEligibility.progress}
                       remaining={checkoutEligibility.remaining}
+                      minimumPurchaseAmount={
+                        checkoutEligibility.minimumPurchaseAmount
+                      }
                       showTopBorder={false}
                     />
                   </div>

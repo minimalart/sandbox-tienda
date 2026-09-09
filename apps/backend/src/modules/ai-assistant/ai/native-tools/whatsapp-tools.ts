@@ -78,6 +78,7 @@ function track(
     payload: payload ?? null,
     usedAi: ctx.waUsedAi === true,
     sessionId: ctx.waSessionId ?? null,
+    siteId: ctx.waSiteId ?? null,
   });
 }
 
@@ -823,6 +824,7 @@ async function runGuidedStart(args: Record<string, unknown>, ctx: NativeToolCont
     phone,
     ctx.waSessionId ?? null,
     seed,
+    ctx.waSiteId ?? null,
   ).catch(() => false);
 
   if (!started) {

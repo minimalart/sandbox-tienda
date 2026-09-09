@@ -1,5 +1,5 @@
 import { getCollectionByHandle } from "@lib/data/collections";
-import { getTenant } from "@lib/site-config/resolver";
+import { getActiveTenant } from "@lib/site-config/active-tenant";
 import {
   buildBreadcrumbJsonLd,
   buildCollectionPageJsonLd,
@@ -27,7 +27,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params;
   const [collection, tenant] = await Promise.all([
     getCollectionByHandle(params.handle),
-    getTenant(),
+    getActiveTenant(),
   ]);
 
   if (!collection) {
@@ -36,6 +36,8 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
   return {
     // Sin ` | ${tenant.name}`: lo agrega el `title.template` del root layout.
+    // La marca de la `description` sale de `getActiveTenant()`: con el resolver
+    // ESTÁTICO decía "…en Mercatto" en toda tienda que no fuera la principal.
     title: collection.title,
     description: `Explorá la colección ${collection.title} en ${tenant.name}: productos disponibles, precios actualizados y envíos a domicilio.`,
     alternates: { canonical: await canonicalUrl(`/collections/${params.handle}`) },
@@ -54,7 +56,7 @@ export default async function CollectionPage(props: Props) {
   }
 
   const [tenant, url, homeUrl] = await Promise.all([
-    getTenant(),
+    getActiveTenant(),
     canonicalUrl(`/collections/${params.handle}`),
     canonicalUrl("/"),
   ]);

@@ -13,6 +13,9 @@ import {
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const input = parse(LineItemsSchema, req.body);
   const configurator = await configuratorById(req, input.configurator_id, true);
+  // A quote-only space is never sold self-service, whatever the client posts.
+  if (configurator.config.checkout_mode === 'quote')
+    return invalid('Este espacio se cierra por cotización, no por carrito.');
   validateSelection(configurator.config, input.snapshot, input.template_id);
   const cart = await cartContext(req, input.cart_id);
   if (configurator.sales_channel_id && configurator.sales_channel_id !== cart.sales_channel_id)

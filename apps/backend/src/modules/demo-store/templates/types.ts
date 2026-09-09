@@ -39,6 +39,14 @@ export type DemoThemeConfig = {
 };
 
 /**
+ * Ids que la tienda puede poner en el lugar FLEXIBLE de la barra inferior
+ * mobile. Espejo de `MobileNavSlotId` del storefront
+ * (`lib/site-config/types.ts`); el registro con label/href/ícono y el gate de
+ * disponibilidad de cada uno vive en `bottom-nav/slots.ts`.
+ */
+export type MobileNavSlotId = 'promos' | 'colores' | 'sucursales' | 'blog' | 'contacto';
+
+/**
  * Per-demo content config edited from the admin (Contenido tab). Maps onto the
  * storefront TenantAssets in buildTenantConfig: `sections` → `sectionVisibility`,
  * the rest pass through by key. All optional; absent = storefront default.
@@ -77,6 +85,22 @@ export type DemoContentConfig = {
    *    (referencia Arcor en casa)
    */
   categoriesMenuLayout?: 'hamburger' | 'button';
+  /**
+   * Orden de preferencia del LUGAR FLEXIBLE de la barra inferior mobile (el
+   * cuarto ítem, entre el carrito y el menú). El storefront toma el primer id
+   * de la lista que esté realmente disponible en la tienda.
+   *
+   * Ese lugar era `Promos` hardcodeado, y `Promos` se apaga solo cuando el canal
+   * no tiene promociones activas: la barra caía a 4 columnas y el carrito — que
+   * es el FAB del centro — quedaba descentrado. Con una lista ordenada entra el
+   * siguiente candidato y la barra se queda en 5.
+   *
+   * Ausente = el orden por defecto del storefront. Una lista PARCIAL se completa
+   * con el default (es una preferencia, no un recorte), y los ids desconocidos
+   * se ignoran.
+   */
+  mobileNav?: MobileNavSlotId[];
+
   /** Contact data shown on the contact page + footer (address/phone/email). */
   contact?: {
     address?: string;
@@ -217,6 +241,8 @@ export type DemoContentConfig = {
       subtitle?: string;
       poweredByLabel?: string;
       poweredByHref?: string;
+      /** Hex. Ausente = default del template (blanco). */
+      backgroundColor?: string;
     };
     footer?: {
       description?: string;
@@ -224,6 +250,8 @@ export type DemoContentConfig = {
       email?: string;
       copyright?: string;
       poweredBy?: { label: string; href: string };
+      /** Hex. Ausente = default del template (blanco en campaign). */
+      backgroundColor?: string;
     };
   };
 };
@@ -253,6 +281,7 @@ export type DemoStoreLike = {
   home_puck_data?: Record<string, unknown> | null;
   /** B2B: exposes the wholesale portal + channel when enabled. */
   b2b_enabled?: boolean | null;
+  b2b_pricing_tiers?: { minQty: number; discount: number }[] | null;
   b2b_sales_channel_id?: string | null;
   /** Compras recurrentes: exposes the subscribe UI + store API when enabled. */
   recurring_enabled?: boolean | null;

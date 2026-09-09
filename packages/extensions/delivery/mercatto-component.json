@@ -700,11 +700,11 @@
     },
     {
       "path": "apps/backend/src/workflows/auto-assign-delivery.ts",
-      "sha256": "1b672d86f08ba5f1fa02a5cacce6f1018e1f3e401cf5e73adaffd9fbdeb6f1d5"
+      "sha256": "882dffe80a83609efce2297249f7e77f79ac548326777849fd6ecfd2d392a522"
     },
     {
       "path": "apps/backend/src/workflows/auto-build-routes.ts",
-      "sha256": "2944b866c51ec17a471d827672cbd1d831ff853c57cac1d384413bb8a59f5024"
+      "sha256": "3ee71d87abd030ccb1083410807cae0b1125cae7d984e23877afd6c750333b19"
     },
     {
       "path": "apps/backend/src/workflows/capture-proof-of-delivery.ts",
@@ -716,11 +716,11 @@
     },
     {
       "path": "apps/backend/src/workflows/create-delivery-execution.ts",
-      "sha256": "a4c75e6f4c306e2977205e626f30da2e304dbfb6e45e0e86c82f97b07fe56bf7"
+      "sha256": "0f2cff11720c339b47c3796e04fd3f38926f3be423a77eb5a4ca54176816be4b"
     },
     {
       "path": "apps/backend/src/workflows/create-route.ts",
-      "sha256": "409e3f28028c2cb93ad898c56a70950b2f9531fc1d430b5513dcc4dd3af291fe"
+      "sha256": "37c861a46b2e66102187db15eecb1e8f7ef5b94e21dd59e9c223a0c73a2e4d84"
     },
     {
       "path": "apps/backend/src/workflows/dispatch-route.ts",
@@ -736,11 +736,11 @@
     },
     {
       "path": "apps/backend/src/workflows/transition-delivery-execution.ts",
-      "sha256": "4e6f9cebc1df93b502f4a0f1cca3911186aa60133ffa524ed80f0528bd94e653"
+      "sha256": "63b282c2f55aaa6d2e9fb1a22b8e30eeda5e2b04db3af509b21d9173c2126f3f"
     },
     {
       "path": "apps/backend/src/workflows/update-route-stops.ts",
-      "sha256": "86e8bc33171c668392fcf2934a42c80d7b761f7347fa234602ecbd8c5c8cab02"
+      "sha256": "c1dcfecfca5024861101def3f163d96e664ab39d58cea261fd3cdb9d66236f8a"
     },
     {
       "path": "apps/backend/src/workflows/validate-delivery-pin.ts",

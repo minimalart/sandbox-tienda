@@ -1,3 +1,4 @@
+import type { IPaymentModuleService } from '@medusajs/framework/types';
 import { createStep, StepResponse } from '@medusajs/framework/workflows-sdk';
 import { MedusaError, Modules } from '@medusajs/framework/utils';
 import type { PaymentSessionDTO } from '@medusajs/framework/types';
@@ -27,12 +28,12 @@ export const createMercadopagoApiPaymentStep = createStep<
   'create-mercadopago-api-payment',
   async ({ paymentSessionId, paymentData, deviceSessionId, cartId, salesChannelId }, { container }) => {
     const provider = container
-      .resolve('payment')
+      .resolve<IPaymentModuleService>('payment')
       // @ts-expect-error — internal accessor, same pattern as the source plugin.
       .paymentProviderService_.retrieveProvider(
         MERCADO_PAGO_API_PROVIDER_ID,
       ) as MercadoPagoApiProviderService;
-    const paymentModule = container.resolve(Modules.PAYMENT);
+    const paymentModule = container.resolve<IPaymentModuleService>(Modules.PAYMENT);
 
     const paymentSession = await paymentModule.retrievePaymentSession(paymentSessionId, {
       select: ['amount', 'currency_code'],

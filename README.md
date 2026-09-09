@@ -259,10 +259,12 @@ El boilerplate trae el login con Google listo para activar, sin tocar código. S
 
 Si no configurás las credenciales, **el flujo degrada limpio**: el módulo Auth sigue usando solo `emailpass` y el botón "Continuar con Google" no se renderiza.
 
+> **Las tres variables o ninguna.** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `GOOGLE_CALLBACK_URL` son un set: el provider `auth-google` las exige a las tres y con un set incompleto su loader falla (`Google callbackUrl is required`). Como Auth es un módulo del core, ese fallo **abortaría el arranque del backend**, no sólo el login con Google. Por eso el gate de `medusa-config.ts` mira las tres y, si encuentra el set a medias, deja Google apagado y lo avisa en el log del arranque (`[auth-google] ⚠️ …`). Si ves ese aviso: completá lo que falta o borrá `GOOGLE_CLIENT_ID` para apagarlo a propósito.
+
 **Cómo activarlo:**
 
 1. En [Google Cloud Console](https://console.cloud.google.com/apis/credentials) creá un OAuth Client ID (tipo *Web application*). Agregá como **Authorized redirect URI** exactamente el valor de `GOOGLE_CALLBACK_URL` (en dev: `http://localhost:3000/google-callback`; en prod: `https://tu-dominio/google-callback`).
-2. En `apps/backend/.env` seteá `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `GOOGLE_CALLBACK_URL`. Al haber `GOOGLE_CLIENT_ID`, `medusa-config.ts` registra el módulo Auth con los providers `emailpass` **y** `google`.
+2. En `apps/backend/.env` seteá `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `GOOGLE_CALLBACK_URL` — las tres. Con las tres presentes, `medusa-config.ts` registra el módulo Auth con los providers `emailpass` **y** `google`.
 3. En `apps/storefront/.env.local` seteá `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` para mostrar el botón en la pantalla de login.
 4. Verificá que el dominio del storefront esté en `AUTH_CORS` del backend.
 

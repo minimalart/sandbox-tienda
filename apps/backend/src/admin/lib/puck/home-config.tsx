@@ -1,5 +1,6 @@
 import type { Config } from '@measured/puck';
 import { config as landingConfig } from './config';
+import { s3ImageField } from './fields/s3-image-field';
 
 /**
  * Config del editor Puck del home de un demo ("Personalizar home").
@@ -201,10 +202,10 @@ export const homeConfig: Config = {
           label: 'Tarjetas de categoría',
           arrayFields: {
             label: text('Nombre'),
-            image: text('URL de imagen'),
+            image: s3ImageField('URL de imagen'),
             href: text('Link (ej: /store?category=frescos)'),
             backgroundColor: text('Color de fondo (hex, opcional)'),
-            backgroundImage: text('Imagen de fondo (URL, opcional — pisa el color)'),
+            backgroundImage: s3ImageField('Imagen de fondo (opcional — pisa el color)'),
           },
           defaultItemProps: { label: 'Categoría', image: '', href: '/store', backgroundColor: '', backgroundImage: '' },
         },
@@ -289,9 +290,9 @@ export const homeConfig: Config = {
           arrayFields: {
             title: text('Título'),
             subtitle: text('Subtítulo'),
-            image: text('URL imagen chica'),
+            image: s3ImageField('Imagen chica'),
             video: text('URL video (mp4)'),
-            poster: text('URL poster'),
+            poster: s3ImageField('Poster del video'),
             bgColor: text('Color de fondo (hex)'),
             href: text('Link'),
           },
@@ -312,7 +313,7 @@ export const homeConfig: Config = {
         subtitle: textarea('Bajada (opcional)'),
         ctaLabel: text('Botón — texto (vacío = sin botón)'),
         ctaHref: text('Botón — link'),
-        image: text('URL de imagen'),
+        image: s3ImageField('Imagen del banner'),
         imagePosition: select('Lado de la imagen', [
           { label: 'Derecha', value: 'right' },
           { label: 'Izquierda', value: 'left' },
@@ -395,7 +396,7 @@ export const homeConfig: Config = {
           label: 'Tarjetas',
           arrayFields: {
             label: text('Nombre'),
-            image: text('URL de imagen'),
+            image: s3ImageField('URL de imagen'),
             href: text('Link'),
             backgroundColor: text('Color de fondo (hex, opcional)'),
           },
@@ -506,10 +507,19 @@ export const homeConfig: Config = {
         eyebrow: text('Eyebrow (etiqueta arriba del título)'),
         title: text('Título'),
         subtitle: textarea('Subtítulo'),
-        image: text('URL de la imagen'),
+        image: s3ImageField('Imagen del hero'),
         imageAlt: text('Alt de la imagen'),
         ctaText: text('CTA — texto'),
         ctaHref: text('CTA — link'),
+        // Fondo/CTA con override manual: sirven como escape para instituciones
+        // que necesitan otro tratamiento sin cambiar el primario global.
+        backgroundColor: text('Fondo del hero (hex, vacío = blanco)'),
+        ctaBackgroundColor: text('CTA fondo (hex, vacío = color primario)'),
+        ctaTextColor: text('CTA texto (hex, vacío = blanco)'),
+        eyebrowBackgroundColor: text(
+          'Eyebrow — fondo (hex, vacío = color secundario)',
+        ),
+        eyebrowTextColor: text('Eyebrow — texto (hex, vacío = blanco)'),
         trustBadges: {
           type: 'array' as const,
           label: 'Trust badges (bajo el CTA)',
@@ -531,6 +541,11 @@ export const homeConfig: Config = {
         imageAlt: '',
         ctaText: 'Ver los kits',
         ctaHref: '#tienda',
+        backgroundColor: '',
+        ctaBackgroundColor: '',
+        ctaTextColor: '',
+        eyebrowBackgroundColor: '',
+        eyebrowTextColor: '',
         trustBadges: [
           { id: 'cuotas', icon: 'credit-card', label: '3 cuotas sin interés' },
           { id: 'retiro', icon: 'store', label: 'Retiro gratis en la escuela' },

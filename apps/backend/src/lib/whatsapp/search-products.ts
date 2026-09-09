@@ -1,7 +1,7 @@
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 import { QueryContext } from '@medusajs/utils';
 import type { MedusaContainer } from '@medusajs/framework/types';
-import { salesChannelProductIds } from '../../api/store/b2b/channel-products';
+import { salesChannelProductIds } from '../catalog/channel-products';
 import { resolveWaOrderContext, type WaOrderContext } from './order-context';
 import { TYPESENSE } from '../../modules/typesense';
 

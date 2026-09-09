@@ -1,3 +1,4 @@
+import type { RemoteQueryFunction } from '@medusajs/framework/types';
 /**
  * auto-build-routes (F6) — AUTO-ARMADO de rutas de flota propia: toma las
  * ejecuciones own_fleet sin rutear de una sucursal (y opcionalmente una zona),
@@ -89,7 +90,7 @@ const loadCandidateExecutionsStep = createStep(
   'auto-build-load-candidate-executions',
   async (input: LoadStopsInput, { container }) => {
     const service = container.resolve<DeliveryModuleService>(DELIVERY_MODULE);
-    const query = container.resolve(ContainerRegistrationKeys.QUERY);
+    const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
 
     // Candidatas: own_fleet, status NO terminal, SIN ruta, de esta sucursal (y
     // zona si vino). route_id null → todavía no ruteadas.

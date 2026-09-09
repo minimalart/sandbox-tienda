@@ -297,3 +297,14 @@ describe("el proxy NO 308ea al host canónico — decisión de diseño", () => {
     );
   });
 });
+
+for (const pathname of ['/b2b', '/b2b/login', '/b2b/pedidos', '/ar/b2b']) {
+  it('root wholesale route ignores a stale child cookie: ' + pathname, () => {
+    const site = r({ pathname, cookieSlug: 'fashion' });
+    assert.equal(site.slug, null); assert.equal(site.pathPrefix, ''); assert.equal(site.isExit, true);
+  });
+}
+it('a child wholesale route preserves explicit child context', () => {
+  const site = r({ pathname: '/tienda/fashion/b2b', cookieSlug: 'other' });
+  assert.equal(site.slug, 'fashion'); assert.equal(site.pathPrefix, '/tienda/fashion');
+});

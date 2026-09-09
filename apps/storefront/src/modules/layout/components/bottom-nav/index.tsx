@@ -2,12 +2,16 @@
 
 import { useAddToCartAnimation } from "@lib/context/add-to-cart-animation";
 import { useHasActivePromotions } from "@lib/context/promotions-availability";
-import { useTenantBrand } from "@lib/site-config/context";
+import { useTenantBrand, useTenantSections } from "@lib/site-config/context";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import {
   Bars3Icon,
   BuildingStorefrontIcon,
+  ChatBubbleOvalLeftIcon,
   HomeIcon,
+  MapPinIcon,
+  NewspaperIcon,
+  SwatchIcon,
   TagIcon,
 } from "@heroicons/react/24/outline";
 import {
@@ -23,6 +27,8 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ShoppingCart } from "lucide-react";
 import { resolveNavIcon } from "./nav-icon";
+import { pickMobileNavSlot, resolveMobileNavOrder } from "./slots";
+import type { MobileNavSlotId } from "@lib/site-config/types";
 
 type BottomNavItem = {
   id: string;
@@ -32,13 +38,41 @@ type BottomNavItem = {
   action?: "menu" | "cart";
 };
 
-const bottomNavItems: BottomNavItem[] = [
+/**
+ * Los cuatro ítems FIJOS. El quinto lugar — entre el carrito y el menú — es el
+ * único configurable y lo resuelve `FLEX_SLOTS` + el orden de la tienda; ver
+ * `slots.ts` para el por qué.
+ */
+const fixedNavItems: BottomNavItem[] = [
   { id: "home", label: "", href: "/", Icon: HomeIcon },
   { id: "store", label: "Tienda", href: "/store", Icon: BuildingStorefrontIcon },
   { id: "cart", label: "Carrito", action: "cart", Icon: ShoppingCart },
-  { id: "promos", label: "Promos", href: "/store?promos=1", Icon: TagIcon },
   { id: "menu", label: "Menu", action: "menu", Icon: Bars3Icon },
 ];
+
+/** Índice en `fixedNavItems` donde se inserta el ítem flexible. */
+const FLEX_SLOT_INDEX = 3;
+
+/**
+ * Cómo se dibuja cada candidato del lugar flexible. Los labels son cortos a
+ * propósito: la barra tiene 5 columnas y el texto va en 10px.
+ */
+const FLEX_SLOTS: Record<
+  MobileNavSlotId,
+  { label: string; href: string; Icon: ComponentType<SVGProps<SVGSVGElement>> }
+> = {
+  promos: { label: "Promos", href: "/store?promos=1", Icon: TagIcon },
+  colores: { label: "Colores", href: "/colores", Icon: SwatchIcon },
+  sucursales: { label: "Sucursales", href: "/sucursales", Icon: MapPinIcon },
+  blog: { label: "Blog", href: "/blog", Icon: NewspaperIcon },
+  contacto: { label: "Contacto", href: "/contact", Icon: ChatBubbleOvalLeftIcon },
+};
+
+/** Cuántas columnas pinta la barra. Tailwind necesita las clases literales. */
+const GRID_COLS: Record<number, string> = {
+  4: "grid-cols-4",
+  5: "grid-cols-5",
+};
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -48,6 +82,13 @@ type BottomNavProps = {
   cartCount?: number;
   cartBounce?: boolean;
   hidden?: boolean;
+  /**
+   * Tintométrico prendido Y con carta importada. Es un dato de RUNTIME que sólo
+   * conoce el server (`tintingGate.catalogReady`), no un flag de config: sin
+   * carta, "Buscá tu color" no tiene nada que mostrar. Por eso el candidato
+   * `colores` del lugar flexible es el único que necesita esta prop.
+   */
+  hasTinting?: boolean;
   onCartClick?: () => void;
   onMenuClick?: () => void;
 };
@@ -56,6 +97,7 @@ const BottomNav = ({
   cartCount = 0,
   cartBounce = false,
   hidden = false,
+  hasTinting = false,
   onCartClick,
   onMenuClick,
 }: BottomNavProps) => {
@@ -66,12 +108,52 @@ const BottomNav = ({
   const searchParams = useSearchParams();
   const { registerCartIcon } = useAddToCartAnimation();
   const { name, logos } = useTenantBrand();
-  // Sin promociones activas en el canal, el tab "Promos" no se muestra (la PLP
-  // filtrada saldría vacía) y la barra queda de 4 columnas.
+  const {
+    blogSectionName,
+    isBlogVisible,
+    isContactVisible,
+    isSucursalesVisible,
+    isTintingHidden,
+    mobileNav,
+  } = useTenantSections();
+  // Sin promociones activas en el canal, "Promos" no se ofrece: la PLP filtrada
+  // saldría vacía. Antes eso dejaba la barra en 4 columnas con el carrito
+  // descentrado; ahora sólo hace que el lugar flexible pase al siguiente
+  // candidato del orden que configuró la tienda.
   const hasActivePromotions = useHasActivePromotions();
-  const visibleItems = hasActivePromotions
-    ? bottomNavItems
-    : bottomNavItems.filter((item) => item.id !== "promos");
+
+  const flexSlotId = pickMobileNavSlot(
+    resolveMobileNavOrder(mobileNav),
+    (id) => {
+      switch (id) {
+        case "promos":
+          return hasActivePromotions;
+        case "colores":
+          // Opt-in: `isTintingHidden` alcanza para esconderla en un tenant que
+          // SÍ tiene tintometría, no para prenderla en uno que no.
+          return hasTinting && !isTintingHidden;
+        case "sucursales":
+          return isSucursalesVisible;
+        case "blog":
+          return isBlogVisible;
+        case "contacto":
+          return isContactVisible;
+      }
+    },
+  );
+
+  const visibleItems: BottomNavItem[] = [...fixedNavItems];
+  if (flexSlotId) {
+    const slot = FLEX_SLOTS[flexSlotId];
+    visibleItems.splice(FLEX_SLOT_INDEX, 0, {
+      id: flexSlotId,
+      // El blog se llama distinto en cada tienda ("Recetas", "Notas"…), y el
+      // label de la barra tiene que decir lo mismo que el del menú.
+      label: flexSlotId === "blog" ? blogSectionName || slot.label : slot.label,
+      href: slot.href,
+      Icon: slot.Icon,
+    });
+  }
 
   const cartIconRefCallback = useCallback(
     (el: HTMLDivElement | null) => {
@@ -140,7 +222,9 @@ const BottomNav = ({
       <div
         className={classNames(
           "mx-auto grid w-full items-center",
-          hasActivePromotions ? "grid-cols-5" : "grid-cols-4",
+          // 5 con el lugar flexible resuelto; 4 sólo si NINGÚN candidato
+          // aplica (ver `pickMobileNavSlot`).
+          GRID_COLS[visibleItems.length] ?? "grid-cols-4",
         )}
         style={{ height: "64px" }}
       >
@@ -240,7 +324,9 @@ const BottomNav = ({
                 {item.label && (
                   <span
                     className={classNames(
-                      "text-[10px] leading-tight",
+                      // `max-w` + truncate: el label del lugar flexible puede ser
+                      // el nombre del blog de la tienda, que es texto libre.
+                      "max-w-[64px] truncate text-[10px] leading-tight",
                       active ? "font-semibold" : "font-medium"
                     )}
                   >

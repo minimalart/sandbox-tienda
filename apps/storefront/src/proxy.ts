@@ -1,3 +1,5 @@
+import { applyCustomerSessionHeaders, resolveCustomerSession } from '@lib/util/customer-session'
+import { readRequestHost } from '@lib/site-config/resolve-site'
 import { type NextRequest, NextResponse } from 'next/server'
 import {
   parseUtmFromSearch,
@@ -117,12 +119,11 @@ export default async function proxy(request: NextRequest) {
     // mano. Bajo subdominios la cookie no existe (el host manda y la cookie se
     // ignora), así que un lector de cookie pelado dejaría a todos los fetch de
     // cliente cayendo al catálogo del sitio principal.
-    const site = resolveSite(request)
-    if (!site.slug) return NextResponse.next()
-    const headers = new Headers(request.headers)
-    headers.set(SITE_SLUG_HEADER, site.slug)
+    const { site, session } = resolveCustomerSession(request.url, request.headers.get('referer'), readRequestHost(request), resolveSite(request), request.headers.get('x-storefront-page'))
+    const headers = applyCustomerSessionHeaders(request.headers, session, name => request.cookies.get(name)?.value)
+    headers.set(SITE_SLUG_HEADER, site.slug ?? '')
     // Un release de convivencia: los server components todavía leen el viejo.
-    headers.set(LEGACY_SITE_SLUG_HEADER, site.slug)
+    headers.set(LEGACY_SITE_SLUG_HEADER, site.slug ?? '')
     headers.set(SITE_PREFIX_HEADER, site.pathPrefix)
     return NextResponse.next({ request: { headers } })
   }
@@ -210,7 +211,7 @@ export default async function proxy(request: NextRequest) {
   // el JWT. Si se crea un `new Headers()` vacío, el rewrite REEMPLAZA todos los
   // headers de la request downstream — incluido `Cookie` — y la página SSR lee
   // las cookies vacías (p.ej. _b2b_cart_id → el checkout no encuentra el carrito).
-  const authToken = request.cookies.get('_medusa_jwt')?.value
+
 
   /**
    * Identidad del sitio: UNA llamada, y se ramifica sobre el resultado.
@@ -226,17 +227,12 @@ export default async function proxy(request: NextRequest) {
    */
   const site = resolveSite(request)
 
-  let requestInit: { request: { headers: Headers } } | undefined
-  if (authToken || site.slug) {
-    const headers = new Headers(request.headers)
-    if (authToken) headers.set('x-medusa-jwt', authToken)
-    if (site.slug) {
-      headers.set(SITE_SLUG_HEADER, site.slug)
-      headers.set(LEGACY_SITE_SLUG_HEADER, site.slug)
-      headers.set(SITE_PREFIX_HEADER, site.pathPrefix)
-    }
-    requestInit = { request: { headers } }
-  }
+  const { session } = resolveCustomerSession(request.url, null, readRequestHost(request), site)
+  const headers = applyCustomerSessionHeaders(request.headers, session, name => request.cookies.get(name)?.value)
+  headers.set(SITE_SLUG_HEADER, site.slug ?? '')
+  headers.set(LEGACY_SITE_SLUG_HEADER, site.slug ?? '')
+  headers.set(SITE_PREFIX_HEADER, site.pathPrefix)
+  const requestInit = { request: { headers } }
 
   /**
    * Cookie de sesión del sitio.

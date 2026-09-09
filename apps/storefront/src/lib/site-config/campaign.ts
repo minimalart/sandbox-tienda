@@ -14,9 +14,19 @@ export const campaignConfig: CampaignHomeConfig = {
     text: "Tienda oficial · comprá como invitado, sin registrarte",
   },
   chrome: {
-    subtitle: "TIENDA OFICIAL",
-    poweredByLabel: "Powered by EDUCABOT",
-    poweredByHref: "https://educabot.com",
+    // Texto del header (subtitulo institucional + pill "Powered by"): NO tienen
+    // default. Antes eran "TIENDA OFICIAL" / "Powered by EDUCABOT" / educabot.com
+    // → sites que no seteaban `assets.campaign.chrome` heredaban esos valores
+    // via overlayCampaign y aparecian en la landing como si el operador los
+    // hubiera cargado. Los placeholders del admin form (Sites → Contenido)
+    // sugieren el shape esperado; el hide-if-empty solo funciona si el preset
+    // no impone contenido.
+    subtitle: undefined,
+    poweredByLabel: undefined,
+    poweredByHref: undefined,
+    // Default blanco alineado con el resto del chrome (footer, hero). Sites
+    // que no lo pisen desde admin heredan blanco automaticamente.
+    backgroundColor: "#ffffff",
   },
   hero: {
     eyebrow: "BENEFICIO EXCLUSIVO PARA LA COMUNIDAD",
@@ -31,6 +41,12 @@ export const campaignConfig: CampaignHomeConfig = {
       { id: "cuotas", icon: "credit-card", label: "3 cuotas sin interés" },
       { id: "retiro", icon: "store", label: "Retiro gratis en la escuela" },
     ],
+    // Fondo blanco por default; el hero es el elemento más visible y en
+    // instituciones raramente conviene competir con el primario de marca.
+    // El operador puede pisarlo desde el admin / Puck cuando quiera dar énfasis.
+    backgroundColor: "#ffffff",
+    // ctaBackgroundColor / ctaTextColor quedan undefined: el componente usa
+    // --primary-color + white como fallback natural, así el CTA hereda la marca.
   },
   kits: {
     title: "Nuestros kits",
@@ -45,6 +61,12 @@ export const campaignConfig: CampaignHomeConfig = {
     address: "Av. Siempre Viva 1234, Buenos Aires",
     email: "tienda@ejemplo.edu.ar",
     copyright: "© 2026 Institución",
-    poweredBy: { label: "Plataforma provista por EDUCABOT", href: "https://educabot.com" },
+    // poweredBy: NO tiene default. Antes era "Plataforma provista por EDUCABOT"
+    // / educabot.com y aparecia via overlay en cualquier site sin config
+    // explicita. Mismo criterio que chrome.poweredBy* — se muestra si el
+    // operador lo carga, y solo se oculta si vacio.
+    poweredBy: undefined,
+    // Footer blanco por default (mismo criterio que el hero).
+    backgroundColor: "#ffffff",
   },
 };
