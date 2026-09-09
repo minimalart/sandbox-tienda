@@ -222,6 +222,9 @@ export class OdooErpAdapter implements ErpAdapter {
       product_images: true,
       // v1: account no instalado → nada que consultar.
       invoice_fetch: false,
+      // No expone listados de sus códigos de configuración: la pantalla
+      // sigue con inputs de texto libre, igual que hasta ahora.
+      config_lookups: false,
     };
   }
 

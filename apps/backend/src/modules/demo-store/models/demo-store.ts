@@ -71,9 +71,7 @@ export const DemoStore = model.define('demo_store', {
   sales_channel_id: model.text().nullable(),
   region_id: model.text().nullable(),
   stock_location_id: model.text().nullable(),
-  status: model
-    .enum(['draft', 'provisioning', 'importing', 'ready', 'failed'])
-    .default('draft'),
+  status: model.enum(['draft', 'provisioning', 'importing', 'ready', 'failed']).default('draft'),
   theme: model.json().nullable(),
   // Per-demo content config: section visibility toggles + editable texts
   // (blog name, shopping-list copy, "Explorar" quick suggestions). Surfaced to
@@ -91,6 +89,10 @@ export const DemoStore = model.define('demo_store', {
   // The storefront exposes the portal at /demo/{slug}/b2b. The ids below are
   // filled by provisioning (sync) / the import runner (price list, async).
   b2b_enabled: model.boolean().default(false),
+  b2b_pricing_tiers: model.json().nullable(),
+  // Legacy resources were provisioned; selected existing resources are retained on deletion.
+  b2b_sales_channel_owned: model.boolean().default(true),
+  b2b_price_list_owned: model.boolean().default(true),
   b2b_sales_channel_id: model.text().nullable(),
   b2b_customer_group_id: model.text().nullable(),
   b2b_price_list_id: model.text().nullable(),

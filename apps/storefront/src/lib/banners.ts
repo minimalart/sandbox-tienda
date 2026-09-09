@@ -25,6 +25,7 @@ export type RawApiBanner = {
 	metadata?: {
 		card_color?: string | null;
 		color_font?: string | null;
+		cta_color_font?: string | null;
 		icon?: string | null;
 		icon_color?: string | null;
 		[key: string]: unknown;
@@ -58,6 +59,7 @@ function withImageVersion(
 export function normalizeApiBanner(raw: RawApiBanner): ApiBanner {
 	const cardColor = raw.metadata?.card_color ?? undefined;
 	const textColor = raw.metadata?.color_font ?? undefined;
+	const ctaTextColor = raw.metadata?.cta_color_font ?? undefined;
 	const versionedImage = withImageVersion(raw.media?.url, raw.updated_at);
 	return {
 		id: raw.id,
@@ -76,6 +78,7 @@ export function normalizeApiBanner(raw: RawApiBanner): ApiBanner {
 		gradient: cardColor,
 		card_color: cardColor,
 		color_font: textColor,
+		cta_color_font: ctaTextColor,
 		icon_color: raw.metadata?.icon_color ?? undefined,
 		countdown_seconds:
 			raw.metadata?.countdown_seconds != null
@@ -120,6 +123,13 @@ export type ApiBanner = {
 	product_image?: string;
 	href?: string;
 	color_font?: string;
+	/**
+	 * Color del texto DEL BOTÓN CTA, separado del `color_font` general del
+	 * banner. Sin esto ambos textos (título/subtítulo del banner y label del
+	 * CTA) compartían color: seteabas oscuro para arreglar el CTA sobre
+	 * card_color claro y el título quedaba invisible sobre la imagen.
+	 */
+	cta_color_font?: string;
 	icon_color?: string;
 	mobile_title?: string;
 	mobile_subtitle?: string;

@@ -1,6 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveImagePhaseScope, shouldWritePriceListsOnRun } from './full-sweep-scope.ts';
+import {
+  resolveImagePhaseScope,
+  shouldSkipKnownImageFailures,
+  shouldWritePriceListsOnRun,
+} from './full-sweep-scope.ts';
 
 describe('resolveImagePhaseScope', () => {
   it('un backfill pendiente gana sobre todo lo demás', () => {
@@ -53,5 +57,19 @@ describe('shouldWritePriceListsOnRun', () => {
 
   it('solo se saltean si el operador lo pidió, y solo en el barrido', () => {
     assert.equal(shouldWritePriceListsOnRun({ fullSweep: true, writeOnFullSweep: false }), false);
+  });
+});
+
+describe('shouldSkipKnownImageFailures', () => {
+  it('el delta reintenta todo: llegó porque cambió en el ERP', () => {
+    assert.equal(shouldSkipKnownImageFailures('delta'), false);
+  });
+
+  it('las dos pasadas completas saltean los códigos fichados', () => {
+    assert.equal(shouldSkipKnownImageFailures('backfill'), true);
+    // La que faltaba: un barrido completo arrastra los códigos que nunca
+    // cambiaron, así que sin esto los 18 que dan HTTP 500 se comen los 15
+    // fallos consecutivos y la fase aborta antes de tocar a los sanos.
+    assert.equal(shouldSkipKnownImageFailures('full_sweep'), true);
   });
 });

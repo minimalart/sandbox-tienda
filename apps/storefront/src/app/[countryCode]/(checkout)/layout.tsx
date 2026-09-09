@@ -7,6 +7,7 @@ import {
   getActiveSitePrefix,
   getActiveTenant,
 } from "@lib/site-config/active-tenant";
+import { storeFeedHref } from "@lib/site-config/template-helpers";
 import { getTenantThemeStyles } from "@lib/site-config/theme/inject-theme";
 import { StoreProvider } from "@lib/stores/store-provider";
 import { getCustomerAvatar } from "@lib/util/customer-avatar";
@@ -14,6 +15,7 @@ import { ArrowLeftIcon, UserIcon } from "@heroicons/react/24/outline";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import UserAvatar from "@modules/common/components/user-avatar";
 import "@modules/home-sports/sports-theme.css";
+import "@modules/home-campaign/campaign-theme.css";
 import CartDrawerMount from "@modules/layout/components/cart-drawer/cart-drawer-mount";
 import PromoConflictGuard from "@modules/layout/components/promo-conflict-guard";
 import { Toaster } from "@medusajs/ui";
@@ -30,6 +32,7 @@ export default async function CheckoutLayout({
   const customer = await retrieveCustomer();
   const cart = await retrieveCart();
   const isSportsTemplate = tenant.template === "sports";
+  const isCampaignTemplate = tenant.template === "campaign";
   const { avatarUrl, initials } = getCustomerAvatar(customer);
   const logoSrc =
     tenant.assets.logos?.main ?? "/logos-mercatto/logocompleto-verde.svg";
@@ -41,7 +44,9 @@ export default async function CheckoutLayout({
           className={
             isSportsTemplate
               ? "sports-checkout min-h-screen bg-white"
-              : "min-h-screen bg-gray-50"
+              : isCampaignTemplate
+                ? "campaign-checkout min-h-screen bg-white"
+                : "min-h-screen bg-gray-50"
           }
           style={themeStyles}
         >
@@ -49,7 +54,9 @@ export default async function CheckoutLayout({
             className={
               isSportsTemplate
                 ? "border-[--sp-ink] border-b-2 bg-[--sp-paper]"
-                : "bg-white shadow-sm"
+                : isCampaignTemplate
+                  ? "border-b border-gray-200 bg-white"
+                  : "bg-white shadow-sm"
             }
           >
             <div
@@ -66,7 +73,7 @@ export default async function CheckoutLayout({
                     : "flex items-center gap-2 font-semibold text-gray-600 text-sm hover:text-[--primary-color]"
                 }
                 data-testid="back-to-store-link"
-                href="/store"
+                href={storeFeedHref(tenant.template)}
               >
                 <ArrowLeftIcon aria-hidden className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Volver a la tienda</span>
@@ -87,31 +94,36 @@ export default async function CheckoutLayout({
                   src={logoSrc}
                 />
               </LocalizedClientLink>
-              <LocalizedClientLink
-                className={
-                  isSportsTemplate
-                    ? "flex items-center gap-2 font-bold text-[--sp-ink] text-xs uppercase tracking-[0.08em] hover:opacity-70"
-                    : "flex items-center gap-2 font-medium text-gray-600 text-sm hover:text-[--primary-color]"
-                }
-                href="/account"
-              >
-                {customer ? (
-                  <UserAvatar
-                    alt={`Foto de ${customer.first_name ?? "perfil"}`}
-                    avatarUrl={avatarUrl}
-                    className="text-[11px]"
-                    initials={initials}
-                    size={24}
-                  />
-                ) : (
-                  <UserIcon className="h-5 w-5" />
-                )}
-                <span className="hidden sm:inline">
-                  {customer
-                    ? customer.first_name || "Mi cuenta"
-                    : "Iniciar sesión"}
-                </span>
-              </LocalizedClientLink>
+              {/* Campaign es un flow de compra como invitado (institucional):
+                  no hay onboarding de cuenta. Ocultamos el link para no
+                  invitar a un flow inexistente. Otros templates lo muestran. */}
+              {!isCampaignTemplate && (
+                <LocalizedClientLink
+                  className={
+                    isSportsTemplate
+                      ? "flex items-center gap-2 font-bold text-[--sp-ink] text-xs uppercase tracking-[0.08em] hover:opacity-70"
+                      : "flex items-center gap-2 font-medium text-gray-600 text-sm hover:text-[--primary-color]"
+                  }
+                  href="/account"
+                >
+                  {customer ? (
+                    <UserAvatar
+                      alt={`Foto de ${customer.first_name ?? "perfil"}`}
+                      avatarUrl={avatarUrl}
+                      className="text-[11px]"
+                      initials={initials}
+                      size={24}
+                    />
+                  ) : (
+                    <UserIcon className="h-5 w-5" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {customer
+                      ? customer.first_name || "Mi cuenta"
+                      : "Iniciar sesión"}
+                  </span>
+                </LocalizedClientLink>
+              )}
             </div>
           </header>
           <div className="relative" data-testid="checkout-container">

@@ -118,9 +118,17 @@ const MobileMenu = ({ open, onClose, customer, hasTinting = false, hasSpaceDesig
             <span className='sr-only'>{name}</span>
             {/* El panel es blanco: va el logo positivo (como el nav), no la
                 variante mobile que está pensada para el header con fondo. */}
+            {/*
+              Preserva aspect ratio para logos horizontales anchos: antes era
+              `h-10 w-auto max-w-[180px]` — con logos 5:1 o más el max-w
+              capaba el width sin ajustar el height, dejando la imagen
+              comprimida. Ahora `object-contain` respeta el ratio dentro del
+              max-h × max-w, y el max-w sube a 250px para no forzar logos
+              horizontales a 180px.
+            */}
             <img
               alt={`${name} Logo`}
-              className='h-10 w-auto max-w-[180px]'
+              className='h-auto max-h-10 w-auto max-w-[250px] object-contain'
               src={logos.main || logos.mobile || '/logos-mercatto/logocompleto-verde.svg'}
             />
           </LocalizedClientLink>

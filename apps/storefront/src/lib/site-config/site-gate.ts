@@ -86,6 +86,28 @@ const verifyGateToken = cache(
   },
 );
 
+/**
+ * ¿El gate está CONFIGURADO como activo para el sitio de este request?
+ *
+ * Deliberadamente NO mira cookies, al revés de `getSiteGateState()`. Es la pregunta
+ * que necesitan `robots.txt` y el `robots` meta del root layout: si están detrás del
+ * muro, no puede haber `index, follow`. Mezclar la cookie ahí haría que la
+ * indexabilidad dependa de QUIÉN pide — un revisor con la contraseña vería
+ * `Allow: /` y un crawler `Disallow: /`, con el riesgo de que el CDN cachee la
+ * variante equivocada.
+ *
+ * `getStoreGateConfig()` ya está en el data cache de Next (revalidate 60), así que
+ * esto no agrega una llamada por request ni vuelve dinámica una ruta estática.
+ */
+export const isSiteGateEnabled = cache(async (): Promise<boolean> => {
+  const slug = await getActiveDemoSlug();
+  const config = slug
+    ? ((await getTenantBySlug(slug))?.medusa.passwordGate ?? GATE_OFF)
+    : await getStoreGateConfig();
+
+  return Boolean(config.enabled) && config.length > 0;
+});
+
 export type SiteGateState = {
   /** true = hay que mostrar la pantalla de contraseña en vez del sitio. */
   locked: boolean;

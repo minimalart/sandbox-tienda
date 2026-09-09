@@ -1,6 +1,23 @@
 import { getChannelProductByHandle } from "@lib/data/channel-products";
 import { getRegion } from "@lib/data/regions";
-import { getTenant } from "@lib/site-config/resolver";
+/**
+ * `getActiveTenant()` y NO `getTenant()`.
+ *
+ * `getTenant()` es el resolver ESTÁTICO: devuelve `defaultConfig` (`site-config/default.ts`),
+ * cuyo `name` es el literal `"Mercatto"` del boilerplate. El root layout ya usa
+ * `getActiveTenant()` —el que lee la fila del sitio— y por eso el `<title>` de desdeelsur
+ * decía "Desde el sur" mientras ESTA página seguía emitiendo, en cada PDP:
+ *
+ *   - `BreadcrumbList` con `{ "name": "Mercatto", "item": "…/" }` como raíz;
+ *   - la meta description de fallback "Comprá online en Mercatto…" para todo producto
+ *     sin descripción propia del catalogador.
+ *
+ * Structured data con la marca de otra tienda no es un detalle de copy: es lo que Google
+ * lee como identidad del sitio (DESDEELSUR-50). `getActiveTenant()` está documentado como
+ * drop-in replacement de `getTenant()` justamente para esto, y cae a `getTenant()` solo si
+ * la fila no está.
+ */
+import { getActiveTenant } from "@lib/site-config/active-tenant";
 import { canonicalUrl } from "@lib/util/site-url";
 import {
   buildBreadcrumbJsonLd,
@@ -30,7 +47,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params;
   const [product, tenant] = await Promise.all([
     getChannelProductByHandle(params.handle, params.countryCode, true),
-    getTenant(),
+    getActiveTenant(),
   ]);
 
   if (!product) {
@@ -99,7 +116,7 @@ export default async function ProductPage(props: Props) {
 
   const [product, tenant] = await Promise.all([
     getChannelProductByHandle(params.handle, params.countryCode, true),
-    getTenant(),
+    getActiveTenant(),
   ]);
 
   if (!product) {

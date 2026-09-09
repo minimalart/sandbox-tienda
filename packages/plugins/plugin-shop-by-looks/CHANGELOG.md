@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3 - Fix: el click en la fila abría el drawer de edición con el wrapper de TanStack.
+
+- `useDataTable` de `@medusajs/ui` tipa el segundo argumento de `onRowClick` como el registro, pero en runtime entrega la `Row` de TanStack (`instance.onRowClick(e, row)` en `data-table-table.js`). Ahora se desenvuelve `.original`.
+- Mismo síntoma que en brands: el form arrancaba vacío hasta que resolvía `useShopByLook`.
+
 ## 1.0.1 - Fase B: consumir `ExtensionVersion` y `SiteScopeBar` desde el runtime contract.
 
 - Reemplaza los TODOs Fase B en `src/admin/routes/shop-by-looks/page.tsx` por imports concretos desde `@minimalart/mercatto-plugin-runtime@^0.3.0/admin`. El badge de versión + alcance multitienda ya no queda pelado, y la SiteScopeBar del host vuelve a renderizarse debajo del toolbar.

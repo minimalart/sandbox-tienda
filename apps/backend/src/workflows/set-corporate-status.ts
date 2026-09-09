@@ -1,3 +1,4 @@
+import type { IEventBusModuleService } from '@medusajs/framework/types';
 import {
   createStep,
   createWorkflow,
@@ -25,7 +26,7 @@ const setStatusStep = createStep(
     const previous = current.status as CorporateStatus;
     await service.updateCorporates({ id: input.corporate_id, status: input.status });
 
-    const eventBus = container.resolve(Modules.EVENT_BUS);
+    const eventBus = container.resolve<IEventBusModuleService>(Modules.EVENT_BUS);
     if (input.status === 'active' && previous !== 'active') {
       await eventBus.emit({ name: 'corporate.activated', data: { id: input.corporate_id } });
     } else if (input.status === 'suspended') {

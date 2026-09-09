@@ -42,9 +42,6 @@ import {
   ModuleRegistrationName,
   Modules,
 } from '@medusajs/framework/utils';
-import { createCompanyWorkflow } from '../../workflows/create-company';
-import { linkCompanyCustomerGroupWorkflow } from '../../workflows/link-company-customer-group';
-import { COMPANY_MODULE } from '../company';
 import { DEMO_STORE_MODULE } from './index';
 import { deleteDemoPromotions } from './promotions';
 
@@ -99,6 +96,9 @@ export type ProvisionResult = {
 };
 
 export type ProvisionB2BInput = {
+  salesChannelId?: string | null;
+  sourceSalesChannelId?: string | null;
+  customerGroupId?: string | null;
   id: string;
   name: string;
   slug: string;
@@ -600,29 +600,36 @@ const B2B_DEMO_BUYER_LAST = 'Pérez';
  */
 export async function provisionDemoB2B(
   container: any,
-  input: ProvisionB2BInput,
+  input: ProvisionB2BInput
 ): Promise<ProvisionB2BResult> {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
   const salesChannelService: ISalesChannelModuleService = container.resolve(
-    ModuleRegistrationName.SALES_CHANNEL,
+    ModuleRegistrationName.SALES_CHANNEL
   );
   const customerService: any = container.resolve(Modules.CUSTOMER);
-  const companyService: any = container.resolve(COMPANY_MODULE);
+  // Load B2B only when this explicitly requested provisioning operation runs.
+  const { createCompanyWorkflow } = require('../../workflows/create-company');
+  const { linkCompanyCustomerGroupWorkflow } = require('../../workflows/link-company-customer-group');
+  const companyService: any = container.resolve('company');
   const authModule: any = container.resolve(Modules.AUTH);
 
   logger.info(`[demo-store] Provisioning B2B for "${input.slug}"...`);
 
   // ── Wholesale sales channel (idempotent by name) ───────────────────────────
   const scName = `Demo ${input.name} · Mayorista`;
-  const [existingSc] = await salesChannelService.listSalesChannels({ name: scName });
+  const candidates = await salesChannelService.listSalesChannels({ name: scName });
+  const existingSc = candidates.find(sc => sc.metadata?.demo_id === input.id || sc.metadata?.demo_slug === input.slug);
   let salesChannelId: string;
-  if (existingSc) {
-    salesChannelId = existingSc.id;
+  if (input.salesChannelId || existingSc) {
+    salesChannelId = input.salesChannelId || existingSc!.id;
   } else {
     const { result } = await createSalesChannelsWorkflow(container).run({
       input: {
         salesChannelsData: [
-          { name: scName, metadata: { channel_type: 'b2b', demo_slug: input.slug } } as any,
+          {
+            name: scName,
+            metadata: { channel_type: 'b2b', demo_slug: input.slug, demo_id: input.id },
+          } as any,
         ],
       },
     });
@@ -637,7 +644,23 @@ export async function provisionDemoB2B(
   });
   const apiKeyService: any = container.resolve(Modules.API_KEY);
   const publishableApiKeys = await apiKeyService.listApiKeys({ type: 'publishable' });
+  let allowedKeyIds: Set<string> | undefined;
+  if (input.sourceSalesChannelId) {
+    const { data: keys } = await container.resolve(ContainerRegistrationKeys.QUERY).graph({
+      entity: 'api_key',
+      fields: ['id', 'sales_channels.id'],
+      filters: { type: 'publishable' },
+    });
+    allowedKeyIds = new Set(
+      keys
+        .filter((key: any) =>
+          key.sales_channels?.some((sc: any) => sc.id === input.sourceSalesChannelId)
+        )
+        .map((key: any) => key.id)
+    );
+  }
   for (const key of publishableApiKeys) {
+    if (allowedKeyIds && !allowedKeyIds.has(key.id)) continue;
     await linkSalesChannelsToApiKeyWorkflow(container).run({
       input: { id: key.id, add: [salesChannelId] },
     });
@@ -645,8 +668,9 @@ export async function provisionDemoB2B(
 
   // ── Customer group (idempotent by name) ────────────────────────────────────
   const groupName = `Mayorista Demo ${input.name}`;
-  const [existingGroup] = await customerService.listCustomerGroups({ name: groupName });
-  let customerGroupId: string | null = existingGroup?.id ?? null;
+  const groups = await customerService.listCustomerGroups({ name: groupName });
+  const existingGroup = groups.find((group: any) => group.metadata?.demo_id === input.id);
+  let customerGroupId: string | null = input.customerGroupId ?? existingGroup?.id ?? null;
   if (!customerGroupId) {
     const created = await customerService.createCustomerGroups([
       { name: groupName, metadata: { demo_id: input.id } },
@@ -661,6 +685,19 @@ export async function provisionDemoB2B(
   let companyId: string | null = existingCompany?.id ?? null;
   let testEmail: string | null = null;
   let testPassword: string | null = null;
+
+  if (existingCompany && existingCompany.sales_channel_id !== salesChannelId) {
+    await companyService.updateCompanies({
+      id: existingCompany.id,
+      sales_channel_id: salesChannelId,
+    });
+  }
+
+  if (existingCompany && customerGroupId && existingCompany.customer_group_id !== customerGroupId) {
+    await linkCompanyCustomerGroupWorkflow(container).run({
+      input: { company_id: existingCompany.id, customer_group_id: customerGroupId },
+    });
+  }
 
   if (!existingCompany) {
     testEmail = `mayorista@${input.slug}.demo`;
@@ -718,7 +755,7 @@ export async function provisionDemoB2B(
   }
 
   logger.info(
-    `[demo-store] Provisioned B2B "${input.slug}": sc=${salesChannelId} group=${customerGroupId} company=${companyId}`,
+    `[demo-store] Provisioned B2B "${input.slug}": sc=${salesChannelId} group=${customerGroupId} company=${companyId}`
   );
 
   return { salesChannelId, customerGroupId, companyId, testEmail, testPassword };

@@ -90,7 +90,7 @@ const AccountLayout: React.FC<AccountLayoutProps> = ({
   );
 
   const handleLogout = async () => {
-    await logout();
+    if (!(await logout())) return;
     // En un demo volvemos a su home (/demo/{slug}) en vez de la raíz, que sale
     // del demo y lleva a Mercatto.
     window.location.href = siteHref("/");

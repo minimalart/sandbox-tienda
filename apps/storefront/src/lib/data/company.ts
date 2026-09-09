@@ -194,7 +194,7 @@ export async function registerCompany(input: {
   }
 }
 
-export type B2BPriceInfo = { unit_price: number | null; available: number };
+export type B2BPriceInfo = { unit_price: number | null; currency_code?: string; price_tax_included?: boolean; available: number; commercial?: import("@lib/util/catalog-commercial").CatalogCommercial };
 
 /** Precios mayoristas + stock para un set de productos (los que devuelve Typesense). */
 export async function b2bPrices(

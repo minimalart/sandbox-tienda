@@ -1,3 +1,4 @@
+import type { Logger, IEventBusModuleService, RemoteQueryFunction } from '@medusajs/framework/types';
 /**
  * Andreani — workflow de generación de etiquetas on-demand.
  *
@@ -223,8 +224,8 @@ const hasAndreaniHint = (value: string | undefined): boolean => {
 const validateOrderForTicketsStep = createStep(
   'validate-order-for-andreani-tickets',
   async (input: GenerateTicketInput, { container }) => {
-    const logger = container.resolve('logger');
-    const query = container.resolve(ContainerRegistrationKeys.QUERY);
+    const logger = container.resolve<Logger>('logger');
+    const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
 
     logger.info(`[andreani-tickets] Validando orden ${input.order_id}`);
 
@@ -429,7 +430,7 @@ const validateOrderForTicketsStep = createStep(
 const createAndreaniTicketShipmentStep = createStep(
   'create-andreani-ticket-shipment',
   async (input: ValidatedOrderData, { container }) => {
-    const logger = container.resolve('logger');
+    const logger = container.resolve<Logger>('logger');
 
     // LA cuenta con la que se despacha. `{ orderId, salesChannelId }` son dos
     // pistas de la misma tienda: el canal resuelve directo y el id de la orden es
@@ -697,7 +698,7 @@ const saveTicketMetadataStep = createStep(
     },
     { container }
   ) => {
-    const logger = container.resolve('logger');
+    const logger = container.resolve<Logger>('logger');
     const orderModuleService = container.resolve(
       Modules.ORDER
     ) as IOrderModuleService;
@@ -754,10 +755,10 @@ const linkTicketToDeliveryExecutionStep = createStep(
     input: { order_id: string; ticket: TicketMetadataEntry },
     { container }
   ) => {
-    const logger = container.resolve('logger');
+    const logger = container.resolve<Logger>('logger');
 
     try {
-      const query = container.resolve(ContainerRegistrationKeys.QUERY);
+      const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
 
       // Resolvemos las executions de la orden por el link order↔execution
       // (traversal `order.delivery_executions`). No hay columnas FK; el vínculo
@@ -854,7 +855,7 @@ const emitTicketGeneratedStep = createStep(
     },
     { container }
   ) => {
-    const logger = container.resolve('logger');
+    const logger = container.resolve<Logger>('logger');
 
     // Solo la primera generación notifica. Las re-generaciones acumulan tickets
     // (existing_ticket_count > 0) y no re-spammean.
@@ -863,7 +864,7 @@ const emitTicketGeneratedStep = createStep(
     }
 
     try {
-      const eventBus = container.resolve(Modules.EVENT_BUS);
+      const eventBus = container.resolve<IEventBusModuleService>(Modules.EVENT_BUS);
       await eventBus.emit({
         name: 'andreani.ticket_generated',
         data: {

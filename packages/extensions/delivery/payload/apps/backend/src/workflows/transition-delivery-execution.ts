@@ -1,3 +1,4 @@
+import type { Logger, IEventBusModuleService, RemoteQueryFunction } from '@medusajs/framework/types';
 /**
  * transition-delivery-execution — ÚNICO punto donde el sidecar proyecta al
  * estado comercial de Medusa.
@@ -227,7 +228,7 @@ const resolveProjectionContextStep = createStep(
     input: { execution_id: string; to_status: string },
     { container },
   ) => {
-    const query = container.resolve(ContainerRegistrationKeys.QUERY);
+    const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
 
     const { data: executions } = await query.graph({
       entity: 'delivery_execution',
@@ -312,9 +313,9 @@ const emitOwnFleetOutForDeliveryStep = createStep(
     },
     { container },
   ) => {
-    const logger = container.resolve('logger');
+    const logger = container.resolve<Logger>('logger');
     try {
-      const eventBus = container.resolve(Modules.EVENT_BUS);
+      const eventBus = container.resolve<IEventBusModuleService>(Modules.EVENT_BUS);
       await eventBus.emit({
         name: 'delivery.own_fleet_out_for_delivery',
         data: {

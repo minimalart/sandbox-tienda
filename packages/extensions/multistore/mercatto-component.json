@@ -2,13 +2,18 @@
   "schema_version": 1,
   "id": "multistore",
   "name": "Tiendas",
-  "version": "1.6.0",
+  "version": "1.9.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [],
   "incompatibilities": [],
   "settings_namespace": "extension:multistore",
   "environment": [
+    "APPLY",
+    "DEFAULT_CURRENCY_CODE",
+    "DEMO_IMPORT_CRON",
+    "DEMO_IMPORT_STALE_MS",
+    "DEMO_SLUG",
     "DEMO_IMPORT_BACKOFF_BASE_MS",
     "DEMO_IMPORT_THROTTLE_MS",
     "MERCADOPAGO_ACCOUNTS",
@@ -16,6 +21,58 @@
     "MULTISTORE_PUBLIC_BASE_URL"
   ],
   "files": [
+    {
+      "source": "payload/apps/backend/src/api/admin/catalog-imports",
+      "target": "apps/backend/src/api/admin/catalog-imports"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/catalog-imports",
+      "target": "apps/backend/src/admin/routes/catalog-imports"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/widgets/catalog-commercial.tsx",
+      "target": "apps/backend/src/admin/widgets/catalog-commercial.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/process-catalog-imports.ts",
+      "target": "apps/backend/src/jobs/process-catalog-imports.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/test-catalog-import-fixture.ts",
+      "target": "apps/backend/src/scripts/test-catalog-import-fixture.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/modules/store-importer",
+      "target": "apps/backend/src/modules/store-importer"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/process-demo-store-imports.ts",
+      "target": "apps/backend/src/jobs/process-demo-store-imports.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/backfill-woocommerce-variant-prices.ts",
+      "target": "apps/backend/src/scripts/backfill-woocommerce-variant-prices.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/carts/[id]/checkout",
+      "target": "apps/backend/src/api/store/carts/[id]/checkout"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/orders/[id]/checkout",
+      "target": "apps/backend/src/api/admin/orders/[id]/checkout"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/widgets/order-checkout-recipients.tsx",
+      "target": "apps/backend/src/admin/widgets/order-checkout-recipients.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/hooks/site-checkout-validation.ts",
+      "target": "apps/backend/src/workflows/hooks/site-checkout-validation.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/cleanup-checkout-recipients.ts",
+      "target": "apps/backend/src/jobs/cleanup-checkout-recipients.ts"
+    },
     {
       "source": "payload/apps/backend/src/scripts/seed-site-footer.ts",
       "target": "apps/backend/src/scripts/seed-site-footer.ts"
@@ -96,84 +153,140 @@
     "apps/backend/src/modules/demo-store/migrations/Migration20260805100000DemoStore.ts",
     "apps/backend/src/modules/demo-store/migrations/Migration20260807120000DemoStore.ts",
     "apps/backend/src/modules/demo-store/migrations/Migration20260807130000DemoStore.ts",
-    "apps/backend/src/modules/demo-store/migrations/Migration20260819120000DemoStore.ts"
+    "apps/backend/src/modules/demo-store/migrations/Migration20260819120000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260907180000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260908180000DemoStore.ts",
+    "apps/backend/src/modules/store-importer/migrations/Migration20260907210000StoreImporter.ts",
+    "apps/backend/src/modules/store-importer/migrations/Migration20260909170000CatalogSettings.ts"
   ],
   "managed_files": [
     {
       "path": "apps/backend/src/admin/hooks/api/demo-stores.tsx",
-      "sha256": "8ca6f0c7d29383ecc895f0a8d73e50895e4b4e08069ef821dab19926eb9af2ee"
+      "sha256": "9588deb1c240a9945141eef01862a7378206342a578ac6bc11348eb4c3f8d2bf"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/catalog-imports/page.tsx",
+      "sha256": "d394155cc9b58b5b884be4aa150e693764aabab8593a9d174cb54215aaf5593e"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/[id]/footer/page.tsx",
-      "sha256": "ecce7bdb0ce5f9cad4cec9332fb210575fa7655d0bb2f4a1a84a6aceb8d8f2e9"
+      "sha256": "3b72bab7fd4bf019528d63d34e9e7f735a62492a4b5d8648150bc04941af7b94"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/[id]/home/page.tsx",
-      "sha256": "bc30995fe5ca390d533606c09127bf67aa7e501dbc5484f885516a6f4448e5b4"
+      "sha256": "9c84f57ceff0ce5004df687be232fb3056bd8bca489eedf8c2c2156765faf17c"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/[id]/page.tsx",
-      "sha256": "c6d4d8bea6d26adce0bf6f1f29afb2f8c0c206dd66757f6af837bf12861f791a"
+      "sha256": "94756b915048c6f6a2024e74b678a1176e2fdc70446148c5b6f00270fc4644c1"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/components/branding.tsx",
-      "sha256": "d3cbb697d2330686110971c8602e49f90f9f3c6f402463c48a4c2036996ad3d3"
+      "sha256": "220485fa19b4a302b66ef02d440e6ff6f25d976c7479d852e50dfc22720f9d85"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/components/campaign-content-fields.tsx",
-      "sha256": "f903b5092e2e06356deee11334aaf6111e288c8da28c2d300af17f534edbb990"
+      "sha256": "f386034786f89043fe7ce7d3a4dabc485b1d099b3ab81becd944111660a20fe3"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/catalog-source-fields.tsx",
+      "sha256": "a3d0bde509f4974c550c195906a0f8e897f728dc25038eafb2651cfd41ff21dc"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/checkout-config.tsx",
+      "sha256": "a99a42796af2bbed58f9aef8f621de0390a22a10b73f0c40ef9ad6f5cd5d8c2c"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/components/content-config-fields.tsx",
-      "sha256": "659a68446b965997d8f8604138813364e523fc50ceff9875b99748b4fbbd854a"
+      "sha256": "7576db81a48623bfb7e68e5c36615de99db65463271aa9643bfaceb51c9c41f4"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/components/content-config-form.test.ts",
-      "sha256": "34c46be0f7f45c326b8bc3ef8e6b4b5a140a48064771026b84281de3a6e5b5c8"
+      "sha256": "d3775ed2241219e4da1c437a71634184bc6c7b8a420938427c3f15837b76493d"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/components/content-config-form.ts",
-      "sha256": "a19aa92770af54d1b8f698c477afde9f35afd79a58373c8404249c048ef548f8"
+      "sha256": "a38c1c975530cb00fb5ce632d8fb7d8bf2ec53fab825c69e9b456be224c00d52"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/components/demo-store-actions.tsx",
-      "sha256": "a55c49d3e04b9f6dfdaea9af60aca19dceeeb11a017db486a8345162d94e174a"
+      "sha256": "82688903696d6cf72b5c592e7ae9b1da33d4c9cefa1642c12b718633c93400f1"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/components/demo-store-create.tsx",
-      "sha256": "4d36351462762652c8416ccf855fec5795bd05ab23d208c80238e4c7888251f5"
+      "sha256": "2c4329dc70272ec9495f58148a1959e16c76e4b7655e6dace76f3c0d3c38cfb6"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/components/demo-store-edit.tsx",
-      "sha256": "92b5f7a81529fa52efa2140f88ac2f3674b7a99f4ab236a8d19f8dbfb5c02682"
+      "sha256": "8eed45f34a9d5dd3e878880156d5f4b5003d2f8df9b2c3332b92f1827e4b4941"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/components/index.ts",
-      "sha256": "fc9c758beb40d2c322e3bd4fa058ababfa8c8300e7b4098524ae3fb6db93835d"
+      "sha256": "105300ab584b282b5d633b9e3aaa010a88976743193763e2f9f9b4a436e423f5"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/sites/components/store-catalog.tsx",
+      "sha256": "02453f75086011aa2937207dffbf645a43315c0d54108b4950344d42632d2285"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/credenciales/page.tsx",
-      "sha256": "1caf2fc0d1ac6323128b5c2289e169e1cc3619ac719b35a23e024039edd02531"
+      "sha256": "7d09e294f2f971bcc3ca5b3cbf7aa6c34692c6f668ad002e5f7e3fdabd44076c"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/lib.test.ts",
-      "sha256": "d8c107f24ec7f91c8a74e0ef976dc311de7b367f3e5546754dc15216b3b0c6e0"
+      "sha256": "3ad7eaafbf0e89c5deb4369a5c56af88a9a6a3b9d93f626e94dafbf923845712"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/lib.ts",
-      "sha256": "483008efae39ba4d160f1c44e6500e7e231e87b39f63f0f8dbd7a0acd218e898"
+      "sha256": "2baf1678d6e7691ac58429815ef0f017cd79dea75010fef0d7c2a0b8c28c4d5e"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/page.tsx",
-      "sha256": "18af775c3361528899da769fe4bbcf10558c3d8b77b0bcddee613d39e49ef144"
+      "sha256": "d22751e062ca1bf5b38e4a275a7d40ae2212948dc502275646b51649f47c5fda"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/settings/page.tsx",
-      "sha256": "36741e40367861cf64c2524a474df2d0b63aa0eb84b9d5590342b746aeae0559"
+      "sha256": "3a5d9323e11e1266e0244eff3716bf1910684770655548e80a66132bbf1ccddb"
     },
     {
       "path": "apps/backend/src/admin/translations/demo-stores/index.ts",
-      "sha256": "2a46a1049713dceee776fee8bbe802dee97b742ec8f8a4812f9657979e019fbf"
+      "sha256": "aa4b28889060cb3b87dea1aefb5a7925b8a60a83e550304edecbde2c2cf4849a"
+    },
+    {
+      "path": "apps/backend/src/admin/widgets/catalog-commercial.tsx",
+      "sha256": "1cf812f4e8b163e72fdb2a714d0ed298d5f16b2b8d2d5a827d8176a88bb8612e"
+    },
+    {
+      "path": "apps/backend/src/admin/widgets/order-checkout-recipients.tsx",
+      "sha256": "80e43f65a99165d9f4786edcf2c8c7e3c8183482a64eefd7018bdd1ec91584af"
+    },
+    {
+      "path": "apps/backend/src/api/admin/catalog-imports/[id]/execute/route.ts",
+      "sha256": "71920aa46f3c0c912589778f09d191422e53afe93488e709c17c2800aff7e19f"
+    },
+    {
+      "path": "apps/backend/src/api/admin/catalog-imports/[id]/preview/route.ts",
+      "sha256": "2a5011ffeb252a3dd48a5b51516c00751daf75ffc9932e676fa157600ba8bf3b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/catalog-imports/[id]/route.ts",
+      "sha256": "6bfceaa50ee1158ab0dbcb5ffa15acc182ff0ba1a4f7516b70703f1658758338"
+    },
+    {
+      "path": "apps/backend/src/api/admin/catalog-imports/jobs/[id]/route.ts",
+      "sha256": "b2bcdf86a23a81fe1555429296d54434446717538e69540180c2341f85d20239"
+    },
+    {
+      "path": "apps/backend/src/api/admin/catalog-imports/route.ts",
+      "sha256": "974d4f2dd7d9752800b7d0a61f772514dfa490252267a8a9792e0e1ead783d55"
+    },
+    {
+      "path": "apps/backend/src/api/admin/catalog-imports/variants/[id]/route.ts",
+      "sha256": "ac0bc2e7b74b156db03f6ef70aff71f9832f0af0b252235efe5816f88d1ade09"
+    },
+    {
+      "path": "apps/backend/src/api/admin/orders/[id]/checkout/route.ts",
+      "sha256": "bb44b88e36f2dc9411767b2484734258c262f36305e0df6400ec0af60ce99ba6"
     },
     {
       "path": "apps/backend/src/api/admin/site-credentials/route.ts",
@@ -181,287 +294,499 @@
     },
     {
       "path": "apps/backend/src/api/admin/site-templates/route.ts",
-      "sha256": "16eab558c13f39f6c7d0920dd7e342383eacc92c2a5b61be9a496fe2da480250"
+      "sha256": "ab705ca6b1ee34b2d3d5dcd94f78384dc899639eb98ad3e7328c4986ae10912d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sites/[id]/checkout/route.ts",
+      "sha256": "4c87739b92e9ca7d8fe87d09e215f5b39034b2c39eb7ee33c65716a5d7ab7a05"
     },
     {
       "path": "apps/backend/src/api/admin/sites/[id]/import-job/route.ts",
-      "sha256": "81bc3adfa014682ba57dfbe1bbcacce9a3720121667517e448278bc3856a9382"
+      "sha256": "412ee91ae4fe6f11c0895e7feb5b8cefb4a3b574980772f2634559b1204433f8"
     },
     {
       "path": "apps/backend/src/api/admin/sites/[id]/promotions/route.ts",
-      "sha256": "1041266a211de3d936808b19c3205085462cf5871c6c73c8406c7800b2a2ea7a"
+      "sha256": "bcdbfb36594b63994ffa9acd2f61d5a799e8b8d5ce4134d4c9080309534c5a5e"
     },
     {
       "path": "apps/backend/src/api/admin/sites/[id]/retry/route.ts",
-      "sha256": "74566af7a782255355c72d8352b4eda2234f46e819c42d56c067c37e8d8e1fa0"
+      "sha256": "f480f304a93dd637180756e526a51d9770c883e607be5f680bbfbcfc65756ff7"
     },
     {
       "path": "apps/backend/src/api/admin/sites/[id]/route.ts",
-      "sha256": "7a38d99fc50e03de34d5f099029bb574c0a90d063f10204f1e1c97fc543f678c"
+      "sha256": "23870295bdcad12f4240ce1cd678b801ad8dcb7b15ea8c7d8018aeb075fe5792"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sites/b2b-main.test.ts",
+      "sha256": "3109a732725d16035b357a0e31ce59b979c197af47fe2819731079d83fd49c5a"
+    },
+    {
+      "path": "apps/backend/src/api/admin/sites/checkout-context/route.ts",
+      "sha256": "1ad142a3f67281ce3c00c152257973698edb65707d2ecf7574ca317b4042b011"
     },
     {
       "path": "apps/backend/src/api/admin/sites/middlewares.ts",
-      "sha256": "57d985de2949bff6c180617b563d91e89b89f765d564f5c48827308ac27cf467"
+      "sha256": "874bfc64a46d50ca31bba3dd8ac6332f5b6c9acc1ae19083679c931993a99711"
     },
     {
       "path": "apps/backend/src/api/admin/sites/route.ts",
-      "sha256": "08ea1eeb14c50d2a2327adda198d55cbd0949b8999d4257af3b8f2e6736ee0d8"
+      "sha256": "eb085480c79cc538d31bda969476b4a2991f06fd436bcdda351d9e5d4ed0c846"
     },
     {
       "path": "apps/backend/src/api/admin/sites/schemas.ts",
-      "sha256": "5649b0585d81ccb03096a18d555629140450122b913df49436e0ba84cbc9b9e9"
+      "sha256": "5ff471628394e6818bbb3b8df6ee369eade6958b7a26c68399fa324bdcda8f5d"
     },
     {
       "path": "apps/backend/src/api/admin/sites/theme-schema.test.ts",
-      "sha256": "8964027fbb6af7557ae9e87c58fcfd7b5c93828b77ea8ef573fb9d4245433853"
+      "sha256": "6bd3ce3d78ecfa9b21e8f3e225b234ef49b46fd0826fe92a13b8d84dcfbe0070"
+    },
+    {
+      "path": "apps/backend/src/api/store/carts/[id]/checkout/route.ts",
+      "sha256": "ec3054eb08c23cbe4b25270e0530fd73b87b3b730f14b38dafd977469af8fcc8"
     },
     {
       "path": "apps/backend/src/api/store/demo-stores/[slug]/config/route.ts",
-      "sha256": "6c4a4f5f73fb1daa6b6c469ca87e11c6403a6c6a9521979e57b003c32547d614"
+      "sha256": "af7f1ca7dd5f65645e8fd1e3c2c038e442390aafd7b0bad72301cf6722c08c59"
     },
     {
       "path": "apps/backend/src/api/store/demo-stores/main/config/route.ts",
-      "sha256": "299d84942ac826831f7718696b4c0edb986df100441e7b289bc58cf81b9e9a25"
+      "sha256": "9926b72d542b500fa167c414b625ccba9dde2f4ba6b5bcd72b2bf49fbe86078b"
     },
     {
       "path": "apps/backend/src/api/store/sites/[slug]/config/route.ts",
-      "sha256": "c78ef8ba4bc3fe31b5a5118d6050a38cccc3b4dd961bffa67b7e67273a26b5c9"
+      "sha256": "059f5015856a9970a452b632af7f74c3d88bdcd881e84d5e99e5bb731aaf3f7b"
     },
     {
       "path": "apps/backend/src/api/store/sites/main/config/route.ts",
-      "sha256": "2b7a2cfe7e2cb12ce308d61ebc0b71e295b32c9b3f1c61abb5b57a2808d63b26"
+      "sha256": "00c437ba925c89244b5e9b0a64ad1af09a5b0673c5cb4dfe1459575011af2694"
+    },
+    {
+      "path": "apps/backend/src/jobs/cleanup-checkout-recipients.ts",
+      "sha256": "be8b0c36ebaba9acc6ba8973f86172e8c2d1b73b885267874ee25314cb405a4d"
+    },
+    {
+      "path": "apps/backend/src/jobs/process-catalog-imports.ts",
+      "sha256": "6e1f672033a9c051cda1166ea220d9f4e5f491ead356af72bae55b8c22905ac8"
+    },
+    {
+      "path": "apps/backend/src/jobs/process-demo-store-imports.ts",
+      "sha256": "7370abc8f2b806d168d9634ddce57e1bf2074822b12fec870b785839828fc421"
     },
     {
       "path": "apps/backend/src/links/demo-store-region.ts",
-      "sha256": "e26e355e2f8dbbccff4ed990ee09bfede913a10fbfbd6666d4c9e9da550e678f"
+      "sha256": "08967c1208c311320f9c00f3d183946d1cbf3cc400dfe86c408e8c2cd27b49ee"
     },
     {
       "path": "apps/backend/src/links/demo-store-sales-channel.ts",
-      "sha256": "90c2be2ff72a431f63bbf1dbba8ab98ab51d83a337f918a8221b9f0fc6908cf6"
+      "sha256": "3296908989c47222afbec11722d6e438a90d43b54f1784c1c3f20f1b102962e0"
     },
     {
       "path": "apps/backend/src/links/demo-store-stock-location.ts",
-      "sha256": "8d1c09f77fb10e5ddd8e2d5dbaff48ecd562cc9fa98b60ed105e5c5ef4cbff86"
+      "sha256": "c0b7ecc8eeff43bd3f6bc8923140905a426634d1bbb697af34632921c679c32e"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/b2b-pricing.test.ts",
+      "sha256": "41e72df949ecf10be409c55b69bef2141ccf686a2ebc2d18ea2ede5d601471f4"
     },
     {
       "path": "apps/backend/src/modules/demo-store/b2b-pricing.ts",
-      "sha256": "a1264a11e9387fe7ebae95489ca122a965d2a8856f3077e6f767cdc240066392"
+      "sha256": "c1435f945d9f91555b740fdb51fdbfe66928c8144c6240b5b8dbb9b9ba6d29c6"
     },
     {
       "path": "apps/backend/src/modules/demo-store/catalog/types.ts",
-      "sha256": "f604c4ecee9be3a54bd0f7886f7262adcb5530f0adf13fbad7c5db325946d4b6"
+      "sha256": "937ab2ca4cebe83da73a4d39c0898b112b8a50ce703781cba9241a4bd5026051"
     },
     {
       "path": "apps/backend/src/modules/demo-store/catalog/util.test.ts",
-      "sha256": "b1716712c9e390893db8f4acbf7b69df1d1a72675f135240a42ccde14d851b5c"
+      "sha256": "a4aee671452fc39b027dd21a2366e4464712761dd678fd8700b7f0312387cf7f"
     },
     {
       "path": "apps/backend/src/modules/demo-store/catalog/util.ts",
-      "sha256": "188936422f11844708f9807846f862b3e58ebeb64b118b89f51f923508d1e090"
+      "sha256": "79322cfa8a7a1975082873b0816c70c7fcd203ae1e904b92319921ee0c81d865"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/acceptance-matrix.test.ts",
+      "sha256": "8dc55596ce63e02bb39d73fb81c806501e9804296f866fd37abb29b97a9c1b2d"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/assignments.ts",
+      "sha256": "befcb2eb82ed322d9d460b4f4109af15d2366171156c58ea20d3218a6fdbcca1"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/checkout.test.ts",
+      "sha256": "9d45a8e68acd247d4a4c0fe1c36af297b555fd83e2dc30770ad8ef44cead16b0"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/http.test.ts",
+      "sha256": "850a431e8cdc9767f68ffa85198b22ca7ffdda1396d60717ad32db6b1335b62b"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/http.ts",
+      "sha256": "60aaf1ef6bd2b7c3a39f740cef15ca6d98ab46f9875f2b54125d50094dfff387"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/logistics.test.ts",
+      "sha256": "e3603bfbc3492d523517a80f335fd34a95dfb2f76b252dcf5abdadbc29bb10d7"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/middlewares.test.ts",
+      "sha256": "55fe0f387f2cd0d788bb8108adaa48686df69b59ae6b28b43c150220afbd97be"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/middlewares.ts",
+      "sha256": "4bf81819ab57eb1d57fa6382c2e61c974b33af461c2e1bda686ed7ec11e812af"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/payment.test.ts",
+      "sha256": "f5007250184e8b64a413a0fa982ae3c99edaf72357fdb0370d38f260bd1902f9"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/payment.ts",
+      "sha256": "d38d4e9946c3592a6ee1a8e7570442288b5d397e2a8f90235862101fbbb7bb41"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/policy.ts",
+      "sha256": "7e726693e9126f208ff421adbf15ad2569d5e51b8c47b7c64268ce7a16620290"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/runtime.integration.test.ts",
+      "sha256": "0c8d3c43e027cf6692cfc26e890f07bc7d78ce46b244c168b3e747a79e35acdb"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/checkout/runtime.ts",
+      "sha256": "63a51249001dad583d0a373db3b1ec50bdd2c531810f83a5ddbb32f91025ed63"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/configure-b2b.test.ts",
+      "sha256": "3a6f7b2e36408fa25aa2ef51d3334b72d274565d39df66529e69a52ed64291df"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/configure-b2b.ts",
+      "sha256": "98d5d2739abb645b5c3b37e95e977b33f99d73ff31459c1a5dd4440392ac4688"
     },
     {
       "path": "apps/backend/src/modules/demo-store/ddl-mirrors.test.ts",
-      "sha256": "0f3ed7e4421769d0ca60d50c1e15754d352d024c0c378828d6bac26a981b682c"
+      "sha256": "2a03048cc54d42ab79756271239ba59fc2538bb391ce9ad607467d327fb26cf2"
     },
     {
       "path": "apps/backend/src/modules/demo-store/ensure-tables.ts",
-      "sha256": "5be0131bbd9c4d5a3e3f476fe8d4776a02430ac12e599b0bbcf200f3fb7c283b"
+      "sha256": "2538254842575431634f34b8a790919c836cb898dcac5b1d908847bf7dd4a6e0"
     },
     {
       "path": "apps/backend/src/modules/demo-store/index.ts",
-      "sha256": "5438df34ab3f083b01413199c0c128369417bccaba315b5646956a521b6c41e0"
+      "sha256": "69c280fdd0eab2445d7b46856ca5f9777126bc4ce0bb20aa80c13b7b37a3fd19"
     },
     {
       "path": "apps/backend/src/modules/demo-store/main-store.test.ts",
-      "sha256": "d51f61e3568c11997c5f5fba9d094fe71a153bb1bad028ea8d6171da12ecf20e"
+      "sha256": "1c62dcb3f810af0a4d4ddbfa4bdd190e93e4a924b069244db96c86d7bd2c6c6e"
     },
     {
       "path": "apps/backend/src/modules/demo-store/main-store.ts",
-      "sha256": "eab356c81f44e57acaae603edcadbaddf429cc6903c015f01298d722309867f7"
+      "sha256": "a44f4bfe9651d6d31d839ec4b79130f5160a201b2c94a8a98934866a3ab2d6f4"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260623120000.ts",
-      "sha256": "ab787c9546d73d93663052b7c6fb624ecb097e3378168ab35554a98cb3f346de"
+      "sha256": "769432cb9187c73e0921911462e9d3d7fd429008a55fc4d5f8c5f3ff26387f37"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260624170000.ts",
-      "sha256": "8f3810a2d2253a275b50d2cda7402c7bffcbb22a7214ee9697df297a6a71be96"
+      "sha256": "4194e751c420dffd611f923916b90e316c3356a971bacf973b17489fc3fb75f3"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260624190000.ts",
-      "sha256": "c9ad06d6e70cb4f9a00be3961d5f094dfc2c87230b7bd691726cfbdd64c346bf"
+      "sha256": "af9f6c0ad70115b640cbdc893e3398f0bde41e2ec0f6d83ad2b0a153f17f690b"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260703120000DemoStore.ts",
-      "sha256": "d0ae437d9bcc9c48ebb65bc0efdfd86dfd19933c721ace338fb3331287e9b41f"
+      "sha256": "4f3e4b74f6f74ad78ca9b33e83d9fd702e3294b400352a74ea2bd6ca713117a2"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260703130000DemoStore.ts",
-      "sha256": "751df776138f3759491588c2346e1aaf1657bec9524fa7f98a045a894d963043"
+      "sha256": "3b3f2f38e60a188c5348b9f245393ae8021d68851b21e1603b62b678edf0a273"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260704120000DemoStore.ts",
-      "sha256": "cc3fa7aabe632d429a6fce9a70a4c883ab0a3de1ffc31fc384734e468198645d"
+      "sha256": "3107c2fe07ef620cf8e2a38ed2942317a34187a12d876d6e01bf2426d56f7c10"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260706150001DemoStore.ts",
-      "sha256": "0bc8d31a6cd4796e27ed9a9b9ed1a252c95b7329718eb256bfc64d656b80bef1"
+      "sha256": "cd5146449d695828d0961858c780dc123a5f71b188e50746d6d8447e6bc69bfd"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260726100000DemoStore.ts",
-      "sha256": "0cbca8376cb87ba2b17ff8daa2a342afd1f6f1f63e92a79cfbb13dfd0c2f5a38"
+      "sha256": "e3d14112f3f9d877bdae31ef613af1ccd8dbd9eb2c5e6ce7ce7e11d2557e3ccf"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260731120000DemoStore.ts",
-      "sha256": "73157c9c48ef49b5dc1dc3f099a36fab0b20f06687182120f400d652895480f6"
+      "sha256": "a0e147c29cc59892ee08729608baebe941ec3962029ff37a2d134edc048dca17"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260803120000DemoStore.ts",
-      "sha256": "1f1fa26c2501cd9028a2105fe59fb5e66f4d510d3b93320e4c6d247419c252e2"
+      "sha256": "0a1007a4ddc0ccd766765e8b7b395d25c0761e8b1f16477767899b74a706de36"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260804120000DemoStore.ts",
-      "sha256": "e86b13b429dc649119cf26723407c6f03e21c46aba6ed7e78bb32ffaf70cfd6f"
+      "sha256": "06e4addddbb44b355f14ef6a5e634363f958815708f16a52a76517e7ffcf5ea1"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260805100000DemoStore.ts",
-      "sha256": "f3b6a8d5cbd31cb0e4099ffe80427d3abc15f7b56dbfddcd1a4d38eabfba690a"
+      "sha256": "5a957bc6c4f00cfb88bfe33c7e92b975d3b4f7e27e83a4750b4d70e15ee16582"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260807120000DemoStore.ts",
-      "sha256": "4bf6f4bacb9a6aa4b88429e66d461ca95eb6229a65a1ef27efb1e304d1df87e7"
+      "sha256": "fc851df698bdb3926f5ed45126aa104f8556665c14e514810adffbf906c058a5"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260807130000DemoStore.ts",
-      "sha256": "f7ea9ec3671ed9ecc5722978da681dfce538ed00e5de489b0c629fa99acb775e"
+      "sha256": "f1bba96081c457e4d35060577a5985bb33d37b9a005f4c5c152fa3e405716926"
     },
     {
       "path": "apps/backend/src/modules/demo-store/migrations/Migration20260819120000DemoStore.ts",
-      "sha256": "3036940dba0b6fd4cd2da999d7115db4f54a60c8bd38c1641488a3d0023bbeab"
+      "sha256": "d67038fc3ae455a60b3f2171ae1ecdc3989288ca355351a4ee3dcedd801e08d7"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260907180000DemoStore.ts",
+      "sha256": "192b304f99b76afd71545286d691a16078a68b4aaa51217b22eab0e89a046d42"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260908180000DemoStore.ts",
+      "sha256": "960ef2eaa2e3826c4f6c136d3fcbc8690acb26c97283ef9f5072073189dcc5ea"
     },
     {
       "path": "apps/backend/src/modules/demo-store/models/demo-store.ts",
-      "sha256": "89df1cf648698e734dd0f129a7e4fdc1f1042036be1504594bff242904cfe69c"
+      "sha256": "bb30166723802a7fe9bae7c86ea84bb7072fb94be86fbfcdd9b0607d8906edc3"
     },
     {
       "path": "apps/backend/src/modules/demo-store/models/import-job.ts",
-      "sha256": "3942b9edfa313c2e786dcf1223981090432d382f86e62aeaa44586f8496fe0ac"
+      "sha256": "5a6da7442df2d52bca83bd4d0516c6913681c2db67ae9ccf574d309ea57ba311"
     },
     {
       "path": "apps/backend/src/modules/demo-store/models/index.ts",
-      "sha256": "fa7f2fe2fe9f24c64595de4100e747d42b8f6c057209a7928111ec2c9be8940c"
+      "sha256": "a3b59111a9df20666419ebc9dde92e3cfb37bbb27d2721c378346e28dded7e66"
     },
     {
       "path": "apps/backend/src/modules/demo-store/models/site-setting.ts",
-      "sha256": "ce7c498e3e47ba85fec1eaf9e18b95430c33e6c41107f704ed73229f2c46e74d"
+      "sha256": "2c2ab7a0ac4dbff32a2b26eb94c26a43d954360f6ef038c0acf0b0ec5757ab4f"
     },
     {
       "path": "apps/backend/src/modules/demo-store/persist-plan.ts",
-      "sha256": "f27d98b6f8683a28d0ec62620ca74c51fbf438b5e98bfef8c78af90168d22f13"
+      "sha256": "a8526df662cc17e41740c74242a5a31e5bea44fc6680e3185b701805b9775966"
     },
     {
       "path": "apps/backend/src/modules/demo-store/persist.test.ts",
-      "sha256": "ac4cfbf2e30b6994bf33053ba8c264fcdecc92ce53ee68132df8232e38a6b9c5"
+      "sha256": "6712ee6ee4475127e60688c1cc70a314a1852da30fdcf806105d5162ad83af8c"
     },
     {
       "path": "apps/backend/src/modules/demo-store/persist.ts",
-      "sha256": "51d8485420c9dbd297cd44ba3d602b06b8034e4f7d954d1470a5a4256583f5a7"
+      "sha256": "91182b4fff6e1f915542522beb060931e21ae6db225d371891f012eec34c8364"
     },
     {
       "path": "apps/backend/src/modules/demo-store/promotions.ts",
-      "sha256": "143d74186659c102faaa1d7e430b1f9439268f2979ac0a74d49f3c8b0f704f89"
+      "sha256": "e8a55e045bf4bb88909be31608cfb0c5c7af4a68e28275772267c6e7e474974e"
     },
     {
       "path": "apps/backend/src/modules/demo-store/provision.ts",
-      "sha256": "8fa080aefea54d114e6cfa2f45c8b2f41fefce02f7abeba9af857017845ad3d4"
+      "sha256": "4cb71287b33dc8b69bb9b161fe1298abca35cf0ad5b40f67057fd91e4344697e"
     },
     {
       "path": "apps/backend/src/modules/demo-store/reserved-slugs.test.ts",
-      "sha256": "a77ac4222d2c074ad87cba9946d8a65213ca6c311084cad85442affa23f47d08"
+      "sha256": "58f4b27a13585e6d7c8b5413e44d16afa70b6efbcb269b4b8cd52b353c51d5b7"
     },
     {
       "path": "apps/backend/src/modules/demo-store/reserved-slugs.ts",
-      "sha256": "c0309cdff2e9af70fe29e07cec0211d61dae124147f1c95f569d6b0b442b9eb0"
+      "sha256": "dc655e30325417a2f7d06d13d7585c7f1aadb4665200dfd9f7b5697b05729ea7"
     },
     {
       "path": "apps/backend/src/modules/demo-store/service.ts",
-      "sha256": "57c2f69fe6dd0b3fd4bc8dc04711014f3a130d7e6eada60288490bd288631a19"
+      "sha256": "b118563b2547ce84265b67050e5217470563c5852aee21dd7fd7c5a3ff2d6927"
     },
     {
       "path": "apps/backend/src/modules/demo-store/settings.test.ts",
-      "sha256": "3ad5e6c9ddf0ed653b445d59bab7041eecab01dc9b6bbe1475d806c113601a0a"
+      "sha256": "4e6c60222767f9f08d2c5eedc22becfd740cf689cf54057328d80f13284b10fb"
     },
     {
       "path": "apps/backend/src/modules/demo-store/settings.ts",
-      "sha256": "a11a0926ff1d53ab10c1d8bdd473a027c0b1a3dba6b134dfe17c72c377191c6e"
+      "sha256": "bd996321841dae1f6bdc607cf37a58fd10c162577b9ae8a9ebc2967bd2a48bc7"
     },
     {
       "path": "apps/backend/src/modules/demo-store/site-setting.test.ts",
-      "sha256": "9a8ebfe35e79c219b774ddb3bd71340e70aaa2321a0d5844ee659fccca1b195e"
+      "sha256": "3703852e855f654405106868e03a5d693b862d6b514938c6468961538e6bee2a"
     },
     {
       "path": "apps/backend/src/modules/demo-store/source-type.ts",
-      "sha256": "bb66c34a0b72d0e06177a241db88a29a0d16b4b8cdcf03c3ef093160f1909984"
+      "sha256": "e0a5fcd55ac666d893fee185a771510829d48b5481e6abe05550e46c91d1c854"
     },
     {
       "path": "apps/backend/src/modules/demo-store/templates/campaign.ts",
-      "sha256": "49973383ab6d0bb3aeea8820388ac1a21d8eff21e4f08e9e1329eb5b80e8b66d"
+      "sha256": "de0186778d88d0964339a516ed3b8853d79c773437c3e1f92f3713f7a2d1a3ac"
     },
     {
       "path": "apps/backend/src/modules/demo-store/templates/fashion.ts",
-      "sha256": "69fc6063bb63b4cb53d68b38d8a24bd754bd9d36b3e9953cecdc8240b34b42d9"
+      "sha256": "53d62d7e50b454be9f0d2119943615e4b17e6b731e926e80527a6a83f9ef0556"
     },
     {
       "path": "apps/backend/src/modules/demo-store/templates/index.ts",
-      "sha256": "68311f21c56e420a78f1301ec391aabc9119bd5493b271d2eaf79bcabe541840"
+      "sha256": "6d11b208e6dc70df0dad82ad23a7532bd04f0060df682a2f690ce2f1cfa0ce1c"
     },
     {
       "path": "apps/backend/src/modules/demo-store/templates/main-config.test.ts",
-      "sha256": "f34342236acdd141426ffdc868571821445a970ddf7f262b8a6c71b0aff3d3aa"
+      "sha256": "42b71950c1582120283db1403fceb8db31807e6f19f86d61fff9775fa02562b3"
     },
     {
       "path": "apps/backend/src/modules/demo-store/templates/password-gate.test.ts",
-      "sha256": "bb572f15cd45b2db3b6140baa2d7750924b2585107e3a1a3e2b07630cca55802"
+      "sha256": "34327b8cbff3620f2de861e5552b922c4fcb43a1577ace61a5fb058e5e1eed4a"
     },
     {
       "path": "apps/backend/src/modules/demo-store/templates/shared.ts",
-      "sha256": "afb4b02d83e98b9a4d42b03555377107c27ee5c2bb4466c9d6dc885242f105e5"
+      "sha256": "dc9a786a4022f486e707292401a6e22808ed41135d639edf6c789d2cee9a9f77"
     },
     {
       "path": "apps/backend/src/modules/demo-store/templates/sports.ts",
-      "sha256": "a3c2c8932916c1c5a4f7328c86ab2d0a890a3ba178fd5f342805018b6f4c5a94"
+      "sha256": "cfeb71f03675f188535c0bea475fb86574622fd11a0adede61c60313daa59388"
     },
     {
       "path": "apps/backend/src/modules/demo-store/templates/supermercado.ts",
-      "sha256": "93de27e080eb54b90d688b1e5ae01b5915f438e87ff43c504e4643f43bdbe6d9"
+      "sha256": "3095686b0958738d3f56a82b3b2a9e483bed0e0e553a6548b6f1f4a38170b154"
     },
     {
       "path": "apps/backend/src/modules/demo-store/templates/tech-retail.ts",
-      "sha256": "3916379ce588762ed6e82a25c8f2ddfc750a3a08a2d8d6bc815b7cedd4c77f07"
+      "sha256": "f6d9dee9820dea4b3925db5e4e23a532a6ea0ddcee34bce1521a5893417f8639"
     },
     {
       "path": "apps/backend/src/modules/demo-store/templates/technology.ts",
-      "sha256": "67ef5e6f966b816c695992236fafe1eda345ecd619c859a6e7e795729ac3a95a"
+      "sha256": "7e5c7c7bf409f964ac693fd461d631408548d8946fa63de95c537f882445407d"
     },
     {
       "path": "apps/backend/src/modules/demo-store/templates/types.ts",
-      "sha256": "f92ed58deeedf5e345a1d58805333bba75145705555a90353c174f0197fb223c"
+      "sha256": "ead68e10b9d0e1d817d671444f8aa2292e535435c02503518b1379ed19d7771f"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/admin-context.ts",
+      "sha256": "ba7e4035ff448e2c11104277113b55bf17f320b40e8ef470988f22c3e1023bed"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/catalog-jobs.ts",
+      "sha256": "68476988d32c1ffdd890761fdefcbab018124cdce59fdda095691ade66dcbfec"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/config.ts",
+      "sha256": "acbcd103c4754c9aadf04dacdadc054a7ae4ce41d6d25af69754bd6ac584ed45"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/http.ts",
+      "sha256": "d39d87f045a58afa53d3212175d4476d4dd25faefc6882fb9f809495c17d1392"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/importers/importers.test.ts",
+      "sha256": "8b209b12a3e06c42629e2bb90ba04b1f13bed6a7fc1278542fdd21669a58b41e"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/importers/index.ts",
+      "sha256": "53c40d7b5e888f6b3b903ddfff8418f12a26cc98c692982781c6b531a065bd7e"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/importers/shopify.ts",
+      "sha256": "6ace35042fd63ffaa56e955dfb49bf9178bcdf4ffadc56128f23a3b532169c4c"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/importers/vtex-catalog.test.ts",
+      "sha256": "a66157775ece010559ad1ae2ba5081396760712d29589cbe5144e3bdb2da0106"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/importers/vtex-catalog.ts",
+      "sha256": "157d8461d9c7f86c7c58c9d610d760f7e0112dd0a23b095749fbbf8f2447698f"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/importers/vtex.ts",
+      "sha256": "5e1037ef035755c9e7b4212b4783e6613956ed3223032f93ab98f8e2d67ce25f"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/importers/woocommerce.ts",
+      "sha256": "cd6d3909ef120283270b1af3f4b70b80e6c82e6a57e7d7f4b54a21a85e2ba672"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/index.ts",
+      "sha256": "442607ce650632685c69171ef537d81d1585c43bade1ef1c8971a4fbb9f036f6"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/link-from-sales-channel.test.ts",
+      "sha256": "de46d7946fa75bbb49fc0c93091681bf3a7b1fc9e527ed1579237cb912e31c1c"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/link-from-sales-channel.ts",
+      "sha256": "fd7bd1287b9f592883b9ef57bcc15dbd00632aad471043852ad7cb96ca396195"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/migrations/Migration20260907210000StoreImporter.ts",
+      "sha256": "cd2b8a632be70eccbd1035084cb1910a87667ff50140befb7be712e500b53401"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/migrations/Migration20260909170000CatalogSettings.ts",
+      "sha256": "b3b430102fe65ec8e5607922b0064c4c52785716dc3087db29358fdb53958e7e"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/models/connection.ts",
+      "sha256": "1b397714f79abafa508ec4ad2b306766f1ce17f409e7e61aa88d4018305c9d69"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/models/job.ts",
+      "sha256": "976204ec47eb12893f8e99a48ca991755a82881a42e16e041cb65d4fb9295dc3"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/models/record.ts",
+      "sha256": "6b977955e7f856a666bd9db2b3bf0428574cfc2657f017faa125fc00520bddda"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/persist-catalog.ts",
+      "sha256": "71a6a298c56e333b7ce85f4ba83f6815d05b3af78320fdd05cc84eab11ff9014"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/run-import.ts",
+      "sha256": "020e25298a567c269e4273164ba29486ea543752ab010c91523e9e30784ae5b2"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/service.ts",
+      "sha256": "fb2315974e4aa644d52e57387884286dc0fe7ab561a1d3a0fd8224ab00a161b6"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/settings-migration.ts",
+      "sha256": "4954c62bc744bf8304944e8694b7022b4feb0594f14eb1dee46bae68af2c5e01"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/settings.test.ts",
+      "sha256": "bb1c78ae399897ca9b120607f68079958d3d9f1de3e651eba64c38a88770775f"
+    },
+    {
+      "path": "apps/backend/src/modules/store-importer/settings.ts",
+      "sha256": "21564b134eed37520e43f816307a0476f66765702e4378c82c6f8bf3b4c4f3de"
+    },
+    {
+      "path": "apps/backend/src/scripts/backfill-woocommerce-variant-prices.ts",
+      "sha256": "539a798922ddd9979a095d35f98eee4d0579d116d3d134fd0d89b31ec0b23238"
     },
     {
       "path": "apps/backend/src/scripts/seed-site-footer.ts",
-      "sha256": "3021505f1cdd632c8573492b0ea6663f570f6a531ac58850e9a03a3b244dac2e"
+      "sha256": "4a636010091145ac6d6c73ce8f2a0015c1ac5bcfd6ba0da9668cb59241cc1138"
+    },
+    {
+      "path": "apps/backend/src/scripts/test-catalog-import-fixture.ts",
+      "sha256": "7b522ed69d36e9f127edcabea69362241116665ae5913c71b51eb950080fffda"
+    },
+    {
+      "path": "apps/backend/src/workflows/hooks/site-checkout-validation.ts",
+      "sha256": "12c6844cdf667683257adfb0625803af86cf94589c9a19c8e515fe3048b45ae6"
     },
     {
       "path": "apps/backend/src/workflows/update-demo-store-sales-channel.ts",
-      "sha256": "0053c3d77fbdb4dc7416e9c3b9e792ae2d5ae2f09d4c45eb0062c62151c7817c"
+      "sha256": "3defdcae40b30069db5566a49d8bae2a642fb8c3a04dee466fcb0a0e1099fa78"
     },
     {
       "path": "apps/backend/src/workflows/update-demo-store-stock-location.ts",
-      "sha256": "2026e4f345dee35247e2ee57484d3e5e299dc16d7102ed5ceac6875bfc832c62"
+      "sha256": "19468d75a2e5044d69e68f6a441f40de680c5c920ea0eb8b6a4edad62167d123"
     },
     {
       "path": "apps/storefront/src/app/[countryCode]/(main)/demo/[slug]/page.tsx",
-      "sha256": "d11bb4825ff61bf6efca41ccd206fd18aad0ff546367d23e47c83cfbf2f1b789"
+      "sha256": "07f79236ddc896818ab7e8fbc3975d02f4ab7bd7e998f21a7ca31413419f2bf1"
     }
   ],
   "integrations": {

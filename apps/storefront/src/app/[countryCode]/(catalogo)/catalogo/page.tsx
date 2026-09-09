@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
 import { getActivePdfCatalog } from "@lib/data/pdf-catalog";
-import { getTenant } from "@lib/site-config/resolver";
+import { getActiveTenant } from "@lib/site-config/active-tenant";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import PdfCatalogViewerClient from "@modules/pdf-catalog/components/pdf-catalog-viewer-client";
 
+/**
+ * `getActiveTenant()`, no `getTenant()`. Y el título SIN la marca.
+ *
+ * Acá había `Catálogo | ${tenant.name}` resuelto con `getTenant()` — el resolver
+ * ESTÁTICO de `site-config/resolver.ts`, que devuelve siempre `defaultConfig`
+ * (`name: "Mercatto"`). En desdeelsur esto emitía
+ * `<title>Catálogo | Mercatto | Desde el sur</title>`: la marca ajena la ponía esta
+ * línea y la propia el `title.template` del root layout.
+ *
+ * El título no nombra la marca (la pone el template, igual que `/cart` y
+ * `/checkout`); la `description` sí la necesita, así que sale del tenant REAL.
+ */
 export async function generateMetadata(): Promise<Metadata> {
-  const tenant = await getTenant();
+  const tenant = await getActiveTenant();
   return {
-    title: `Catálogo | ${tenant.name}`,
+    title: "Catálogo",
     description: `Explorá el catálogo interactivo de ${tenant.name}.`,
   };
 }

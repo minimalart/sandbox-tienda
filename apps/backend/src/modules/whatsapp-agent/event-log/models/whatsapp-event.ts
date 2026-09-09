@@ -31,6 +31,15 @@ export const WhatsappEvent = model
     payload: model.json().nullable(),
     used_ai: model.boolean().default(false),
     /**
+     * Orden de emisión dentro del proceso que atendió el turno.
+     *
+     * `created_at` no basta para reconstruir un recorrido: los eventos son
+     * fire-and-forget y varios de un mismo turno comparten milisegundo, así que el
+     * timeline salía con las decisiones invertidas. Se ordena por `(created_at, seq)`.
+     * Nullable porque las filas anteriores a esta columna no lo tienen.
+     */
+    seq: model.number().nullable(),
+    /**
      * La tienda que RECIBIÓ el mensaje. `NULL` = no se pudo determinar.
      *
      * `phone` es el teléfono del CLIENTE, no el eje: el eje es el número de WhatsApp
@@ -47,4 +56,7 @@ export const WhatsappEvent = model
     { on: ['site_id', 'created_at'] },
     { on: ['type', 'created_at'] },
     { on: ['session_id'] },
+    // El timeline de UNA sesión ordenado por tiempo: sin el compuesto, Postgres
+    // filtra por `session_id` y después ordena en memoria.
+    { on: ['session_id', 'created_at'] },
   ]);

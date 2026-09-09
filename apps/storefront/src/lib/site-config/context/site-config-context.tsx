@@ -125,6 +125,12 @@ export const useTenantSections = () => {
     blogSectionName: tenant.assets.blogSectionName,
     /** Variante del menú "Categorías" del nav. Ausente = 'hamburger'. */
     categoriesMenuLayout: tenant.assets.categoriesMenuLayout ?? "hamburger",
+    /**
+     * Orden de preferencia del lugar flexible de la barra inferior mobile. Se
+     * expone CRUDO (sin default) porque el default y el filtrado de ids viven
+     * en `bottom-nav/slots.ts`, junto al registro de candidatos.
+     */
+    mobileNav: tenant.assets.mobileNav,
     isBlogVisible: visibility?.blog !== false,
     isCategoriesMenuVisible: visibility?.categories !== false,
     isContactVisible: visibility?.contact !== false,

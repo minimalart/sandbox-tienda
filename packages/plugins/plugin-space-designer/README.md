@@ -10,6 +10,8 @@ Catalog entries reference actual Medusa `product_id` and `variant_id`. Scene ent
 
 Asset `model` selects table, desk, hex-table-set, shelving, cabinet, chair, computer, projector or robotics-kit geometry. `color` and `accent_color` configure materials. `mount` supports floor, surface, wall or ceiling; optional `anchor_product_ref` must resolve to another scene product in this configurator. External GLB assets are loaded by the storefront and fitted to the product dimensions. Room `floor_texture_url`/`wall_texture_url` and surface-option `texture_url` preserve configurable finishes. The admin edits these fields alongside the existing plan editor. Texture and GLB hosts must allow browser access, including CORS when hosted separately.
 
+`checkout_mode` decides how the shopper closes. `cart` (the default, and what a config without the field means) adds every product to the native cart. `quote` turns the designer into a request form: the storefront hides prices, does not gate on stock, and posts the design plus contact data to `/store/space-designer/quotes`, which stores a `space_quote` for the backoffice. Nothing is reserved or priced in quote mode.
+
 `allow_custom: false` restricts purchases to an exact saved template. Otherwise furniture and equipment quantities can be adjusted, while `locked` template furniture retains its position. Scene bounds, variant bindings, allowed rotations, finite quantities and duplicate references are validated on the server. Configurator edits replace the JSON atomically.
 
 ## APIs
@@ -18,6 +20,9 @@ Asset `model` selects table, desk, hex-table-set, shelving, cabinet, chair, comp
 - `GET/POST/DELETE /admin/space-designer/configurators/:id`: retrieve, partial update and archive.
 - `GET /admin/space-designer/products`: actual catalog and variants, with `q`, `limit`, `offset`, `sales_channel_id`.
 - `GET /admin/space-designer/designs`: customer designs for the selected site.
+- `GET /admin/space-designer/quotes`: quote requests for the selected site, with `q` (name/email), `status`, `limit`, `offset`.
+- `POST/DELETE /admin/space-designer/quotes/:id`: change `status` (`new`/`contacted`/`closed`) or archive.
+- `POST /store/space-designer/quotes`: `{ configurator_id, template_id?, snapshot, name, email, phone?, message? }` on a `checkout_mode: 'quote'` configurator; returns `{ requested: true }`.
 - `GET /store/space-designer/configurators`: published configurators authorized by the publishable key.
 - `GET /store/space-designer/configurators/:slug`: `{ configurator }` with live `catalog`; optional `region_id` or `cart_id` supplies native price context.
 - `POST /store/space-designer/line-items`: `{ cart_id, configurator_id, template_id?, snapshot }`, adds all quantities with one native `addToCartWorkflow` and returns `{ added: true, items_count }`.
@@ -29,7 +34,7 @@ Cart writes validate the cart's channel, completion and customer ownership, then
 
 ## Installation and verification
 
-Install or locally link this package, then register it in Medusa's `plugins` configuration. It auto-registers the `space_designer` module. Run the normal Medusa migration process to create `space_configurator` and `space_design`; no fixture or catalog is seeded automatically. The host may disable installation with `SPACE_DESIGNER_ENABLED=false`. Only published configurators appear in the storefront.
+Install or locally link this package, then register it in Medusa's `plugins` configuration. It auto-registers the `space_designer` module. Run the normal Medusa migration process to create `space_configurator`, `space_design` and `space_quote`; no fixture or catalog is seeded automatically. The host may disable installation with `SPACE_DESIGNER_ENABLED=false`. Only published configurators appear in the storefront.
 
 This package is initially local/experimental until its first registry release; do not add a dependency on a nonexistent published version. It depends only on Medusa, React admin packages, Zod and the shared Mercatto runtime contract, with no dependency on another feature plugin.
 

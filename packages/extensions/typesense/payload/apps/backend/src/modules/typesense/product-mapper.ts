@@ -248,6 +248,7 @@ export class ProductMapper {
             }))
           : [],
       variants: variants.map((variant: AnyRecord) => ({
+        ...(variant.metadata?.catalog_commercial ? { metadata: { catalog_commercial: variant.metadata.catalog_commercial } } : {}),
         id: variant.id as string,
         title: variant.title as string,
         sku: variant.sku as string | null,

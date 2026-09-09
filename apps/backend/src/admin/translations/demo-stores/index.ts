@@ -19,7 +19,7 @@ export const en = {
   /** The store served at the root host. One row, not deletable. */
   BADGE_MAIN: 'Main',
   MAIN_HINT:
-    'This is the store served at the root host. Name, branding, content, home and flags are edited here like any other store. It has no catalog import (its catalog already lives in this instance), and its slug, channel, region and stock location are fixed — deleting or re-provisioning them would tear down the real site.',
+    'This is the store served at the root host. Name, branding, content, home and flags are edited here like any other store. Catalogs can be imported from Edit → Catalog. Its identity is preserved; the main store cannot be deleted or re-provisioned.',
   TEMPLATE_WARNING_MAIN:
     'Changing the template swaps the ENTIRE storefront chrome (header, footer, home, catalog layout) of the main site. It is reversible, but there is no preview.',
 
@@ -114,6 +114,8 @@ export const en = {
 
   // Content tab
   STEP_CONTENT: 'Content',
+  EDIT_TAB_OPERATIONS: 'Operations',
+  EDIT_TAB_FEATURES: 'Features',
   CONTENT_SECTIONS_TITLE: 'Visible sections',
   CONTENT_BLOG_TOGGLE: 'Blog',
   CONTENT_BLOG_TOGGLE_HELP: 'Show the blog link in the menu',
@@ -126,16 +128,31 @@ export const en = {
   CONTENT_CORPORATE_TOGGLE: 'Corporate accounts',
   CONTENT_CORPORATE_TOGGLE_HELP: 'Show the corporate accounts link in the footer',
   CONTENT_VARIANT_LABELS_TOGGLE: 'Variant labels',
-  CONTENT_VARIANT_LABELS_TOGGLE_HELP:
-    'Show the format/size and colours on the product card',
+  CONTENT_VARIANT_LABELS_TOGGLE_HELP: 'Show the format/size and colours on the product card',
   CONTENT_CATEGORIES_TOGGLE: 'Categories menu',
-  CONTENT_CATEGORIES_TOGGLE_HELP:
-    'Show the categories menu in the desktop nav, before "Store"',
+  CONTENT_CATEGORIES_TOGGLE_HELP: 'Show the categories menu in the desktop nav, before "Store"',
   CONTENT_CATEGORIES_LAYOUT: 'Categories menu design',
   CONTENT_CATEGORIES_LAYOUT_HELP:
     'How the categories entry looks in the nav. It is hidden automatically when the store has no categories.',
   CONTENT_CATEGORIES_LAYOUT_HAMBURGER: 'Hamburger menu with side submenu',
   CONTENT_CATEGORIES_LAYOUT_BUTTON: 'Solid button with dropdown',
+
+  // Mobile bottom bar — order of the one flexible slot (4th item).
+  MOBILE_NAV_TITLE: 'Mobile bottom bar',
+  MOBILE_NAV_HELP:
+    'The bar always shows 5 icons: home, Store, cart, one of the entries below and the menu. It uses the first one that is actually available, so move the one you want first to the top with the arrows. Promos only counts when the channel has active promotions, and "Find your colour" only when tinting is on with an imported colour chart.',
+  MOBILE_NAV_MOVE_UP: 'Move up',
+  MOBILE_NAV_MOVE_DOWN: 'Move down',
+  MOBILE_NAV_PROMOS: 'Promos',
+  MOBILE_NAV_PROMOS_HELP: 'Only when the channel has active promotions',
+  MOBILE_NAV_COLORES: 'Find your colour',
+  MOBILE_NAV_COLORES_HELP: 'Only with tinting on and the colour chart imported',
+  MOBILE_NAV_SUCURSALES: 'Branches',
+  MOBILE_NAV_SUCURSALES_HELP: 'Needs the Branches toggle above',
+  MOBILE_NAV_BLOG: 'Blog',
+  MOBILE_NAV_BLOG_HELP: 'Needs the Blog toggle above',
+  MOBILE_NAV_CONTACTO: 'Contact',
+  MOBILE_NAV_CONTACTO_HELP: 'Needs the Contact toggle above',
   CONTENT_BLOG_NAME: 'Blog section name',
   CONTENT_BLOG_NAME_PLACEHOLDER: 'Recipes',
   CONTENT_BRANDS_LAYOUT: 'Brands section design',
@@ -153,8 +170,7 @@ export const en = {
   CONTENT_SUCURSALES_TITLE: 'Branches page',
   CONTENT_SUCURSALES_HELP: 'Copy, filters and layout of the /sucursales page.',
   CONTENT_SUCURSALES_SUBTITLE: 'Subtitle',
-  CONTENT_SUCURSALES_SUBTITLE_PLACEHOLDER:
-    'Search by location, filter by store type…',
+  CONTENT_SUCURSALES_SUBTITLE_PLACEHOLDER: 'Search by location, filter by store type…',
   CONTENT_SUCURSALES_SUBTITLE_HELP: 'Leave empty to hide the subtitle.',
   CONTENT_SUCURSALES_LAYOUT: 'Layout',
   CONTENT_SUCURSALES_LAYOUT_FULL: 'Full (search + filters + map + list below)',
@@ -164,8 +180,7 @@ export const en = {
   CONTENT_SUCURSALES_LOCATION_FILTERS: 'Location filters',
   CONTENT_SUCURSALES_LOCATION_FILTERS_HELP: 'Region checkboxes (CABA, Buenos Aires, …).',
   CONTENT_SUCURSALES_CATEGORY_FILTERS: 'Category filters',
-  CONTENT_SUCURSALES_CATEGORY_FILTERS_HELP:
-    'Branch type checkboxes (point of sale, wholesale, …).',
+  CONTENT_SUCURSALES_CATEGORY_FILTERS_HELP: 'Branch type checkboxes (point of sale, wholesale, …).',
   CONTENT_CONTACT_TITLE: 'Contact info',
   CONTENT_CONTACT_HELP: 'Shown on the contact page and the footer.',
   CONTENT_CONTACT_ADDRESS: 'Address',
@@ -201,8 +216,7 @@ export const en = {
   CONTENT_SUGGESTION_QUERY: 'Search query',
   CONTENT_SL_QUICK_TERMS: 'Shopping list — quick-add words',
   CONTENT_SL_QUICK_TERMS_PLACEHOLDER: 'Chocolates\nCereals\nCookies',
-  CONTENT_SL_QUICK_TERMS_HELP:
-    'One per line. Shown as quick-add chips in the modal and the page.',
+  CONTENT_SL_QUICK_TERMS_HELP: 'One per line. Shown as quick-add chips in the modal and the page.',
   CONTENT_SEARCH_HINTS: 'Search bar hints',
   CONTENT_SEARCH_HINTS_PLACEHOLDER: 'Search products...\nDeals...',
   CONTENT_SEARCH_HINTS_HELP:
@@ -212,7 +226,8 @@ export const en = {
   DETAIL_BACK: 'Back to stores',
   DETAIL_IMPORT_PROGRESS: 'Import progress',
   DETAIL_PRODUCTS_IMPORTED: '{{imported}} / {{total}} products',
-  DETAIL_IMPORT_COUNTS: '{{imported}} created · {{linked}} linked · {{skipped}} skipped · {{failed}} failed · {{total}} fetched',
+  DETAIL_IMPORT_COUNTS:
+    '{{imported}} created · {{linked}} linked · {{skipped}} skipped · {{failed}} failed · {{total}} fetched',
   DETAIL_FAILED: '{{failed}} failed',
   DETAIL_IMPORT_HISTORY: 'Import history',
   DETAIL_JOB_DATE: 'Date',
@@ -245,6 +260,13 @@ export const en = {
   // B2B / Wholesale
   B2B_SECTION_TITLE: 'B2B / Wholesale',
   B2B_TOGGLE: 'Enable B2B wholesale',
+  B2B_SETUP_HELP:
+    'Saving completes or repairs wholesale setup. Choose existing resources or create them automatically. The main portal opens at /b2b.',
+  B2B_CHANNEL_SELECT: 'Wholesale sales channel',
+  B2B_AUTO_CHANNEL: 'Create a wholesale channel automatically',
+  B2B_AUTO_PRICING: 'Create tiered prices automatically (20%, 25%, 30%)',
+  B2B_MAIN_HELP:
+    'Enables the wholesale portal using the store’s existing catalog and prices. Manage companies and wholesale pricing from B2B.',
   B2B_TOGGLE_HELP:
     'Provisions a dedicated wholesale channel, a customer group, a tiered price list (1+ -20% · 10+ -25% · 50+ -30%) and a test buyer. The portal opens at /tienda/{slug}/b2b.',
   B2B_ALREADY_ENABLED: 'B2B is enabled. See the wholesale panel for the test credentials.',
@@ -282,7 +304,7 @@ export const es: typeof en = {
 
   BADGE_MAIN: 'Principal',
   MAIN_HINT:
-    'Es la tienda que se sirve en el host raíz. El nombre, la marca, el contenido, el home y los flags se editan acá como en cualquier otra tienda. No importa catálogo (el suyo ya vive en esta instancia), y su slug, canal, región y depósito son fijos: eliminarlos o re-provisionarlos desarmaría el sitio real.',
+    'Es la tienda que se sirve en el host raíz. El nombre, la marca, el contenido, el home y los flags se editan acá como en cualquier otra tienda. Podés importar productos desde Editar → Catálogo. Se conserva su identidad: la tienda principal no se elimina ni se vuelve a provisionar.',
   TEMPLATE_WARNING_MAIN:
     'Cambiar la plantilla reemplaza TODO el chrome del storefront (header, footer, home, layout del catálogo) del sitio principal. Es reversible, pero no hay previsualización.',
 
@@ -304,7 +326,8 @@ export const es: typeof en = {
   DELETE_ERROR: 'No se pudo eliminar la tienda: {{msg}}',
   RETRY_STARTED: 'Importación reiniciada',
   RETRY_ERROR: 'No se pudo reintentar la importación: {{msg}}',
-  RETRY_CONFIRM_STUCK: 'Parece haber una importación en curso o trabada. ¿Iniciar una nueva de todas formas?',
+  RETRY_CONFIRM_STUCK:
+    'Parece haber una importación en curso o trabada. ¿Iniciar una nueva de todas formas?',
   ACTION_PROMOTIONS: 'Crear promociones',
   PROMOS_SUCCESS: '{{promos}} promociones sobre {{products}} productos',
   PROMOS_ERROR: 'No se pudieron crear las promociones: {{msg}}',
@@ -376,6 +399,8 @@ export const es: typeof en = {
 
   // Content tab
   STEP_CONTENT: 'Contenido',
+  EDIT_TAB_OPERATIONS: 'Operación',
+  EDIT_TAB_FEATURES: 'Funciones',
   CONTENT_SECTIONS_TITLE: 'Secciones visibles',
   CONTENT_BLOG_TOGGLE: 'Blog',
   CONTENT_BLOG_TOGGLE_HELP: 'Mostrar el link del blog en el menú',
@@ -388,8 +413,7 @@ export const es: typeof en = {
   CONTENT_CORPORATE_TOGGLE: 'Cuentas corporativas',
   CONTENT_CORPORATE_TOGGLE_HELP: 'Mostrar el link de cuentas corporativas en el footer',
   CONTENT_VARIANT_LABELS_TOGGLE: 'Etiquetas de variantes',
-  CONTENT_VARIANT_LABELS_TOGGLE_HELP:
-    'Mostrar el formato/medida y los colores en la card',
+  CONTENT_VARIANT_LABELS_TOGGLE_HELP: 'Mostrar el formato/medida y los colores en la card',
   CONTENT_CATEGORIES_TOGGLE: 'Menú de categorías',
   CONTENT_CATEGORIES_TOGGLE_HELP:
     'Mostrar el menú de categorías en el nav de escritorio, antes de "Tienda"',
@@ -398,6 +422,23 @@ export const es: typeof en = {
     'Cómo se ve la entrada de categorías en el nav. Se oculta solo si la tienda no tiene categorías.',
   CONTENT_CATEGORIES_LAYOUT_HAMBURGER: 'Menú hamburguesa con submenú lateral',
   CONTENT_CATEGORIES_LAYOUT_BUTTON: 'Botón sólido con desplegable',
+
+  // Barra inferior mobile — orden del único lugar flexible (el 4º ítem).
+  MOBILE_NAV_TITLE: 'Barra inferior mobile',
+  MOBILE_NAV_HELP:
+    'La barra siempre muestra 5 íconos: home, Tienda, carrito, una de estas entradas y el menú. Usa la primera que esté realmente disponible, así que subí con las flechas la que quieras primero. Promos sólo cuenta si el canal tiene promociones activas, y "Buscá tu color" sólo con tintometría prendida y la carta importada.',
+  MOBILE_NAV_MOVE_UP: 'Subir',
+  MOBILE_NAV_MOVE_DOWN: 'Bajar',
+  MOBILE_NAV_PROMOS: 'Promos',
+  MOBILE_NAV_PROMOS_HELP: 'Sólo si el canal tiene promociones activas',
+  MOBILE_NAV_COLORES: 'Buscá tu color',
+  MOBILE_NAV_COLORES_HELP: 'Sólo con tintometría prendida y la carta importada',
+  MOBILE_NAV_SUCURSALES: 'Sucursales',
+  MOBILE_NAV_SUCURSALES_HELP: 'Necesita el switch de Sucursales de arriba',
+  MOBILE_NAV_BLOG: 'Blog',
+  MOBILE_NAV_BLOG_HELP: 'Necesita el switch de Blog de arriba',
+  MOBILE_NAV_CONTACTO: 'Contacto',
+  MOBILE_NAV_CONTACTO_HELP: 'Necesita el switch de Contacto de arriba',
   CONTENT_BLOG_NAME: 'Nombre de la sección de blog',
   CONTENT_BLOG_NAME_PLACEHOLDER: 'Recetas',
   CONTENT_BRANDS_LAYOUT: 'Diseño de la sección de marcas',
@@ -415,8 +456,7 @@ export const es: typeof en = {
   CONTENT_SUCURSALES_TITLE: 'Página de sucursales',
   CONTENT_SUCURSALES_HELP: 'Textos, filtros y layout de la página /sucursales.',
   CONTENT_SUCURSALES_SUBTITLE: 'Subtítulo',
-  CONTENT_SUCURSALES_SUBTITLE_PLACEHOLDER:
-    'Buscá por ubicación, filtrá por tipo de sucursal…',
+  CONTENT_SUCURSALES_SUBTITLE_PLACEHOLDER: 'Buscá por ubicación, filtrá por tipo de sucursal…',
   CONTENT_SUCURSALES_SUBTITLE_HELP: 'Dejalo vacío para no mostrar el subtítulo.',
   CONTENT_SUCURSALES_LAYOUT: 'Layout',
   CONTENT_SUCURSALES_LAYOUT_FULL: 'Completo (buscador + filtros + mapa + listado abajo)',
@@ -473,7 +513,8 @@ export const es: typeof en = {
   DETAIL_BACK: 'Volver a tiendas',
   DETAIL_IMPORT_PROGRESS: 'Progreso de importación',
   DETAIL_PRODUCTS_IMPORTED: '{{imported}} / {{total}} productos',
-  DETAIL_IMPORT_COUNTS: '{{imported}} creados · {{linked}} vinculados · {{skipped}} omitidos · {{failed}} fallidos · {{total}} traídos',
+  DETAIL_IMPORT_COUNTS:
+    '{{imported}} creados · {{linked}} vinculados · {{skipped}} omitidos · {{failed}} fallidos · {{total}} traídos',
   DETAIL_FAILED: '{{failed}} con error',
   DETAIL_IMPORT_HISTORY: 'Historial de importaciones',
   DETAIL_JOB_DATE: 'Fecha',
@@ -506,9 +547,17 @@ export const es: typeof en = {
   // B2B / Mayorista
   B2B_SECTION_TITLE: 'B2B / Mayorista',
   B2B_TOGGLE: 'Habilitar B2B mayorista',
+  B2B_SETUP_HELP:
+    'Al guardar se completa o repara la configuración mayorista. Elegí recursos existentes o crealos automáticamente. El portal principal abre en /b2b.',
+  B2B_CHANNEL_SELECT: 'Canal de ventas mayorista',
+  B2B_AUTO_CHANNEL: 'Crear un canal mayorista automáticamente',
+  B2B_AUTO_PRICING: 'Crear precios por cantidad automáticamente (20%, 25%, 30%)',
+  B2B_MAIN_HELP:
+    'Habilita el portal mayorista con el catálogo y los precios actuales de la tienda. Administrá las empresas y los precios mayoristas desde B2B.',
   B2B_TOGGLE_HELP:
     'Provisiona un canal mayorista dedicado, un grupo de clientes, una lista de precios con escalas (1+ -20% · 10+ -25% · 50+ -30%) y una cuenta de prueba. El portal abre en /tienda/{slug}/b2b.',
-  B2B_ALREADY_ENABLED: 'El B2B está habilitado. Mirá el panel Mayorista para las credenciales de prueba.',
+  B2B_ALREADY_ENABLED:
+    'El B2B está habilitado. Mirá el panel Mayorista para las credenciales de prueba.',
   B2B_PORTAL_URL: 'Portal mayorista',
   B2B_TEST_EMAIL: 'Email de prueba',
   B2B_TEST_PASSWORD: 'Contraseña de prueba',

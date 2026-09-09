@@ -1,6 +1,6 @@
+import { WHOLESALE_TIERS } from '../b2b-pricing';
 import { readMercadoPagoSetting } from '../../app-settings/mercadopago-runtime';
 import type { DemoStoreLike, DemoTemplate, TenantConfigPayload } from './types';
-import { WHOLESALE_TIERS } from '../b2b-pricing';
 import { parseMpAccounts, resolveMpAccount } from '../../mercado-pago/utils/accounts';
 import { buildMainStoreBrandAssets } from './shared';
 import { fashionTemplate } from './fashion';
@@ -191,6 +191,11 @@ export function buildTenantConfig(demo: DemoStoreLike): TenantConfigPayload {
     ...(content.sections ? { sectionVisibility: content.sections } : {}),
     ...(content.blogSectionName ? { blogSectionName: content.blogSectionName } : {}),
     ...(content.categoriesMenuLayout ? { categoriesMenuLayout: content.categoriesMenuLayout } : {}),
+    // Orden del lugar flexible de la barra inferior mobile. Se emite sólo si la
+    // lista tiene algo: `mobileNav: []` GANA ENTERA sobre el default del
+    // storefront (el merge de `assets` es shallow por clave) y volvería a dejar
+    // la barra en 4 columnas — justo lo que este campo arregla.
+    ...(content.mobileNav?.length ? { mobileNav: content.mobileNav } : {}),
     ...(content.sucursales ? { sucursales: content.sucursales } : {}),
     ...(content.shoppingList ? { shoppingList: content.shoppingList } : {}),
     ...(content.searchSuggestions ? { searchSuggestions: content.searchSuggestions } : {}),
@@ -287,7 +292,7 @@ export function buildTenantConfig(demo: DemoStoreLike): TenantConfigPayload {
             b2b: {
               enabled: true,
               salesChannelId: demo.b2b_sales_channel_id,
-              tiers: WHOLESALE_TIERS.map((t) => ({ minQty: t.minQty, discount: t.discount })),
+              tiers: demo.b2b_pricing_tiers ?? WHOLESALE_TIERS.map((t) => ({ ...t })),
             },
           }
         : {}),

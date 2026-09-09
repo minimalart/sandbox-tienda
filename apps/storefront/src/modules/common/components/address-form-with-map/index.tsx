@@ -1,5 +1,6 @@
 'use client';
 
+import { GOOGLE_MAPS_LIBRARIES } from '@lib/util/google-maps-loader';
 import { makeAddressSchema } from '@lib/validation/address';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { PhoneInput, defaultCountries, parseCountry } from 'react-international-phone';
@@ -8,7 +9,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import FormInput from '@modules/common/components/form-input';
 import { composeGeocodeQuery } from './compose-geocode-query';
 
-const LIBRARIES: ('places' | 'marker')[] = ['places', 'marker'];
 const DEFAULT_CENTER = { lat: -34.6037, lng: -58.3816 };
 const DEBOUNCE_MS = 600;
 const MIN_QUERY_LENGTH = 3;
@@ -282,7 +282,7 @@ export default function AddressFormWithMap(props: AddressFormWithMapProps) {
 function AddressFormWithMapsLoader(props: AddressFormWithMapProps) {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: props.googleMapsApiKey,
-    libraries: LIBRARIES,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
   return <AddressFormImpl {...props} isLoaded={isLoaded} />;
 }

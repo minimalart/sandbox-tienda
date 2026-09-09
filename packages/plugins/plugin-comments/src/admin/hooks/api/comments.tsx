@@ -140,13 +140,46 @@ export function useCommentSettings() {
   });
 }
 
+/**
+ * Campos que el schema Zod del POST /admin/comments/settings acepta como
+ * mutables (ver `api/admin/comments/validators.ts`). Los read-only del row
+ * (id, site_id, timestamps) causan 400 "Unrecognized fields" si viajan.
+ *
+ * Mantener sincronizado con `AdminUpdateCommentSettingsSchema`. Cambiar el
+ * schema del backend sin ajustar este whitelist deja al admin mandando el
+ * campo nuevo con éxito local (typecheck) pero rechazado por Zod al submit.
+ */
+const MUTABLE_SETTINGS_KEYS = [
+  'enabled',
+  'review_mode',
+  'rating_scale',
+  'who_can_comment',
+  'moderation',
+  'edit_window_minutes',
+  'min_length',
+  'max_length',
+  'rate_limit_per_minute',
+] as const;
+
+function pickMutableSettings(
+  data: Partial<CommentSettings>,
+): Partial<CommentSettings> {
+  const out: Partial<CommentSettings> = {};
+  for (const key of MUTABLE_SETTINGS_KEYS) {
+    if (key in data) (out as any)[key] = (data as any)[key];
+  }
+  return out;
+}
+
 export function useUpdateCommentSettings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: Partial<CommentSettings>) =>
       fetchJson<{ settings: CommentSettings }>(`${BASE_URL}/settings`, {
         method: 'POST',
-        body: JSON.stringify(data),
+        // El draft del form viene del row entero (con id, site_id, timestamps).
+        // Filtramos antes del POST para no reventar contra el Zod del backend.
+        body: JSON.stringify(pickMutableSettings(data)),
       }),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: COMMENT_SETTINGS_QUERY_KEY }),

@@ -71,6 +71,8 @@ export type JobScopeState =
 
 /** Clave: la ruta relativa a `src/`, sin extensión. Ej: `jobs/seo-audit-schedule`. */
 export const JOB_SCOPE: Record<string, JobScopeState> = {
+  'jobs/process-catalog-imports': { state: 'scoped' },
+  'jobs/cleanup-checkout-recipients': { state: 'scoped' },
 
   // ══ JOBS ══════════════════════════════════════════════════════════════════
 

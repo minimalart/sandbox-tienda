@@ -1,5 +1,6 @@
 "use client";
 
+import { presentationSummary } from "@lib/util/catalog-commercial";
 import { getTracking } from "@lib/util/get-tracking";
 import {
   handleImageError,
@@ -63,6 +64,7 @@ export default function B2BOrderDetail({ order, company, placedBy }: Props) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-foreground">{it.product_title ?? it.title}</p>
+                  {presentationSummary(it.metadata, it.quantity) && <p className="text-xs text-muted-foreground">{presentationSummary(it.metadata, it.quantity)}</p>}
                   <p className="text-xs text-muted-foreground">
                     {it.variant?.title ? `${it.variant.title} · ` : ""}{it.quantity} × {fmt(it.unit_price)}
                   </p>

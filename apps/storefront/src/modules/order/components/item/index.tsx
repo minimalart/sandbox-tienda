@@ -1,3 +1,4 @@
+import { presentationSummary } from "@lib/util/catalog-commercial";
 import type { HttpTypes } from "@medusajs/types";
 import { Text } from "@medusajs/ui";
 
@@ -27,6 +28,7 @@ const Item = ({ item, currencyCode }: ItemProps) => (
         >
           {item.product_title}
         </Text>
+        {presentationSummary(item.metadata, item.quantity) && <Text size="small">{presentationSummary(item.metadata, item.quantity)}</Text>}
         <LineItemOptions
           data-testid="product-variant"
           variant={item.variant}

@@ -102,7 +102,11 @@ const Brands = () => {
         setPagination((prev) => ({ ...prev, pageIndex: 0 }));
       },
     },
-    onRowClick: (_event, row) => setEditingBrand(row),
+    // `useDataTable` tipa el segundo argumento como el registro, pero en runtime
+    // entrega la Row de TanStack: sin `.original` el drawer recibe el wrapper y
+    // `brand.name` (y todo lo demás) queda undefined.
+    onRowClick: (_event, row) =>
+      setEditingBrand((row as unknown as { original?: Brand }).original ?? row),
   });
 
   return (

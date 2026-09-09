@@ -74,6 +74,7 @@ type DeliveryMode = {
 };
 
 type ShippingProps = {
+  disableAutoSelect?: boolean;
   cart: HttpTypes.StoreCart;
   availableShippingMethods: HttpTypes.StoreCartShippingOption[] | null;
   onCartUpdate?: (
@@ -269,6 +270,7 @@ const Shipping: React.FC<ShippingProps> = ({
   onCartUpdate,
   shippingCoverage,
   refreshingOptions = false,
+  disableAutoSelect = false,
 }) => {
   const hasNoCoverage =
     !!shippingCoverage?.evaluated && !shippingCoverage.covered;
@@ -373,7 +375,7 @@ const Shipping: React.FC<ShippingProps> = ({
 
   const searchParams = useSearchParams();
 
-  const isOpen = searchParams.get("step") === "delivery";
+  const isOpen = searchParams.get("step")?.replace(/^edit-/, '') === "delivery";
 
   // Postal code from the user's shipping address (pre-filled, no re-entry)
   const postalCode = cart.shipping_address?.postal_code || "";
@@ -663,7 +665,7 @@ const Shipping: React.FC<ShippingProps> = ({
 
   // Auto-select first shipping method if none selected
   useEffect(() => {
-    if (hasAutoSelected.current) return;
+    if (hasAutoSelected.current || disableAutoSelect) return;
 
     if (
       !shippingMethodId &&

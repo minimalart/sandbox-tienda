@@ -49,6 +49,11 @@ export type RouterInput = {
   selectionId: string | null;
   /** ¿Hay historial previo? Define si el saludo abre el menú. */
   hasHistory: boolean;
+  /**
+   * Tienda que recibió el mensaje (`?site=` del webhook). Sin esto los eventos del
+   * router quedan sin `site_id` y el embudo por tienda mezcla todo.
+   */
+  siteId?: string | null;
 };
 
 /** `true` = el turno quedó resuelto sin IA; `false` = seguí con el agente. */
@@ -158,6 +163,7 @@ function toolCtx(ctx: Ctx, overrides: AnyRecord = {}): AnyRecord {
     waPhone: ctx.input.phone,
     waUsedAi: false,
     waSessionId: ctx.sessionId,
+    waSiteId: ctx.input.siteId ?? null,
     ...overrides,
   };
 }
@@ -249,6 +255,7 @@ export async function routeInbound(input: RouterInput): Promise<RouterResult> {
         payload: payload ?? null,
         usedAi: false,
         sessionId: session.session_id,
+        siteId: input.siteId ?? null,
       }),
   };
 
@@ -266,6 +273,7 @@ export async function routeInbound(input: RouterInput): Promise<RouterResult> {
         ctx.sessionId,
         advisorAnswer.dimension,
         advisorAnswer.value,
+        input.siteId ?? null,
       );
       return handled ? HANDLED : NOT_HANDLED;
     }
@@ -332,6 +340,7 @@ export async function routeInbound(input: RouterInput): Promise<RouterResult> {
         phone,
         sessionId: ctx.sessionId,
         answers: (session.answers ?? {}) as AdvisorAnswers,
+        siteId: input.siteId ?? null,
       });
       if (resumed) return HANDLED;
     }
@@ -438,7 +447,14 @@ async function handleAction(ctx: Ctx, action: string): Promise<RouterResult> {
      * tiene que devolverlo a la primera pregunta y no dejarlo donde estaba.
      */
     case 'help': {
-      const started = await startAdvisor(ctx.input.container, ctx.svc, phone, ctx.sessionId, {});
+      const started = await startAdvisor(
+        ctx.input.container,
+        ctx.svc,
+        phone,
+        ctx.sessionId,
+        {},
+        ctx.input.siteId ?? null,
+      );
       return started ? HANDLED : NOT_HANDLED;
     }
 

@@ -160,7 +160,7 @@ const Addresses = ({
     [cart?.shipping_address],
   );
 
-  const isOpen = searchParams.get("step") === "address" || !hasCompleteAddress;
+  const isOpen = searchParams.get("step")?.replace(/^edit-/, '') === "address" || !hasCompleteAddress;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

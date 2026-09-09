@@ -37,6 +37,10 @@ export type RouteScopeState =
 
 /** Clave: la ruta relativa a `src/api`, sin `route.ts`. Ej: `admin/banners/[id]`. */
 export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
+  'admin/catalog-imports': { state: 'scoped' },
+  'admin/sites/[id]/checkout': { state: 'scoped' },
+  'admin/sites/checkout-context': { state: 'not-applicable', reason: 'server-only cart context binding; resolves requested site and validates its channel before an immutable binding' },
+  'admin/orders/[id]/checkout': { state: 'scoped' },
 
   // ── multistore ──────────────────────────────────────────────────
   'admin/multistore/manifest': { state: 'not-applicable', reason: 'publica el estado del propio scoping; es de la instancia' },
@@ -236,6 +240,7 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
 
   // ── erp ─────────────────────────────────────────────────────────
   'admin/erp/catalog-sync/run': { state: 'not-applicable', reason: 'corridas de sincronizacion contra el ERP unico de la instancia' },
+  'admin/erp/config/lookups': { state: 'not-applicable', reason: 'Consulta los códigos de la cuenta ERP única de la instalación mediante getConfig; no consulta recursos de una tienda.' },
   'admin/erp/config': { state: 'not-applicable', reason: 'conexion al ERP de la empresa: es un sistema por instalacion, no por tienda' },
   'admin/erp/invoices/[id]/download': { state: 'not-applicable', reason: 'comprobante emitido por el ERP unico de la instancia; el eje es la orden, no la tienda' },
   'admin/erp/orders/[id]': { state: 'not-applicable', reason: 'estado de facturacion de UNA orden en el ERP unico de la instancia; el eje es la orden' },

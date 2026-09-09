@@ -57,6 +57,16 @@ export interface CatalogingExecution {
   applied_at: string | null;
   created_at: string;
   updated_at: string;
+  /** Cuándo se mandó a la papelera. `null` en el listado normal. */
+  deleted_at: string | null;
+  /**
+   * ¿Se puede mandar a la papelera? Lo calcula el BACKEND por fila (la regla vive
+   * en `modules/catalogador/deletable.ts`). La UI no tiene su propia lista de
+   * estados: el día que uno cambie de lado, el menú cambia solo.
+   */
+  deletable?: boolean;
+  /** Por qué no se puede, para mostrarlo. `null` cuando sí se puede. */
+  delete_block_reason?: string | null;
   restored_from_execution_id: string | null;
 }
 
@@ -117,6 +127,8 @@ interface ExecutionsListResponse {
   count: number;
   offset: number;
   limit: number;
+  /** true cuando la respuesta es la papelera (`?deleted=only`). */
+  deleted?: boolean;
 }
 interface ExecutionDetailResponse {
   execution: CatalogingExecution;
@@ -162,12 +174,19 @@ export const useCreateExecution = () => {
   });
 };
 
+/** Borrado LÓGICO: la manda a la papelera, de donde `useUndeleteExecution` la trae. */
 export const useDeleteExecution = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      sdk.client.fetch<void>(`/admin/catalogador/executions/${id}`, { method: 'DELETE' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: catalogadorQueryKey.lists() }),
+      sdk.client.fetch<{ id: string; deleted: boolean }>(
+        `/admin/catalogador/executions/${id}`,
+        { method: 'DELETE' }
+      ),
+    onSuccess: (_res, id) => {
+      qc.invalidateQueries({ queryKey: catalogadorQueryKey.lists() });
+      qc.invalidateQueries({ queryKey: catalogadorQueryKey.detail(id) });
+    },
   });
 };
 
@@ -193,6 +212,11 @@ export const useCancelExecution = () => useExecutionAction('cancel');
 export const useDuplicateExecution = () => useExecutionAction('duplicate');
 export const useRefloatExecution = () => useExecutionAction('refloat');
 export const useRestoreExecution = () => useExecutionAction('restore');
+/**
+ * Saca de la papelera. OJO con el vecino: `useRestoreExecution` NO es esto — crea
+ * una corrida que reescribe el catálogo con los valores previos.
+ */
+export const useUndeleteExecution = () => useExecutionAction('undelete');
 
 // ---------------------------------------------------------------------------
 // Revisión por producto / imagen

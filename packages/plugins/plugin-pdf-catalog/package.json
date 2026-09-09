@@ -1,6 +1,6 @@
 {
   "name": "@minimalart/mercatto-plugin-pdf-catalog",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "Mercatto plugin — catálogos PDF por sitio con hotspots clickeables que agregan al carrito. Genera + almacena + sirve PDFs desde el admin.",
   "main": ".medusa/server/src/index.js",
   "types": ".medusa/server/src/index.d.ts",

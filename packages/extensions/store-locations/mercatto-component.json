@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "store-locations",
   "name": "Sucursales",
-  "version": "1.11.1",
+  "version": "1.11.3",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -303,11 +303,11 @@
     },
     {
       "path": "apps/backend/src/workflows/provision-branch.ts",
-      "sha256": "6b67548cbed54c9628e832d51ed34cdb6b0d4ef8107882169f15120a88a1116c"
+      "sha256": "bd5bd71a2296e4b2d16994636926755c357badb9a130c430a64f80008b101892"
     },
     {
       "path": "apps/storefront/src/app/api/store/addresses/route.ts",
-      "sha256": "2e7993bd3034280a1bd09f811eea62b6ee7647761975768e0eb9add93ee3d00b"
+      "sha256": "88ea532e064a1c0bb8ec4c3c57d8a04be554ba0df260cd8fa18fbfa9397d3107"
     },
     {
       "path": "apps/storefront/src/lib/data/branch-types.ts",
@@ -327,7 +327,7 @@
     },
     {
       "path": "apps/storefront/src/modules/store-locations/components/store-locator-client.tsx",
-      "sha256": "c482a8f0d8fc501bfaa0ed052d0ef2df1d16c597b207bb4577f25eb0a08b0e23"
+      "sha256": "2b5549aebaed0df699303cf575afaf49726907fbd19381c63b0108626d593064"
     },
     {
       "path": "apps/storefront/src/modules/store-locations/components/store-locator-filters.tsx",

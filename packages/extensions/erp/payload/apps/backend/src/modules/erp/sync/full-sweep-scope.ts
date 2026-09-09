@@ -56,6 +56,34 @@ export function resolveImagePhaseScope(input: {
 }
 
 /**
+ * ¿Se saltean los artículos que ya vienen fallando (`images.failures`)?
+ *
+ * En `delta` NO: si el artículo llega por el delta es porque algo cambió en el
+ * ERP, y cargarle la foto es justamente uno de los cambios que le mueven
+ * `fechahoramodife`. Ahí hay que reintentar aunque esté en cooldown.
+ *
+ * En `backfill` y en `full_sweep` SÍ, y por la misma razón: las dos pasan el
+ * catálogo COMPLETO, así que arrastran los códigos que nunca cambiaron —
+ * incluidos los que devuelven HTTP 500 en cada corrida—. Sin consultar el
+ * registro, esos códigos se comen los 15 fallos consecutivos de
+ * `ABORT_AFTER_CONSECUTIVE_FAILURES` y la fase muere antes de llegar a los
+ * artículos sanos.
+ *
+ * Medido en desdeelsur el 2026-09-07 (log `erpsl_01M1Y8Q9GJM8KMNTNJCXQ13BGS`),
+ * un barrido manual con el opt-in de imágenes prendido:
+ *
+ *     scope=full_sweep  planned=425  imported=0  failed=18  aborted=true
+ *     tracked_failures=269
+ *
+ * 269 códigos ya fichados, ninguno salteado, y los ~406 artículos que sí tenían
+ * foto usable nunca se intentaron. Es el mismo deadlock que `image-failures.ts`
+ * ya resolvió para el backfill, entrando por la otra puerta.
+ */
+export function shouldSkipKnownImageFailures(scope: ImagePhaseScope): boolean {
+  return scope === 'backfill' || scope === 'full_sweep';
+}
+
+/**
  * ¿Se escriben las price lists en esta corrida?
  *
  * Default `true`, y el default importa: el barrido completo es la RED DE

@@ -1,3 +1,4 @@
+import importerSettings from './fragments/catalog-import';
 import { defineSettings } from './types';
 
 /**
@@ -81,6 +82,7 @@ export default defineSettings({
    */
   defaultScope: 'instance',
   envOnly: [
+    ...(importerSettings.envOnly ?? []),
     {
       key: 'MERCADOPAGO_ACCOUNTS',
       reason:
@@ -93,6 +95,7 @@ export default defineSettings({
     },
   ],
   settings: [
+    ...importerSettings.settings,
     // ─── URL pública ─────────────────────────────────────────────────────────
     {
       key: 'MULTISTORE_PUBLIC_BASE_URL',

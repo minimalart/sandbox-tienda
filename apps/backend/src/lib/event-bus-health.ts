@@ -107,6 +107,34 @@ export type EventBusWorkerLike = {
    * y se verifica en el tick siguiente, que es justamente lo que el monitor ya hace.
    */
   run?: () => Promise<unknown>;
+  /**
+   * La conexión de ioredis que el Worker usa para consumir, tal como BullMQ la
+   * expone (`QueueBase#client`, una promesa que resuelve cuando está lista).
+   *
+   * OPCIONAL por el mismo motivo que `run`: es interior de un paquete ajeno.
+   *
+   * ES UNA PROMESA QUE PUEDE NO RESOLVER NUNCA. Si la conexión no logra
+   * establecerse, BullMQ deja ese `client` pendiente para siempre: awaitearlo sin
+   * techo de tiempo cuelga a quien lo espere, o sea que el monitor se convertiría
+   * en la falla que vigila. Todo consumo de esto va con deadline.
+   */
+  client?: Promise<EventBusRedisClientLike>;
+};
+
+/**
+ * Lo mínimo que necesitamos del cliente de ioredis para saber si la conexión está
+ * viva y, si no, reabrirla.
+ *
+ * `status` es el estado público de ioredis (`wait`, `connecting`, `connect`,
+ * `ready`, `reconnecting`, `close`, `end`). `connect()` reabre el MISMO socket
+ * cuando quedó en `end` — no crea un cliente nuevo, y eso es exactamente por qué
+ * se usa ésta y no la construcción de un Worker nuevo: contra un Valkey que está
+ * rechazando conexiones por tope de plan, abrir clientes nuevos cada cinco
+ * minutos empuja en la dirección del problema.
+ */
+export type EventBusRedisClientLike = {
+  status?: string;
+  connect?: () => Promise<unknown>;
 };
 
 /**

@@ -50,6 +50,7 @@ import { applyColorOptions, readColorState } from './apply-color-option';
 import { applyProductImages, readProductImageState } from './apply-product-images';
 import {
   resolveImagePhaseScope,
+  shouldSkipKnownImageFailures,
   shouldWritePriceListsOnRun,
   type ImagePhaseScope,
 } from './full-sweep-scope';
@@ -1034,13 +1035,15 @@ async function executeCatalogSync(
           rows.map((row) => row.code)
         );
         /**
-         * La lista de fallidos se pasa SÓLO en el backfill. Si el artículo llega
-         * por el delta es porque cambió en el ERP —cargarle la foto le mueve
-         * `fechahoramodife`—, así que ahí se reintenta aunque esté en cooldown.
+         * La lista de fallidos se consulta en las dos pasadas COMPLETAS
+         * (`backfill` y `full_sweep`) y no en el `delta`; ver
+         * `shouldSkipKnownImageFailures`.
          */
         const plan = planProductImages(
           states,
-          imageCounts.scope === 'backfill' ? { failures: imageFailures, now: imagesNow } : {}
+          shouldSkipKnownImageFailures(imageCounts.scope)
+            ? { failures: imageFailures, now: imagesNow }
+            : {}
         );
         imageCounts.planned = plan.fetches.length;
         imageCounts.skipped = plan.skipped;

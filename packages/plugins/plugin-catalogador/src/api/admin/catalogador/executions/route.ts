@@ -3,11 +3,16 @@ import { z } from 'zod';
 import { CATALOGADOR_MODULE } from '../../../../modules/catalogador';
 import type CatalogadorModuleService from '../../../../modules/catalogador/service';
 import { getCatalogadorConfig } from '../../../../modules/catalogador/config';
+import { deleteBlockReason, isDeletableStatus } from '../../../../modules/catalogador/deletable';
+import type { ExecutionStatus } from '../../../../modules/catalogador/models';
 
 import { siteFromRequest } from '../../../../lib/multistore/request';
 import { siteOf } from '../_shared';
-import { siteDefaults, siteFilter } from '../../../../lib/multistore/scope';
-import { CATALOGING_EXECUTION_SITE_SCOPE } from '../../../../modules/catalogador/site-scope';
+import { siteDefaults } from '../../../../lib/multistore/scope';
+import {
+  CATALOGING_EXECUTION_SITE_SCOPE,
+  executionSiteFilter,
+} from '../../../../modules/catalogador/site-scope';
 
 /** Operación elegida en el Paso 2 (campo de texto o de imagen). */
 export const OperationInputSchema = z.object({
@@ -33,27 +38,46 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
   const offset = req.query.offset ? Number(req.query.offset) : 0;
   const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
 
+  // `?deleted=only` es la PAPELERA: sólo las corridas mandadas a borrar. Sin el
+  // param, el listado normal —que es lo que ve el 99% de las visitas— no cambia.
+  // No hay un tercer modo "todas juntas" a propósito: mezclar vivas y borradas en
+  // una tabla paginada obliga a mirar una columna para saber si lo que estás por
+  // abrir todavía existe.
+  const trash = req.query.deleted === 'only';
+
   const filters: Record<string, unknown> = {};
   // Scopea el HISTORIAL, no el efecto: el producto enriquecido es compartido por toda
   // la instancia. Es para que el operador vea sus corridas sin el ruido de las demás.
-  Object.assign(
-    filters,
-    await siteFilter(req.scope, await siteFromRequest(req), CATALOGING_EXECUTION_SITE_SCOPE),
-  );
+  Object.assign(filters, executionSiteFilter(await siteFromRequest(req)));
   if (typeof req.query.status === 'string' && req.query.status) filters.status = req.query.status;
   if (typeof req.query.created_by === 'string' && req.query.created_by) {
     filters.created_by = req.query.created_by;
   }
   if (typeof req.query.kind === 'string' && req.query.kind) filters.kind = req.query.kind;
   if (q) filters.name = { $ilike: `%${q}%` };
+  // `withDeleted` solo trae vivas Y borradas mezcladas: el `$ne: null` es el que
+  // deja la papelera en sólo-borradas.
+  if (trash) filters.deleted_at = { $ne: null };
 
   const [executions, count] = await service.listAndCountCatalogingExecutions(filters, {
     skip: offset,
     take: limit,
-    order: { created_at: 'DESC' },
+    order: trash ? { deleted_at: 'DESC' } : { created_at: 'DESC' },
+    withDeleted: trash,
   });
 
-  res.status(200).json({ executions, count, offset, limit });
+  // La regla de quién se puede borrar viaja CALCULADA por fila, en vez de que la
+  // UI la reimplemente sobre `status`. Es la diferencia entre una regla y dos: el
+  // día que un estado cambie de lado, el menú del listado cambia con él sin que
+  // nadie tenga que acordarse de tocar el admin. `delete_block_reason` es además el
+  // texto que el menú muestra, así que el motivo lo escribe el dueño de la regla.
+  const withGate = executions.map((execution) => ({
+    ...execution,
+    deletable: isDeletableStatus(execution.status as ExecutionStatus),
+    delete_block_reason: deleteBlockReason(execution.status as ExecutionStatus),
+  }));
+
+  res.status(200).json({ executions: withGate, count, offset, limit, deleted: trash });
 }
 
 /**

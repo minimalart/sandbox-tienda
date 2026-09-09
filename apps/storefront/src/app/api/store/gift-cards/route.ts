@@ -1,9 +1,9 @@
 import { sdk } from '@lib/config'
-import { cookies } from 'next/headers'
+import { getAuthToken } from '@lib/data/cookies'
 import { NextResponse } from 'next/server'
 
 async function authToken(): Promise<string | undefined> {
-  return (await cookies()).get('_medusa_jwt')?.value
+  return await getAuthToken()
 }
 type Account = { id: string; balance: number; currency_code: string; movements?: unknown[] }
 

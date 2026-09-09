@@ -31,6 +31,8 @@ export type AdvisorFlowInput = {
   sessionId: string;
   /** Respuestas acumuladas (la nueva ya incluida). */
   answers: AdvisorAnswers;
+  /** Tienda que recibió el mensaje, para que los eventos no queden sin `site_id`. */
+  siteId?: string | null;
 };
 
 const money = (amount: number | null, currency: string): string => {
@@ -170,8 +172,16 @@ async function offerNoResultsExits(phone: string): Promise<boolean> {
  */
 export async function advanceAdvisor(input: AdvisorFlowInput): Promise<boolean> {
   const { container, svc, phone, sessionId } = input;
+  const siteId = input.siteId ?? null;
   const track = (type: WaEventType, payload?: AnyRecord) =>
-    trackWaEvent(container, { phone, type, payload: payload ?? null, usedAi: false, sessionId });
+    trackWaEvent(container, {
+      phone,
+      type,
+      payload: payload ?? null,
+      usedAi: false,
+      sessionId,
+      siteId,
+    });
 
   const config = await getAdvisorConfig(container);
   const ctx = await resolveWaOrderContext(container);
@@ -282,6 +292,7 @@ export async function startAdvisor(
   phone: string,
   sessionId: string | null,
   seedAnswers: AdvisorAnswers = {},
+  siteId: string | null = null,
 ): Promise<boolean> {
   const resolvedSessionId = sessionId ?? (await svc.getSession(phone)).session_id;
   trackWaEvent(container, {
@@ -290,6 +301,7 @@ export async function startAdvisor(
     payload: { seeded: Object.keys(seedAnswers) },
     usedAi: false,
     sessionId: resolvedSessionId,
+    siteId,
   });
   await svc.patchSession(phone, {
     intent: 'guided',
@@ -306,7 +318,14 @@ export async function startAdvisor(
       'Te voy a hacer algunas preguntas para mostrarte productos adecuados 👇',
     ).catch(() => null);
   }
-  return advanceAdvisor({ container, svc, phone, sessionId: resolvedSessionId, answers: seedAnswers });
+  return advanceAdvisor({
+    container,
+    svc,
+    phone,
+    sessionId: resolvedSessionId,
+    answers: seedAnswers,
+    siteId,
+  });
 }
 
 /** Registra la respuesta a una dimensión y sigue (§13). */
@@ -317,6 +336,7 @@ export async function answerAdvisor(
   sessionId: string,
   dimension: AdvisorDimension,
   value: string,
+  siteId: string | null = null,
 ): Promise<boolean> {
   const session = await svc.getSession(phone);
   const previous = (session.answers ?? {}) as AdvisorAnswers;
@@ -329,9 +349,10 @@ export async function answerAdvisor(
     payload: { value, label: answerLabel(dimension, value) },
     usedAi: false,
     sessionId,
+    siteId,
   });
 
-  return advanceAdvisor({ container, svc, phone, sessionId, answers });
+  return advanceAdvisor({ container, svc, phone, sessionId, answers, siteId });
 }
 
 /**

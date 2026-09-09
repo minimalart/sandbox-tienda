@@ -11,7 +11,11 @@ import { useAddToCartAnimation } from "@lib/context/add-to-cart-animation";
 import type { NavigationLink } from "@lib/data/navigation-links";
 import { useGhostCompletion } from "@lib/hooks/use-ghost-completion";
 import { SEARCH_HINTS, useRotatingHint } from "@lib/hooks/use-rotating-hint";
-import { useSiteHref, useTenant } from "@lib/site-config/context";
+import {
+  useSiteHref,
+  useTenant,
+  useTenantSections,
+} from "@lib/site-config/context";
 import { useWishlist } from "@lib/hooks/use-wishlist";
 import { useWishlistDrawerStore } from "@lib/stores/wishlist-drawer.store";
 import ShoppingListModal from "@modules/shopping-list/components/shopping-list-modal";
@@ -38,6 +42,7 @@ const MobileSearchBar = () => {
   const isLocalChangeRef = useRef(false);
   const tenant = useTenant();
   const siteHref = useSiteHref();
+  const { isShoppingListVisible } = useTenantSections();
   const searchHints = tenant.assets.searchHints?.length
     ? tenant.assets.searchHints
     : SEARCH_HINTS;
@@ -257,15 +262,17 @@ const MobileSearchBar = () => {
           )
         )}
       </div>
-      <button
-        aria-label="Abrir lista de compras"
-        data-testid="shopping-list-open-button"
-        className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:border-[--primary-color] hover:text-[--primary-color]"
-        onClick={() => setShoppingListOpen(true)}
-        type="button"
-      >
-        <ListPlus aria-hidden="true" className="h-5 w-5" />
-      </button>
+      {isShoppingListVisible && (
+        <button
+          aria-label="Abrir lista de compras"
+          data-testid="shopping-list-open-button"
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:border-[--primary-color] hover:text-[--primary-color]"
+          onClick={() => setShoppingListOpen(true)}
+          type="button"
+        >
+          <ListPlus aria-hidden="true" className="h-5 w-5" />
+        </button>
+      )}
       <button
         aria-label="Favoritos"
         className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:border-[--primary-color] hover:text-[--primary-color]"
@@ -286,10 +293,12 @@ const MobileSearchBar = () => {
         )}
       </button>
     </div>
-    <ShoppingListModal
-      open={shoppingListOpen}
-      onClose={() => setShoppingListOpen(false)}
-    />
+    {isShoppingListVisible && (
+      <ShoppingListModal
+        open={shoppingListOpen}
+        onClose={() => setShoppingListOpen(false)}
+      />
+    )}
     </>
   );
 };

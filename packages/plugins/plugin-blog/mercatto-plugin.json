@@ -3,7 +3,7 @@
   "schema_version": 1,
   "id": "blog",
   "name": "Blog comprable",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "kind": "plugin",
   "status": "ready",
   "dependencies": [],

@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { GOOGLE_MAPS_LIBRARIES } from '@lib/util/google-maps-loader'
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api'
 
 type ContactMapProps = {
@@ -23,7 +24,10 @@ export default function ContactMap(props: ContactMapProps) {
 }
 
 function ContactMapImpl({ apiKey, address }: ContactMapProps) {
-  const { isLoaded } = useJsApiLoader({ googleMapsApiKey: apiKey })
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: apiKey,
+    libraries: GOOGLE_MAPS_LIBRARIES,
+  })
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
 
   useEffect(() => {

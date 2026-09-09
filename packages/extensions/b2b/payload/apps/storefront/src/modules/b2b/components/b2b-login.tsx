@@ -21,7 +21,7 @@ export default function B2BLogin({
   storeLogo,
   demoSlug,
 }: {
-  /** Logo de la tienda del demo. Ausente = logo de Mercatto (store principal). */
+  /** Logo configurado de la tienda activa, incluida la principal. */
   storeLogo?: string;
   /** Slug del demo activo, para preservar el prefijo /demo/{slug} tras el login. */
   demoSlug?: string;

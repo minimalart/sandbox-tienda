@@ -1,5 +1,6 @@
 "use client";
 
+import { presentationFactor, type CatalogCommercial } from "@lib/util/catalog-commercial";
 import type { B2BPriceInfo } from "@lib/data/company";
 import { useTypesenseProducts } from "@lib/hooks/use-typesense-products";
 import { useDemoHref } from "@lib/site-config/context";
@@ -34,6 +35,7 @@ type Props = {
  * → shimmer en el precio y stepper deshabilitado.
  */
 type BuilderRow = {
+  commercial?: CatalogCommercial;
   product_id: string;
   variant_id: string;
   sku: string | null;
@@ -85,18 +87,32 @@ function Stepper({
   row,
   qty,
   onChange,
+  mode,
+  onMode,
 }: {
+  mode: "unit" | "package";
+  onMode: (mode: "unit" | "package") => void;
   row: BuilderRow;
   qty: number;
   onChange: (vid: string, n: number) => void;
 }) {
   const disabled = row.pending || row.unit_price == null || row.available <= 0;
-  return (
+  const factor = mode === "package" ? presentationFactor(row.commercial) : 1;
+  const shown = qty / factor;
+  const p = row.commercial?.presentation;
+  const policy = row.commercial?.purchasePolicy;
+  const canPackage = policy?.enabled && policy.allowedModes?.includes("package") && (presentationFactor(row.commercial) > 1 || (p?.mode === "own-sku" && p.priceBasis === "sku"));
+  return (<div className="space-y-1">
+    {canPackage && <select aria-label={`Presentación de ${row.product_title}`} value={mode} onChange={e => onMode(e.target.value as "unit" | "package")} className="w-full rounded border bg-background px-1 py-1 text-xs focus-visible:outline focus-visible:outline-2">
+      {(policy?.allowedModes?.includes("unit") ?? true) && <option value="unit">{p?.mode === "own-sku" ? "SKU" : "Unidades"}</option>}
+      <option value="package" disabled={qty > 0 && qty % presentationFactor(row.commercial) !== 0}>{p?.label || "Bulto"}{p?.unitsPerPackage ? ` × ${p.unitsPerPackage}` : ""}</option>
+    </select>}
+
     <div className="flex items-center justify-center gap-1">
       <button
         type="button"
         disabled={disabled}
-        onClick={() => onChange(row.variant_id, qty - 1)}
+        onClick={() => onChange(row.variant_id, qty - factor)}
         className="flex size-7 items-center justify-center rounded-md border border-input text-foreground hover:bg-muted disabled:opacity-40"
       >
         −
@@ -105,8 +121,9 @@ function Stepper({
         type="number"
         min={0}
         disabled={disabled}
-        value={qty || ""}
-        onChange={(e) => onChange(row.variant_id, parseInt(e.target.value, 10) || 0)}
+        aria-label={`Cantidad de ${row.product_title}`}
+        value={shown || ""}
+        onChange={(e) => onChange(row.variant_id, (Number(e.target.value) || 0) * factor)}
         className={cn(
           "h-7 w-12 rounded-md border text-center text-sm tabular-nums outline-none disabled:opacity-40",
           qty > 0 ? "border-primary bg-primary/5 font-semibold text-primary" : "border-input",
@@ -115,11 +132,14 @@ function Stepper({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => onChange(row.variant_id, qty + 1)}
+        onClick={() => onChange(row.variant_id, qty + factor)}
         className="flex size-7 items-center justify-center rounded-md border border-input text-foreground hover:bg-muted disabled:opacity-40"
       >
         +
       </button>
+    </div>
+    {p?.label && <p className="text-xs text-muted-foreground">{p.label}{p.unitsPerPackage ? ` × ${p.unitsPerPackage}` : ""}</p>}
+    {mode === "package" && <p className="text-xs text-muted-foreground">{qty} {p?.mode === "own-sku" ? "cajas" : "unidades"} · {fmt((row.unit_price ?? 0) * factor)} por {p?.label || "bulto"}</p>}
     </div>
   );
 }
@@ -217,6 +237,7 @@ export default function B2BOrderBuilder({ company, placedBy, salesChannelId, tie
             product_title: p.title,
             variant_title: v.title,
             thumbnail: p.thumbnail,
+            commercial: info?.commercial,
             available: info?.available ?? 0,
             unit_price: info?.unit_price ?? null,
             pending: !resolvedProducts.has(p.id),
@@ -241,9 +262,10 @@ export default function B2BOrderBuilder({ company, placedBy, salesChannelId, tie
 
   // Selección + cantidades.
   const [sel, setSel] = useState<Record<string, number>>({});
+  const [presentationModes, setPresentationModes] = useState<Record<string, "unit" | "package">>({});
   const setQty = (vid: string, n: number) =>
     setSel((p) => {
-      const q2 = Math.max(0, Math.floor(n || 0));
+      const q2 = Math.max(0, n || 0);
       const next = { ...p };
       if (q2 <= 0) delete next[vid];
       else next[vid] = q2;
@@ -270,16 +292,20 @@ export default function B2BOrderBuilder({ company, placedBy, salesChannelId, tie
               variant_sku?: string | null;
               thumbnail?: string | null;
               unit_price?: number | null;
+              metadata?: any;
+              variant?: any;
             }>;
           } | null;
         };
         const items = cart?.items ?? [];
         if (!items.length) return;
         const initSel: Record<string, number> = {};
+        const initModes: Record<string, "unit" | "package"> = {};
         const seeded: BuilderRow[] = [];
         for (const it of items) {
           if (!it.variant_id) continue;
           initSel[it.variant_id] = it.quantity;
+          if (it.metadata?.catalog_presentation) initModes[it.variant_id] = "package";
           seeded.push({
             product_id: it.product_id ?? it.variant_id,
             variant_id: it.variant_id,
@@ -287,12 +313,14 @@ export default function B2BOrderBuilder({ company, placedBy, salesChannelId, tie
             product_title: it.product_title ?? it.title ?? "Producto",
             variant_title: it.variant_title ?? "",
             thumbnail: it.thumbnail ?? null,
+            commercial: it.variant?.metadata?.catalog_commercial,
             available: 9999,
             unit_price: it.unit_price ?? null,
             pending: false,
           });
         }
         setSel(initSel);
+        setPresentationModes(initModes);
         // Sembramos el caché para que el resumen muestre estos ítems aunque no
         // estén en la página visible de Typesense. Cuando la fila real del
         // catálogo llega (con stock/precio), sobreescribe la sembrada.
@@ -358,7 +386,11 @@ export default function B2BOrderBuilder({ company, placedBy, salesChannelId, tie
   const finalize = async () => {
     const lines = Object.entries(sel)
       .filter(([, q2]) => q2 > 0)
-      .map(([variant_id, quantity]) => ({ variant_id, quantity }));
+      .map(([variant_id, quantity]) => {
+        const mode = presentationModes[variant_id] ?? (rowCache.get(variant_id)?.commercial?.purchasePolicy?.enabled && rowCache.get(variant_id)?.commercial?.purchasePolicy?.allowedModes?.length === 1 && rowCache.get(variant_id)?.commercial?.purchasePolicy?.allowedModes?.includes("package") ? "package" : undefined);
+        const factor = mode === "package" ? presentationFactor(rowCache.get(variant_id)?.commercial) : 1;
+        return { variant_id, quantity: quantity / factor, ...(mode ? { presentation_mode: mode } : {}) };
+      });
     if (!lines.length) return;
     setBusy(true);
     setErr(null);
@@ -570,7 +602,7 @@ export default function B2BOrderBuilder({ company, placedBy, salesChannelId, tie
                               className="line-clamp-2 max-w-[22ch] break-words font-medium text-foreground"
                               title={title}
                             >
-                              {title}
+                              <LocalizedClientLink href={`/b2b/productos/${r.product_id}`}>{title}</LocalizedClientLink>
                             </p>
                             {noStock ? (
                               <Badge variant="outline" className="mt-0.5 text-[10px] text-destructive">
@@ -612,7 +644,7 @@ export default function B2BOrderBuilder({ company, placedBy, salesChannelId, tie
                         )}
                       </td>
                       <td className="px-2 py-2">
-                        <Stepper row={r} qty={qty} onChange={setQty} />
+                        <Stepper row={r} qty={qty} onChange={setQty} mode={presentationModes[r.variant_id] ?? (r.commercial?.purchasePolicy?.enabled && r.commercial.purchasePolicy.allowedModes?.length === 1 && r.commercial.purchasePolicy.allowedModes.includes("package") ? "package" : "unit")} onMode={mode => setPresentationModes(previous => ({ ...previous, [r.variant_id]: mode }))} />
                       </td>
                       <td className="hidden px-2 py-2 text-right font-medium tabular-nums text-foreground sm:table-cell">
                         {qty > 0 && r.unit_price != null ? fmt((priceForQty(r.unit_price, tiers, qty) ?? 0) * qty) : "—"}

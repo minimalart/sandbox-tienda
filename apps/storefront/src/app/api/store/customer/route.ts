@@ -1,11 +1,7 @@
 import { sdk } from "@lib/config";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { getAuthToken } from "@lib/data/cookies";
 
-async function getAuthToken() {
-  const cookieStore = await cookies();
-  return cookieStore.get("_medusa_jwt")?.value;
-}
 
 export async function POST(request: Request) {
   try {

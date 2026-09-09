@@ -12,6 +12,7 @@ import type {
   SpaceProduct,
   SpaceSnapshot,
 } from '@lib/space-designer/types';
+import { SPACE_PRODUCT_MIME } from '../drag';
 import { createProductModel } from '../three/product-models';
 import {
   dimensionsOf,
@@ -34,6 +35,8 @@ export type SpaceSceneProps = {
   onMove?: (object: SpaceObject) => void;
   onRotate?: (id: string) => void;
   onDelete?: (id: string) => void;
+  /** Called with the floor point (metres) where a catalogue product was dropped. */
+  onDropProduct?: (productId: string, point: { x: number; z: number }) => void;
 };
 
 type SceneRuntime = {
@@ -64,6 +67,7 @@ export default function SpaceScene(props: SpaceSceneProps) {
   const [ready, setReady] = useState(false);
   const [topView, setTopView] = useState(false);
   const [retry, setRetry] = useState(0);
+  const [dropping, setDropping] = useState(false);
   const descriptionId = useId();
   const titleOf = (product: SpaceProduct) =>
     product.label ||
@@ -105,8 +109,16 @@ export default function SpaceScene(props: SpaceSceneProps) {
       dz: number;
       plane: THREE.Plane;
     } | null = null;
+    // Follow the tenant palette instead of a hardcoded green. The CSS tints are
+    // color-mix(), which getComputedStyle does NOT evaluate and three cannot
+    // parse, so read the raw --primary-color and mix it here.
+    const primary = new THREE.Color('#2e7d32');
+    const declared = getComputedStyle(host).getPropertyValue('--primary-color').trim();
+    if (/^(#[0-9a-f]{3,8}|rgba?\(|hsla?\()/i.test(declared)) primary.setStyle(declared);
+    const tint = (amount: number, base: string) =>
+      primary.clone().lerp(new THREE.Color(base), 1 - amount);
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#edf0e9');
+    scene.background = tint(0.07, '#f2f3ef');
     const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 500);
     const target = new THREE.Vector3();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, preview ? 1.25 : 1.75));
@@ -134,7 +146,7 @@ export default function SpaceScene(props: SpaceSceneProps) {
       controls.zoomSpeed = 0.85;
       controls.target.copy(target);
     }
-    const hemisphere = new THREE.HemisphereLight('#fffaf0', '#829885', 2.5);
+    const hemisphere = new THREE.HemisphereLight('#fffaf0', '#8f9490', 2.5);
     scene.add(hemisphere);
     const sun = new THREE.DirectionalLight('#fff4dc', 3.4);
     sun.castShadow = !preview;
@@ -152,7 +164,7 @@ export default function SpaceScene(props: SpaceSceneProps) {
     const prototypes = new Map<string, Prototype>();
     const carriers = new Map<string, THREE.Group>();
     const batches = new Map<string, InstancePart[]>();
-    const selection = new THREE.Box3Helper(new THREE.Box3(), '#3c9667');
+    const selection = new THREE.Box3Helper(new THREE.Box3(), tint(0.7, '#ffffff'));
     (selection.material as THREE.LineBasicMaterial).depthTest = false;
     selection.renderOrder = 20;
     selection.visible = false;
@@ -501,6 +513,41 @@ export default function SpaceScene(props: SpaceSceneProps) {
     const lostCapture = (event: PointerEvent) => {
       if (drag?.pointerId === event.pointerId) endDrag(false);
     };
+    // A catalogue card dropped on the canvas lands where the pointer is, not in
+    // the middle of the room. Touch has no HTML5 drag, hence the "+" button too.
+    const floorPoint = (event: DragEvent) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.set(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        (-(event.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      raycaster.setFromCamera(pointer, camera);
+      const floor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      return raycaster.ray.intersectPlane(floor, intersection)
+        ? { x: intersection.x, z: intersection.z }
+        : null;
+    };
+    const carriesProduct = (event: DragEvent) =>
+      Array.from(event.dataTransfer?.types ?? []).includes(SPACE_PRODUCT_MIME);
+    const dragOver = (event: DragEvent) => {
+      if (!latest.current.onDropProduct || !carriesProduct(event)) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+      setDropping(true);
+    };
+    const dragLeave = (event: DragEvent) => {
+      if (event.relatedTarget && host.contains(event.relatedTarget as Node)) return;
+      setDropping(false);
+    };
+    const drop = (event: DragEvent) => {
+      setDropping(false);
+      const handler = latest.current.onDropProduct;
+      if (!handler || !carriesProduct(event)) return;
+      event.preventDefault();
+      const productId = event.dataTransfer?.getData(SPACE_PRODUCT_MIME);
+      const point = floorPoint(event);
+      if (productId && point) handler(productId, point);
+    };
     const contextLost = (event: Event) => {
       event.preventDefault();
       endDrag();
@@ -527,6 +574,9 @@ export default function SpaceScene(props: SpaceSceneProps) {
       renderer.domElement.ownerDocument.addEventListener('pointerup', pointerUp, true);
       renderer.domElement.ownerDocument.addEventListener('pointercancel', pointerUp, true);
       renderer.domElement.addEventListener('lostpointercapture', lostCapture);
+      host.addEventListener('dragover', dragOver);
+      host.addEventListener('dragleave', dragLeave);
+      host.addEventListener('drop', drop);
     }
     runtime.current = {
       sync,
@@ -555,6 +605,9 @@ export default function SpaceScene(props: SpaceSceneProps) {
       renderer.domElement.ownerDocument.removeEventListener('pointerup', pointerUp, true);
       renderer.domElement.ownerDocument.removeEventListener('pointercancel', pointerUp, true);
       renderer.domElement.removeEventListener('lostpointercapture', lostCapture);
+      host.removeEventListener('dragover', dragOver);
+      host.removeEventListener('dragleave', dragLeave);
+      host.removeEventListener('drop', drop);
       cancelAnimationFrame(pendingFrame);
       clearBatches();
       roomView?.dispose();
@@ -619,7 +672,7 @@ export default function SpaceScene(props: SpaceSceneProps) {
   return (
     <div
       ref={rootRef}
-      className={`${styles.root} ${preview ? styles.preview : ''}`}
+      className={`${styles.root} ${preview ? styles.preview : ''} ${dropping ? styles.dropTarget : ''}`}
       data-space-scene="3d"
     >
       <div
@@ -702,6 +755,7 @@ export default function SpaceScene(props: SpaceSceneProps) {
             </button>
           </div>
           <p id={descriptionId} className={styles.instructions}>
+            {interactive ? 'Arrastrá un producto del catálogo hasta acá para agregarlo. ' : ''}
             {interactive ? 'Arrastrá un mueble para moverlo. ' : ''}Arrastrá el fondo para girar ·
             Pellizcá o usá la rueda para acercar.
           </p>

@@ -1,3 +1,4 @@
+import type { RemoteQueryFunction } from '@medusajs/framework/types';
 /**
  * create-route (M7) — crea una Route de FLOTA PROPIA y, opcionalmente, sus
  * RouteStops ordenados a partir de una lista de DeliveryExecutions.
@@ -134,7 +135,7 @@ const createRouteStopsStep = createStep(
     }
 
     const service = container.resolve<DeliveryModuleService>(DELIVERY_MODULE);
-    const query = container.resolve(ContainerRegistrationKeys.QUERY);
+    const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
 
     // Resolvemos ejecuciones + dirección de la orden linkeada en una sola query.
     const { data: executions } = await query.graph({

@@ -1,6 +1,6 @@
 {
   "name": "@minimalart/mercatto-plugin-ga4",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Mercatto plugin — envío server-side de eventos ecommerce a GA4 vía Measurement Protocol, con mapeo por evento y builtins configurables por tienda",
   "main": ".medusa/server/src/index.js",
   "types": ".medusa/server/src/index.d.ts",

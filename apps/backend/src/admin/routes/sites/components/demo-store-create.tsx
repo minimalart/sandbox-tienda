@@ -26,6 +26,7 @@ import {
   formToContentConfig,
   type ContentConfigForm,
 } from './content-config-fields';
+import { CatalogSourceFields } from './catalog-source-fields';
 import { currencyForCountry } from '../lib';
 import { ImageField } from '../../../components/image-field';
 
@@ -426,83 +427,13 @@ export const DemoStoreCreate = ({ open, onOpenChange }: Props) => {
               {/* Step 5 — Source */}
               <ProgressTabs.Content value="source">
                 <div className="flex flex-col gap-y-4">
-                  <div className="flex flex-col gap-y-2">
-                    <Label>{t('FIELD_SOURCE_TYPE')}</Label>
-                    <Select
-                      value={sourceType}
-                      onValueChange={(v) => setSourceType(v as DemoSourceType)}
-                    >
-                      <Select.Trigger>
-                        <Select.Value />
-                      </Select.Trigger>
-                      <Select.Content>
-                        <Select.Group>
-                          <Select.Label>{t('SOURCE_GROUP_PLATFORM')}</Select.Label>
-                          <Select.Item value="woocommerce">WooCommerce</Select.Item>
-                          <Select.Item value="vtex">VTEX</Select.Item>
-                          <Select.Item value="shopify">Shopify</Select.Item>
-                        </Select.Group>
-                        <Select.Separator />
-                        <Select.Group>
-                          <Select.Label>{t('SOURCE_GROUP_INTERNAL')}</Select.Label>
-                          <Select.Item value="sales_channel">{t('SOURCE_SALES_CHANNEL')}</Select.Item>
-                        </Select.Group>
-                      </Select.Content>
-                    </Select>
-                  </div>
-                  {isChannelSource ? (
-                    <div className="flex flex-col gap-y-2">
-                      <Label>{t('FIELD_SOURCE_CHANNEL')}</Label>
-                      <Select value={sourceChannelId} onValueChange={setSourceChannelId}>
-                        <Select.Trigger>
-                          <Select.Value placeholder={t('FIELD_SOURCE_CHANNEL_PLACEHOLDER')} />
-                        </Select.Trigger>
-                        <Select.Content>
-                          {channelOptions.map((channel) => (
-                            <Select.Item key={channel.id} value={channel.id}>
-                              {channel.name}
-                            </Select.Item>
-                          ))}
-                        </Select.Content>
-                      </Select>
-                      <Text size="small" className="text-ui-fg-subtle">
-                        {salesChannels.isLoading
-                          ? '…'
-                          : channelOptions.length
-                            ? t('FIELD_SOURCE_CHANNEL_HELP')
-                            : t('FIELD_SOURCE_CHANNEL_EMPTY')}
-                      </Text>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-y-2">
-                      <Label>{t('FIELD_SOURCE_URL')}</Label>
-                      <Input
-                        value={sourceUrl}
-                        placeholder="https://mitienda.com"
-                        onChange={(e) => setSourceUrl(e.target.value)}
-                      />
-                      <Text size="small" className="text-ui-fg-subtle">
-                        {t('FIELD_SOURCE_URL_HELP')}
-                      </Text>
-                    </div>
-                  )}
-                  {/* El tope de productos no aplica al origen interno: la demo usa
-                      el canal de origen tal cual, con todo su catálogo. */}
-                  {!isChannelSource && (
-                    <div className="flex flex-col gap-y-2">
-                      <Label>{t('FIELD_TARGET_COUNT')}</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={targetCount}
-                        placeholder={t('FIELD_TARGET_COUNT_PLACEHOLDER')}
-                        onChange={(e) => setTargetCount(e.target.value)}
-                      />
-                      <Text size="small" className="text-ui-fg-subtle">
-                        {t('FIELD_TARGET_COUNT_HELP')}
-                      </Text>
-                    </div>
-                  )}
+                  <CatalogSourceFields
+                    sourceType={sourceType} sourceUrl={sourceUrl} targetCount={targetCount}
+                    onSourceTypeChange={setSourceType} onSourceUrlChange={setSourceUrl}
+                    onTargetCountChange={setTargetCount} channels={channelOptions}
+                    channelId={sourceChannelId} onChannelChange={setSourceChannelId}
+                    channelsLoading={salesChannels.isLoading}
+                  />
                   {sourceType === 'shopify' && (
                     <div className="flex flex-col gap-y-4 rounded-lg border border-ui-border-base p-3">
                       <Text size="small" className="font-medium">

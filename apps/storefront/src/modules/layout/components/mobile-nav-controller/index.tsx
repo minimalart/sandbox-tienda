@@ -41,6 +41,7 @@ const MobileNavController = ({
       <BottomNav
         cartCount={cartCount}
         cartBounce={cartBounce}
+        hasTinting={hasTinting}
         hidden={
           isMobileMenuOpen ||
           isOpen ||

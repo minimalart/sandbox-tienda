@@ -1,3 +1,4 @@
+import type { IEventBusModuleService } from '@medusajs/framework/types';
 import {
   createStep,
   createWorkflow,
@@ -102,7 +103,7 @@ const emitCreatedEventsStep = createStep(
     data: { corporateId: string; status: string },
     { container },
   ) => {
-    const eventBus = container.resolve(Modules.EVENT_BUS);
+    const eventBus = container.resolve<IEventBusModuleService>(Modules.EVENT_BUS);
     await eventBus.emit({
       name: 'corporate.created',
       data: { id: data.corporateId },

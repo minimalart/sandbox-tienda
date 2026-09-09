@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "typesense",
   "name": "Typesense",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "kind": "extension",
   "status": "ready",
   "dependencies": [],
@@ -460,7 +460,7 @@
     },
     {
       "path": "apps/backend/src/modules/typesense/product-mapper.ts",
-      "sha256": "ed3922f2631072dcf1fa4a33f0da4c6b7de04666f9635bae9f0bfc241c3a26f6"
+      "sha256": "ae100766fc81c48087dd437ce8e85899591610a310cda801540b72661db2630a"
     },
     {
       "path": "apps/backend/src/modules/typesense/reindex-queue.ts",

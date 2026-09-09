@@ -1,8 +1,8 @@
+import { requireB2BStore } from "@lib/site-config/require-b2b-store";
 import { getMyCompany } from "@lib/data/company";
 import { retrieveCustomer } from "@lib/data/customer";
 import {
   getActiveSitePrefix,
-  getActiveSiteSlug,
   getActiveTenant,
 } from "@lib/site-config/active-tenant";
 import { withSitePrefix } from "@lib/site-config/site-path";
@@ -15,6 +15,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 export default async function B2BLayout({ children }: { children: ReactNode }) {
+  await requireB2BStore();
   const customer = await retrieveCustomer().catch(() => null);
 
   // Sin sesión → login B2B dedicado. Preservamos el prefijo /demo/{slug} para no
@@ -35,12 +36,7 @@ export default async function B2BLayout({ children }: { children: ReactNode }) {
     customer.email ||
     undefined;
 
-  // Logo de la tienda del demo (cuando estamos en contexto de demo). En el store
-  // principal queda undefined → el sidebar usa el logo de Mercatto. `storeIcon`
-  // (favicon cuadrado) se usa en el sidebar colapsado, donde el logo completo no
-  // entra.
-  const siteSlug = await getActiveSiteSlug();
-  const tenantAssets = siteSlug ? (await getActiveTenant()).assets : null;
+  const tenantAssets = (await getActiveTenant()).assets;
   const storeLogo = tenantAssets?.logos?.main ?? undefined;
   const storeIcon = tenantAssets?.favicon ?? undefined;
 

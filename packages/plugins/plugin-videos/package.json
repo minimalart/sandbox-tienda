@@ -1,6 +1,6 @@
 {
   "name": "@minimalart/mercatto-plugin-videos",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Mercatto plugin — Vimeo integration for shoppable videos: admin CRUD, Vimeo OAuth flow, product-video links, storefront-facing store API.",
   "main": ".medusa/server/src/index.js",
   "types": ".medusa/server/src/index.d.ts",

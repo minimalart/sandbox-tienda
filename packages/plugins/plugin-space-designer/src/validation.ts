@@ -160,6 +160,7 @@ export const ConfigSchema = z
     products: z.array(ProductSchema).max(500),
     templates: z.array(TemplateSchema).max(100),
     allow_custom: z.boolean().default(true),
+    checkout_mode: z.enum(['cart', 'quote']).default('cart'),
     surface_options: z.object({ floors: surface.optional(), walls: surface.optional() }).optional(),
   })
   .superRefine((config, ctx) => {
@@ -234,6 +235,16 @@ export const SelectionSchema = z.object({
 });
 export const LineItemsSchema = SelectionSchema.extend({ cart_id: identifier });
 export const DesignSchema = SelectionSchema.extend({ name: z.string().trim().min(1).max(150) });
+export const QuoteSchema = SelectionSchema.extend({
+  name: z.string().trim().min(2).max(150),
+  email: z.string().trim().email().max(200),
+  phone: z.string().trim().max(60).optional(),
+  message: z.string().trim().max(2000).optional(),
+});
+export const QuoteListSchema = PaginationSchema.extend({
+  status: z.enum(['new', 'contacted', 'closed']).optional(),
+});
+export const QuoteUpdateSchema = z.object({ status: z.enum(['new', 'contacted', 'closed']) });
 
 const canonicalSnapshot = (snapshot: SpaceSnapshot) =>
   JSON.stringify({

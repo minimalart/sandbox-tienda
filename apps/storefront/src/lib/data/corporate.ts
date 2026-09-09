@@ -44,7 +44,7 @@ export type MyCorporate = {
 /** Empresa del customer autenticado (o null si no pertenece a ninguna). */
 export async function getMyCorporate(): Promise<MyCorporate> {
   const authHeaders = await getAuthHeaders();
-  if (!authHeaders || Object.keys(authHeaders).length === 0) {
+  if (!authHeaders || !authHeaders.authorization) {
     return { corporate: null, membership: null };
   }
   try {
@@ -261,7 +261,7 @@ export async function validateCorporateCart(
   cartId: string,
 ): Promise<{ ok: boolean; violations: Array<{ type: string; message: string }> }> {
   const authHeaders = await getAuthHeaders();
-  if (!authHeaders || Object.keys(authHeaders).length === 0) {
+  if (!authHeaders || !authHeaders.authorization) {
     return { ok: true, violations: [] };
   }
   try {

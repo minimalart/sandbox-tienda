@@ -1,6 +1,7 @@
 "use client";
 
 import { useStoreLocatorFilters } from "@lib/hooks/use-store-locator-filters";
+import { GOOGLE_MAPS_LIBRARIES } from "@lib/util/google-maps-loader";
 import type {
   StoreLocatorLocation,
   StoreLocatorRegion,
@@ -31,7 +32,6 @@ type StoreLocatorClientProps = {
   showCategoryFilters?: boolean;
 };
 
-const libraries: "places"[] = ["places"];
 const DEBOUNCE_MS = 500;
 const MIN_QUERY_LENGTH = 3;
 
@@ -50,7 +50,7 @@ export default function StoreLocatorClient({
   const hasApiKey = Boolean(googleMapsApiKey);
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: googleMapsApiKey || "missing-key",
-    libraries,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   const [searchLocation, setSearchLocation] =

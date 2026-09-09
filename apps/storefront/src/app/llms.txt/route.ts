@@ -1,9 +1,8 @@
 import { listCategories } from "@lib/data/categories";
 import { listCollections } from "@lib/data/collections";
-import { listProducts } from "@lib/data/products";
+import { listProductsForSeo } from "@lib/data/products";
 import { getActiveTenant } from "@lib/site-config/active-tenant";
 import { getCanonicalOrigin } from "@lib/util/site-url";
-import {StoreProduct} from "@medusajs/types";
 
 // Cached for an hour at the edge; regenerated after that.
 // SIN `revalidate`: tenía 3600, o sea UN solo llms.txt cacheado por URL para todos
@@ -81,17 +80,22 @@ export async function GET() {
   // fallback por `Host` puesto justamente para ella (ver `active-tenant.ts`).
   const tenant = await getActiveTenant();
   const brand = tenant.name || tenant.metadata?.name || "Tienda online";
-  const countryCode =
-    process.env.NEXT_PUBLIC_COUNTRY_CODE ||
-    process.env.NEXT_PUBLIC_DEFAULT_REGION ||
-    "ar";
-
+  // `countryCode` ya NO se lee acá.
+  //
+  // Era `NEXT_PUBLIC_COUNTRY_CODE || NEXT_PUBLIC_DEFAULT_REGION || 'ar'` **sin
+  // `.toLowerCase()`**, al contrario de `proxy.ts` y `site-config/site-path.ts`. Con la
+  // env en `AR`, `getRegion()` devolvía `undefined` y `listProducts()` un catálogo
+  // vacío sin un solo error: este archivo publicaba la sección "## Productos" con cero
+  // productos —o sin la sección— mientras el catálogo tenía 2.696 (DESDEELSUR-50).
+  //
+  // `listProductsForSeo()` no necesita región: acá no se muestran precios.
   const [productsResult, categories, collectionsResult] = await Promise.all([
-    listProducts({
-      pageParam: 1,
-      queryParams: { limit: LLMS_PRODUCT_LIMIT },
-      countryCode,
-    }).catch(() => ({ response: { products: [], count: 0 }, nextPage: null })),
+    listProductsForSeo({ max: LLMS_PRODUCT_LIMIT }).catch(() => ({
+      products: [],
+      total: 0,
+      complete: false,
+      truncated: false,
+    })),
     listCategories({ limit: 200 }).catch(
       () => [] as Awaited<ReturnType<typeof listCategories>>
     ),
@@ -170,12 +174,15 @@ export async function GET() {
     sections.push("");
   }
 
-  const products: StoreProduct[] | never[] = productsResult.response.products;
+  // `llms.txt` es un RESUMEN para agentes, no el catálogo: se topea en
+  // `LLMS_PRODUCT_LIMIT` y se remite al sitemap para el listado completo. El techo va
+  // como `max` para que `listProductsForSeo()` ni pida las páginas de más: acá
+  // `truncated` es lo ESPERADO, no una falla.
+  const products = productsResult.products;
   if (products.length > 0) {
     sections.push("## Productos");
     sections.push("");
     for (const product of products) {
-      if (!product.handle) continue;
       sections.push(
         line(
           product.title ?? product.handle,
@@ -184,10 +191,10 @@ export async function GET() {
         )
       );
     }
-    if (productsResult.nextPage) {
+    if (productsResult.total > products.length) {
       sections.push("");
       sections.push(
-        `_Mostrando los primeros ${products.length} productos. Consultá /sitemap.xml para el listado completo._`
+        `_Mostrando ${products.length} de ${productsResult.total} productos. Consultá /sitemap.xml para el listado completo._`
       );
     }
     sections.push("");

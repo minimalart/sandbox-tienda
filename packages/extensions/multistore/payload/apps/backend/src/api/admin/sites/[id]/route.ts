@@ -1,16 +1,14 @@
-import { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
+import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import {
   deleteProductsWorkflow,
   deleteSalesChannelsWorkflow,
   deleteStockLocationsWorkflow,
 } from '@medusajs/core-flows';
-import { COMPANY_MODULE } from '../../../../modules/company';
 import { DEMO_STORE_MODULE } from '../../../../modules/demo-store';
 import { ensureDemoStoreTables } from '../../../../modules/demo-store/ensure-tables';
 import { isMainStore } from '../../../../modules/demo-store/main-store';
-import { provisionDemoB2B } from '../../../../modules/demo-store/provision';
-import { provisionDemoB2BPricing } from '../../../../modules/demo-store/b2b-pricing';
+import { configureStoreB2B } from '../../../../modules/demo-store/configure-b2b';
 import { updateDemoStoreStockLocationWorkflow } from '../../../../workflows/update-demo-store-stock-location';
 import { updateDemoStoreSalesChannelWorkflow } from '../../../../workflows/update-demo-store-sales-channel';
 import { type UpdateDemoStoreInput } from '../schemas';
@@ -24,7 +22,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
   const demo = await service.retrieveDemoStore(id);
   const jobs = await service.listImportJobs(
     { demo_store_id: id },
-    { order: { created_at: 'DESC' } },
+    { order: { created_at: 'DESC' } }
   );
 
   res.status(200).json({
@@ -36,7 +34,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
 
 export async function POST(
   req: MedusaRequest<UpdateDemoStoreInput>,
-  res: MedusaResponse,
+  res: MedusaResponse
 ): Promise<void> {
   const id = req.params.id as string;
   const input = req.validatedBody as UpdateDemoStoreInput;
@@ -46,17 +44,7 @@ export async function POST(
   // Detect the B2B enable transition BEFORE applying the update.
   const before = await service.retrieveDemoStore(id);
 
-  // La tienda principal NO puede habilitar B2B: `provisionDemoB2B` +
-  // `provisionDemoB2BPricing` crearían un SEGUNDO canal mayorista y una price list
-  // sobre la tienda real. Va antes del update para que la transición ni se persista.
-  if (isMainStore(before) && input.b2b_enabled) {
-    res.status(409).json({
-      message:
-        'La tienda principal no puede habilitar B2B desde acá: provisionaría un segundo ' +
-        'canal mayorista y una lista de precios sobre el catálogo real.',
-    });
-    return;
-  }
+  // The same provisioning contract applies to the main site and child sites.
 
   // Cambios de sales_channel_id se procesan PRIMERO porque el workflow SC
   // reconstruye los links SL↔SC y publishable_key↔SC, y luego el workflow SL
@@ -72,9 +60,7 @@ export async function POST(
         },
       });
     } catch (err) {
-      logger.error(
-        `[demo-store] update sales_channel falló: ${(err as Error).message}`,
-      );
+      logger.error(`[demo-store] update sales_channel falló: ${(err as Error).message}`);
       res.status(400).json({
         message: `No se pudo cambiar el sales channel: ${(err as Error).message}`,
       });
@@ -96,14 +82,12 @@ export async function POST(
           demo_store_id: id,
           stock_location_id: relocateStockLocation
             ? (input.stock_location_id as string | null)
-            : current.stock_location_id ?? null,
+            : (current.stock_location_id ?? null),
           ...(relocateRegion ? { region_id: input.region_id as string | null } : {}),
         },
       });
     } catch (err) {
-      logger.error(
-        `[demo-store] update stock_location/region falló: ${(err as Error).message}`,
-      );
+      logger.error(`[demo-store] update stock_location/region falló: ${(err as Error).message}`);
       res.status(400).json({
         message: `No se pudo cambiar la asignación: ${(err as Error).message}`,
       });
@@ -115,58 +99,48 @@ export async function POST(
   // region_id — los workflows de arriba se encargan. Los strippeo del payload
   // para evitar doble escritura (redundante, no dañino).
   const {
+    b2b_enabled,
+    b2b_sales_channel_id,
+    b2b_price_list_id,
     stock_location_id: _sl,
     region_id: _rg,
     sales_channel_id: _sc,
     ...rest
   } = input;
-  const demo = await service.updateDemoStores({ id, ...rest });
+  // Checkout has its own validated, revision-controlled writer. General/footer
+  // saves must never erase it or overwrite it from a stale editor.
+  const contentConfig = rest.content_config;
+  delete rest.content_config;
+  let demo = await service.updateDemoStores({ id, ...rest });
+  if (contentConfig) {
+    const pg: any = req.scope.resolve(ContainerRegistrationKeys.PG_CONNECTION);
+    await pg('demo_store').where({ id }).update({
+      content_config: pg.raw(`(?::jsonb - 'checkout') || CASE WHEN content_config -> 'checkout' IS NOT NULL THEN jsonb_build_object('checkout', content_config -> 'checkout') ELSE '{}'::jsonb END`, [JSON.stringify(contentConfig)]),
+      updated_at: new Date(),
+    });
+    demo = await service.retrieveDemoStore(id);
+  }
 
-  // Enabling B2B on an existing demo provisions the wholesale resources inline
-  // (channel/group/company/user) and — if the demo already has a catalog —
-  // links its products + builds the tiered price list from the CURRENT prices
-  // (no re-import). Best-effort: a hiccup leaves the demo B2C-functional and a
-  // "Reintentar" completes it. Requires the B2C resources to exist already.
   if (
-    input.b2b_enabled &&
-    !before.b2b_sales_channel_id &&
-    before.region_id &&
-    before.stock_location_id
+    b2b_enabled ||
+    (b2b_enabled !== false && before.b2b_enabled && (b2b_sales_channel_id !== undefined || b2b_price_list_id !== undefined))
   ) {
     try {
-      const b2b = await provisionDemoB2B(req.scope, {
-        id: before.id,
-        name: demo.name ?? before.name,
-        slug: before.slug,
-        regionId: before.region_id,
-        stockLocationId: before.stock_location_id,
+      const configured = await configureStoreB2B(req.scope, demo, {
+        b2b_sales_channel_id,
+        b2b_price_list_id,
       });
-      await service.updateDemoStores({
-        id,
-        b2b_sales_channel_id: b2b.salesChannelId,
-        b2b_customer_group_id: b2b.customerGroupId,
-        b2b_company_id: b2b.companyId,
-        ...(b2b.testEmail
-          ? { b2b_test_email: b2b.testEmail, b2b_test_password: b2b.testPassword }
-          : {}),
-      });
-      if (before.status === 'ready' && before.sales_channel_id) {
-        const pricing = await provisionDemoB2BPricing(req.scope, {
-          demoSlug: before.slug,
-          sourceSalesChannelId: before.sales_channel_id,
-          b2bSalesChannelId: b2b.salesChannelId,
-          customerGroupId: b2b.customerGroupId,
-          currencyCode: before.currency_code,
-          regionId: before.region_id,
-        });
-        if (pricing.priceListId) {
-          await service.updateDemoStores({ id, b2b_price_list_id: pricing.priceListId });
-        }
-      }
+      res.status(200).json({ demo_store: configured });
     } catch (err) {
-      logger.warn(`[demo-store] B2B enable-on-edit skipped: ${(err as Error).message}`);
+      logger.error('[demo-store] B2B setup failed: ' + (err as Error).message);
+      res.status(400).json({ message: (err as Error).message });
     }
-    res.status(200).json({ demo_store: await service.retrieveDemoStore(id) });
+    return;
+  }
+  if (b2b_enabled === false) {
+    res
+      .status(200)
+      .json({ demo_store: await service.updateDemoStores({ id, b2b_enabled: false }) });
     return;
   }
 
@@ -180,6 +154,13 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<v
   const service: any = req.scope.resolve(DEMO_STORE_MODULE);
 
   const demo = await service.retrieveDemoStore(id);
+
+  // Preserve checkout snapshots and the site/channel identity of active orders.
+  const checkoutDb: any = req.scope.resolve(ContainerRegistrationKeys.PG_CONNECTION);
+  if (await checkoutDb('site_checkout_session').where({ site_id: id }).first()) {
+    res.status(409).json({ message: 'Esta tienda tiene checkouts o pedidos con datos protegidos. Archivala sin eliminar sus recursos.' });
+    return;
+  }
 
   // La tienda principal NO se borra. El teardown de abajo no tiene otra entrada, y
   // sobre la fila principal se llevaría por delante el canal de ventas por defecto,
@@ -215,7 +196,7 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<v
         .filter(
           (p) =>
             Array.isArray(p.sales_channels) &&
-            p.sales_channels.some((sc: any) => sc?.id === demo.sales_channel_id),
+            p.sales_channels.some((sc: any) => sc?.id === demo.sales_channel_id)
         )
         .map((p) => p.id as string);
       if (productIds.length > 0) {
@@ -239,15 +220,15 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<v
   }
 
   // ── B2B teardown (best-effort) ─────────────────────────────────────────────
-  // The wholesale channel is ALWAYS the demo's own (B2B provisioning creates it),
-  // so it always goes: deleting a channel only unlinks its products, it doesn't
+  // Automatically provisioned wholesale resources are owned by the site;
+  // manually selected resources are retained. Deleting a channel only unlinks its products, it doesn't
   // delete them. The test buyer + auth identity are intentionally LEFT:
   // provisioning reuses them by email on recreate, which keeps a same-slug recreate
   // working (deleting only the customer would orphan its auth identity and break
   // re-provisioning).
   if (demo.b2b_company_id) {
     try {
-      const companyService: any = req.scope.resolve(COMPANY_MODULE);
+      const companyService: any = req.scope.resolve('company');
       const members = await companyService.listCompanyMembers({ company_id: demo.b2b_company_id });
       const memberIds = (members as any[]).map((m) => m.id);
       if (memberIds.length) await companyService.deleteCompanyMembers(memberIds);
@@ -256,7 +237,7 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<v
       logger.warn(`[demo-store] B2B company cleanup failed: ${(err as Error).message}`);
     }
   }
-  if (demo.b2b_price_list_id) {
+  if (demo.b2b_price_list_id && demo.b2b_price_list_owned !== false) {
     try {
       const pricing: any = req.scope.resolve(Modules.PRICING);
       await pricing.deletePriceLists([demo.b2b_price_list_id]);
@@ -272,9 +253,11 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<v
       logger.warn(`[demo-store] B2B customer group cleanup failed: ${(err as Error).message}`);
     }
   }
-  if (demo.b2b_sales_channel_id) {
+  if (demo.b2b_sales_channel_id && demo.b2b_sales_channel_owned !== false) {
     try {
-      await deleteSalesChannelsWorkflow(req.scope).run({ input: { ids: [demo.b2b_sales_channel_id] } });
+      await deleteSalesChannelsWorkflow(req.scope).run({
+        input: { ids: [demo.b2b_sales_channel_id] },
+      });
     } catch (err) {
       logger.warn(`[demo-store] B2B sales channel cleanup failed: ${(err as Error).message}`);
     }
@@ -282,7 +265,9 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<v
 
   if (demo.stock_location_id) {
     try {
-      await deleteStockLocationsWorkflow(req.scope).run({ input: { ids: [demo.stock_location_id] } });
+      await deleteStockLocationsWorkflow(req.scope).run({
+        input: { ids: [demo.stock_location_id] },
+      });
     } catch (err) {
       logger.warn(`[demo-store] Stock location cleanup failed: ${(err as Error).message}`);
     }

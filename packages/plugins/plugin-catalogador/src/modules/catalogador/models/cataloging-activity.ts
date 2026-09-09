@@ -18,6 +18,10 @@ export const ACTIVITY_TYPES = [
   'restored',
   'refloated',
   'duplicated',
+  // Papelera. `deleted`/`undeleted` y NO `restored`: ese ya está tomado por el
+  // rollback del catálogo (`POST /:id/restore`), que es otra cosa completamente.
+  'deleted',
+  'undeleted',
   'error',
 ] as const;
 

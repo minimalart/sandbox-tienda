@@ -27,12 +27,23 @@ function backendUrl(): string {
   return raw.replace(/\/+$/, '');
 }
 
-function storefrontLogo(): string {
-  const sf = (
-    process.env.STOREFRONT_URL || 'https://mercatto.minimalart.studio'
-  ).replace(/\/+$/, '');
-  return `${sf}/logos-mercatto/logo-verde.svg`;
-}
+/**
+ * Marca de ESTA instalación, servida por el propio backend.
+ *
+ * Antes era `${STOREFRONT_URL}/logos-mercatto/logo-verde.svg`, con el dominio de
+ * Mercatto como default. Esta página la ve el usuario que ACEPTA su invitación al
+ * panel: todo cliente recibía una pantalla con la marca de otro. Y un logo ajeno que
+ * carga bien no lo reporta nadie.
+ *
+ * Son rutas y no valores porque `page()` es SÍNCRONA y leer la marca es async; se
+ * sirven del mismo origen, así que la relativa siempre resuelve. La prioridad
+ * (logotipo -> isotipo -> generado) la deciden ellas, en un solo lugar.
+ *
+ * El `<link rel="icon">` va SIN `type`: la ruta redirige a lo que haya cargado la
+ * marca —png, webp o svg—, y declarar un tipo que no es hace que el ícono no cargue.
+ */
+const INSTANCE_LOGO = '/instance-logo';
+const INSTANCE_FAVICON = '/favicon.ico';
 
 function esc(s: unknown): string {
   return String(s ?? '')
@@ -90,11 +101,10 @@ function page(opts: {
   title: string;
   bodyHtml: string;
 }): string {
-  const logo = storefrontLogo();
   return `<!doctype html><html lang="es"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${esc(opts.title)}</title>
-<link rel="icon" type="image/svg+xml" href="${logo}" />
+<link rel="icon" href="${INSTANCE_FAVICON}" />
 <style>
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f3f4f6;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center}
   .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px;width:100%;max-width:400px;box-shadow:0 10px 30px rgba(0,0,0,.06)}
@@ -110,7 +120,7 @@ function page(opts: {
   a.btn{display:block;margin-top:16px;text-align:center;color:#2e7d32;font-weight:600;text-decoration:none;font-size:14px}
 </style></head><body>
 <div class="card">
-  <img class="logo" src="${logo}" alt="Mercatto" />
+  <img class="logo" src="${INSTANCE_LOGO}" alt="" />
   ${opts.bodyHtml}
 </div></body></html>`;
 }

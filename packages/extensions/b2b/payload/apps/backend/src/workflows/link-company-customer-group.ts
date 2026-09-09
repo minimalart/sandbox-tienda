@@ -1,3 +1,4 @@
+import type { ICustomerModuleService } from '@medusajs/framework/types';
 import {
   createStep,
   createWorkflow,
@@ -17,7 +18,7 @@ const linkStep = createStep(
   'link-company-customer-group',
   async (input: LinkCompanyCustomerGroupInput, { container }) => {
     const service = container.resolve<CompanyModuleService>(COMPANY_MODULE);
-    const customerService = container.resolve(Modules.CUSTOMER);
+    const customerService = container.resolve<ICustomerModuleService>(Modules.CUSTOMER);
     const company = await service.retrieveCompany(input.company_id);
     if (!company) {
       throw new MedusaError(MedusaError.Types.NOT_FOUND, 'Empresa no encontrada.');
@@ -60,7 +61,7 @@ const linkStep = createStep(
     const service = container.resolve<CompanyModuleService>(COMPANY_MODULE);
     await service.updateCompanies({ id: undo.companyId, customer_group_id: undo.previousGroupId });
     if (undo.createdGroupId) {
-      const customerService = container.resolve(Modules.CUSTOMER);
+      const customerService = container.resolve<ICustomerModuleService>(Modules.CUSTOMER);
       await customerService.deleteCustomerGroups([undo.createdGroupId]);
     }
   },

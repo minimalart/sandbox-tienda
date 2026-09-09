@@ -23,6 +23,17 @@ export default defineHelp({
   summary: 'Varias tiendas sobre una misma instancia de Medusa, cada una con su canal de venta, región, depósito y catálogo.',
   sections: [
     {
+      heading: 'Importar catálogo al crear o editar una tienda',
+      body: `
+        El alta incluye el paso Origen. Para una tienda existente, incluida la
+        principal, abrí Editar → Catálogo. Ambos usan los mismos campos de origen.
+        Configurá la fuente, revisá una muestra y confirmá la importación.
+        El avance y el resultado quedan en esa misma pestaña. La tienda editada
+        determina el destino; el selector global no lo cambia.
+        Esta capacidad está incluida en Tiendas y no requiere otra extensión.
+      `,
+    },
+    {
       heading: 'Qué es una tienda acá adentro',
       body: `
         Una tienda no es una instalación aparte: es una fila que agrupa recursos
@@ -188,6 +199,10 @@ export default defineHelp({
         'Crear y esperar a que la tienda pase a Lista. La importación la ejecuta un cron, no el botón.',
         'Cargar las credenciales propias de esa tienda en Credenciales por tienda, si va a operar con cuentas distintas de las del entorno.',
       ],
+    },
+    {
+      heading: 'B2B al editar una tienda',
+      body: "El portal de la principal abre en `/b2b`, aunque se haya visitado una tienda hija antes. Las hijas conservan su propio portal en `/tienda/{slug}/b2b` o en su dominio.\n\nEl editor se organiza en pestañas: General, Branding, Contenido, Operación, B2B y Funciones. En B2B se puede desactivar el portal sin borrar sus recursos: todas sus rutas vuelven al inicio de esa tienda. El login, registro y panel muestran el logo configurado de la tienda activa, incluida la principal.\n\nEn Editar se puede elegir un canal mayorista y una lista de precios existentes, o dejar la creación automática. El canal mayorista debe ser distinto del minorista y no pertenecer a otra tienda. Guardar completa los recursos faltantes incluso si B2B ya estaba activado; si falla, muestra el error y permite reintentar. Hace falta una región y un depósito asignado o un único depósito vinculado al canal minorista.\n\nLa creación automática agrega la lista aun con el catálogo vacío. Una lista elegida manualmente conserva sus precios y condiciones, incluye al grupo mayorista sin restringir listas públicas y no recibe las escalas automáticas. Las importaciones posteriores y la eliminación de la tienda conservan los recursos seleccionados manualmente.",
     },
   ],
 });

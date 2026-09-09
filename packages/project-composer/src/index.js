@@ -10,7 +10,7 @@ const { renderAdminHookIndex, renderAdminI18n, renderExtensionMiddlewares, rende
 const COMPOSER_VERSION = '1.0.0';
 const OMIT_NAMES = new Set([
   '.git', '.claude', '.codex', '.turbo', '.next', '.medusa', 'node_modules',
-  'dist', 'build', 'playwright-report', 'test-results',
+  'dist', 'build', 'playwright-report', 'test-results', 'tmp',
 ]);
 const OMIT_RELATIVE = new Set([
   'apps/platform', 'blueprints', 'packages/project-composer', 'packages/project-catalog',

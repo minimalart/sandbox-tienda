@@ -72,6 +72,7 @@ describe('OdooErpAdapter — getCapabilities', () => {
       tinting_price: false,
       product_images: true,
       invoice_fetch: false,
+      config_lookups: false,
     });
   });
 });

@@ -383,23 +383,34 @@ describe('planProductMetadata — marca y familia a nivel PRODUCTO', () => {
 
   it('escribe marca, familia y el código crudo de categoría', () => {
     const patch = metadataPlan()!;
+    // La marca va CRUDA: es un nombre propio con casing de marca.
     assert.equal(patch.brand, 'EQ ARTE');
-    assert.equal(patch.family, 'ARTISTICA ACRILICOS');
+    // La familia va NORMALIZADA (DESDEELSUR-48): es el filtro del PLP.
+    assert.equal(patch.family, 'Artística acrílicos');
     assert.equal(patch.erp_category_code, '020B');
   });
 
   it('devuelve null cuando no hay nada que cambiar', () => {
     const patch = metadataPlan({
-      current: { brand: 'EQ ARTE', family: 'ARTISTICA ACRILICOS', erp_category_code: '020B' },
+      current: { brand: 'EQ ARTE', family: 'Artística acrílicos', erp_category_code: '020B' },
     });
     assert.equal(patch, null);
+  });
+
+  it('reescribe una familia que quedó guardada en crudo', () => {
+    // El caso de desdeelsur al momento del fix: 2716 productos con la familia
+    // gritada. El diff existe justamente para que el barrido las corrija.
+    const patch = metadataPlan({
+      current: { brand: 'EQ ARTE', family: 'ARTISTICA ACRILICOS', erp_category_code: '020B' },
+    })!;
+    assert.equal(patch.family, 'Artística acrílicos');
   });
 
   it('preserva las claves que no son del ERP', () => {
     const patch = metadataPlan({ current: { hidden_from_store: true, ranking: 5 } })!;
     assert.equal(patch.hidden_from_store, true);
     assert.equal(patch.ranking, 5);
-    assert.equal(patch.family, 'ARTISTICA ACRILICOS');
+    assert.equal(patch.family, 'Artística acrílicos');
   });
 
   it('respeta la allowlist: sin `family` no escribe la familia', () => {
@@ -412,7 +423,7 @@ describe('planProductMetadata — marca y familia a nivel PRODUCTO', () => {
   it('un valor vacío en el ERP no borra el que ya está guardado', () => {
     const patch = metadataPlan({
       row: row({ brand: null, family: null }),
-      current: { brand: 'EQ ARTE', family: 'ARTISTICA ACRILICOS', erp_category_code: '020B' },
+      current: { brand: 'EQ ARTE', family: 'Artística acrílicos', erp_category_code: '020B' },
     });
     assert.equal(patch, null);
   });

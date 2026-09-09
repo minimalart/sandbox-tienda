@@ -1,3 +1,4 @@
+import type { Logger, IEventBusModuleService, RemoteQueryFunction } from '@medusajs/framework/types';
 /**
  * Correo Argentino — workflow de generación de envíos on-demand.
  *
@@ -1052,8 +1053,8 @@ function readErrorCode(error: unknown): string | undefined {
 const validateOrderForCorreoTicketsStep = createStep(
   'validate-order-for-correo-tickets',
   async (input: CorreoGenerateTicketInput, { container }) => {
-    const logger = container.resolve('logger');
-    const query = container.resolve(ContainerRegistrationKeys.QUERY);
+    const logger = container.resolve<Logger>('logger');
+    const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
 
     logger.info(`[correo-tickets] Validando orden ${input.order_id}`);
 
@@ -1153,7 +1154,7 @@ const validateOrderForCorreoTicketsStep = createStep(
 const createCorreoTicketShipmentStep = createStep(
   'create-correo-ticket-shipment',
   async (input: ValidatedCorreoOrderData, { container }) => {
-    const logger = container.resolve('logger');
+    const logger = container.resolve<Logger>('logger');
 
     // Idempotencia: la orden ya tiene envío. Se devuelve el ticket existente sin
     // tocar la API — no hay `when()` en el medio a propósito, así el guard vive
@@ -1396,7 +1397,7 @@ const createCorreoTicketShipmentStep = createStep(
   async (compensateInput, { container }) => {
     if (!compensateInput?.tracking_number) return;
 
-    const logger = container.resolve('logger');
+    const logger = container.resolve<Logger>('logger');
     const { paqar } = await getCorreoClientsForSite(
       container,
       { salesChannelId: compensateInput.sales_channel_id },
@@ -1460,7 +1461,7 @@ interface SaveCorreoTicketMetadataCompensation {
 const saveCorreoTicketMetadataStep = createStep(
   'save-correo-ticket-metadata',
   async (input: SaveCorreoTicketMetadataInput, { container }) => {
-    const logger = container.resolve('logger');
+    const logger = container.resolve<Logger>('logger');
 
     // Idempotencia: no se creó nada, no hay nada que appendear.
     if (!input.created) {
@@ -1521,7 +1522,7 @@ const saveCorreoTicketMetadataStep = createStep(
     // restaurarla igual pisaría tickets que este workflow nunca tocó.
     if (!compensateInput?.saved) return;
 
-    const logger = container.resolve('logger');
+    const logger = container.resolve<Logger>('logger');
     const orderModuleService = container.resolve(
       Modules.ORDER
     ) as IOrderModuleService;
@@ -1572,10 +1573,10 @@ const linkCorreoTicketToDeliveryExecutionStep = createStep(
     input: { order_id: string; ticket: CorreoTicketMetadataEntry },
     { container }
   ) => {
-    const logger = container.resolve('logger');
+    const logger = container.resolve<Logger>('logger');
 
     try {
-      const query = container.resolve(ContainerRegistrationKeys.QUERY);
+      const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
 
       const { data: orders } = await query.graph({
         entity: 'order',
@@ -1662,14 +1663,14 @@ const emitCorreoTicketGeneratedStep = createStep(
     },
     { container }
   ) => {
-    const logger = container.resolve('logger');
+    const logger = container.resolve<Logger>('logger');
 
     if (!input.created || input.existing_ticket_count > 0) {
       return new StepResponse({ emitted: false });
     }
 
     try {
-      const eventBus = container.resolve(Modules.EVENT_BUS);
+      const eventBus = container.resolve<IEventBusModuleService>(Modules.EVENT_BUS);
       await eventBus.emit({
         name: CORREO_TICKET_GENERATED_EVENT,
         data: {

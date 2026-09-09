@@ -82,6 +82,18 @@ describe('normalizeCategoryName · tildes por diccionario', () => {
     }
   });
 
+  it('acentúa la palabra pegada a una coma', () => {
+    // El diccionario matchea por palabra plegada, y partiendo por espacios el
+    // token era `espatulas,` —con la coma— que no encuentra la clave
+    // `espatulas`. Lo destapó la carta de FAMILIAS, que separa enumeraciones con
+    // comas, pero el bug estaba acá: cualquier categoría con coma lo tenía.
+    assert.equal(
+      normalizeCategoryName('MASILLAS, ESPATULAS Y ELECTRICAS'),
+      'Masillas, espátulas y eléctricas'
+    );
+    assert.equal(normalizeCategoryName('PISOS (ARTISTICA)'), 'Pisos (artística)');
+  });
+
   it('no toca las palabras que el diccionario no conoce', () => {
     assert.equal(normalizeCategoryName('FRATACHOS Y LLANAS'), 'Fratachos y llanas');
     assert.equal(normalizeCategoryName('TEXTURADOS'), 'Texturados');

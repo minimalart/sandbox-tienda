@@ -124,9 +124,14 @@ export function getCartCheckoutEligibility({
     cartPromotions,
   );
   const hasMinimumPurchase = minimumPurchaseTotal >= minimumPurchaseAmount;
+  const hasItems = (items ?? []).length > 0;
 
   return {
-    canCheckout: hasMinimumPurchase && !hasOutOfStockItems,
+    // Carrito vacío nunca es checkout-elegible, aunque el mínimo sea 0 y no
+    // haya items sin stock. Antes canCheckout salía `true` con carrito vacío
+    // (0 >= 0 y sin OOS), habilitando un click que iba a un checkout sin
+    // líneas.
+    canCheckout: hasItems && hasMinimumPurchase && !hasOutOfStockItems,
     hasMinimumPurchase,
     hasOutOfStockItems,
     minimumPurchaseAmount,

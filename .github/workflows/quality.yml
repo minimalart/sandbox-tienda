@@ -46,6 +46,20 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    services:
+      checkout-postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: checkout-ci-only
+          POSTGRES_DB: checkout_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d checkout_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -79,5 +93,22 @@ jobs:
       # `test` también usa `^build` (las DEPENDENCIAS, no el paquete propio). Antes
       # era `["build"]`, lo que exigía un `next build` de producción entero para
       # correr tests unitarios — imposible en CI. Ver el comentario en `turbo.json`.
+      - name: Checkout hook boot regression
+        working-directory: apps/backend
+        run: node --experimental-transform-types --import ./test-register.mjs --test src/workflows/cart-validation-registration.test.ts
+
+      - name: Catalog import integration
+        working-directory: apps/backend
+        env:
+          CATALOG_TEST_DATABASE_URL: postgres://postgres:checkout-ci-only@127.0.0.1:5432/catalog_fixture
+        run: |
+          node -e "const { Client } = require('pg'); const c = new Client({ connectionString: process.env.CATALOG_TEST_DATABASE_URL.replace('/catalog_fixture', '/checkout_test') }); (async () => { await c.connect(); await c.query('CREATE DATABASE catalog_fixture'); await c.end(); })().catch(e => { console.error(e); process.exit(1); });"
+          node scripts/test-catalog-import.mjs
+
       - name: Test
         run: pnpm test
+
+      - name: Checkout transaction and payment contracts
+        run: pnpm --filter @repo/backend test:checkout:integration
+        env:
+          CHECKOUT_TEST_DATABASE_URL: postgres://postgres:checkout-ci-only@127.0.0.1:5432/checkout_test

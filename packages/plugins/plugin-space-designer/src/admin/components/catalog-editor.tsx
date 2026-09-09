@@ -130,7 +130,7 @@ export function CatalogEditor({
                       disabled={!variantId}
                       onClick={() => add(product)}
                     >
-                      {exists ? 'Editar producto agregado' : 'Habilitar en el diseñador'}
+                      {exists ? 'Editar producto agregado' : 'Habilitar en el espacio'}
                     </Button>
                   </div>
                 </div>
@@ -193,9 +193,9 @@ export function CatalogEditor({
             </select>
             {selected && (
               <div className="flex flex-col gap-4 rounded-lg border border-ui-border-base p-4">
-                <Field label="Nombre en el diseñador">
+                <Field label="Nombre en el espacio">
                   <Input
-                    aria-label="Nombre en el diseñador"
+                    aria-label="Nombre en el espacio"
                     value={selected.label ?? ''}
                     onChange={(event) => patch({ label: event.target.value })}
                   />
@@ -440,7 +440,7 @@ export function CatalogEditor({
                   Variante: {selected.variant_id}
                 </Text>
                 <Button variant="danger" size="small" onClick={() => onRemove(selected.id)}>
-                  Quitar del diseñador
+                  Quitar del espacio
                 </Button>
               </div>
             )}

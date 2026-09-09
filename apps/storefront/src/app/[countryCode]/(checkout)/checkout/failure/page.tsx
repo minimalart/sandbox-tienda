@@ -1,4 +1,3 @@
-import { getTenant } from '@lib/site-config/resolver'
 import PaymentResultOverlay from '@modules/common/components/payment-result-overlay'
 import type { Metadata } from 'next'
 import FailureClient from './failure-client'
@@ -6,13 +5,20 @@ import FailureClient from './failure-client'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export async function generateMetadata(): Promise<Metadata> {
-  const tenant = await getTenant()
-
-  return {
-    title: `Pago Fallido | ${tenant.name}`,
-    description: 'Hubo un problema con tu pago',
-  }
+/**
+ * SIN la marca en el título: la pone el `title.template` del root layout.
+ *
+ * Acá había `Pago Fallido | ${tenant.name}` resuelto con `getTenant()`, el resolver ESTÁTICO
+ * que devuelve siempre `defaultConfig` (`name: "Mercatto"`). En desdeelsur esto
+ * emitía `<title>Pago Fallido | Mercatto | Desde el sur</title>` en la pantalla que ve el
+ * cliente JUSTO DESPUÉS DE PAGAR. Mismo patrón que ya se corrigió en
+ * `checkout/page.tsx`; estas tres quedaron afuera.
+ *
+ * Metadata estática: no hace falta resolver el tenant para no nombrarlo.
+ */
+export const metadata: Metadata = {
+  title: 'Pago Fallido',
+  description: 'Hubo un problema con tu pago',
 }
 
 /**

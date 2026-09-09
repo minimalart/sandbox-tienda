@@ -1,3 +1,4 @@
+import type { ICustomerModuleService } from '@medusajs/framework/types';
 import {
   createStep,
   createWorkflow,
@@ -19,7 +20,7 @@ const linkGroupStep = createStep(
   'link-corporate-customer-group',
   async (input: LinkCorporateCustomerGroupInput, { container }) => {
     const service = container.resolve<CorporateModuleService>(CORPORATE_MODULE);
-    const customerService = container.resolve(Modules.CUSTOMER);
+    const customerService = container.resolve<ICustomerModuleService>(Modules.CUSTOMER);
 
     const corporate = await service.retrieveCorporate(input.corporate_id);
     if (!corporate) {
@@ -77,7 +78,7 @@ const linkGroupStep = createStep(
       customer_group_id: undo.previousGroupId,
     });
     if (undo.createdGroupId) {
-      const customerService = container.resolve(Modules.CUSTOMER);
+      const customerService = container.resolve<ICustomerModuleService>(Modules.CUSTOMER);
       await customerService.deleteCustomerGroups([undo.createdGroupId]);
     }
   },

@@ -102,7 +102,11 @@ const PdfCatalogsPage = () => {
         setPagination((prev) => ({ ...prev, pageIndex: 0 }));
       },
     },
-    onRowClick: (_event, row) => setEditing(row),
+    // `useDataTable` tipa el segundo argumento como el registro, pero en runtime
+    // entrega la Row de TanStack: sin `.original` el drawer recibe el wrapper y
+    // `catalog.name` (y todo lo demás) queda undefined.
+    onRowClick: (_event, row) =>
+      setEditing((row as unknown as { original?: PdfCatalog }).original ?? row),
   });
 
   return (

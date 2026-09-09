@@ -217,9 +217,12 @@ const Ga4Events = () => {
       columnHelper.display({
         id: 'title',
         header: t('COLUMN_TITLE'),
-        // El título es el punto de entrada clickeable de la fila. NO usamos el
-        // onRowClick de useDataTable porque está roto en esta versión de
-        // @medusajs/ui (el render lee instance.Ln y el hook expone onRowClick).
+        // El título es el punto de entrada clickeable de la fila. No usamos el
+        // onRowClick de useDataTable: acá cada fila abre un drawer distinto según
+        // su `kind`, y el botón deja eso explícito. (El diagnóstico viejo de que
+        // onRowClick no se disparaba ya no aplica: el render sí lee
+        // `instance.onRowClick`. Lo que sí engaña es su tipo — entrega la Row de
+        // TanStack, no el registro; por eso acá va `row.original`.)
         cell: ({ row }) => (
           <button
             type="button"

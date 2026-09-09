@@ -1,8 +1,8 @@
-import type { ConfigModule } from '@medusajs/framework/types';
 import { defineConfig, loadEnv, Modules } from '@medusajs/framework/utils';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import './src/loaders/plugin-runtime-bridge';
+import { googleAuthEnvWarning, resolveGoogleAuthEnv } from './src/lib/google-auth-env';
 
 loadEnv(process.env.NODE_ENV || 'development', __dirname);
 
@@ -84,6 +84,22 @@ const mercadoPagoApiEnabled = hasExtensionSource('mercado-pago-api');
 // eso ya no depende de COMPANY_CREDIT_ENABLED.
 const cuentaCorrienteEnabled = hasExtensionSource('company-credit-payment');
 
+/**
+ * Login con Google. El gate mira las TRES variables (`GOOGLE_CLIENT_ID`,
+ * `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`) y no sólo el clientId como antes,
+ * porque el provider `auth-google` las exige a las tres: con dos de tres su loader
+ * tira `Google callbackUrl is required` y, siendo Auth un módulo del CORE, eso no
+ * degrada el login con Google — aborta el `medusa start` entero. Pasó en
+ * producción el 2026-09-08. El por qué largo y el aviso de boot están en
+ * `src/lib/google-auth-env.ts`, que es donde se pueden testear.
+ */
+const googleAuth = resolveGoogleAuthEnv();
+const googleAuthWarning = googleAuthEnvWarning(googleAuth);
+// `console.warn` y no el logger de Medusa: esto corre al EVALUAR este archivo,
+// cuando todavía no hay contenedor de donde sacarlo (mismo criterio que el aviso
+// de entorno de Andreani en `andreani-fulfillment/settings.ts`).
+if (googleAuthWarning) console.warn(googleAuthWarning);
+
 // Managed Postgres providers (DigitalOcean, etc.) require SSL but sign their
 // certs with a private CA that Node doesn't trust. Newer `pg` treats
 // sslmode=require as verify-full, so the connection fails CA verification and
@@ -124,7 +140,7 @@ const redisOptions = redisUrl
 // only opt into Redis (set WORKFLOW_ENGINE_REDIS=true) when running >1 container.
 const workflowEngineRedis = !!redisUrl && process.env.WORKFLOW_ENGINE_REDIS === 'true';
 
-const config: ConfigModule = defineConfig({
+const config = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
     ...(databaseSslEnabled
@@ -518,11 +534,12 @@ const config: ConfigModule = defineConfig({
       : {}),
 
     // Auth: emailpass (email/password) is Medusa's built-in default. Google
-    // OAuth registers ONLY when GOOGLE_CLIENT_ID is set — same opt-in-by-env
-    // criterion as Stripe/Vimeo/SendGrid. IMPORTANT: declaring the Auth module
-    // here overrides Medusa's default providers, so emailpass MUST be listed
-    // alongside google — otherwise email/password login would stop working.
-    ...(process.env.GOOGLE_CLIENT_ID
+    // OAuth registers ONLY when its THREE env vars are set — see `googleAuth`
+    // above: gating on GOOGLE_CLIENT_ID alone made an incomplete set abort the
+    // whole boot instead of leaving Google login off. IMPORTANT: declaring the
+    // Auth module here overrides Medusa's default providers, so emailpass MUST be
+    // listed alongside google — otherwise email/password login would stop working.
+    ...(googleAuth.enabled
       ? {
           [Modules.AUTH]: {
             resolve: '@medusajs/medusa/auth',
@@ -974,6 +991,7 @@ const config: ConfigModule = defineConfig({
     // import de catálogo externo). Cada demo crea su propio sales channel /
     // región / stock location y se publica en mercatto.studio/demo/{slug}.
     ...optionalModule('demo_store', 'demo-store'),
+    ...optionalModule('catalog_import', 'store-importer'),
 
     // GA4: migrated to @minimalart/mercatto-plugin-ga4.
     // The plugin registers the `ga4` module by itself.

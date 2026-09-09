@@ -1,0 +1,40 @@
+{
+  "name": "@minimalart/mercatto-plugin-store-importer-contract",
+  "version": "0.2.0",
+  "description": "Type-only contract for Mercatto catalog importers. Zero runtime — shared shape between the multistore host and the store-importer plugin.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "package.json",
+    "README.md"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "tsc -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minimalart/medusa-b2c-boilerplate.git",
+    "directory": "packages/plugins/plugin-store-importer-contract"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "private": false,
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

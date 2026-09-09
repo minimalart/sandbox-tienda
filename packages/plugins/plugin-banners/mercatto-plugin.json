@@ -3,7 +3,7 @@
   "schema_version": 1,
   "id": "banners",
   "name": "Banners",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "kind": "plugin",
   "status": "ready",
   "dependencies": [],

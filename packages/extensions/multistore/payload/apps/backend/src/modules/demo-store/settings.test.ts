@@ -24,6 +24,7 @@ import { getMultistoreSettings } from './settings.ts';
 
 /** Las que se gestionan desde el admin. */
 const MANAGED_KEYS = [
+  'DEMO_IMPORT_STALE_MS',
   'DEMO_IMPORT_THROTTLE_MS',
   'DEMO_IMPORT_BACKOFF_BASE_MS',
   'MULTISTORE_PUBLIC_BASE_URL',
@@ -41,9 +42,9 @@ const ENV_ONLY_KEYS = ['MERCADOPAGO_ACCOUNTS', 'MERCADOPAGO_PUBLIC_KEY'];
 
 const byKey = new Map(descriptors.settings.map((d) => [d.key, d]));
 
-test('el descriptor cubre las 5 variables, ni una más ni una menos', () => {
+test('Tiendas incluye los ajustes y variables del importador', () => {
   assert.deepEqual([...byKey.keys()].sort(), [...MANAGED_KEYS].sort());
-  assert.deepEqual((descriptors.envOnly ?? []).map((e) => e.key).sort(), [...ENV_ONLY_KEYS].sort());
+  assert.deepEqual((descriptors.envOnly ?? []).map((e) => e.key).sort(), [...ENV_ONLY_KEYS, 'APPLY', 'DEFAULT_CURRENCY_CODE', 'DEMO_IMPORT_CRON', 'DEMO_SLUG'].sort());
 });
 
 test('las dos del importador son números de instancia con default y rango', () => {

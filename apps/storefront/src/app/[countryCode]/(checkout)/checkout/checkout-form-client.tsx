@@ -21,6 +21,8 @@ import PersonalInfo from "@modules/checkout/components/personal-info";
 import Shipping from "@modules/checkout/components/shipping";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CheckoutState } from '@lib/hooks/use-checkout-policy';
+import Recipients from '@modules/checkout/components/recipients';
 
 type PaymentMethod = { id: string };
 type PaymentSession = { provider_id: string; status: string; id: string };
@@ -38,6 +40,8 @@ function BenefitsContinueButton() {
 }
 
 type CheckoutFormClientProps = {
+  checkout?: CheckoutState | null;
+  onCheckoutUpdate?: (state: CheckoutState) => void;
   googleMapsApiKey: string;
   cart: HttpTypes.StoreCart;
   customer: HttpTypes.StoreCustomer | null;
@@ -49,6 +53,8 @@ export default function CheckoutFormClient({
   cart,
   customer,
   onCartUpdate,
+  checkout,
+  onCheckoutUpdate,
 }: CheckoutFormClientProps) {
   const [shippingMethods, setShippingMethods] = useState<
     HttpTypes.StoreCartShippingOption[] | null
@@ -86,12 +92,12 @@ export default function CheckoutFormClient({
   // Step completion checks
   const emailComplete = !!cart?.email;
   const addressComplete = useMemo(
-    () => isAddressComplete(cart?.shipping_address),
-    [cart?.shipping_address],
+    () => checkout?.configured ? !checkout.flow.address_required || isAddressComplete(cart?.shipping_address) : isAddressComplete(cart?.shipping_address),
+    [cart?.shipping_address, checkout],
   );
   const shippingComplete = useMemo(
-    () => (cart?.shipping_methods?.length ?? 0) > 0,
-    [cart?.shipping_methods],
+    () => checkout?.configured ? !!checkout.flow.blocks.find(b => b.id === 'delivery')?.complete : (cart?.shipping_methods?.length ?? 0) > 0,
+    [cart?.shipping_methods, checkout],
   );
   const activeSession = cart?.payment_collection?.payment_sessions?.find(
     (s: PaymentSession) => s.status === "pending",
@@ -99,23 +105,40 @@ export default function CheckoutFormClient({
   const paymentComplete = !!activeSession;
 
   // Step order and prerequisites
-  const stepOrder = [
+  const legacySteps = [
     "personal",
     "address",
     "delivery",
     "benefits",
     "payment",
-  ] as const;
+  ];
+  const policyBlocks = checkout?.configured ? checkout.flow.blocks : null;
+  const visible = (id: string) => !policyBlocks || (id === 'payment' ? Number(cart.total) !== 0 : !!policyBlocks.find(b => b.id === id)?.visible) || currentStep === `edit-${id}`;
+  const stepOrder = policyBlocks ? policyBlocks.filter(b => visible(b.id)).map(b => b.id) : legacySteps;
+  const stepNumber = (id: string) => Math.max(1, stepOrder.indexOf(id) + 1);
+  const recipientsComplete = !checkout?.configured || checkout.recipients_complete;
   const stepPrereqs: Record<string, boolean> = {
     personal: true,
     address: emailComplete,
     delivery: emailComplete && addressComplete,
     benefits: emailComplete && addressComplete && shippingComplete,
-    payment: emailComplete && addressComplete && shippingComplete,
+    billing: emailComplete && addressComplete && shippingComplete,
+    recipients: emailComplete && addressComplete && shippingComplete && (!policyBlocks || !!policyBlocks.find(b => b.id === 'billing')?.complete),
+    payment: emailComplete && addressComplete && shippingComplete && recipientsComplete,
+    review: emailComplete && addressComplete && shippingComplete && recipientsComplete,
   };
 
   // Determine the effective step: if prerequisites aren't met, fall back to the earliest incomplete step
   const effectiveStep = useMemo(() => {
+    if (policyBlocks) {
+      const requested = currentStep.replace(/^edit-/, '');
+      const firstIncomplete = policyBlocks.find(b => b.applicable && !b.complete && b.id !== 'payment');
+      const fullOrder = policyBlocks.map(b => b.id);
+      if (firstIncomplete && fullOrder.indexOf(firstIncomplete.id) < fullOrder.indexOf(requested)) return firstIncomplete.id;
+      if (stepOrder.includes(requested) && stepPrereqs[requested]) return requested;
+      const after = fullOrder.indexOf(requested);
+      return stepOrder.find(id => fullOrder.indexOf(id) > after && stepPrereqs[id]) ?? firstIncomplete?.id ?? stepOrder.at(-1) ?? 'personal';
+    }
     if (stepPrereqs[currentStep]) {
       return currentStep;
     }
@@ -129,7 +152,7 @@ export default function CheckoutFormClient({
     }
     return "personal";
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, emailComplete, addressComplete, shippingComplete]);
+  }, [currentStep, emailComplete, addressComplete, shippingComplete, checkout]);
 
   const goToStep = useCallback(
     (step: string) => {
@@ -147,7 +170,7 @@ export default function CheckoutFormClient({
   // deciding whether to redirect (avoids race condition when navigating
   // right after onCartUpdate sets new cart state).
   useEffect(() => {
-    if (currentStep === effectiveStep) return;
+    if (currentStep.replace(/^edit-/, '') === effectiveStep) return;
     const timer = setTimeout(() => {
       goToCheckoutStep(effectiveStep, { replace: true });
     }, 100);
@@ -373,7 +396,7 @@ export default function CheckoutFormClient({
   return (
     <div className="flex w-full flex-col gap-4">
       {/* Step 1: Datos personales */}
-      <CheckoutStep
+      {visible('personal') && <CheckoutStep
         completedSummary={emailComplete ? cart.email : undefined}
         icon={<UserIcon className="h-4 w-4" />}
         isCompleted={emailComplete && effectiveStep !== "personal"}
@@ -382,7 +405,7 @@ export default function CheckoutFormClient({
         }
         isOpen={effectiveStep === "personal" || !emailComplete}
         onEdit={() => goToStep("personal")}
-        stepNumber={1}
+        stepNumber={stepNumber('personal')}
         title="Datos personales"
       >
         <PersonalInfo
@@ -390,10 +413,10 @@ export default function CheckoutFormClient({
           customer={customer}
           onCartUpdate={onCartUpdate}
         />
-      </CheckoutStep>
+      </CheckoutStep>}
 
       {/* Step 2: Datos de envío */}
-      <CheckoutStep
+      {visible('address') && <CheckoutStep
         completedSummary={addressSummary}
         icon={<MapPinIcon className="h-4 w-4" />}
         isCompleted={addressComplete && effectiveStep !== "address"}
@@ -402,7 +425,7 @@ export default function CheckoutFormClient({
         }
         isOpen={effectiveStep === "address"}
         onEdit={emailComplete ? () => goToStep("address") : undefined}
-        stepNumber={2}
+        stepNumber={stepNumber('address')}
         title="Datos de envío"
       >
         <Addresses
@@ -411,10 +434,10 @@ export default function CheckoutFormClient({
           googleMapsApiKey={googleMapsApiKey}
           onCartUpdate={onCartUpdate}
         />
-      </CheckoutStep>
+      </CheckoutStep>}
 
       {/* Step 3: Tipo de envío */}
-      <CheckoutStep
+      {visible('delivery') && <CheckoutStep
         completedSummary={shippingSummary}
         icon={<TruckIcon className="h-4 w-4" />}
         isCompleted={shippingComplete && effectiveStep !== "delivery"}
@@ -427,17 +450,25 @@ export default function CheckoutFormClient({
             ? () => goToStep("delivery")
             : undefined
         }
-        stepNumber={3}
+        stepNumber={stepNumber('delivery')}
         title="Tipo de envío"
       >
         <Shipping
+          disableAutoSelect={!!checkout?.configured}
           availableShippingMethods={shippingMethods}
           cart={cart}
           onCartUpdate={onCartUpdate}
           refreshingOptions={shippingLoading}
           shippingCoverage={shippingCoverage}
         />
-      </CheckoutStep>
+      </CheckoutStep>}
+
+      {policyBlocks && visible('billing') && <CheckoutStep stepNumber={stepNumber('billing')} title="Facturación" icon={<UserIcon className="h-4 w-4" />} isCompleted={!!policyBlocks.find(b => b.id === 'billing')?.complete} isOpen={effectiveStep === 'billing'} onEdit={() => goToStep('billing')}>
+        <PersonalInfo cart={cart} customer={customer} onCartUpdate={onCartUpdate} />
+      </CheckoutStep>}
+      {checkout?.configured && checkout.policy.recipients.enabled && <CheckoutStep stepNumber={stepNumber('recipients')} title={checkout.policy.recipients.title} icon={<UserIcon className="h-4 w-4" />} isCompleted={checkout.recipients_complete && effectiveStep !== 'recipients'} isOpen={effectiveStep === 'recipients'} onEdit={() => goToStep('recipients')} completedSummary={`${checkout.people.length} personas · ${checkout.units.length} unidades`}>
+        <Recipients buyer={customer ?? undefined} state={checkout} items={cart.items ?? []} onSaved={next => onCheckoutUpdate?.(next)} onContinue={() => goToCheckoutStep('benefits')} />
+      </CheckoutStep>}
 
       {/* Step 4: Beneficios */}
       <CheckoutStep
@@ -455,7 +486,7 @@ export default function CheckoutFormClient({
             ? () => goToStep("benefits")
             : undefined
         }
-        stepNumber={4}
+        stepNumber={stepNumber('benefits')}
         title="Beneficios"
       >
         <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4 sm:p-5">
@@ -474,7 +505,7 @@ export default function CheckoutFormClient({
       </CheckoutStep>
 
       {/* Step 5: Forma de pago */}
-      <CheckoutStep
+      {visible('payment') && <CheckoutStep
         icon={<CreditCardIcon className="h-4 w-4" />}
         isCompleted={paymentComplete}
         isEditing={
@@ -486,7 +517,7 @@ export default function CheckoutFormClient({
             ? () => goToStep("payment")
             : undefined
         }
-        stepNumber={5}
+        stepNumber={stepNumber('payment')}
         title="Forma de pago"
       >
         <Payment
@@ -495,7 +526,11 @@ export default function CheckoutFormClient({
           mercadopagoPublicKey={mercadopagoPublicKey}
           onCartUpdate={onCartUpdate}
         />
-      </CheckoutStep>
+      </CheckoutStep>}
+      {checkout?.configured && visible('review') && <CheckoutStep stepNumber={stepNumber('review')} title="Revisá tu compra" icon={<UserIcon className="h-4 w-4" />} isCompleted={false} isOpen={effectiveStep === 'review'} onEdit={() => goToStep('review')}>
+        <p className="text-sm text-gray-600">Revisá los productos, destinatarios e importes del resumen antes de confirmar la compra.</p>
+      </CheckoutStep>}
+      {policyBlocks && <div className="flex flex-wrap gap-3 text-sm">{policyBlocks.filter(b => b.applicable && !b.visible && b.id !== 'review').map(b => <button key={b.id} type="button" className="underline" onClick={() => goToCheckoutStep(`edit-${b.id}`)}>Editar {({ personal: 'contacto', address: 'dirección', delivery: 'entrega', billing: 'facturación', payment: 'pago' } as Record<string, string>)[b.id] ?? b.id}</button>)}</div>}
     </div>
   );
 }

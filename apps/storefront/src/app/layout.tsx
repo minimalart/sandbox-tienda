@@ -3,6 +3,7 @@ import UtmCapture from '@lib/context/utm-capture'
 import { getTenantThemeStyles } from '@lib/site-config/theme'
 import { StorefrontSharedProviders } from '@lib/storefront-shared-providers'
 import { getBaseURL } from '@lib/util/env'
+import { isSiteGateEnabled } from '@lib/site-config/site-gate'
 import { getCanonicalOrigin } from '@lib/util/site-url'
 import type { Metadata, Viewport } from 'next'
 import { Cormorant_Garamond, Inter, Manrope } from 'next/font/google'
@@ -43,10 +44,22 @@ const cormorant = Cormorant_Garamond({
 const SITE_TITLE = 'Mercatto'
 const SITE_DESCRIPTION = 'Tienda online de Mercatto'
 
-// Keywords que no dependen de la marca. La marca se antepone en `generateMetadata()`.
+/**
+ * Keywords que no dependen de la marca NI DEL RUBRO. La marca se antepone en
+ * `generateMetadata()`.
+ *
+ * Acá estaba `'supermercado online'`, y esta lista es el FALLBACK de toda tienda que
+ * no tenga `metadata.seo.keywords` cargadas. O sea que una pinturería servía
+ * `<meta name="keywords" content="Desde el sur,tienda online,supermercado online,…">`
+ * en el `<head>` de cada página (DESDEELSUR-49).
+ *
+ * Este boilerplate es multi-rubro —hay templates de tecnología, moda, deportes y
+ * campaña, no sólo `grocery`— así que el default no puede nombrar un rubro. Una tienda
+ * que quiera keywords de su vertical las carga desde el admin, que es justo la rama de
+ * arriba de este `else`.
+ */
 const GENERIC_KEYWORDS = [
   'tienda online',
-  'supermercado online',
   'compras online',
   'ofertas',
   'promociones',
@@ -134,6 +147,23 @@ export async function generateMetadata(): Promise<Metadata> {
    * `getCanonicalOrigin()` además tiene el piso anti-loopback (`canonical-base.ts`).
    */
   metadata.metadataBase = new URL(await getCanonicalOrigin())
+
+  /**
+   * Gate prendido ⇒ `noindex, nofollow`.
+   *
+   * `baseMetadata.robots` es `index, follow` y se HEREDA en todas las páginas. Con el
+   * password gate activo eso se emitía igual, así que cada URL contestaba 200 con
+   * `index, follow`, el `<title>` correcto y un cuerpo de ~120 caracteres que dice
+   * "Sitio en preparación": thin content duplicado, servido con una invitación
+   * explícita a indexarlo.
+   *
+   * Va junto con el `Disallow: /` de `robots.ts`, y por el mismo motivo: `robots.txt`
+   * frena el crawl, el meta frena la indexación de lo que ya se crawleó. Los dos leen
+   * `isSiteGateEnabled()`, que mira SÓLO la config y no la cookie del visitante.
+   */
+  if (await isSiteGateEnabled()) {
+    metadata.robots = { index: false, follow: false }
+  }
 
   try {
     const { getActiveTenant } = await import('@lib/site-config/active-tenant')

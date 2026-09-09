@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.4
+
+- Elimina la nota técnica de ajustes por sitio debajo de la lista de videos.
+
 ## 1.2.2
 
 - Feature: consumir el slot `SiteScopeBar` de `@minimalart/mercatto-plugin-runtime@^0.2.0` (variant `card`) — la barra reaparece en `/app/videos` con la implementación del host.

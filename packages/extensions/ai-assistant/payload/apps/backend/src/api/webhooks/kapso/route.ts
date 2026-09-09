@@ -269,6 +269,33 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
     waSvc = null;
   }
 
+  const siteId = turn.siteId ?? null;
+
+  // La sesión se resuelve ACÁ, antes del primer evento, y no dentro del router.
+  //
+  // Antes el `inbound` se escribía sin `session_id`, así que `sessionKeyOf` del
+  // analytics lo agrupaba bajo una clave `legacy:phone:fecha` distinta de la que
+  // usaban los eventos comerciales: cada conversación se partía en DOS sesiones que
+  // no se cruzaban y los `percent_of_total` del embudo comparaban poblaciones
+  // disjuntas. `legacy_sessions` no era tráfico viejo, era todo el tráfico.
+  //
+  // `getSession` además renueva la sesión vencida (12 h). Llamarlo también en el
+  // camino pausado es deliberado: cuando la conversación vuelva al bot, arranca con
+  // una sesión fresca en vez de arrastrar la de antes del handoff.
+  //
+  // Sí, `routeInbound` la vuelve a pedir: necesita la sesión ENTERA (`step`,
+  // `intent`, `answers`), no sólo el id, y para cuando llega ya está renovada, así
+  // que la segunda lectura no reescribe nada. Un SELECT de más por turno es más
+  // barato que enhebrar el objeto por las seis firmas que hoy no lo reciben.
+  let sessionId: string | null = null;
+  if (waSvc) {
+    try {
+      sessionId = (await waSvc.getSession(from)).session_id;
+    } catch {
+      sessionId = null;
+    }
+  }
+
   // Handoff: si un humano está atendiendo esta conversación, el bot NO responde
   // (evalúa auto-resume por inactividad adentro). Igual persiste el mensaje entrante.
   if (waSvc && (await waSvc.isPaused(from))) {
@@ -278,7 +305,8 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
     // Sin este evento la pausa es el ÚNICO camino que no deja rastro: ni un `inbound`
     // en el embudo. Un bot pausado y un bot roto se veían exactamente igual.
     trackWaEvent(container, {
-      siteId: turn.siteId ?? null,
+      siteId,
+      sessionId,
       phone: from,
       type: 'paused_drop',
       payload: { kind: selectionId ? 'selection' : 'text', text: text.slice(0, 120) },
@@ -295,7 +323,8 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
   // `kind` separa el recorrido interactivo (botón/lista) del texto libre, que es
   // el que obliga a gastar modelo.
   trackWaEvent(container, {
-      siteId: turn.siteId ?? null,
+    siteId,
+    sessionId,
     phone: from,
     type: 'inbound',
     payload: {
@@ -336,6 +365,7 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
       text: rawText,
       selectionId: selectionId ?? null,
       hasHistory: history.length > 0,
+      siteId,
     });
     if (routed.handled) {
       if (waSvc) {
@@ -381,7 +411,8 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
         blocks.push(`(y ${customer.orders.length - recent.length} pedido/s más antiguos)`);
       }
       trackWaEvent(container, {
-      siteId: turn.siteId ?? null,
+        siteId,
+        sessionId,
         phone: from,
         type: 'order_status',
         payload: { orders: recent.length, identified: true },
@@ -397,13 +428,27 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
   // `waUsedAi: true` porque acá el turno lo resuelve el LLM: las tools que emitan
   // eventos del embudo quedan marcadas como "gastó modelo". El router
   // determinístico (que resuelve los botones sin LLM) pasa `false`.
-  const nativeCtx = { container, store, waPhone: from, isVariantSelection, waUsedAi: true } as {
+  //
+  // `waSessionId`/`waSiteId` no estaban: todo evento comercial resuelto por el
+  // modelo (search, added_to_cart, checkout_generated…) se escribía huérfano, y el
+  // embudo sólo veía los que pasaban por el router.
+  const nativeCtx = {
+    container,
+    store,
+    waPhone: from,
+    isVariantSelection,
+    waUsedAi: true,
+    waSessionId: sessionId,
+    waSiteId: siteId,
+  } as {
     container: typeof container;
     store: typeof store;
     waPhone: string;
     isVariantSelection?: boolean;
     sentUserMessage?: boolean;
     waUsedAi?: boolean;
+    waSessionId?: string | null;
+    waSiteId?: string | null;
   };
 
   let reply: string;
@@ -420,7 +465,8 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
   } catch (err) {
     logger.error(`[WhatsApp bot] El agente falló para ${from}: ${(err as Error).message}`);
     trackWaEvent(container, {
-      siteId: turn.siteId ?? null,
+      siteId,
+      sessionId,
       phone: from,
       type: 'error',
       payload: { message: (err as Error).message },
@@ -455,7 +501,8 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
   if (!trimmed) {
     logger.error(`[WhatsApp bot] El agente no devolvió texto para ${from}: se responde con el menú.`);
     trackWaEvent(container, {
-      siteId: turn.siteId ?? null,
+      siteId,
+      sessionId,
       phone: from,
       type: 'error',
       payload: { where: 'empty_reply', message: 'el agente no devolvió texto' },

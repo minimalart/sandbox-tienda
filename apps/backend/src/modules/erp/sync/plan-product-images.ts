@@ -39,10 +39,12 @@ export type ProductImagePlan = {
 
 export type PlanProductImagesOptions = {
   /**
-   * Artículos que vienen fallando, para saltearlos. **Sólo se pasa en el
-   * backfill**: cuando el artículo llega por el DELTA es porque algo cambió en
-   * el ERP —cargarle la foto le mueve `fechahoramodife`—, y ahí hay que
-   * reintentar aunque esté en cooldown. Ver `image-failures.ts`.
+   * Artículos que vienen fallando, para saltearlos. Se pasa en las pasadas
+   * COMPLETAS (`backfill` y `full_sweep`) y NO en el delta: cuando el artículo
+   * llega por el delta es porque algo cambió en el ERP —cargarle la foto le
+   * mueve `fechahoramodife`—, y ahí hay que reintentar aunque esté en cooldown.
+   * La decisión vive en `shouldSkipKnownImageFailures` (`full-sweep-scope.ts`);
+   * el por qué del registro, en `image-failures.ts`.
    */
   failures?: ImageFailures;
   /** Inyectable para poder testear el cooldown sin esperar siete días. */

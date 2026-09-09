@@ -123,7 +123,7 @@ describe('buildTenantConfig · tienda principal', () => {
   it('las claves de assets están congeladas: agregar una es una decisión consciente', () => {
     // Cualquier clave nueva acá se le suma al sitio principal en el merge. Este
     // assert obliga a que aparezca en un diff en vez de colarse.
-    assert.deepEqual(Object.keys(buildTenantConfig(mainRow()) .assets as object).sort(), [
+    assert.deepEqual(Object.keys(buildTenantConfig(mainRow()).assets as object).sort(), [
       'mercadopago',
     ]);
   });
@@ -135,7 +135,13 @@ describe('buildTenantConfig · isotipo del nav mobile', () => {
     // Los assets no se tocan —`iconNegative` sigue expuesto para otros
     // consumidores— porque lo que se retiró fue la ELECCIÓN, no el archivo.
     const config = buildTenantConfig(
-      regularRow({ theme: { icon: '/iso.svg', icon_negative: '/iso-neg.svg', mobile_nav_icon: 'negative' } as any })
+      regularRow({
+        theme: {
+          icon: '/iso.svg',
+          icon_negative: '/iso-neg.svg',
+          mobile_nav_icon: 'negative',
+        } as any,
+      })
     );
     assert.equal('mobileNavIcon' in (config.assets as Record<string, unknown>), false);
     assert.equal((config.assets as any).logos.mobile, '/iso.svg');
@@ -145,6 +151,37 @@ describe('buildTenantConfig · isotipo del nav mobile', () => {
   it('el isotipo positivo es el que toma el botón de home', () => {
     const config = buildTenantConfig(regularRow({ theme: { icon: '/iso.svg' } as any }));
     assert.equal((config.assets as any).logos.mobile, '/iso.svg');
+  });
+});
+
+describe('buildTenantConfig · orden de la barra inferior mobile', () => {
+  it('la lista configurada pasa a `assets.mobileNav` tal cual', () => {
+    const config = buildTenantConfig(
+      regularRow({ content_config: { mobileNav: ['blog', 'promos'] } as any })
+    );
+    assert.deepEqual((config.assets as any).mobileNav, ['blog', 'promos']);
+  });
+
+  it('sin config no emite la clave: gana el default del storefront', () => {
+    const config = buildTenantConfig(regularRow({ content_config: {} as any }));
+    assert.equal('mobileNav' in (config.assets as Record<string, unknown>), false);
+  });
+
+  /**
+   * El merge de `assets` es shallow POR CLAVE: un `mobileNav: []` presente le
+   * ganaría entero al default del storefront y dejaría el lugar flexible sin
+   * candidatos, o sea la barra en 4 columnas con el carrito descentrado.
+   */
+  it('una lista VACÍA no se emite', () => {
+    const config = buildTenantConfig(
+      regularRow({ content_config: { mobileNav: [] } as any })
+    );
+    assert.equal('mobileNav' in (config.assets as Record<string, unknown>), false);
+  });
+
+  it('la principal tampoco la emite si no la configuró', () => {
+    const config = buildTenantConfig(mainRow());
+    assert.equal('mobileNav' in (config.assets as Record<string, unknown>), false);
   });
 });
 
@@ -160,7 +197,7 @@ describe('buildTenantConfig · footer.description', () => {
     // `buildMainStoreBrandAssets` no aporta footer, así que acá sale sola. El resto
     // del footer lo repone `mergeMainTenant` en el storefront (merge por subclave).
     const config = buildTenantConfig(
-      mainRow({ content_config: { footer: { description: 'Texto del backoffice' } } }),
+      mainRow({ content_config: { footer: { description: 'Texto del backoffice' } } })
     );
     assert.deepEqual((config.assets as any).footer, {
       description: 'Texto del backoffice',
@@ -170,7 +207,7 @@ describe('buildTenantConfig · footer.description', () => {
   it('en una demo se mergea SOBRE el footer del template', () => {
     // El template aporta el newsletter; la descripción editada sólo pisa el copy.
     const config = buildTenantConfig(
-      regularRow({ content_config: { footer: { description: 'Mi texto' } } }),
+      regularRow({ content_config: { footer: { description: 'Mi texto' } } })
     );
     const templateFooter = supermercadoTemplate.buildAssets(regularRow()).footer as any;
     const footer = (config.assets as any).footer;
@@ -185,7 +222,7 @@ describe('buildTenantConfig · footer.description', () => {
           footer: { description: 'Mi texto' },
           contact: { phone: '+54 11 5555-5555' },
         },
-      }),
+      })
     );
     const footer = (config.assets as any).footer;
     assert.equal(footer.description, 'Mi texto');
@@ -196,7 +233,7 @@ describe('buildTenantConfig · footer.description', () => {
     // Regresión del comportamiento previo, cuando `footer` sólo se emitía con
     // contacto cargado.
     const config = buildTenantConfig(
-      regularRow({ content_config: { contact: { phone: '+54 11 5555-5555' } } }),
+      regularRow({ content_config: { contact: { phone: '+54 11 5555-5555' } } })
     );
     const templateFooter = supermercadoTemplate.buildAssets(regularRow()).footer as any;
     assert.equal((config.assets as any).footer.description, templateFooter.description);
@@ -206,7 +243,7 @@ describe('buildTenantConfig · footer.description', () => {
     // Si se persistiera '', la principal publicaría un párrafo vacío en lugar de
     // caer al copy por defecto.
     const config = buildTenantConfig(
-      mainRow({ content_config: { footer: { description: '   ' } } }),
+      mainRow({ content_config: { footer: { description: '   ' } } })
     );
     assert.equal('footer' in (config.assets as Record<string, unknown>), false);
   });
@@ -218,7 +255,7 @@ describe('buildTenantConfig · copy de "Atención al cliente"', () => {
     // (teléfono/mail/dirección/horario), así que configurar únicamente el título
     // se guardaba en la fila y no llegaba nunca al storefront. Sin error.
     const config = buildTenantConfig(
-      regularRow({ content_config: { contactPage: { title: 'Te ayudamos' } } }),
+      regularRow({ content_config: { contactPage: { title: 'Te ayudamos' } } })
     );
     assert.equal((config.assets as any).contactPage.title, 'Te ayudamos');
   });
@@ -230,7 +267,7 @@ describe('buildTenantConfig · copy de "Atención al cliente"', () => {
           contactPage: { title: 'Te ayudamos', note: 'Sumá tu número de pedido' },
           contact: { phone: '+54 11 5555-5555', email: 'hola@tienda.com' },
         },
-      }),
+      })
     );
     const contactPage = (config.assets as any).contactPage;
     assert.equal(contactPage.title, 'Te ayudamos');
@@ -243,7 +280,7 @@ describe('buildTenantConfig · copy de "Atención al cliente"', () => {
     // Emitir `title: ''` dejaría la tarjeta con el título vacío en vez de caer al
     // copy por defecto del storefront.
     const config = buildTenantConfig(
-      mainRow({ content_config: { contactPage: { title: '   ', note: '' } } }),
+      mainRow({ content_config: { contactPage: { title: '   ', note: '' } } })
     );
     assert.equal('contactPage' in (config.assets as Record<string, unknown>), false);
   });
@@ -252,7 +289,7 @@ describe('buildTenantConfig · copy de "Atención al cliente"', () => {
     // El copy por defecto vive en el storefront, no acá: emitirlo desde el backend
     // lo duplicaría en dos lugares que después se desincronizan.
     const config = buildTenantConfig(
-      regularRow({ content_config: { contact: { phone: '+54 11 5555-5555' } } }),
+      regularRow({ content_config: { contact: { phone: '+54 11 5555-5555' } } })
     );
     const contactPage = (config.assets as any).contactPage;
     assert.equal(contactPage.phone.value, '+54 11 5555-5555');
@@ -267,17 +304,11 @@ describe('buildTenantConfig · canonicalForm', () => {
     // Es el comportamiento que estaba hardcodeado antes de la columna, así que las
     // filas existentes (con la columna en NULL) no cambian de conducta.
     assert.equal(buildTenantConfig(regularRow()).canonicalForm, 'host');
-    assert.equal(
-      buildTenantConfig(regularRow({ canonical_form: null })).canonicalForm,
-      'host',
-    );
+    assert.equal(buildTenantConfig(regularRow({ canonical_form: null })).canonicalForm, 'host');
   });
 
   it("respeta 'path' cuando la tienda lo elige", () => {
-    assert.equal(
-      buildTenantConfig(regularRow({ canonical_form: 'path' })).canonicalForm,
-      'path',
-    );
+    assert.equal(buildTenantConfig(regularRow({ canonical_form: 'path' })).canonicalForm, 'path');
   });
 
   it('se publica SIEMPRE, para que el storefront no tenga que consultarlo aparte', () => {
@@ -288,7 +319,7 @@ describe('buildTenantConfig · canonicalForm', () => {
       const form = buildTenantConfig(row).canonicalForm;
       assert.ok(
         form === 'host' || form === 'path',
-        'canonicalForm tiene que estar presente y ser uno de los dos valores',
+        'canonicalForm tiene que estar presente y ser uno de los dos valores'
       );
     }
   });
@@ -328,9 +359,7 @@ describe('buildTenantConfig · el payload no dice "demo" en ningún lugar', () =
 });
 
 describe('buildTenantConfig · template campaign — overrides SITE-LEVEL de content_config.campaign', () => {
-  const campaignRow = (
-    override: Partial<DemoStoreLike['content_config']> = {},
-  ): DemoStoreLike =>
+  const campaignRow = (override: Partial<DemoStoreLike['content_config']> = {}): DemoStoreLike =>
     regularRow({
       id: 'demo_campaign_1',
       slug: 'escuela-tecnica-1',
@@ -355,7 +384,7 @@ describe('buildTenantConfig · template campaign — overrides SITE-LEVEL de con
           announcement: { text: 'Tienda oficial de la escuela' },
           footer: { address: 'Av. Siempre Viva 1234' },
         },
-      } as any),
+      } as any)
     );
     const assets = cfg.assets as Record<string, any>;
     assert.equal(assets.campaign.announcement.text, 'Tienda oficial de la escuela');
@@ -373,7 +402,7 @@ describe('buildTenantConfig · template campaign — overrides SITE-LEVEL de con
           announcement: { text: '', href: 'https://example.com' },
           footer: { address: '', email: 'hola@edu.ar' },
         },
-      } as any),
+      } as any)
     );
     const assets = cfg.assets as Record<string, any>;
     // href sí, text no.
@@ -393,7 +422,7 @@ describe('buildTenantConfig · template campaign — overrides SITE-LEVEL de con
         content_config: {
           campaign: { footer: { address: 'no debería aparecer' } },
         } as any,
-      }),
+      })
     );
     const assets = cfg.assets as Record<string, unknown>;
     // supermercadoTemplate.buildAssets no siembra la clave; buildTenantConfig
@@ -415,7 +444,7 @@ describe('buildTenantConfig · template campaign — overrides SITE-LEVEL de con
         campaign: {
           announcement: { text: 'OK' },
         } as any,
-      }),
+      })
     );
     const assets = cfg.assets as Record<string, any>;
     assert.equal('hero' in assets.campaign, false);
@@ -431,5 +460,30 @@ describe('buildTenantConfig · la principal sigue sin filtrar la contraseña', (
       mainRow({ password_gate_enabled: true, password_gate_password: 'secreta1' })
     );
     assert.equal(JSON.stringify(config).includes('secreta1'), false);
+  });
+});
+
+describe('main store B2B configuration', () => {
+  it('does not advertise an unprovisioned main wholesale portal', () => {
+    assert.equal(buildTenantConfig(mainRow({ b2b_enabled: true })).medusa.b2b, undefined);
+  });
+  it('preserves explicit custom pricing without applying demo discounts', () => {
+    const config = buildTenantConfig(
+      mainRow({ b2b_enabled: true, b2b_sales_channel_id: 'sc_b2b', b2b_pricing_tiers: [] })
+    );
+    assert.deepEqual(config.medusa.b2b?.tiers, []);
+  });
+  it('preserves an assigned wholesale channel', () => {
+    const config = buildTenantConfig(
+      mainRow({ b2b_enabled: true, b2b_sales_channel_id: 'sc_wholesale' })
+    );
+    assert.equal(config.medusa.b2b?.salesChannelId, 'sc_wholesale');
+  });
+  it('keeps demo tiers and requires a provisioned channel for demos', () => {
+    assert.equal(buildTenantConfig(regularRow({ b2b_enabled: true })).medusa.b2b, undefined);
+    const config = buildTenantConfig(
+      regularRow({ b2b_enabled: true, b2b_sales_channel_id: 'sc_demo_b2b' })
+    );
+    assert.equal(config.medusa.b2b?.tiers?.length, 3);
   });
 });

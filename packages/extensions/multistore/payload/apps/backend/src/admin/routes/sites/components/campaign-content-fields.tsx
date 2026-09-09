@@ -89,7 +89,7 @@ export const CampaignContentFields = ({ value, onChange }: Props) => {
             <Label>Pill "Powered by" — texto</Label>
             <Input
               value={value.campaignChromePoweredByLabel}
-              placeholder="Powered by EDUCABOT"
+              placeholder="Powered by NOMBRETIENDA"
               onChange={(e) =>
                 set('campaignChromePoweredByLabel', e.target.value)
               }
@@ -99,12 +99,26 @@ export const CampaignContentFields = ({ value, onChange }: Props) => {
             <Label>Pill "Powered by" — link</Label>
             <Input
               value={value.campaignChromePoweredByHref}
-              placeholder="https://educabot.com"
+              placeholder="https://nombretienda.com"
               onChange={(e) =>
                 set('campaignChromePoweredByHref', e.target.value)
               }
             />
           </div>
+        </div>
+        <div className="flex flex-col gap-y-2">
+          <Label>Color de fondo del header (hex)</Label>
+          <Input
+            value={value.campaignChromeBackgroundColor}
+            placeholder="#ffffff"
+            onChange={(e) =>
+              set('campaignChromeBackgroundColor', e.target.value)
+            }
+          />
+          <Text size="xsmall" className="text-ui-fg-subtle">
+            Ej. <code>#ffffff</code> (blanco por default). El texto elige
+            contraste automático sobre este fondo.
+          </Text>
         </div>
       </section>
 
@@ -154,7 +168,7 @@ export const CampaignContentFields = ({ value, onChange }: Props) => {
             <Label>"Powered by" del footer — texto</Label>
             <Input
               value={value.campaignFooterPoweredByLabel}
-              placeholder="Plataforma provista por EDUCABOT"
+              placeholder="Plataforma provista por NOMBRETIENDA"
               onChange={(e) =>
                 set('campaignFooterPoweredByLabel', e.target.value)
               }
@@ -164,12 +178,26 @@ export const CampaignContentFields = ({ value, onChange }: Props) => {
             <Label>"Powered by" del footer — link</Label>
             <Input
               value={value.campaignFooterPoweredByHref}
-              placeholder="https://educabot.com"
+              placeholder="https://nombretienda.com"
               onChange={(e) =>
                 set('campaignFooterPoweredByHref', e.target.value)
               }
             />
           </div>
+        </div>
+        <div className="flex flex-col gap-y-2">
+          <Label>Color de fondo del footer (hex)</Label>
+          <Input
+            value={value.campaignFooterBackgroundColor}
+            placeholder="#ffffff"
+            onChange={(e) =>
+              set('campaignFooterBackgroundColor', e.target.value)
+            }
+          />
+          <Text size="xsmall" className="text-ui-fg-subtle">
+            Ej. <code>#ffffff</code> (blanco por default). Vacío = hereda el
+            default del template.
+          </Text>
         </div>
       </section>
     </div>

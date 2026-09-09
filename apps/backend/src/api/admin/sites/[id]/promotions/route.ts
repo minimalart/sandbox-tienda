@@ -4,7 +4,6 @@ import { DEMO_STORE_MODULE } from '../../../../../modules/demo-store';
 import { ensureDemoStoreTables } from '../../../../../modules/demo-store/ensure-tables';
 import { isMainStore } from '../../../../../modules/demo-store/main-store';
 import { createDemoPromotions } from '../../../../../modules/demo-store/promotions';
-import { resyncTypesense } from '../../../../../modules/store-importer/run-import';
 
 /**
  * Generate demo promotions for a demo store's catalog (the "Crear promociones"
@@ -38,6 +37,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<voi
     return;
   }
 
+  let resyncTypesense: (container: any) => Promise<void>;
+  try { ({ resyncTypesense } = require('../../../../../modules/store-importer/run-import')); }
+  catch { res.status(409).json({ message: 'Instalá la extensión de importación para generar promociones de muestra.' }); return; }
   try {
     const result = await createDemoPromotions(req.scope, demo.sales_channel_id);
     await resyncTypesense(req.scope);

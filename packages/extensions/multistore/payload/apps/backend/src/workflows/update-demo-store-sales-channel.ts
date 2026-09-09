@@ -1,3 +1,4 @@
+import type { ISalesChannelModuleService } from '@medusajs/framework/types';
 /**
  * Reasigna el sales channel de una demo store (incluida la principal).
  *
@@ -67,7 +68,7 @@ const validateStep = createStep(
     }
 
     if (input.sales_channel_id) {
-      const scService = container.resolve(Modules.SALES_CHANNEL);
+      const scService = container.resolve<ISalesChannelModuleService>(Modules.SALES_CHANNEL);
       const [sc] = await scService.listSalesChannels({ id: input.sales_channel_id });
       if (!sc) {
         throw new MedusaError(

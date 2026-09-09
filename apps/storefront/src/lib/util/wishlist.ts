@@ -1,3 +1,4 @@
+import { browserCustomerSession, sessionCookieName } from "./customer-session";
 export type StoredWishlistItem = {
   product_id: string;
   product_variant_id: string;
@@ -19,7 +20,7 @@ export function isWishlistAuthenticated(): boolean {
     return false;
   }
 
-  return document.cookie.includes("_medusa_jwt=");
+  return document.cookie.split("; ").includes(`${sessionCookieName(browserCustomerSession(), "present")}=1`);
 }
 
 export function dedupeWishlistItems(

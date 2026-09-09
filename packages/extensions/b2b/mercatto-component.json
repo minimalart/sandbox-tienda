@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "b2b",
   "name": "B2B",
-  "version": "1.21.0",
+  "version": "1.23.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -97,18 +97,6 @@
       "target": "apps/storefront/src/lib/data/company.ts"
     },
     {
-      "source": "payload/apps/storefront/src/lib/data/company-credit.ts",
-      "target": "apps/storefront/src/lib/data/company-credit.ts"
-    },
-    {
-      "source": "payload/apps/storefront/src/lib/data/billing-profile.ts",
-      "target": "apps/storefront/src/lib/data/billing-profile.ts"
-    },
-    {
-      "source": "payload/apps/storefront/src/lib/data/billing-profile-client.ts",
-      "target": "apps/storefront/src/lib/data/billing-profile-client.ts"
-    },
-    {
       "source": "payload/apps/backend/src/admin/widgets/customer-billing-profiles-widget.tsx",
       "target": "apps/backend/src/admin/widgets/customer-billing-profiles-widget.tsx"
     },
@@ -173,7 +161,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/companies/credenciales/page.tsx",
-      "sha256": "d7bf17995b7f84509cf2742128721882965d914a437dbfe5f213dcb51757d4cf"
+      "sha256": "fd8ec5491da55133b9c174e661e4f083c07ffbb27f0ba4e428a2f97aa5f7dd52"
     },
     {
       "path": "apps/backend/src/admin/routes/companies/page.tsx",
@@ -224,8 +212,12 @@
       "sha256": "c5f5ba8d48fc0c5bf210cbb4dc69080aa278e0accc87fe67c7c351df2e9b14ad"
     },
     {
+      "path": "apps/backend/src/api/store/b2b/carts/[id]/presentations/route.ts",
+      "sha256": "108eade8290a157beba290e1cc45983b482906ccbadf78e6bfaf2c21d25e6d31"
+    },
+    {
       "path": "apps/backend/src/api/store/b2b/channel-products.ts",
-      "sha256": "8018c048942d6d7a115f8e957937c56b13998772be87fece07a981e4d3b7c843"
+      "sha256": "fb516e1507ef4540e0e67ac15040deca4e23b9f36014eb9f91d3afef1dbf0ec0"
     },
     {
       "path": "apps/backend/src/api/store/b2b/import-order/route.ts",
@@ -233,7 +225,7 @@
     },
     {
       "path": "apps/backend/src/api/store/b2b/prices/route.ts",
-      "sha256": "2fecd867004a9c1468073e3f2f7a81bace1682f7a7cab1e385e5e04f868bf122"
+      "sha256": "5f44a18a1bf9caf08477b1afb52ef046d65837a394e9e02c2a8a262a2d2944f5"
     },
     {
       "path": "apps/backend/src/api/store/b2b/pricing-region.ts",
@@ -441,11 +433,11 @@
     },
     {
       "path": "apps/backend/src/workflows/accept-company-invitation.ts",
-      "sha256": "23a63d11bd4fbe98550d465b1b88fc65c7eb5775b3ceec252c0f8999439b69c6"
+      "sha256": "050e22a6215f61f5abd24e97d18452da316caad797228999fec5fd87d885ad67"
     },
     {
       "path": "apps/backend/src/workflows/create-company.ts",
-      "sha256": "a6ca5f420d3309a007f999648bb4d648498a0b9540254d2021d2d1f01162a7a7"
+      "sha256": "54fe49fa23898edcf459eb738299d77f1284ffe50ecb2142fe3c3d209803a68d"
     },
     {
       "path": "apps/backend/src/workflows/invite-company-member.ts",
@@ -453,7 +445,7 @@
     },
     {
       "path": "apps/backend/src/workflows/link-company-customer-group.ts",
-      "sha256": "171c46f58642c6766a2b1fc4b92f2f40674d1222676c3b3e5701fb5abe28fac3"
+      "sha256": "9c99e6a16d5fd4258d6899d45bac6844d1255571e27477fa6d93f9c04a867436"
     },
     {
       "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/checkout/loading.tsx",
@@ -469,7 +461,7 @@
     },
     {
       "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/layout.tsx",
-      "sha256": "d685fd42945f134b7c87bcfc6a29259996306a2aa0a40d4db3be9fb119aaff76"
+      "sha256": "4cb8f19527b007964b096c536cf19f4694c84832b9a21ff29e3413bbea53bd98"
     },
     {
       "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/loading.tsx",
@@ -504,16 +496,24 @@
       "sha256": "2010d2cdcc3b4f436bb3038dbf90ff6a008e1420b8ff66d50893407e5bcd811c"
     },
     {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/(portal)/productos/[id]/page.tsx",
+      "sha256": "655962c1c8f547ba4f7c5d67a2053f6b1b53b011ff172a931678a64f98be3014"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/[...unmatched]/page.tsx",
+      "sha256": "93657bf15b756d753c7c2ce1793c9b0a4ffab631717a674d0920a1e55b576279"
+    },
+    {
       "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/login/page.tsx",
-      "sha256": "bb728e3deb99272278ff2606533ef62e8838cd8a4a7a8ac44395dff8a8522694"
+      "sha256": "c3f5c3a13ac620e8e291961f4781485823c1573ebb8395df8458b45b64824f58"
     },
     {
       "path": "apps/storefront/src/app/[countryCode]/(b2b)/b2b/register/page.tsx",
-      "sha256": "2ffc406124a9f1cf38dc7511afaecb7833acf07d2f9eeea3273b2c9eb1d06caa"
+      "sha256": "fe10b58a544f4b6a1ff4908781f2431bef3824f4caa5e477cd103588c4182aa7"
     },
     {
       "path": "apps/storefront/src/app/[countryCode]/(b2b)/layout.tsx",
-      "sha256": "9449e4149c86731b8820f3fb506ccb8334c3357f8116a03330879748c47540ef"
+      "sha256": "e5ba6ebe5237ea35ff9f4567f133a8d53228d26a997ad05f30c94bd777ee9cde"
     },
     {
       "path": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/billing/page.tsx",
@@ -529,7 +529,7 @@
     },
     {
       "path": "apps/storefront/src/app/api/b2b/cart/route.ts",
-      "sha256": "00bc067af17046aa982a5251db25f0cfc0467cfc7732e1400178e5c71b5e09a6"
+      "sha256": "7140be232f50f03aa0e1f078fce641cd21b18af6e11ba621ee5391bc2e40260c"
     },
     {
       "path": "apps/storefront/src/app/api/b2b/prices/route.ts",
@@ -537,23 +537,11 @@
     },
     {
       "path": "apps/storefront/src/lib/data/b2b-cart.ts",
-      "sha256": "d3c9611abbeaaedc9d9f54b5f5b584616036d70698c39b5ae44a1ea26fe84c0e"
-    },
-    {
-      "path": "apps/storefront/src/lib/data/billing-profile-client.ts",
-      "sha256": "a2f8a425a7d915bd74ae78922a93ffcff166b1b3507db87bf0c5e79dab25d3a9"
-    },
-    {
-      "path": "apps/storefront/src/lib/data/billing-profile.ts",
-      "sha256": "1c819a60f4b6d4ad22f673c33b85f495165c1a1491caf178ae4d74d81624c650"
-    },
-    {
-      "path": "apps/storefront/src/lib/data/company-credit.ts",
-      "sha256": "83ad10282183a446efe5ea21ddea37cb69a27bb7aa7a09b67a85730dd268a51b"
+      "sha256": "af3e7f365c06b426d037c9815679abc287a9eccbc6a6902ede1ac69de240c40f"
     },
     {
       "path": "apps/storefront/src/lib/data/company.ts",
-      "sha256": "13a6d48274baefc544deffecb90e5b81abdf7f14b5ff20f3e23a6908b9050138"
+      "sha256": "b7137b51da7bc2c2a527dafadc01b457643d35aa719e0dc34e3f81044d6b0c3d"
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/b2b-brand.tsx",
@@ -561,7 +549,7 @@
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/b2b-checkout-flow.tsx",
-      "sha256": "f477af84a341631b9075ff8e2b50bd3d38a2923bc1b934989b0a7fa31f9798f1"
+      "sha256": "01dec1f304df391d8808a30cfa00339b4dd4c05d27e785ff248bfc98f703df69"
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/b2b-gate-screen.tsx",
@@ -569,15 +557,19 @@
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/b2b-login.tsx",
-      "sha256": "c75a62395935297b5d63214971a552d149b62e00d7ea36d729ee1f9329042e9c"
+      "sha256": "8177a43f814c2c99b1128e29686a4cab28e0b34d2b8d0e53fe00f55305520405"
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/b2b-order-builder.tsx",
-      "sha256": "b956940afe16466619ea16e8b210a765b91bbc8ca260754cb88d522a0066c6b4"
+      "sha256": "4b9ad7c3914d191ae3f8f18dec0dc5291778d3f9bc9f1823efb8ba2cc2ec5f0c"
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/b2b-order-detail.tsx",
-      "sha256": "bef36bdadd7f22f8a5f025e4a18d5f941e22a75c987f31b3876edc024a9d7d87"
+      "sha256": "1a12f1b3c7be188c8e21d1665f1a5387df27b3cad20c5e845c4236d87cd4c8e8"
+    },
+    {
+      "path": "apps/storefront/src/modules/b2b/components/catalog-product.tsx",
+      "sha256": "ba8f4268439498c7967940ab3cd2a084114827c6c8e8124d46b1b83eacb0ad61"
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/company-users.tsx",
@@ -589,7 +581,7 @@
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/portal/app-sidebar.tsx",
-      "sha256": "2d935a67732d1743af46e5a4e5faabe01faad559bdcc190d37137e50739686c4"
+      "sha256": "f41b589e988f411b412ce9c2f4cc29181d6d52c31f11bb156dc739ad19684e65"
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/portal/page-header.tsx",

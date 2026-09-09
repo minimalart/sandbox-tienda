@@ -12,7 +12,7 @@ import {
   syncB2BCartLines,
   updateB2BLineItem,
 } from "@lib/data/b2b-cart";
-import { cookies } from "next/headers";
+import { setB2BCartId, removeB2BCartId } from "@lib/data/cookies";
 import { type NextRequest, NextResponse } from "next/server";
 
 /**
@@ -28,15 +28,6 @@ import { type NextRequest, NextResponse } from "next/server";
  * es a /api/b2b/cart, el browser scopea la cookie a /api/b2b y nunca llega a
  * /b2b/checkout (→ el checkout no encuentra el carrito y rebota a /nuevo).
  */
-const COOKIE = "_b2b_cart_id";
-const COOKIE_OPTS = {
-  maxAge: 60 * 60 * 24 * 7,
-  httpOnly: true,
-  sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
-  path: "/",
-};
-
 /** Devuelve el carrito B2B actual (para precargar el order builder al editar). */
 export async function GET(): Promise<NextResponse> {
   const cart = await retrieveB2BCart();
@@ -50,14 +41,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     case "add": {
       const r = await addB2BLineItems(body.countryCode, body.lines ?? [], body.company);
       if (r.ok && "cartId" in r && r.cartId) {
-        (await cookies()).set(COOKIE, r.cartId, COOKIE_OPTS);
+        await setB2BCartId(r.cartId);
       }
       return NextResponse.json(r);
     }
     case "sync": {
       const r = await syncB2BCartLines(body.countryCode, body.lines ?? [], body.company);
       if (r.ok && "cartId" in r && r.cartId) {
-        (await cookies()).set(COOKIE, r.cartId, COOKIE_OPTS);
+        await setB2BCartId(r.cartId);
       }
       return NextResponse.json(r);
     }
@@ -79,7 +70,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json(await initiateB2BPayment(body.providerId));
     case "place-order": {
       const r = await placeB2BOrder();
-      if (r.ok) (await cookies()).set(COOKIE, "", { ...COOKIE_OPTS, maxAge: 0 });
+      if (r.ok) await removeB2BCartId();
       return NextResponse.json(r);
     }
     default:

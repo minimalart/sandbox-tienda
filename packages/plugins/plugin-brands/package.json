@@ -1,6 +1,6 @@
 {
   "name": "@minimalart/mercatto-plugin-brands",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Mercatto plugin — marcas (brands) con CRUD admin, imágenes por marca, y storefront público. Migrado desde packages/extensions/brands.",
   "main": ".medusa/server/src/index.js",
   "types": ".medusa/server/src/index.d.ts",

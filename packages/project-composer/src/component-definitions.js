@@ -88,7 +88,6 @@ module.exports = {
     'apps/storefront/public/images/gift-card-default.svg',
   ],
   mercadopago: [
-    'apps/backend/src/admin/routes/mercadopago',
     'apps/backend/src/modules/mercado-pago', 'apps/backend/src/modules/mercado-pago-api',
     'apps/backend/src/api/mercado-pago', 'apps/backend/src/api/mercado-pago-api', 'apps/backend/src/api/store/mercadopago',
     'apps/backend/src/scripts/setup-mercadopago.ts', 'apps/backend/src/scripts/probe-mercadopago-benefits.ts',
@@ -263,7 +262,7 @@ module.exports = {
     'apps/storefront/src/modules/b2b', 'apps/storefront/src/app/api/b2b', 'apps/storefront/src/app/[countryCode]/(b2b)',
     'apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/company', 'apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/credit',
     'apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/billing',
-    'apps/storefront/src/lib/data/b2b-cart.ts', 'apps/storefront/src/lib/data/company.ts', 'apps/storefront/src/lib/data/company-credit.ts', 'apps/storefront/src/lib/data/billing-profile.ts', 'apps/storefront/src/lib/data/billing-profile-client.ts',
+    'apps/storefront/src/lib/data/b2b-cart.ts', 'apps/storefront/src/lib/data/company.ts',
     // EXPLÍCITO, y por la misma razón que la línea de `delivery` de más abajo:
     // el descubrimiento ya le daba esta ruta a b2b (importa `./validators`, que
     // es de b2b). Al declarar `modules/arca` en `fiscal-documentation`, los
@@ -279,7 +278,7 @@ module.exports = {
   corporate: [
     'apps/backend/src/modules/corporate', 'apps/backend/src/api/admin/corporates', 'apps/backend/src/api/store/corporates', 'apps/backend/src/api/store/corporate-invitations',
     'apps/backend/src/admin/routes/corporates', 'apps/backend/src/admin/hooks/api/corporates.tsx',
-    'apps/storefront/src/lib/data/corporate.ts', 'apps/storefront/src/app/[countryCode]/(main)/corporate',
+    'apps/storefront/src/app/[countryCode]/(main)/corporate',
     'apps/storefront/src/modules/account/components/corporate',
   ],
   // The fiscal document tabs/cards live inside the companies, corporates and
@@ -489,6 +488,19 @@ module.exports = {
    * admin del cliente no tenía multitienda. Ahora se instala.
    */
   multistore: [
+    'apps/backend/src/api/admin/catalog-imports',
+    'apps/backend/src/admin/routes/catalog-imports',
+    'apps/backend/src/admin/widgets/catalog-commercial.tsx',
+    'apps/backend/src/jobs/process-catalog-imports.ts',
+    'apps/backend/src/scripts/test-catalog-import-fixture.ts',
+    'apps/backend/src/modules/store-importer',
+    'apps/backend/src/jobs/process-demo-store-imports.ts',
+    'apps/backend/src/scripts/backfill-woocommerce-variant-prices.ts',
+    'apps/backend/src/api/store/carts/[id]/checkout',
+    'apps/backend/src/api/admin/orders/[id]/checkout',
+    'apps/backend/src/admin/widgets/order-checkout-recipients.tsx',
+    'apps/backend/src/workflows/hooks/site-checkout-validation.ts',
+    'apps/backend/src/jobs/cleanup-checkout-recipients.ts',
     // Carga del footer de una tienda desde un JSON. Genérico; el contenido de
     // cada cliente vive en SU repo.
     'apps/backend/src/scripts/seed-site-footer.ts',
@@ -506,25 +518,4 @@ module.exports = {
     'apps/storefront/src/app/[countryCode]/(main)/demo',
   ],
 
-  /**
-   * Importar el catálogo desde Shopify, VTEX o WooCommerce. OPCIONAL, con
-   * `dependencies: ['multistore']`.
-   *
-   * Va aparte porque un cliente que quiere tres tiendas propias no necesita —ni
-   * quiere— los importadores de tres plataformas ajenas, su tabla de jobs y su
-   * cron. Mismo patrón que `typesense` / `typesense-sync-log`.
-   *
-   * La partición exigió sacar `SourceType`/`isSalesChannelSource` de `importers/`
-   * a `modules/demo-store/source-type.ts`: las rutas de `multistore` necesitan
-   * clasificar el origen sin depender de ningún importador. Sin eso, quitar este
-   * paquete dejaba imports colgados que `assertRelativeImportsResolve` NO atrapa
-   * —sólo valida `src/admin`— y que fallaban recién en el `tsc` del cliente.
-   */
-  'store-importer': [
-    'apps/backend/src/modules/store-importer',
-    'apps/backend/src/api/admin/sites/[id]/import-job',
-    'apps/backend/src/api/admin/sites/[id]/promotions',
-    'apps/backend/src/jobs/process-demo-store-imports.ts',
-    'apps/backend/src/scripts/backfill-woocommerce-variant-prices.ts',
-  ],
 };

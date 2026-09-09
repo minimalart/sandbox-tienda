@@ -240,6 +240,10 @@ export const en = {
   COL_ERROR: 'Error',
   ITEMS_EMPTY: 'No items for this filter.',
   SEARCH_SKU: 'Search exact SKU…',
+  ITEM_DRAWER_HINT: 'Click a row to see everything the sync recorded for it.',
+  ITEM_DRAWER_TITLE: 'Article {{code}}',
+  ITEM_NO_PAYLOAD: 'The sync did not record any detail for this item.',
+  ITEM_RAW_PAYLOAD: 'Raw payload',
 
   // Outbox page
   OUTBOX_TITLE: 'Sales → ERP (outbox)',
@@ -407,6 +411,7 @@ export const en = {
   ST_NO_PRICE_SET: 'NO PRICE SET',
   ST_VARIANT_NOT_FOUND: 'NO VARIANT',
   ST_NOT_PUBLISHED: 'NOT PUBLISHED',
+  ST_UNKNOWN: 'UNKNOWN',
   ST_NOT_FOUND: 'NOT FOUND',
   ST_DUPLICATE_SKU: 'DUPLICATE SKU',
   ST_INVALID_QUANTITY: 'INVALID QTY',
@@ -642,6 +647,10 @@ export const es: typeof en = {
   COL_ERROR: 'Error',
   ITEMS_EMPTY: 'No hay items para este filtro.',
   SEARCH_SKU: 'Buscar SKU exacto…',
+  ITEM_DRAWER_HINT: 'Hacé clic en una fila para ver todo lo que el sync registró.',
+  ITEM_DRAWER_TITLE: 'Artículo {{code}}',
+  ITEM_NO_PAYLOAD: 'El sync no registró detalle para este item.',
+  ITEM_RAW_PAYLOAD: 'Payload crudo',
 
   OUTBOX_TITLE: 'Ventas → ERP (outbox)',
   COL_CREATED: 'Creado',
@@ -809,6 +818,7 @@ export const es: typeof en = {
   ST_NO_PRICE_SET: 'SIN PRICE SET',
   ST_VARIANT_NOT_FOUND: 'SIN VARIANTE',
   ST_NOT_PUBLISHED: 'NO PUBLICADO',
+  ST_UNKNOWN: 'DESCONOCIDO',
   ST_NOT_FOUND: 'NO ENCONTRADO',
   ST_DUPLICATE_SKU: 'SKU DUPLICADO',
   ST_INVALID_QUANTITY: 'CANTIDAD INVÁLIDA',

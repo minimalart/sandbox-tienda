@@ -145,3 +145,5 @@ export const EXTERNAL_KEYS = {
   APP_SETTINGS_VIA_PG: 'app-settings/via-pg',
   KAPSO_WHATSAPP_SETTINGS: 'kapso-whatsapp/settings',
 } as const;
+
+export { registerCartValidation } from './cart-validation.js';

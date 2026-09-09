@@ -1,6 +1,6 @@
 {
   "name": "@repo/extension-ai-assistant",
-  "version": "1.32.16",
+  "version": "1.32.18",
   "private": true,
   "description": "Asistente IA component source package",
   "dependencies": {

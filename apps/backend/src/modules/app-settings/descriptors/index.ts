@@ -23,7 +23,6 @@ import recommendationEngine from './recommendation-engine';
 import recurringOrders from './recurring-orders';
 import seoGeo from './seo-geo';
 import storeConfig from './store-config';
-import storeImporter from './store-importer';
 import typesense from './typesense';
 import videos from './videos';
 import whatsapp from './whatsapp';
@@ -64,7 +63,6 @@ export const settingsNamespaces: SettingsNamespace[] = [
   recurringOrders,
   seoGeo,
   storeConfig,
-  storeImporter,
   typesense,
   videos,
   whatsapp,

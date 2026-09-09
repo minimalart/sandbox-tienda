@@ -1,3 +1,4 @@
+import type { RemoteQueryFunction } from '@medusajs/framework/types';
 /**
  * update-route-stops (M7) — reordena / agrega / quita las paradas de una Route a
  * partir de la lista DESEADA completa.
@@ -82,7 +83,7 @@ const syncRouteStopsStep = createStep(
   'sync-route-stops',
   async (input: UpdateRouteStopsInput, { container }) => {
     const service = container.resolve<DeliveryModuleService>(DELIVERY_MODULE);
-    const query = container.resolve(ContainerRegistrationKeys.QUERY);
+    const query = container.resolve<Omit<RemoteQueryFunction, symbol>>(ContainerRegistrationKeys.QUERY);
 
     // Ruta debe existir y no estar terminal.
     const route = (await service

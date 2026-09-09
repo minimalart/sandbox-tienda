@@ -3,7 +3,7 @@
   "schema_version": 1,
   "id": "shop-by-looks",
   "name": "Shop by Look",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "kind": "plugin",
   "status": "ready",
   "dependencies": ["media_library", "storeConfig"],
