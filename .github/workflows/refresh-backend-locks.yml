@@ -1,3 +1,31 @@
+# Regenerates the backend lockfiles when a PR touches apps/backend/package.json,
+# and COMMITS them back to the PR branch so the PR is mergeable on its own.
+#
+# WHY IT COMMITS AND NO LONGER JUST UPLOADS AN ARTIFACT. The Upgrade button in
+# minimalart-version-checker opens plugin-bump PRs from a Supabase Edge
+# Function (Deno), which cannot run pnpm/npm and therefore cannot produce
+# `pnpm-lock.yaml` / `apps/backend/package-lock.json`. Without those two files
+# `quality.yml` fails on `pnpm install --frozen-lockfile` and the PR can never
+# go green. This job is the other half of that flow: it resolves the locks and
+# pushes them onto the same branch, which is also exactly what a human wants
+# when they bump a dependency by hand.
+#
+# THE BOT TOKEN IS LOAD-BEARING, and this is the one non-obvious part.
+# A push made with the default `GITHUB_TOKEN` does NOT trigger new workflow
+# runs — GitHub suppresses them on purpose to avoid recursion. So if we pushed
+# the locks with `github.token`, `quality.yml` would keep showing the result
+# from the lock-less commit, stay red, and auto-merge would never fire. Pushing
+# with a PAT (`secrets.MERCATTO_BOT_TOKEN`) emits a real `synchronize` event,
+# quality re-runs against the complete commit, and the PR can auto-merge.
+#
+# Without the secret the job still works — it resolves, verifies and uploads
+# the locks as an artifact, and warns — but the PR then needs a human to add
+# the locks (or any empty commit) to re-trigger the checks.
+#
+# Setup: create a fine-grained PAT with `contents: write` on the store repos
+# and add it as an ORG-level Actions secret named MERCATTO_BOT_TOKEN so every
+# current and future store inherits it.
+
 name: Refresh backend locks
 
 on:
@@ -8,28 +36,68 @@ on:
       - .github/workflows/refresh-backend-locks.yml
 
 permissions:
-  contents: read
+  contents: write
   packages: read
 
 jobs:
   locks:
     runs-on: ubuntu-latest
     steps:
+      # `pull_request` checks out the merge commit in detached HEAD by default,
+      # which cannot be pushed. Check out the head branch by name instead.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.MERCATTO_BOT_TOKEN || github.token }}
+          persist-credentials: true
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - run: corepack enable
+
       - name: Resolve published backend dependencies
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: npm install --prefix apps/backend --package-lock-only --ignore-scripts --no-audit --no-fund
+
       - name: Resolve workspace lock
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: pnpm install --lockfile-only --ignore-scripts
+
       - run: node scripts/verify-backend-lock.js
+
+      - name: Detect lock changes
+        id: diff
+        run: |
+          if git diff --quiet -- pnpm-lock.yaml apps/backend/package-lock.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Locks already match apps/backend/package.json — nothing to commit."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat -- pnpm-lock.yaml apps/backend/package-lock.json
+          fi
+
+      - name: Commit refreshed locks to the PR branch
+        if: github.event_name == 'pull_request' && steps.diff.outputs.changed == 'true'
+        env:
+          HAS_BOT_TOKEN: ${{ secrets.MERCATTO_BOT_TOKEN != '' }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          git config user.name "mercatto-bot"
+          git config user.email "bot@minimalart.co"
+          git add pnpm-lock.yaml apps/backend/package-lock.json
+          git commit -m "chore(locks): refresh backend lockfiles"
+          git push origin "HEAD:refs/heads/${HEAD_REF}"
+          if [ "$HAS_BOT_TOKEN" != "true" ]; then
+            echo "::warning title=Checks will not re-run::Locks were pushed with the default GITHUB_TOKEN, which does not trigger new workflow runs. quality.yml still reflects the commit without the locks, so this PR cannot auto-merge. Add an org secret MERCATTO_BOT_TOKEN (fine-grained PAT, contents: write) to make this hands-off."
+          fi
+
+      # Kept as a fallback for workflow_dispatch runs and for the no-bot-token
+      # case, where a human has to bring the locks in by hand.
       - uses: actions/upload-artifact@v4
+        if: steps.diff.outputs.changed == 'true'
         with:
           name: backend-locks
           path: |
