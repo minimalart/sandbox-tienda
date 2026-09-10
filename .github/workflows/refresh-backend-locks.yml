@@ -22,7 +22,21 @@
 # the locks as an artifact, and warns — but the PR then needs a human to add
 # the locks (or any empty commit) to re-trigger the checks.
 #
-# Setup: create a fine-grained PAT with `contents: write` on the store repos
+# IT ALSO MERGES, but only the checker's own upgrade PRs. GitHub's native
+# auto-merge is not usable here: it refuses to engage on a PR that is already
+# mergeable, and these repos have no required status checks, so a fresh PR is
+# mergeable the instant it opens. Rather than put branch protection on `main`
+# — which would also start blocking the direct `Auto commit` pushes and the
+# deploy triggers — this job waits for the other checks itself and merges.
+#
+# The merge runs with the PAT and not with `github.token`, for the same
+# suppression reason as the lock push: a merge performed by `github.token`
+# would not trigger `deploy-backend.yml` on the resulting push to `main`, so
+# the store would never actually deploy.
+#
+# Setup: create a fine-grained PAT on the store repos with
+#   Contents:      Read and write   (push the lock commit)
+#   Pull requests: Read and write   (merge the PR)
 # and add it as an ORG-level Actions secret named MERCATTO_BOT_TOKEN so every
 # current and future store inherits it.
 
@@ -37,11 +51,26 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
   packages: read
+
+# The lock push emits a `synchronize`, and on `pull_request` the path filters
+# above are evaluated against the whole PR diff — which still contains
+# apps/backend/package.json — so this workflow re-triggers itself once. Let the
+# newer run win: it sees the locks already current, waits for the checks on the
+# new head, and merges. Without this both runs would sit in the wait loop and
+# race to merge.
+concurrency:
+  group: refresh-backend-locks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   locks:
     runs-on: ubuntu-latest
+    # `secrets` is not a context you can read from a step-level `if:`, so the
+    # presence of the token is resolved once here into a plain env string.
+    env:
+      HAS_BOT_TOKEN: ${{ secrets.MERCATTO_BOT_TOKEN != '' }}
     steps:
       # `pull_request` checks out the merge commit in detached HEAD by default,
       # which cannot be pushed. Check out the head branch by name instead.
@@ -82,7 +111,6 @@ jobs:
       - name: Commit refreshed locks to the PR branch
         if: github.event_name == 'pull_request' && steps.diff.outputs.changed == 'true'
         env:
-          HAS_BOT_TOKEN: ${{ secrets.MERCATTO_BOT_TOKEN != '' }}
           HEAD_REF: ${{ github.head_ref }}
         run: |
           git config user.name "mercatto-bot"
@@ -93,6 +121,62 @@ jobs:
           if [ "$HAS_BOT_TOKEN" != "true" ]; then
             echo "::warning title=Checks will not re-run::Locks were pushed with the default GITHUB_TOKEN, which does not trigger new workflow runs. quality.yml still reflects the commit without the locks, so this PR cannot auto-merge. Add an org secret MERCATTO_BOT_TOKEN (fine-grained PAT, contents: write) to make this hands-off."
           fi
+
+      # Merge — ONLY for the branches plugin-upgrade opens. Any other PR that
+      # touches apps/backend/package.json is somebody's work in progress: it
+      # gets its locks refreshed and nothing else. The branch prefix is the
+      # contract, set in `branchName()` in the Edge Function.
+      - name: Wait for the other checks and merge the upgrade PR
+        if: >-
+          github.event_name == 'pull_request' &&
+          startsWith(github.head_ref, 'chore/plugin-upgrade-') &&
+          env.HAS_BOT_TOKEN == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MERCATTO_BOT_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+
+          # Our own check is excluded from the gate for the obvious reason: it
+          # is this job, and it cannot wait for itself.
+          SELF="locks"
+
+          # The lock push started a fresh set of check runs against a new head
+          # sha. Poll until they exist, so we never read the previous head's
+          # green result and merge a commit nobody checked.
+          sleep 45
+
+          deadline=$(( SECONDS + 25 * 60 ))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            checks=$(gh pr checks "$PR" --json name,bucket 2>/dev/null) || true
+            [ -z "$checks" ] && checks='[]'
+
+            others=$(printf '%s' "$checks" | jq -c --arg self "$SELF"               '[.[] | select(.name != $self)]')
+            total=$(printf '%s'   "$others" | jq 'length')
+            pending=$(printf '%s' "$others" | jq '[.[] | select(.bucket == "pending")] | length')
+            broken=$(printf '%s'  "$others" | jq '[.[] | select(.bucket == "fail" or .bucket == "cancel")] | length')
+
+            echo "checks (excluding ${SELF}): total=${total} pending=${pending} failing=${broken}"
+
+            if [ "$broken" -gt 0 ]; then
+              printf '%s' "$others" | jq -r                 '.[] | select(.bucket == "fail" or .bucket == "cancel") | "  \(.name): \(.bucket)"'
+              echo "::error title=Upgrade PR not merged::A required check failed. The PR is left open with the locks committed so the failure can be read and fixed."
+              exit 1
+            fi
+
+            if [ "$total" -gt 0 ] && [ "$pending" -eq 0 ]; then
+              if gh pr merge "$PR" --squash --delete-branch; then
+                echo "PR #${PR} merged."
+                exit 0
+              fi
+              echo "::error title=Merge refused::Checks are green but the merge call failed — most likely a conflict with main. Left open."
+              exit 1
+            fi
+
+            sleep 20
+          done
+
+          echo "::warning title=Timed out waiting for checks::The locks are committed and the PR is mergeable by hand; nothing was merged automatically."
 
       # Kept as a fallback for workflow_dispatch runs and for the no-bot-token
       # case, where a human has to bring the locks in by hand.
