@@ -101,7 +101,7 @@
     "@minimalart/mercatto-plugin-contact": "^1.4.1",
     "@minimalart/mercatto-plugin-database-explorer": "^1.1.1",
     "@minimalart/mercatto-plugin-dynamic-groups": "^1.3.2",
-    "@minimalart/mercatto-plugin-fiscal-documentation": "^1.0.4",
+    "@minimalart/mercatto-plugin-fiscal-documentation": "^1.0.6",
     "@minimalart/mercatto-plugin-ga4": "^1.0.2",
     "@minimalart/mercatto-plugin-gift-cards": "^1.0.4",
     "@minimalart/mercatto-plugin-landing-pages": "^1.0.1",
