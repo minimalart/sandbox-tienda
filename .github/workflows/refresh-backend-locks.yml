@@ -85,15 +85,56 @@ jobs:
           node-version: 24
       - run: corepack enable
 
-      - name: Resolve published backend dependencies
+      # Both .npmrc files (root and apps/backend) resolve the registry token
+      # from ${GITHUB_TOKEN}, so that variable is the only lever here.
+      #
+      # PREFER THE PAT. The per-run Actions token (`ghs_`) can only read a
+      # GitHub Packages package whose "Manage Actions access" list names this
+      # repository, and a newly published plugin does NOT get that grant
+      # automatically. That is exactly how
+      # @minimalart/mercatto-plugin-space-designer took the lock refresh down on
+      # all four stores at once with a 403, for days, while the boilerplate — the
+      # repo that publishes it, and therefore the one repo with access — kept
+      # passing. A user PAT reads org packages through the user's own access, so
+      # no per-package grant is ever needed and every future plugin is covered.
+      #
+      # The Actions token stays as a FALLBACK, attempted only if the PAT run
+      # fails. A missing or under-scoped PAT then leaves this job exactly as it
+      # was rather than breaking resolution for every @minimalart package —
+      # worth guarding, because GitHub Packages' npm registry has historically
+      # wanted a CLASSIC PAT with read:packages and fine-grained support has
+      # been uneven.
+      - name: Resolve backend + workspace lockfiles
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: npm install --prefix apps/backend --package-lock-only --ignore-scripts --no-audit --no-fund
+          BOT_TOKEN: ${{ secrets.MERCATTO_BOT_TOKEN }}
+          ACTIONS_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
 
-      - name: Resolve workspace lock
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: pnpm install --lockfile-only --ignore-scripts
+          resolve () {
+            npm install --prefix apps/backend --package-lock-only --ignore-scripts --no-audit --no-fund \
+              && pnpm install --lockfile-only --ignore-scripts
+          }
+
+          if [ -n "${BOT_TOKEN}" ]; then
+            echo "::group::Resolving with MERCATTO_BOT_TOKEN"
+            if GITHUB_TOKEN="${BOT_TOKEN}" resolve; then
+              echo "::endgroup::"
+              echo "Resolved with the PAT."
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "::warning title=PAT resolution failed::MERCATTO_BOT_TOKEN could not resolve the @minimalart scope; falling back to the per-run Actions token. If it is a fine-grained PAT, GitHub Packages npm may require a classic PAT with read:packages."
+            # Drop any half-written lockfiles before retrying, so the fallback
+            # starts from the committed state instead of the failed attempt's.
+            git checkout -- pnpm-lock.yaml apps/backend/package-lock.json 2>/dev/null || true
+          else
+            echo "MERCATTO_BOT_TOKEN is empty — using the per-run Actions token."
+          fi
+
+          echo "::group::Resolving with the per-run Actions token"
+          GITHUB_TOKEN="${ACTIONS_TOKEN}" resolve
+          echo "::endgroup::"
 
       - run: node scripts/verify-backend-lock.js
 
