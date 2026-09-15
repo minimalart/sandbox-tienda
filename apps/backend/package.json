@@ -108,7 +108,7 @@
     "@minimalart/mercatto-plugin-loyalty": "^1.1.1",
     "@minimalart/mercatto-plugin-media-library": "^1.1.4",
     "@minimalart/mercatto-plugin-payment-benefits": "^1.0.2",
-    "@minimalart/mercatto-plugin-pdf-catalog": "^1.3.4",
+    "@minimalart/mercatto-plugin-pdf-catalog": "^1.3.5",
     "@minimalart/mercatto-plugin-runtime": "^0.5.0",
     "@minimalart/mercatto-plugin-shop-by-looks": "^1.0.3",
     "@minimalart/mercatto-plugin-space-designer": "^1.1.0",
