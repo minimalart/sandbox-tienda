@@ -126,7 +126,7 @@ importers:
         specifier: ^1.4.2
         version: 1.4.2(5bn7dg7xlyekydtzlhtclsnnym)
       '@minimalart/mercatto-plugin-banners':
-        specifier: ^1.0.4
+        specifier: ^1.0.5
         version: 1.0.4(jf23goyn2teua6fsibthr2p6ni)
       '@minimalart/mercatto-plugin-blog':
         specifier: ^1.0.3
