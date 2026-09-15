@@ -1,6 +1,6 @@
 {
   "name": "@minimalart/mercatto-plugin-banners",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Mercatto plugin — home placement banners (hero, promos) with AI-assisted copy + image generation, publishing, scheduling and per-sales-channel scoping. Migrated from packages/extensions/banners.",
   "main": ".medusa/server/src/index.js",
   "types": ".medusa/server/src/index.d.ts",
