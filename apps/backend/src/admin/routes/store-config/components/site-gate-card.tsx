@@ -120,7 +120,7 @@ export const SiteGateCard = () => {
               <div className="flex flex-col gap-1 md:pr-4">
                 <Label>{site.scope === 'store' ? t('ACCESS_MAIN_STORE') : site.label}</Label>
                 <Text size="small" className="text-ui-fg-muted">
-                  {site.path}
+                  {site.public_url ?? site.path}
                 </Text>
               </div>
 

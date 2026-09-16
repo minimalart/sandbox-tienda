@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "mercadopago",
   "name": "Mercado Pago",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -159,8 +159,16 @@
       "sha256": "c6400969a211976fd0e36aaafda39d25f0b6e41f4190d86146acd4540ee2d00d"
     },
     {
+      "path": "apps/backend/src/modules/mercado-pago/return-base.test.ts",
+      "sha256": "b7e13bd24f1d079f47e1b987f403aae2be6fd6cb0156248eae6d68524a4e10cd"
+    },
+    {
+      "path": "apps/backend/src/modules/mercado-pago/return-base.ts",
+      "sha256": "5ddab0a881e9a6995a1b81ce69d8cb6158099bddc15d4f85fe7788cfacf667de"
+    },
+    {
       "path": "apps/backend/src/modules/mercado-pago/service.ts",
-      "sha256": "4a6dadb1d9efeabb77fcbea93bef5ca8363a86d35f75998cd814beb94ff2d1f5"
+      "sha256": "1e681e98d6220babd61bd9e89ddab72355a98b989c13c53e802f80726c1c70d3"
     },
     {
       "path": "apps/backend/src/modules/mercado-pago/utils/accounts.test.ts",

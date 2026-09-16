@@ -82,12 +82,13 @@ jobs:
           if [ "$PLUGIN_ID" = "runtime" ]; then
             npm install --prefix packages/contracts/plugin-runtime --ignore-scripts --legacy-peer-deps --package-lock=false
             npm run build --prefix packages/contracts/plugin-runtime
+            npm test --prefix packages/contracts/plugin-runtime
             exit 0
           fi
           pnpm --filter "@minimalart/mercatto-plugin-${PLUGIN_ID}^..." build
           pnpm --dir "packages/plugins/plugin-$PLUGIN_ID" build
 
-      - name: Publish
+      - name: Pack
         env:
           PLUGIN_ID: ${{ inputs.plugin-id }}
           GITHUB_TOKEN: ${{ github.token }}
@@ -101,7 +102,24 @@ jobs:
           pnpm pack --pack-destination "$PACK_DIR"
           PACKAGE_TARBALL="$(find "$PACK_DIR" -maxdepth 1 -type f -name '*.tgz' -print -quit)"
           test -n "$PACKAGE_TARBALL"
-          npm publish "$PACKAGE_TARBALL" --access restricted --registry https://npm.pkg.github.com
+          echo "PACKAGE_TARBALL=$PACKAGE_TARBALL" >> "$GITHUB_ENV"
+
+      - name: Verify packed AI clients with central credentials
+        if: inputs.plugin-id == 'banners' || inputs.plugin-id == 'landing-pages'
+        env:
+          PLUGIN_ID: ${{ inputs.plugin-id }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/runtime-package"
+          pnpm --dir packages/contracts/plugin-runtime pack --pack-destination "$RUNNER_TEMP/runtime-package"
+          RUNTIME_TARBALL="$(find "$RUNNER_TEMP/runtime-package" -name '*.tgz' -print -quit)"
+          node --experimental-transform-types --import ./apps/backend/test-register.mjs \
+            scripts/test-plugin-central-settings.ts "$RUNTIME_TARBALL" "$PACKAGE_TARBALL" "$PLUGIN_ID"
+
+      - name: Publish
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: npm publish "$PACKAGE_TARBALL" --access restricted --registry https://npm.pkg.github.com
 
       - name: Verify published version
         env:
@@ -114,3 +132,20 @@ jobs:
           ACTUAL_VERSION="$(npm view "$PACKAGE_NAME@$EXPECTED_VERSION" version --registry https://npm.pkg.github.com)"
           test "$ACTUAL_VERSION" = "$EXPECTED_VERSION"
           echo "$PACKAGE_NAME@$ACTUAL_VERSION is available in GitHub Packages"
+
+      - name: Verify registry AI artifacts with central credentials
+        if: inputs.plugin-id == 'banners' || inputs.plugin-id == 'landing-pages'
+        env:
+          PLUGIN_ID: ${{ inputs.plugin-id }}
+          EXPECTED_VERSION: ${{ inputs.version }}
+          GITHUB_TOKEN: ${{ github.token }}
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/registry-plugin" "$RUNNER_TEMP/registry-runtime"
+          RUNTIME_VERSION="$(node -p "require('./packages/contracts/plugin-runtime/package.json').version")"
+          npm pack "@minimalart/mercatto-plugin-runtime@$RUNTIME_VERSION" --ignore-scripts --pack-destination "$RUNNER_TEMP/registry-runtime"
+          npm pack "@minimalart/mercatto-plugin-$PLUGIN_ID@$EXPECTED_VERSION" --ignore-scripts --pack-destination "$RUNNER_TEMP/registry-plugin"
+          RUNTIME_TARBALL="$(find "$RUNNER_TEMP/registry-runtime" -name '*.tgz' -print -quit)"
+          PLUGIN_TARBALL="$(find "$RUNNER_TEMP/registry-plugin" -name '*.tgz' -print -quit)"
+          node --experimental-transform-types --import ./apps/backend/test-register.mjs \
+            scripts/test-plugin-central-settings.ts "$RUNTIME_TARBALL" "$PLUGIN_TARBALL" "$PLUGIN_ID"

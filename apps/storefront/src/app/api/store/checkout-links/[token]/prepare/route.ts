@@ -1,6 +1,7 @@
 import {
   retrieveCart,
   addCartLineItem,
+  addGuestCartAddress,
   updateCart,
   updateCartAddresses,
   applyCartPromotions,
@@ -121,13 +122,42 @@ export async function GET(
 
     // 2) Preload customer data (address implies email when present).
     if (payload.shipping_address) {
+      const shippingAddress = {
+        ...payload.shipping_address,
+        country_code: payload.shipping_address.country_code || countryCode,
+      }
       await updateCartAddresses({
-        shipping_address: {
-          ...payload.shipping_address,
-          country_code: payload.shipping_address.country_code || countryCode,
-        } as CartAddress,
+        shipping_address: shippingAddress as CartAddress,
         email: payload.email || undefined,
       })
+
+      // El paso de dirección del checkout de INVITADOS no lee
+      // `cart.shipping_address`: lista las direcciones guardadas en la metadata
+      // del carrito (`addresses` + `selected_address_id`) y marca como elegida
+      // la que matchea. Con sólo `shipping_address` seteada esa lista queda
+      // vacía y el formulario aparece en blanco aunque el link traiga la
+      // dirección. Se registra también ahí, ya seleccionada. Best-effort: si
+      // falla, el carrito igual tiene la dirección para el resto del flujo.
+      const guestResult = await addGuestCartAddress({
+        id: `checkout-link-${token}`,
+        first_name: shippingAddress.first_name || '',
+        last_name: shippingAddress.last_name || '',
+        address_1: shippingAddress.address_1 || '',
+        address_2: shippingAddress.address_2 || '',
+        postal_code: shippingAddress.postal_code || '',
+        city: shippingAddress.city || '',
+        country_code: shippingAddress.country_code || '',
+        province: shippingAddress.province || '',
+        phone: shippingAddress.phone || '',
+        company: shippingAddress.company || '',
+        address_name: '',
+      })
+      if (!guestResult.success) {
+        console.warn(
+          '[checkout-link build] Could not register guest address (non-blocking):',
+          guestResult.error,
+        )
+      }
     } else if (payload.email) {
       await updateCartAddresses({ email: payload.email })
     }

@@ -1,6 +1,10 @@
 /**
  * Tipos TypeScript para configuración de tenants
  */
+import type {
+  StoreLocatorCategory,
+  StoreLocatorZoneConfig,
+} from "@lib/types/store-locator"
 
 export type TenantMedusaConfig = {
   /** ID del sales channel (hardcodeado, no variable de entorno) */
@@ -39,6 +43,23 @@ export type TenantMedusaConfig = {
     enabled: boolean
   }
   /**
+   * Fidelización ("Mis puntos"). OPT-OUT, al revés que `recurring`: la clave
+   * ausente significa VISIBLE. Las secciones de cuenta que gatea estaban
+   * hardcodeadas como siempre presentes, así que un backend viejo, una fila sin
+   * sembrar o un fetch caído tienen que dejarlas como estaban — nunca apagarlas.
+   * Por eso se lee con `!== false` y no con `Boolean(...)`.
+   */
+  loyalty?: {
+    enabled?: boolean
+  }
+  /**
+   * Gift cards de la cuenta. Mismo criterio opt-out que `loyalty`: ausente =
+   * visible, sólo un `false` explícito esconde la sección y cierra su ruta.
+   */
+  giftCards?: {
+    enabled?: boolean
+  }
+  /**
    * Página de contraseña (site gate), presente solo cuando el demo la tiene
    * activa. `length` es el largo de la palabra: cuántas casillas dibuja el
    * formulario. La palabra NO viaja — el config del demo es público y la
@@ -63,6 +84,12 @@ export type TenantTheme = {
      */
     headerBackground?: string
     footerBackground?: string
+    /**
+     * Fondo del boton "Promociones" del header (y del acceso a promos del menu
+     * mobile). Ausente = el color primario. Se inyecta como `--promo-button-bg`
+     * mas un `--promo-button-fg` derivado (blanco u oscuro segun el contraste).
+     */
+    promoButton?: string
   }
   typography?: {
     fontFamily?: string
@@ -176,7 +203,17 @@ export type MoreProductsConfig = {
   }
 }
 
-export type FeaturedProductsSortBy = 'created_at' | 'price_asc' | 'price_desc'
+/**
+ * `ranking` es el orden por defecto del catálogo: con stock primero, después el
+ * ranking comercial (`metadata.ranking`) y a igualdad lo más nuevo. Es el
+ * criterio de una fila CURADA por el merchant, y el único que no repite lo que
+ * ya muestra la fila de novedades (`created_at`).
+ */
+export type FeaturedProductsSortBy =
+  | 'ranking'
+  | 'created_at'
+  | 'price_asc'
+  | 'price_desc'
 
 export type FeaturedProductsConfig = {
   title?: string
@@ -449,6 +486,14 @@ export type PromoBannerConfig = {
  */
 export type MobileNavSlotId = 'promos' | 'colores' | 'sucursales' | 'blog' | 'contacto'
 
+/**
+ * Cómo se dibuja el ítem flexible en la barra inferior mobile.
+ *  - 'icon' (default): el ícono con su label corto abajo, como el resto de la barra.
+ *  - 'text': sólo el texto, sin ícono — para entradas cuyo nombre lo dice todo
+ *    (el blog de la tienda, "Promos") y no tienen un ícono que las represente.
+ */
+export type MobileNavDisplay = 'icon' | 'text'
+
 export type TenantAssets = {
   logos: {
     main: string
@@ -561,18 +606,41 @@ export type TenantAssets = {
    */
   mobileNav?: MobileNavSlotId[]
   /**
+   * Cómo se dibuja cada candidato si le toca el lugar flexible: ícono (default)
+   * o sólo texto. Se configura por entrada porque el que gana el lugar depende
+   * de los gates, no de la tienda: dejar la elección para "el que salga" haría
+   * que un mismo ajuste signifique cosas distintas según el día.
+   *
+   * Ausente / entrada ausente = 'icon', que es lo que hacía la barra cuando
+   * esto estaba clavado en el código.
+   */
+  mobileNavDisplay?: Partial<Record<MobileNavSlotId, MobileNavDisplay>>
+  /**
    * Override del nombre de la sección de blog: reemplaza el label del nav
    * ("Recetas") y el título de la página `/blog`. Ausente = default del blog.
    */
   blogSectionName?: string
   /**
-   * Página de sucursales (`/sucursales`). Ausente = defaults hardcodeados.
+   * Página de sucursales (`/sucursales`). Ausente = sin zonas y categorías del catálogo.
    * La visibilidad del link vive en `sectionVisibility.sucursales`.
    */
   sucursales?: {
     /** Subtítulo. Ausente = copy por defecto; cadena vacía = no se muestra. */
     subtitle?: string
-    /** Filtro de ubicación (regiones). Ausente/true = visible. */
+    /**
+     * Zonas del filtro de ubicación, COMO SE PERSISTEN: `preset` (una
+     * jurisdicción del catálogo argentino, por referencia) o `geometry`
+     * (dibujada en el admin). El template resuelve los presets contra
+     * `@lib/data/geo-zones-ar` antes de pasárselas al cliente.
+     */
+    regions?: StoreLocatorZoneConfig[]
+    /**
+     * Tipos de sucursal de la tienda, en orden. Vacío = la tienda no clasifica
+     * sus sucursales; ausente = los tres de siempre (`resolveBranchTypes`).
+     */
+    types?: StoreLocatorCategory[]
+    /** Clave vieja del filtro por categoría: se lee, ya no se escribe. */
+    categories?: { type: string; label: string }[]
     showLocationFilters?: boolean
     /** Filtro de categoría (tipo de sucursal). Ausente/true = visible. */
     showCategoryFilters?: boolean
@@ -593,8 +661,21 @@ export type TenantAssets = {
   /**
    * Accesos rápidos del buscador del header ("Explorar:"). Solo se usan en el
    * template grocery/supermercado; ausente = default hardcodeado.
+   *
+   * `category` (preferido) navega a `/store?category=<nombre>`, el mismo filtro que
+   * usan el menú y las tarjetas del home. `query` cae en la búsqueda de texto libre
+   * de Typesense.
+   *
+   * PARA UN ATAJO QUE NOMBRA UNA CATEGORÍA, USAR `category`. Con `query` el atajo
+   * "Pinturas" devolvía removedores, imprimaciones y bases —cualquier producto cuyo
+   * texto mencione la palabra— en vez del rubro (DESDEELSUR-61, BUG-11). El valor de
+   * `category` tiene que ser el NOMBRE exacto de la categoría en Medusa, igual que en
+   * los hrefs del menú: "Pintura", no "pinturas".
+   *
+   * Los dos campos son opcionales pero hace falta uno: con ambos ausentes el atajo no
+   * navega a ningún lado. `category` gana si están los dos.
    */
-  searchSuggestions?: { label: string; query: string }[]
+  searchSuggestions?: { label: string; query?: string; category?: string }[]
   /**
    * Textos rotativos (placeholder) del buscador del header, header flotante y
    * buscador mobile. Ausente = default hardcodeado.
@@ -1247,11 +1328,7 @@ export type CampaignHeroConfig = {
   imageAlt?: string
   /** Trust badges bajo el CTA. */
   trustBadges?: CampaignTrustBadge[]
-  /**
-   * Fondo del hero (hex). Vacío = blanco. Deja override manual porque el hero
-   * es el elemento más visible del template y a veces la institución quiere un
-   * color específico que NO es el primario de la marca.
-   */
+  /** Fondo del hero (hex). Vacío = blanco. */
   backgroundColor?: string
   /** Fondo del botón CTA (hex). Vacío = --primary-color del tenant. */
   ctaBackgroundColor?: string

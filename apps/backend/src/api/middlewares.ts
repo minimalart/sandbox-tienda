@@ -7,12 +7,14 @@ import {
 } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys, MedusaError } from '@medusajs/framework/utils';
 import type { Logger } from '@medusajs/framework/types';
+import type { MiddlewareRoute } from '@medusajs/framework/http';
 import * as Sentry from '@sentry/node';
 import { extensionMiddlewares } from './extension-middlewares';
 import { storeAuthMiddlewares } from './store/auth/middlewares';
 import { productExportMiddlewares } from './product-export-middlewares';
 import { multistoreMiddlewares } from './multistore-middlewares';
 import { apiKeyRbacMiddlewares } from './api-key-rbac-middlewares';
+import { setPricingChannel } from './store/utils/set-pricing-channel';
 
 // Handler de errores por defecto de Medusa. Lo envolvemos para reportar a Sentry
 // y luego delegamos en él para conservar el formato de respuesta estándar.
@@ -73,6 +75,18 @@ const memoryRequestLogger = (
   return next();
 };
 
+// Matchers for store endpoints where we need to inject sales_channel_id into
+// pricingContext. These run after Medusa's core setPricingContext middleware
+// which sets region_id / currency_code. Fail-open: if channel cannot be
+// resolved the base price is used as fallback. Related ticket: EDUCABOT-9
+const pricingChannelMiddlewares: MiddlewareRoute[] = [
+  { matcher: '/store/products', method: 'GET', middlewares: [setPricingChannel()] },
+  { matcher: '/store/products/:id', method: 'GET', middlewares: [setPricingChannel()] },
+  { matcher: '/store/carts/:id/line-items', method: 'POST', middlewares: [setPricingChannel()] },
+  { matcher: '/store/carts/:id/line-items/:line_id', method: ['POST', 'DELETE'], middlewares: [setPricingChannel()] },
+  { matcher: '/store/carts/:id', method: 'POST', middlewares: [setPricingChannel()] },
+];
+
 export default defineMiddlewares({
   routes: [
     { matcher: '/*', middlewares: [memoryRequestLogger] },
@@ -81,6 +95,7 @@ export default defineMiddlewares({
     ...productExportMiddlewares,
     ...extensionMiddlewares,
     ...storeAuthMiddlewares,
+    ...pricingChannelMiddlewares,
   ],
   // Captura de errores HTTP en Sentry, acotada a 5xx para no inundar la cuota.
   // Sentry.isInitialized() es false sin DSN o con SENTRY_ENABLED=false -> no-op.

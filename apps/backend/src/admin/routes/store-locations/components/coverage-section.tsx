@@ -28,14 +28,14 @@ import {
   type DiscardReason,
   type GeoJsonArea,
   type GeoJsonAreasResult,
-} from './geojson-areas';
+} from '../../../components/geo/geojson-areas';
 import {
   DEFAULT_SIMPLIFY_TOLERANCE_M,
   MIN_RING_POSITIONS,
   reductionPercent,
   simplifyAreas,
   SIMPLIFY_TOLERANCES_M,
-} from './simplify-ring';
+} from '../../../components/geo/simplify-ring';
 
 let draftSeq = 0;
 const nextKey = () => `cov-${draftSeq++}`;

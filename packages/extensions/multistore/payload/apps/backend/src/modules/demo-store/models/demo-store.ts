@@ -118,6 +118,21 @@ export const DemoStore = model.define('demo_store', {
   // slug de sitio activo, así que en la principal el switch del admin no estaba
   // cableado a nada y prenderlo no producía ningún efecto.
   tinting_enabled: model.boolean().default(false),
+  // ── Mi cuenta: fidelización y gift cards ───────────────────────────────────
+  // Gatean las secciones "Mis puntos" y "Gift Cards" del área de cuenta del
+  // storefront. Igual que tintometría, son SÓLO la llave de la vidriera: los
+  // módulos de fidelización y gift cards son de la INSTANCIA y siguen teniendo
+  // sus propios switches en app-settings.
+  //
+  // ⚠ Nacen en `true`, al revés que `recurring_enabled` y `tinting_enabled`.
+  // Esas dos estrenaron una función que NO existía, así que el default `false`
+  // era el statu quo. Acá pasa lo contrario: hoy las dos secciones están
+  // HARDCODEADAS como siempre visibles en el storefront. Un default `false` las
+  // apagaría en TODAS las tiendas existentes —la principal incluida— el día del
+  // deploy, sin que nadie lo haya pedido. El `true` preserva el comportamiento
+  // actual y deja que cada tienda opte por apagarlo.
+  loyalty_enabled: model.boolean().default(true),
+  gift_cards_enabled: model.boolean().default(true),
   // ── Página de contraseña (site gate) ───────────────────────────────────────
   // Cuando `password_gate_enabled`, el storefront del demo no se puede navegar
   // sin ingresar `password_gate_password`: sirve para mostrar una tienda que

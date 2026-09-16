@@ -1,7 +1,9 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import CollapsedHeader from "./collapsed-header";
+import type { CategoryNode } from "@lib/util/quick-suggestion-target";
 import CollapsedHeaderMobile from "./collapsed-header-mobile";
 
 type SmartHeaderProps = {
@@ -14,6 +16,15 @@ type SmartHeaderProps = {
   /** Tintometría con carta cargada: muestra el link "Buscá tu color". */
   hasTinting?: boolean;
   hasSpaceDesigner?: boolean;
+  /**
+   * Árbol de categorías para el buscador del header flotante.
+   *
+   * Va por prop y no dentro de `searchBar` porque `collapsed-header` NO reusa ese
+   * nodo: monta su propio `HeaderSearchBar` con estilos compactos. Sin esto, los
+   * atajos "Explorar:" del header flotante se comportarían distinto que los del
+   * header fijo (DESDEELSUR-61, BUG-11).
+   */
+  categories?: CategoryNode[];
 };
 
 export default function SmartHeader({
@@ -25,8 +36,14 @@ export default function SmartHeader({
   initials,
   hasTinting = false,
   hasSpaceDesigner = false,
+  categories = [],
 }: SmartHeaderProps) {
   const [hidden, setHidden] = useState(false);
+  const pathname = usePathname();
+  // En la PDP mobile el topbar promocional se saca: come ~40px de un viewport
+  // chico y compite con el "Volver" y la foto del producto. En desktop sigue
+  // igual, y en el resto de las páginas mobile también.
+  const isProductsPage = pathname?.includes("/products") ?? false;
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
 
@@ -66,7 +83,7 @@ export default function SmartHeader({
           transform: hidden ? "translateY(-100%)" : "translateY(0)",
         }}
       >
-        {topbar}
+        {!isProductsPage && topbar}
         {nav}
         {searchBar}
       </div>
@@ -89,6 +106,7 @@ export default function SmartHeader({
       <div className="absolute inset-x-0 top-[10px] pointer-events-none">
         <CollapsedHeader
           avatarUrl={avatarUrl}
+          categories={categories}
           hasTinting={hasTinting}
           hasSpaceDesigner={hasSpaceDesigner}
           initials={initials}

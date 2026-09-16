@@ -1,6 +1,12 @@
 "use client";
 
 import { CheckCircleIcon, ChevronDownIcon } from "@heroicons/react/20/solid";
+import {
+  Listbox,
+  ListboxButton,
+  ListboxOption,
+  ListboxOptions,
+} from "@headlessui/react";
 import type { HttpTypes } from "@medusajs/types";
 import { clx } from "@medusajs/ui";
 import {
@@ -15,7 +21,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import type React from "react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 type OptionSelectProps = {
   option: HttpTypes.StoreProductOption;
@@ -25,10 +31,9 @@ type OptionSelectProps = {
   disabled: boolean;
   /**
    * "tiles" (default): full-width grid of tiles (desktop) + bottom sheet (mobile),
-   * used on the product page. "dropdown": a compact native <select>, used in the
-   * quick-view next to the price where vertical space is tight. Native <select>
-   * avoids being clipped by the modal's scroll container and gives mobile users
-   * the OS picker.
+   * used on the product page. "dropdown": a compact listbox, used in the
+   * quick-view next to the price where vertical space is tight. Its panel se
+   * ancla por fuera del contenedor con scroll del modal, así que no se recorta.
    */
   layout?: "tiles" | "dropdown";
   "data-testid"?: string;
@@ -104,46 +109,74 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
       );
     }
 
-    const selectId = `option-${option.id}`;
+    // El `<select>` nativo pintaba la lista con el widget del sistema (resalte
+    // azul del SO, tipografía del SO): dentro del quick view desentonaba con el
+    // resto del sitio. El Listbox de Headless UI da el mismo control accesible
+    // con nuestros tokens, y al ser del MISMO paquete que el `Dialog` del quick
+    // view, su panel portaleado no cuenta como click afuera ni pelea con el
+    // focus trap del modal (un popover de Radix acá sí cerraría el modal).
+    const labelId = `option-${option.id}-label`;
     return (
       <div className="flex flex-col gap-1" data-testid={dataTestId}>
-        <label
-          className="font-medium text-gray-500 text-xs"
-          htmlFor={selectId}
-        >
+        <span className="font-medium text-gray-500 text-xs" id={labelId}>
           {title}
-        </label>
-        <div className="relative">
-          <select
+        </span>
+        <Listbox
+          disabled={disabled}
+          onChange={(value: string) => updateOption(option.id, value)}
+          value={current ?? ""}
+        >
+          <ListboxButton
+            aria-labelledby={labelId}
             className={clx(
-              "w-full min-w-[132px] appearance-none rounded-lg border bg-white py-2 pl-3 pr-9 font-semibold text-gray-900 text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-[--primary-color]",
+              "group flex w-full min-w-[132px] items-center justify-between gap-2 rounded-xl border bg-white py-2.5 pl-3 pr-2.5 text-left font-semibold text-gray-900 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[--primary-color] data-[open]:border-[--primary-color]",
               current
                 ? "border-[--primary-color]"
                 : "border-gray-300 hover:border-gray-400",
               disabled && "cursor-not-allowed bg-gray-100 opacity-60"
             )}
-            disabled={disabled}
-            id={selectId}
-            name={option.id}
-            onChange={(e) => updateOption(option.id, e.target.value)}
-            value={current ?? ""}
           >
-            {!current && (
-              <option disabled value="">
-                Elegí {title.toLowerCase()}
-              </option>
-            )}
+            <span className={clx("truncate", !current && "text-gray-500")}>
+              {current || `Elegí ${title.toLowerCase()}`}
+            </span>
+            <ChevronDownIcon
+              aria-hidden="true"
+              className="size-4 shrink-0 text-gray-500 transition-transform group-data-[open]:rotate-180"
+            />
+          </ListboxButton>
+          {/* z por encima del quick view (`z-[10000]`), que es el lugar más
+              alto desde donde se abre este dropdown. */}
+          <ListboxOptions
+            anchor={{ to: "bottom start", gap: 6 }}
+            className="z-[10001] max-h-64 w-[var(--button-width)] min-w-[132px] overflow-y-auto rounded-xl border border-gray-200 bg-white p-1 shadow-lg focus:outline-none"
+            transition
+          >
             {filteredOptions.map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
+              <ListboxOption as={Fragment} key={v} value={v}>
+                {({ focus, selected }) => (
+                  <li
+                    className={clx(
+                      "flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm",
+                      focus && "bg-[--mc-green-soft]",
+                      selected
+                        ? "font-semibold text-[--primary-color]"
+                        : "font-medium text-gray-900"
+                    )}
+                  >
+                    <span className="truncate">{v}</span>
+                    <CheckCircleIcon
+                      aria-hidden="true"
+                      className={clx(
+                        "size-4 shrink-0 text-[--primary-color]",
+                        selected ? "visible" : "invisible"
+                      )}
+                    />
+                  </li>
+                )}
+              </ListboxOption>
             ))}
-          </select>
-          <ChevronDownIcon
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-gray-500"
-          />
-        </div>
+          </ListboxOptions>
+        </Listbox>
       </div>
     );
   }

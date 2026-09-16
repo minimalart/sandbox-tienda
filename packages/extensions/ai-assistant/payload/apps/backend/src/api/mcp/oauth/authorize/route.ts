@@ -1,4 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
+import { colorOf } from '../../../instance-branding/branding';
+import { readInstanceBranding } from '../../../instance-branding/read';
 import { AI_ASSISTANT_MODULE } from '../../../../modules/ai-assistant';
 import {
   baseUrl,
@@ -39,13 +41,20 @@ function esc(s: string): string {
  * Son constantes y no valores leídos porque `loginPage()` es SÍNCRONA y leer la marca
  * es async. La prioridad (logotipo -> isotipo -> generado) la deciden esas rutas.
  *
+ * El COLOR sí entra por parámetro: no hay ruta que lo sirva como imagen, y el botón
+ * "Autorizar" tenía el verde de Mercatto (`#2e7d32`) en duro — la misma marca ajena
+ * que el logo, en el mismo formulario. Los dos handlers leen la marca UNA vez con
+ * `readInstanceBranding` (ya son async) y la pasan; `colorOf` trae el fallback
+ * cuando la instalación no cargó `primary_color`, el mismo que usa el favicon
+ * generado, así la pantalla queda de una sola marca.
+ *
  * El `<link rel="icon">` va SIN `type`: la ruta redirige a lo que haya cargado la
  * marca —png, webp o svg—, y declarar un tipo que no es hace que el ícono no cargue.
  */
 const INSTANCE_LOGO = '/instance-logo';
 const INSTANCE_FAVICON = '/favicon.ico';
 
-function loginPage(p: AuthzParams, error?: string): string {
+function loginPage(p: AuthzParams, color: string, error?: string): string {
   const hidden = (Object.keys(p) as (keyof AuthzParams)[])
     .map((k) => `<input type="hidden" name="${k}" value="${esc(p[k])}" />`)
     .join('\n');
@@ -60,7 +69,7 @@ function loginPage(p: AuthzParams, error?: string): string {
   h1{font-size:18px;margin:0 0 4px}p{color:#6b7280;font-size:13px;margin:0 0 18px}
   label{display:block;font-size:13px;color:#374151;margin:12px 0 6px}
   input[type=email],input[type=password]{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px}
-  button{margin-top:18px;width:100%;padding:11px;background:#2e7d32;color:#fff;border:0;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+  button{margin-top:18px;width:100%;padding:11px;background:${esc(color)};color:#fff;border:0;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
   .err{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:13px;padding:8px 10px;border-radius:8px;margin-bottom:12px}
 </style></head><body>
 <form class="card" method="post" action="${baseUrl()}/mcp/oauth/authorize">
@@ -115,8 +124,9 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     return;
   }
 
+  const branding = await readInstanceBranding(req.scope);
   res.setHeader('Content-Type', 'text/html');
-  res.send(loginPage(p));
+  res.send(loginPage(p, colorOf(branding)));
 };
 
 /** POST — verifica credenciales admin (loopback a /auth/user/emailpass) y emite el code. */
@@ -137,8 +147,9 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
 
   const adminId = await verifyAdmin(email, password);
   if (!adminId) {
+    const branding = await readInstanceBranding(req.scope);
     res.status(401).setHeader('Content-Type', 'text/html');
-    res.send(loginPage(p, 'Credenciales inválidas o el usuario no es administrador.'));
+    res.send(loginPage(p, colorOf(branding), 'Credenciales inválidas o el usuario no es administrador.'));
     return;
   }
 

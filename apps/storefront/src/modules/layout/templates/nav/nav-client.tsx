@@ -30,7 +30,6 @@ import { getCustomerAvatar } from "@lib/util/customer-avatar";
 import type { HttpTypes } from "@medusajs/types";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import UserAvatar from "@modules/common/components/user-avatar";
-import CartDrawer from "@modules/layout/components/cart-drawer";
 import CategoriesMenu from "@modules/layout/components/categories-menu";
 import type { CategoriesMenuNode } from "@modules/layout/components/categories-menu";
 import { BarcodeScannerButton } from "@modules/layout/components/barcode-scanner-button";
@@ -195,9 +194,7 @@ const NavClient = ({
 
   // Zustand cart store
   const cart = useCartStore((state) => state.cart);
-  const isOpen = useCartStore((state) => state.isOpen);
   const openCart = useCartStore((state) => state.openCart);
-  const closeCart = useCartStore((state) => state.closeCart);
   const liveCartCount = useCartStore(selectTotalItems);
 
   // Usar el valor inicial del servidor hasta que el cliente se monte
@@ -222,7 +219,6 @@ const NavClient = ({
 
   return (
     <div className="bg-[color:var(--header-bg,#ffffff)]">
-      <CartDrawer onClose={closeCart} open={isOpen} />
       <WishlistDrawer />
       <BarcodeScannerButton countryCode={countryCode} />
 
@@ -351,7 +347,7 @@ const NavClient = ({
               {showPromotions && (
                 <div className="flow-root">
                   <LocalizedClientLink
-                    className="-m-2 flex items-center gap-2 p-2 font-medium text-[--primary-color]"
+                    className="-m-2 flex items-center gap-2 p-2 font-medium text-[var(--promo-button-bg,var(--primary-color))]"
                     href={promotionsLink.href}
                   >
                     <TagIcon className="h-5 w-5" />
@@ -405,7 +401,10 @@ const NavClient = ({
             </LocalizedClientLink>
 
             {/* Search bar + quick suggestions */}
-            <HeaderSearchBar />
+            {/* El árbol va al buscador para que un atajo "Explorar:" que nombra una
+                categoría navegue al filtro y no a una búsqueda de texto
+                (DESDEELSUR-61, BUG-11). */}
+            <HeaderSearchBar categories={categories} />
 
             {/* Action icons */}
             <div className="flex flex-shrink-0 items-center gap-1">
@@ -648,11 +647,13 @@ const NavClient = ({
                 <LocalizedClientLink
                   aria-current={isPromosView ? "page" : undefined}
                   className={classNames(
-                    "inline-flex items-center gap-1.5 rounded-lg bg-[--primary-color] px-3.5 py-1.5 text-[13px] text-white leading-5 whitespace-nowrap transition-all duration-200 ease-in-out hover:opacity-90",
+                    // Color configurable por tienda (`theme.colors.promoButton`);
+                    // sin configurar cae al primario, como siempre.
+                    "inline-flex items-center gap-1.5 rounded-lg bg-[var(--promo-button-bg,var(--primary-color))] px-3.5 py-1.5 text-[13px] text-[var(--promo-button-fg,#fff)] leading-5 whitespace-nowrap transition-all duration-200 ease-in-out hover:opacity-90",
                     // El pill ya es sólido en el color de marca, así que el activo
                     // no se puede marcar con color: va un halo alrededor.
                     isPromosView
-                      ? "font-semibold ring-2 ring-[--primary-color] ring-offset-2 ring-offset-white"
+                      ? "font-semibold ring-2 ring-[var(--promo-button-bg,var(--primary-color))] ring-offset-2 ring-offset-white"
                       : "font-medium",
                   )}
                   href={promotionsLink.href}

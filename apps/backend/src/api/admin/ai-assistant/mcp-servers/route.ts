@@ -47,6 +47,7 @@ export const POST = async (
     oauth_client_id: body.oauth_client_id?.trim() || null,
     oauth_scope: body.oauth_scope?.trim() || null,
     enabled: body.enabled ?? true,
+    trust_read_only_hints: body.trust_read_only_hints ?? false,
     health: 'unknown',
     created_by: req.auth_context?.actor_id ?? null,
   };

@@ -1,6 +1,7 @@
 import { defineRouteConfig } from '@medusajs/admin-sdk';
-import { CogSixTooth } from '@medusajs/icons';
+import { CogSixTooth, PencilSquare, Trash } from '@medusajs/icons';
 import {
+  Badge,
   Container,
   createDataTableColumnHelper,
   DataTable,
@@ -8,18 +9,25 @@ import {
   Heading,
   Tabs,
   Text,
+  toast,
   Toaster,
   useDataTable,
+  usePrompt,
 } from '@medusajs/ui';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   getCurrentMinimumPurchase,
   type MinimumPurchase,
+  useDeleteMinimumPurchase,
   useMinimumPurchases,
 } from '../../hooks/api';
+import { useActiveSite } from '../../hooks/use-active-site';
 import { registerStoreConfigTranslations } from '../../translations/store-config';
-import { MinimumPurchaseCreateDrawer } from './components/minimum-purchase-create-drawer';
+import {
+  MinimumPurchaseCreateDrawer,
+  MinimumPurchaseEditDrawer,
+} from './components/minimum-purchase-create-drawer';
 import { BranchSettingsCard } from './components/branch-settings-card';
 import { StorefrontSettingsCard } from './components/storefront-settings-card';
 import { AiConfigCard } from './components/ai-config-card';
@@ -81,13 +89,47 @@ const StoreConfig = () => {
   const minimumPurchases = data?.minimum_purchases ?? [];
   const count = data?.count ?? 0;
 
+  // Con una tienda elegida la tabla mezcla su serie con la GLOBAL (la que hereda si
+  // no tiene la suya). Editar o borrar una fila global desde una tienda se lo cambia
+  // a todas las que heredan: la etiqueta es para que el operador lo sepa antes.
+  const { activeId: activeSiteId } = useActiveSite();
+  const [editing, setEditing] = useState<MinimumPurchase | null>(null);
+  const prompt = usePrompt();
+
+  const { mutateAsync: deleteMinimumPurchase } = useDeleteMinimumPurchase({
+    onSuccess: () => toast.success(t('DELETE_SUCCESS')),
+    onError: (error) => toast.error(t('DELETE_ERROR', { msg: error.message })),
+  });
+
+  const onDelete = useCallback(
+    async (record: MinimumPurchase) => {
+      const confirmed = await prompt({
+        title: t('DELETE_TITLE'),
+        description: t('DELETE_DESCRIPTION', {
+          amount: formatAmount(record.amount, record.currency_code, locale),
+        }),
+        variant: 'danger',
+        confirmText: t('DELETE_CONFIRM'),
+        cancelText: t('CANCEL'),
+      });
+      if (!confirmed) return;
+      await deleteMinimumPurchase(record.id);
+    },
+    [prompt, deleteMinimumPurchase, t, locale]
+  );
+
   const columns = useMemo(
     () => [
       columnHelper.accessor('amount', {
         header: t('COLUMN_AMOUNT'),
         cell: ({ row }) => (
-          <span className="font-medium">
+          <span className="flex items-center gap-2 font-medium">
             {formatAmount(row.original.amount, row.original.currency_code, locale)}
+            {activeSiteId && row.original.site_id === null ? (
+              <Badge size="2xsmall" color="grey">
+                {t('BADGE_GLOBAL')}
+              </Badge>
+            ) : null}
           </span>
         ),
       }),
@@ -117,8 +159,27 @@ const StoreConfig = () => {
           <span className="text-ui-fg-subtle">{formatDateTime(getValue(), locale)}</span>
         ),
       }),
+      columnHelper.action({
+        actions: [
+          [
+            {
+              label: t('ACTION_EDIT'),
+              icon: <PencilSquare />,
+              onClick: ({ row }) => setEditing(row.original),
+            },
+          ],
+          [
+            {
+              label: t('ACTION_DELETE'),
+              icon: <Trash />,
+              onClick: ({ row }) => void onDelete(row.original),
+            },
+          ],
+        ],
+      }),
     ],
-    [t, locale]
+    // `activeSiteId` va en las deps: la etiqueta "Global" depende de la tienda elegida.
+    [t, locale, activeSiteId, onDelete]
   );
 
   const table = useDataTable({
@@ -301,7 +362,7 @@ const StoreConfig = () => {
                 </Text>
               </div>
 
-              {/* Append-only history table */}
+              {/* History table: one row per validity window, editable from the row menu */}
               <div className="rounded-lg border border-ui-border-base">
                 <DataTable instance={table}>
                   <DataTable.Toolbar className="flex items-center justify-between px-6 py-4">
@@ -320,6 +381,7 @@ const StoreConfig = () => {
                   )}
                 </DataTable>
               </div>
+              <MinimumPurchaseEditDrawer record={editing} onClose={() => setEditing(null)} />
             </div>
           </Tabs.Content>
 

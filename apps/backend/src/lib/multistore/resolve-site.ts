@@ -15,6 +15,7 @@ type SiteRow = {
   slug: string;
   name: string;
   is_main: boolean;
+  canonical_form?: 'host' | 'path' | null;
   sales_channel_id: string | null;
   b2b_sales_channel_id: string | null;
   region_id: string | null;
@@ -32,6 +33,7 @@ export const toSiteRef = (row: SiteRow): SiteRef => ({
   slug: row.slug,
   name: row.name,
   is_main: Boolean(row.is_main),
+  canonical_form: row.canonical_form ?? 'host',
   // Los DOS canales. Ver la nota de `SiteRef.channel_ids` en types.ts.
   channel_ids: [...new Set([row.sales_channel_id, row.b2b_sales_channel_id].filter(Boolean))] as string[],
   region_id: row.region_id ?? null,

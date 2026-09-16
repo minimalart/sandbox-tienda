@@ -162,12 +162,18 @@ module.exports = {
     'apps/storefront/src/modules/site-gate',
     'apps/storefront/src/app/[countryCode]/layout.tsx',
   ],
+  // `admin/components/geo/` (mapa, parser de GeoJSON, simplificación) queda en
+  // el CORE y no acá: lo usa también la ficha de la tienda, que es de
+  // `multistore`. Si esta extensión lo poseyera, una instalación sin Sucursales
+  // borraría el archivo y se llevaría puesto el editor de zonas del store
+  // locator — poseer un path significa que se borra cuando no está seleccionada.
   'store-locations': [
     'apps/backend/src/modules/store-location', 'apps/backend/src/api/admin/store-locations', 'apps/backend/src/api/admin/sales-channels-b2c',
+    'apps/backend/src/api/admin/branch-types',
     'apps/backend/src/api/store/store-locations', 'apps/backend/src/admin/routes/store-locations', 'apps/backend/src/admin/hooks/api/store-locations.tsx',
     'apps/backend/src/admin/translations/store-locations',
-    'apps/backend/src/scripts/seed-store-locations.ts',
-    'apps/storefront/src/modules/store-locations', 'apps/storefront/src/lib/data/store-locations.ts', 'apps/storefront/src/lib/data/branch.ts', 'apps/storefront/src/lib/data/branch-types.ts', 'apps/storefront/src/app/api/store/addresses',
+    'apps/backend/src/scripts/seed-store-locations.ts', 'apps/backend/src/scripts/build-geo-zones-ar.mjs',
+    'apps/storefront/src/modules/store-locations', 'apps/storefront/src/lib/data/store-locations.ts', 'apps/storefront/src/lib/data/branch.ts', 'apps/storefront/src/lib/data/branch-types.ts', 'apps/storefront/src/lib/data/geo-zones-ar.ts', 'apps/storefront/src/app/api/store/addresses',
   ],
   contact: [
     'apps/backend/src/modules/contact', 'apps/backend/src/api/admin/contact-submissions', 'apps/backend/src/api/store/contact-submissions',
@@ -225,6 +231,14 @@ module.exports = {
     // no habria llegado a ningun proyecto de cliente. Hacerlo importar algo del
     // modulo para "ganarse" la atribucion seria un import de mentira.
     'apps/backend/src/subscribers/order-cancelled-email.ts',
+    // Retiro en tienda (DESDEELSUR-68). Las tres raices van EXPLICITAS por el
+    // mismo motivo que `order-cancelled-email.ts`: ni la ruta admin ni el widget
+    // cuelgan de una raiz existente, y el subscriber llega al modulo de emails
+    // sólo a traves del workflow, no por un import directo.
+    'apps/backend/src/workflows/mark-order-ready-for-pickup.ts',
+    'apps/backend/src/api/admin/orders/[id]/ready-for-pickup',
+    'apps/backend/src/admin/widgets/order-pickup-widget.tsx',
+    'apps/backend/src/subscribers/store-pickup-ready-email.ts',
   ],
   'payment-benefits': [
     'apps/backend/src/modules/payment-benefits', 'apps/backend/src/api/admin/payment-benefits', 'apps/backend/src/api/store/payment-benefits',
@@ -488,6 +502,7 @@ module.exports = {
    * admin del cliente no tenía multitienda. Ahora se instala.
    */
   multistore: [
+    'apps/storefront/src/app/[countryCode]/(main)/tiendas',
     'apps/backend/src/api/admin/catalog-imports',
     'apps/backend/src/admin/routes/catalog-imports',
     'apps/backend/src/admin/widgets/catalog-commercial.tsx',

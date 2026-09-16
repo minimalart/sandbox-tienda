@@ -69,6 +69,13 @@ export type KapsoTemplateNames = {
    * PRESENCIA como interruptor: sin valor, el paso de WhatsApp ni se arma. Ver
    * la nota 2 de `app-settings/descriptors/whatsapp.ts`.
    */
+  /**
+   * Retiro en tienda: lo dispara `markOrderReadyForPickup`, la MISMA función que
+   * el mail, así que el gate de una sola vez (`order.metadata.ready_for_pickup_at`)
+   * también cubre el WhatsApp. Sin valor y sin binding publicado en el admin, el
+   * aviso sale sólo por mail.
+   */
+  orderReadyForPickup: string | null;
   cartAbandoned1: string | null;
   cartAbandoned2: string | null;
   cartAbandoned3: string | null;
@@ -145,6 +152,7 @@ function buildSettings(lookup: RowLookup): KapsoSettings {
       orderDelivery: read('KAPSO_TEMPLATE_ORDER_DELIVERY', 'order_delivery_own_fleet'),
       orderCancelled: read('KAPSO_TEMPLATE_ORDER_CANCELLED', 'order_cancelled'),
       passwordReset: read('KAPSO_TEMPLATE_PASSWORD_RESET', 'password_reset'),
+      orderReadyForPickup: readOptional('KAPSO_TEMPLATE_ORDER_READY_FOR_PICKUP'),
       cartAbandoned1: readOptional('KAPSO_TEMPLATE_CART_ABANDONED_1'),
       cartAbandoned2: readOptional('KAPSO_TEMPLATE_CART_ABANDONED_2'),
       cartAbandoned3: readOptional('KAPSO_TEMPLATE_CART_ABANDONED_3'),

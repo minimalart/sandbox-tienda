@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   getGoogleMapsApiKey,
   loadGoogleMaps,
-} from '../../../store-locations/components/google-maps-loader';
+} from '../../../../components/geo/google-maps-loader';
 import type { ZoneConflictGeometry } from '../../../../hooks/api/delivery';
 
 /* Tipados estructurales mínimos de la Google Maps API (sin @types). */

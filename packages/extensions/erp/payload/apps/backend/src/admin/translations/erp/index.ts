@@ -46,6 +46,7 @@ export const en = {
   OUTBOX_FAILED: 'Failed',
   OUTBOX_DEAD: 'Dead letter',
   OUTBOX_SENT: 'Sent',
+  OUTBOX_SKIPPED: 'Skipped',
   VIEW_OUTBOX: 'View events',
 
   // Config page
@@ -96,7 +97,8 @@ export const en = {
   CONFIG_LOCATION: 'Stock location',
   CONFIG_LOCATION_HINT_MAP: 'Used when there is no warehouse mapping below.',
   CONFIG_DEPOSITO_MAP_TITLE: 'ERP warehouses → stock locations',
-  CONFIG_DEPOSITO_MAP_HELP: 'One row per warehouse: each one writes ITS quantity to the matching stock location. Leave empty to write the ERP total to a single location.',
+  CONFIG_DEPOSITO_MAP_HELP:
+    'One row per warehouse: each one writes ITS quantity to the matching stock location. Leave empty to write the ERP total to a single location.',
   CONFIG_DEPOSITO_CODE: 'Warehouse',
   CONFIG_DEPOSITO_MAP_ADD: 'Add warehouse',
   CONFIG_STOCK_CHANNELS_TITLE: 'Limit stock sync to these channels',
@@ -124,7 +126,8 @@ export const en = {
     'Required credentials: client_id (account email) and client_secret (API Key from Mi Cuenta → Datos de mi empresa → API). Numeric IDs come from your account — see docs/recipes/erp-contabilium.md.',
   CONFIG_CBL_BASE_URL: 'API base URL',
   CONFIG_CBL_DEPOSITO: 'Warehouse ID (depósito)',
-  CONFIG_CBL_DEPOSITO_HINT: 'Required to notify sales; without it stock is summed across warehouses.',
+  CONFIG_CBL_DEPOSITO_HINT:
+    'Required to notify sales; without it stock is summed across warehouses.',
   CONFIG_CBL_SALE_MODE: 'What each sale creates',
   CONFIG_CBL_MODE_ORDEN: 'Sales order (no invoice)',
   CONFIG_CBL_MODE_FACTURA: 'Electronic invoice (collected)',
@@ -134,7 +137,8 @@ export const en = {
   CONFIG_CBL_TIPO_FC: 'Invoice type',
   CONFIG_CBL_CONDICION: 'Sale condition',
   CONFIG_CBL_DEFAULT_CLIENT: 'Default client ID (final consumer)',
-  CONFIG_CBL_DEFAULT_CLIENT_HINT: 'Used for orders without a fiscal document; create a generic client in Contabilium.',
+  CONFIG_CBL_DEFAULT_CLIENT_HINT:
+    'Used for orders without a fiscal document; create a generic client in Contabilium.',
   CONFIG_CBL_SHIPPING_SKU: 'Shipping concept SKU',
   CONFIG_CBL_SHIPPING_SKU_HINT:
     'Sales orders do not allow free-text items: create an "ENVIO" concept in Contabilium to bill shipping as a line.',
@@ -145,9 +149,11 @@ export const en = {
     'Required credential: access_token (Bsale API token). Numeric IDs come from your Bsale account — see docs/recipes/erp-bsale.md to find them via API.',
   CONFIG_BSALE_BASE_URL: 'API base URL',
   CONFIG_BSALE_OFFICE: 'Office ID (branch)',
-  CONFIG_BSALE_OFFICE_HINT: 'Stock and documents are scoped to this branch. Empty = stock summed across all branches.',
+  CONFIG_BSALE_OFFICE_HINT:
+    'Stock and documents are scoped to this branch. Empty = stock summed across all branches.',
   CONFIG_BSALE_DOCTYPE: 'Document type ID',
-  CONFIG_BSALE_DOCTYPE_HINT: 'Document issued per sale (e.g. nota de venta / boleta electrónica). Required to notify sales.',
+  CONFIG_BSALE_DOCTYPE_HINT:
+    'Document issued per sale (e.g. nota de venta / boleta electrónica). Required to notify sales.',
   CONFIG_BSALE_PRICELIST: 'Price list ID',
   CONFIG_BSALE_PAYMENT: 'Payment type ID',
   CONFIG_BSALE_PAYMENT_HINT: 'Empty = document is issued without payments.',
@@ -163,23 +169,32 @@ export const en = {
     'Required credential: jwt_token (the JWT Zeus issues for the Ecommerce API). Codes come from your account — see docs/recipes/erp-zeus.md to find them via API.',
   CONFIG_ZEUS_BASE_URL: 'API base URL',
   CONFIG_ZEUS_ECOMMERCE_ID: 'Ecommerce identifier',
-  CONFIG_ZEUS_ECOMMERCE_ID_HINT: 'Value of the `ecommerce` parameter Zeus assigns to this integration.',
+  CONFIG_ZEUS_ECOMMERCE_ID_HINT:
+    'Value of the `ecommerce` parameter Zeus assigns to this integration.',
   CONFIG_ZEUS_SUCURSAL: 'Branch (sucursal)',
   CONFIG_ZEUS_DEPOSITO: 'Warehouse (depósito)',
-  CONFIG_ZEUS_DEPOSITO_HINT: 'Also scopes the stock sync to this warehouse. Empty = stock summed across all.',
+  CONFIG_ZEUS_DEPOSITO_HINT:
+    'Also scopes the stock sync to this warehouse. Empty = stock summed across all.',
   CONFIG_ZEUS_PTO_VTA: 'Point of sale',
   CONFIG_ZEUS_COD_LISTA: 'Price list',
+  CODE_FIELD_NONE: '— none —',
+  CODE_FIELD_UNREADABLE:
+    'The ERP returned this list but its codes could not be read, so this is a bug on our side. Type the code by hand and report it.',
+  CODE_FIELD_ERROR: 'Could not read the list of valid codes ({{msg}}). Type the code by hand.',
   CONFIG_ZEUS_COND_VENTA: 'Sale condition code',
   CONFIG_ZEUS_TIPO_COMP: 'Document type',
   CONFIG_ZEUS_VENDEDOR: 'Salesperson code',
   CONFIG_ZEUS_DEFAULT_CLIENT: 'Default client code (final consumer)',
-  CONFIG_ZEUS_DEFAULT_CLIENT_HINT: 'Used for orders without a fiscal document; create a generic client in Zeus.',
+  CONFIG_ZEUS_DEFAULT_CLIENT_HINT:
+    'Used for orders without a fiscal document; create a generic client in Zeus.',
   CONFIG_ZEUS_CODIGO_IVA: 'VAT category for new clients',
   CONFIG_ZEUS_CODIGO_IVA_HINT: 'From /categorias-iva; default 5 (final consumer).',
   CONFIG_ZEUS_SHIPPING_CODE: 'Shipping article code',
-  CONFIG_ZEUS_SHIPPING_CODE_HINT: 'Create a shipping article in Zeus to bill shipping as a line; empty = shipping goes in the notes.',
+  CONFIG_ZEUS_SHIPPING_CODE_HINT:
+    'Create a shipping article in Zeus to bill shipping as a line; empty = shipping goes in the notes.',
   CONFIG_ZEUS_TIPO_PAGO: 'Payment type',
-  CONFIG_ZEUS_TIPO_PAGO_HINT: 'Payment type code in your Zeus account. Empty = orders are inserted without payments.',
+  CONFIG_ZEUS_TIPO_PAGO_HINT:
+    'Payment type code in your Zeus account. Empty = orders are inserted without payments.',
   CONFIG_ZEUS_TARJETA: 'Card code',
   CONFIG_ZEUS_CREATE_CLIENTS: 'Create clients in Zeus when missing',
   CONFIG_ZEUS_ESHOP_ONLY: 'Sync only ecommerce-published articles (eshop flag)',
@@ -192,7 +207,8 @@ export const en = {
   CONFIG_ODOO_BASE_URL: 'Base URL',
   CONFIG_ODOO_BASE_URL_HINT: 'Full URL of the Odoo instance, without trailing slash.',
   CONFIG_ODOO_DB: 'Database name',
-  CONFIG_ODOO_DB_HINT: 'Odoo database name; ask the client if unknown. Odoo.sh defaults sometimes to "odoo".',
+  CONFIG_ODOO_DB_HINT:
+    'Odoo database name; ask the client if unknown. Odoo.sh defaults sometimes to "odoo".',
   CONFIG_ODOO_UID: 'User ID',
   CONFIG_ODOO_UID_HINT: 'Numeric id of the res.users record that owns the API key.',
   CONFIG_ODOO_ALLOWED_COMPANY_IDS: 'Allowed company IDs (CSV)',
@@ -256,6 +272,50 @@ export const en = {
   RETRY_OK: 'Event requeued',
   RETRY_ERROR: 'Could not retry: {{msg}}',
   OUTBOX_EMPTY: 'No sale events yet.',
+  SKIPPED_REASON: 'Skipped: sales notification was off',
+  PREVIEW_ACTION: 'View JSON',
+  PREVIEW_TITLE: 'Document sent to the ERP',
+  PREVIEW_SOURCE_STORED: 'Exactly as sent',
+  PREVIEW_SOURCE_RECONSTRUCTED: 'Rebuilt',
+  PREVIEW_SENT_AT: 'Sent',
+  PREVIEW_COPY: 'Copy JSON',
+  PREVIEW_COPIED: 'JSON copied to the clipboard',
+  PREVIEW_COPY_ERROR: 'Could not copy — select the text and copy it by hand.',
+  PREVIEW_LOADING: 'Building the document…',
+  PREVIEW_ERROR: 'Could not get the document: {{msg}}',
+  RESYNC_ONE: 'Resend',
+  RESYNC_SELECTED: 'Resend selected',
+  RESYNC_SELECTED_COUNT: '{{count}} selected',
+  RESYNC_BULK: 'Resend all ({{count}})',
+  RESYNC_BULK_TITLE: 'Resend sales to the ERP',
+  RESYNC_BULK_DESC:
+    '{{count}} sale(s) will be requeued (skipped, failed and dead letter). Each one becomes an order in the ERP.',
+  RESYNC_BULK_DESC_FILTERED:
+    '{{count}} sale(s) in {{status}} will be requeued. Each one becomes an order in the ERP.',
+  RESYNC_BULK_CONFIRM: 'Resend',
+  RESYNC_OK: '{{count}} sale(s) requeued. The processor sends them on the next tick.',
+  RESYNC_NONE: 'Nothing was requeued.',
+  RESYNC_UNTOUCHED: '{{count}} left untouched (already sent or in flight).',
+  RESYNC_REMAINING: '{{count}} more are still waiting; run it again to continue.',
+  RESYNC_ERROR: 'Could not resend: {{msg}}',
+  OUTBOX_UNREGISTERED: 'Not queued',
+  ST_UNREGISTERED: 'Not queued in the ERP',
+  UNREGISTERED_TITLE: 'Orders missing from the queue',
+  UNREGISTERED_HELP:
+    '{{count}} order(s) should already be in the ERP and have no event at all, out of the last {{scanned}} reviewed.',
+  UNREGISTERED_EMPTY: 'Every eligible order has its event. Nothing is missing.',
+  UNREGISTERED_DISABLED:
+    'Sales notification is off, so there is nothing to queue. Turn it on in the ERP settings.',
+  BACK_TO_QUEUE: 'Back to the queue',
+  COL_PAYMENT: 'Payment',
+  COL_TOTAL: 'Total',
+  ENQUEUE_ONE: 'Queue',
+  ENQUEUE_SELECTED: 'Queue selected',
+  ENQUEUE_BULK: 'Queue all ({{count}})',
+  ENQUEUE_BULK_TITLE: 'Queue orders for the ERP',
+  ENQUEUE_BULK_DESC:
+    '{{count}} order(s) will be queued. Each one becomes an order in the ERP once the processor sends it.',
+  ENQUEUE_BULK_CONFIRM: 'Queue',
 
   // Status labels (shared)
   ST_RUNNING: 'RUNNING',
@@ -338,8 +398,19 @@ export const en = {
   CFG_IMPORT_IMAGES: 'Import product images from the ERP',
   CFG_IMPORT_IMAGES_HELP:
     'Downloads each article photo from the ERP and uploads it to your file storage (the ERP endpoint needs a token, so the image cannot be linked directly). Only fills products that have no image at all: a photo uploaded by hand is never replaced. Turning it on triggers a full-catalogue pass on the next run, which can move hundreds of MB.',
+  CFG_IMAGE_MIN_DIMENSION_PX: 'Minimum accepted side (px)',
+  CFG_IMAGE_MIN_DIMENSION_PX_HELP:
+    'The short side of the image, in pixels. Anything below is dropped: the storefront card is square or vertical and CSS stretches to fill it, so a 1600×150 photo looks as broken as a 150×150 one. Leave empty for the default (500). Use 0 to disable the check when the ERP returns thumbnails you still want on the storefront.',
   CFG_IMAGES_BACKFILL_PENDING:
     'An image backfill is pending: the next run will look for a photo for every product without one.',
+  CFG_RESET_IMAGE_FAILURES: 'Reset the image failure counter',
+  CFG_RESET_IMAGE_FAILURES_HELP:
+    'After three consecutive failed downloads for the same SKU the planner backs off for a week to keep a broken ERP endpoint from re-hitting the whole catalogue. If you fixed the underlying issue (published the article in the ERP, lowered the minimum size, restored connectivity), this button clears the map so the next run tries every SKU again.',
+  CFG_RESET_IMAGE_FAILURES_BUTTON: 'Reset',
+  CFG_RESET_IMAGE_FAILURES_CONFIRM:
+    'Reset the image failure counter for every SKU? The next catalog sync will try to fetch every image again.',
+  CFG_RESET_IMAGE_FAILURES_OK: 'Image failure counter reset ({{count}} SKU(s)).',
+  CFG_RESET_IMAGE_FAILURES_ERROR: 'Could not reset the counter: {{msg}}',
   CFG_CATEGORIES_SYNC: 'Mirror the ERP category tree',
   CFG_CATEGORIES_SYNC_HELP:
     'Creates the ERP categories in Medusa and assigns each product to its own. Additive: categories set by hand are never touched. Turning it on schedules a one-off pass over the whole catalog.',
@@ -456,6 +527,7 @@ export const es: typeof en = {
   OUTBOX_FAILED: 'Fallidas',
   OUTBOX_DEAD: 'Dead letter',
   OUTBOX_SENT: 'Enviadas',
+  OUTBOX_SKIPPED: 'Salteadas',
   VIEW_OUTBOX: 'Ver eventos',
 
   CONFIG_TITLE: 'Configuración ERP',
@@ -505,7 +577,8 @@ export const es: typeof en = {
   CONFIG_LOCATION: 'Stock location',
   CONFIG_LOCATION_HINT_MAP: 'Se usa cuando no hay mapeo de depósitos abajo.',
   CONFIG_DEPOSITO_MAP_TITLE: 'Depósitos del ERP → stock locations',
-  CONFIG_DEPOSITO_MAP_HELP: 'Una fila por depósito: cada uno escribe SU cantidad en la stock location que le corresponde. Vacío = el total del ERP en una sola location.',
+  CONFIG_DEPOSITO_MAP_HELP:
+    'Una fila por depósito: cada uno escribe SU cantidad en la stock location que le corresponde. Vacío = el total del ERP en una sola location.',
   CONFIG_DEPOSITO_CODE: 'Depósito',
   CONFIG_DEPOSITO_MAP_ADD: 'Agregar depósito',
   CONFIG_STOCK_CHANNELS_TITLE: 'Acotar el sync de stock a estos canales',
@@ -533,7 +606,8 @@ export const es: typeof en = {
     'Credenciales requeridas: client_id (email de la cuenta) y client_secret (API Key en Mi Cuenta → Datos de mi empresa → API). Los IDs numéricos salen de tu cuenta — ver docs/recipes/erp-contabilium.md.',
   CONFIG_CBL_BASE_URL: 'URL base de la API',
   CONFIG_CBL_DEPOSITO: 'ID de depósito',
-  CONFIG_CBL_DEPOSITO_HINT: 'Requerido para notificar ventas; sin él el stock suma todos los depósitos.',
+  CONFIG_CBL_DEPOSITO_HINT:
+    'Requerido para notificar ventas; sin él el stock suma todos los depósitos.',
   CONFIG_CBL_SALE_MODE: 'Qué crea cada venta',
   CONFIG_CBL_MODE_ORDEN: 'Orden de venta (sin factura)',
   CONFIG_CBL_MODE_FACTURA: 'Factura electrónica (cobrada)',
@@ -543,7 +617,8 @@ export const es: typeof en = {
   CONFIG_CBL_TIPO_FC: 'Tipo de comprobante',
   CONFIG_CBL_CONDICION: 'Condición de venta',
   CONFIG_CBL_DEFAULT_CLIENT: 'ID de cliente por defecto (consumidor final)',
-  CONFIG_CBL_DEFAULT_CLIENT_HINT: 'Se usa para órdenes sin documento fiscal; creá un cliente genérico en Contabilium.',
+  CONFIG_CBL_DEFAULT_CLIENT_HINT:
+    'Se usa para órdenes sin documento fiscal; creá un cliente genérico en Contabilium.',
   CONFIG_CBL_SHIPPING_SKU: 'SKU del concepto de envío',
   CONFIG_CBL_SHIPPING_SKU_HINT:
     'Las órdenes de venta no aceptan ítems libres: creá un concepto "ENVIO" en Contabilium para facturar el envío como línea.',
@@ -554,9 +629,11 @@ export const es: typeof en = {
     'Credencial requerida: access_token (token de la API de Bsale). Los IDs numéricos salen de tu cuenta Bsale — ver docs/recipes/erp-bsale.md para encontrarlos vía API.',
   CONFIG_BSALE_BASE_URL: 'URL base de la API',
   CONFIG_BSALE_OFFICE: 'ID de sucursal (office)',
-  CONFIG_BSALE_OFFICE_HINT: 'Stock y documentos se acotan a esta sucursal. Vacío = stock sumado de todas.',
+  CONFIG_BSALE_OFFICE_HINT:
+    'Stock y documentos se acotan a esta sucursal. Vacío = stock sumado de todas.',
   CONFIG_BSALE_DOCTYPE: 'ID de tipo de documento',
-  CONFIG_BSALE_DOCTYPE_HINT: 'Documento emitido por venta (ej: nota de venta / boleta electrónica). Requerido para notificar ventas.',
+  CONFIG_BSALE_DOCTYPE_HINT:
+    'Documento emitido por venta (ej: nota de venta / boleta electrónica). Requerido para notificar ventas.',
   CONFIG_BSALE_PRICELIST: 'ID de lista de precios',
   CONFIG_BSALE_PAYMENT: 'ID de forma de pago',
   CONFIG_BSALE_PAYMENT_HINT: 'Vacío = el documento se emite sin pagos.',
@@ -572,23 +649,33 @@ export const es: typeof en = {
     'Credencial requerida: jwt_token (el JWT que entrega Zeus para la API Ecommerce). Los códigos salen de tu cuenta — ver docs/recipes/erp-zeus.md para encontrarlos vía API.',
   CONFIG_ZEUS_BASE_URL: 'URL base de la API',
   CONFIG_ZEUS_ECOMMERCE_ID: 'Identificador del ecommerce',
-  CONFIG_ZEUS_ECOMMERCE_ID_HINT: 'Valor del parámetro `ecommerce` que Zeus asigna a esta integración.',
+  CONFIG_ZEUS_ECOMMERCE_ID_HINT:
+    'Valor del parámetro `ecommerce` que Zeus asigna a esta integración.',
   CONFIG_ZEUS_SUCURSAL: 'Sucursal',
   CONFIG_ZEUS_DEPOSITO: 'Depósito',
-  CONFIG_ZEUS_DEPOSITO_HINT: 'También acota el sync de stock a este depósito. Vacío = stock sumado de todos.',
+  CONFIG_ZEUS_DEPOSITO_HINT:
+    'También acota el sync de stock a este depósito. Vacío = stock sumado de todos.',
   CONFIG_ZEUS_PTO_VTA: 'Punto de venta',
   CONFIG_ZEUS_COD_LISTA: 'Lista de precios',
+  CODE_FIELD_NONE: '— ninguno —',
+  CODE_FIELD_UNREADABLE:
+    'El ERP devolvió este listado pero no se pudieron leer sus códigos, así que es un problema nuestro. Escribí el código a mano y reportalo.',
+  CODE_FIELD_ERROR:
+    'No se pudo leer el listado de códigos válidos ({{msg}}). Escribí el código a mano.',
   CONFIG_ZEUS_COND_VENTA: 'Código de condición de venta',
   CONFIG_ZEUS_TIPO_COMP: 'Tipo de comprobante',
   CONFIG_ZEUS_VENDEDOR: 'Código de vendedor',
   CONFIG_ZEUS_DEFAULT_CLIENT: 'Código de cliente por defecto (consumidor final)',
-  CONFIG_ZEUS_DEFAULT_CLIENT_HINT: 'Se usa para órdenes sin documento fiscal; creá un cliente genérico en Zeus.',
+  CONFIG_ZEUS_DEFAULT_CLIENT_HINT:
+    'Se usa para órdenes sin documento fiscal; creá un cliente genérico en Zeus.',
   CONFIG_ZEUS_CODIGO_IVA: 'Categoría de IVA para clientes nuevos',
   CONFIG_ZEUS_CODIGO_IVA_HINT: 'De /categorias-iva; default 5 (consumidor final).',
   CONFIG_ZEUS_SHIPPING_CODE: 'Código de artículo de envío',
-  CONFIG_ZEUS_SHIPPING_CODE_HINT: 'Creá un artículo de envío en Zeus para facturarlo como línea; vacío = el envío va en observaciones.',
+  CONFIG_ZEUS_SHIPPING_CODE_HINT:
+    'Creá un artículo de envío en Zeus para facturarlo como línea; vacío = el envío va en observaciones.',
   CONFIG_ZEUS_TIPO_PAGO: 'Tipo de pago',
-  CONFIG_ZEUS_TIPO_PAGO_HINT: 'Código del tipo de pago en tu cuenta Zeus. Vacío = los pedidos se insertan sin pagos.',
+  CONFIG_ZEUS_TIPO_PAGO_HINT:
+    'Código del tipo de pago en tu cuenta Zeus. Vacío = los pedidos se insertan sin pagos.',
   CONFIG_ZEUS_TARJETA: 'Código de tarjeta',
   CONFIG_ZEUS_CREATE_CLIENTS: 'Crear clientes en Zeus cuando no existen',
   CONFIG_ZEUS_ESHOP_ONLY: 'Sincronizar solo artículos publicados en ecommerce (flag eshop)',
@@ -601,7 +688,8 @@ export const es: typeof en = {
   CONFIG_ODOO_BASE_URL: 'URL base',
   CONFIG_ODOO_BASE_URL_HINT: 'URL completa de la instancia Odoo, sin barra final.',
   CONFIG_ODOO_DB: 'Nombre de la base',
-  CONFIG_ODOO_DB_HINT: 'Nombre de la base Odoo; preguntar al cliente si no se conoce. Odoo.sh a veces default en "odoo".',
+  CONFIG_ODOO_DB_HINT:
+    'Nombre de la base Odoo; preguntar al cliente si no se conoce. Odoo.sh a veces default en "odoo".',
   CONFIG_ODOO_UID: 'ID del usuario',
   CONFIG_ODOO_UID_HINT: 'ID numérico del registro res.users dueño de la API key.',
   CONFIG_ODOO_ALLOWED_COMPANY_IDS: 'IDs de empresas permitidas (CSV)',
@@ -662,6 +750,50 @@ export const es: typeof en = {
   RETRY_OK: 'Evento re-encolado',
   RETRY_ERROR: 'No se pudo reintentar: {{msg}}',
   OUTBOX_EMPTY: 'Todavía no hay eventos de venta.',
+  SKIPPED_REASON: 'Salteada: la notificación de ventas estaba apagada',
+  PREVIEW_ACTION: 'Ver JSON',
+  PREVIEW_TITLE: 'Documento enviado al ERP',
+  PREVIEW_SOURCE_STORED: 'Tal cual se envió',
+  PREVIEW_SOURCE_RECONSTRUCTED: 'Reconstruido',
+  PREVIEW_SENT_AT: 'Enviado',
+  PREVIEW_COPY: 'Copiar JSON',
+  PREVIEW_COPIED: 'JSON copiado al portapapeles',
+  PREVIEW_COPY_ERROR: 'No se pudo copiar — seleccioná el texto y copialo a mano.',
+  PREVIEW_LOADING: 'Armando el documento…',
+  PREVIEW_ERROR: 'No se pudo obtener el documento: {{msg}}',
+  RESYNC_ONE: 'Reenviar',
+  RESYNC_SELECTED: 'Reenviar seleccionadas',
+  RESYNC_SELECTED_COUNT: '{{count}} seleccionadas',
+  RESYNC_BULK: 'Reenviar todas ({{count}})',
+  RESYNC_BULK_TITLE: 'Reenviar ventas al ERP',
+  RESYNC_BULK_DESC:
+    'Se van a re-encolar {{count}} venta(s) (salteadas, fallidas y dead letter). Cada una entra como un pedido en el ERP.',
+  RESYNC_BULK_DESC_FILTERED:
+    'Se van a re-encolar {{count}} venta(s) en estado {{status}}. Cada una entra como un pedido en el ERP.',
+  RESYNC_BULK_CONFIRM: 'Reenviar',
+  RESYNC_OK: '{{count}} venta(s) re-encoladas. El processor las manda en el próximo tick.',
+  RESYNC_NONE: 'No se re-encoló ninguna venta.',
+  RESYNC_UNTOUCHED: '{{count}} quedaron sin tocar (ya enviadas o en curso).',
+  RESYNC_REMAINING: 'Quedan {{count}} esperando; volvé a correrlo para seguir.',
+  RESYNC_ERROR: 'No se pudo reenviar: {{msg}}',
+  OUTBOX_UNREGISTERED: 'Sin encolar',
+  ST_UNREGISTERED: 'Sin encolar en el ERP',
+  UNREGISTERED_TITLE: 'Órdenes que faltan en la cola',
+  UNREGISTERED_HELP:
+    '{{count}} orden(es) ya deberían estar en el ERP y no tienen ningún evento, sobre las últimas {{scanned}} revisadas.',
+  UNREGISTERED_EMPTY: 'Todas las órdenes que corresponden tienen su evento. No falta ninguna.',
+  UNREGISTERED_DISABLED:
+    'La notificación de ventas está apagada, así que no hay nada para encolar. Prendela en la configuración del ERP.',
+  BACK_TO_QUEUE: 'Volver a la cola',
+  COL_PAYMENT: 'Pago',
+  COL_TOTAL: 'Total',
+  ENQUEUE_ONE: 'Encolar',
+  ENQUEUE_SELECTED: 'Encolar seleccionadas',
+  ENQUEUE_BULK: 'Encolar todas ({{count}})',
+  ENQUEUE_BULK_TITLE: 'Encolar órdenes para el ERP',
+  ENQUEUE_BULK_DESC:
+    'Se van a encolar {{count}} orden(es). Cada una entra como un pedido en el ERP cuando el processor la manda.',
+  ENQUEUE_BULK_CONFIRM: 'Encolar',
 
   ST_RUNNING: 'EN CURSO',
   ST_COMPLETED: 'COMPLETADA',
@@ -744,8 +876,19 @@ export const es: typeof en = {
   CFG_IMPORT_IMAGES: 'Importar las imágenes de los artículos desde el ERP',
   CFG_IMPORT_IMAGES_HELP:
     'Baja la foto de cada artículo del ERP y la sube a tu almacenamiento de archivos (el endpoint del ERP pide token, así que la imagen no se puede linkear directo). Solo completa productos que no tienen ninguna imagen: una foto cargada a mano nunca se pisa. Prenderlo programa una pasada sobre todo el catálogo, que puede mover cientos de MB.',
+  CFG_IMAGE_MIN_DIMENSION_PX: 'Lado menor mínimo aceptado (px)',
+  CFG_IMAGE_MIN_DIMENSION_PX_HELP:
+    'Se mira el lado más chico de la imagen, en píxeles. Lo que quede por debajo se descarta: la card del storefront es cuadrada o vertical y el CSS estira hasta llenarla, así que una foto de 1600×150 se ve tan rota como una de 150×150. Vacío usa el default (500). Poné 0 para deshabilitar el filtro cuando tu ERP devuelve thumbnails que igual querés mostrar.',
   CFG_IMAGES_BACKFILL_PENDING:
     'Hay un backfill de imágenes pendiente: la próxima corrida le va a buscar foto a todos los productos que no tengan.',
+  CFG_RESET_IMAGE_FAILURES: 'Resetear el contador de fallas de imágenes',
+  CFG_RESET_IMAGE_FAILURES_HELP:
+    'Después de tres bajadas fallidas seguidas para el mismo SKU, el planner lo saltea por una semana para que un endpoint del ERP roto no vuelva a golpear todo el catálogo. Si arreglaste el motivo (publicaste el artículo en el ERP, bajaste el lado mínimo, se restableció la conexión), este botón limpia el mapa para que la próxima corrida vuelva a intentar cada SKU.',
+  CFG_RESET_IMAGE_FAILURES_BUTTON: 'Resetear',
+  CFG_RESET_IMAGE_FAILURES_CONFIRM:
+    '¿Resetear el contador de fallas de imágenes para todos los SKUs? La próxima corrida del catalog sync va a volver a intentar bajar todas las imágenes.',
+  CFG_RESET_IMAGE_FAILURES_OK: 'Contador de fallas de imágenes reseteado ({{count}} SKU(s)).',
+  CFG_RESET_IMAGE_FAILURES_ERROR: 'No se pudo resetear el contador: {{msg}}',
   CFG_CATEGORIES_SYNC: 'Espejar el árbol de categorías del ERP',
   CFG_CATEGORIES_SYNC_HELP:
     'Crea las categorías del ERP en Medusa y asigna cada producto a la suya. Es aditivo: nunca toca las categorías puestas a mano. Prenderlo programa una pasada única sobre todo el catálogo.',

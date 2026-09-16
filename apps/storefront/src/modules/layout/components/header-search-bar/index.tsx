@@ -14,6 +14,11 @@ import { ListPlus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SEARCH_DEBOUNCE_MS } from "@lib/typesense/core/timing";
+import {
+  resolveQuickSuggestionTarget,
+  type CategoryNode,
+  type QuickSuggestion,
+} from "@lib/util/quick-suggestion-target";
 
 const QUICK_SUGGESTIONS = [
   { label: "Indumentaria", query: "indumentaria" },
@@ -21,8 +26,14 @@ const QUICK_SUGGESTIONS = [
   { label: "Accesorios", query: "accesorios" },
 ];
 
-
-const HeaderSearchBar = () => {
+/**
+ * `categories` es OPCIONAL y su ausencia no es un error: sin árbol, los atajos se
+ * comportan como antes (búsqueda de texto). Se lo pasa quien ya lo tiene a mano —
+ * `nav-client`, que monta este buscador al lado del menú de categorías.
+ */
+const HeaderSearchBar = ({
+  categories = [],
+}: { categories?: CategoryNode[] } = {}) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tenant = useTenant();
@@ -173,13 +184,40 @@ const HeaderSearchBar = () => {
     [tryAcceptGhost, submitSearch]
   );
 
+  /**
+   * Atajo "Explorar:" del header.
+   *
+   * Un atajo que resuelve a una CATEGORÍA navega al filtro —el mismo que usan el menú
+   * y las tarjetas del home— y NO escribe nada en el input: no es una búsqueda de
+   * texto, y dejar el término tipeado ahí hacía que la próxima tecla lo convirtiera en
+   * una, perdiendo el filtro. El que no resuelve cae en la búsqueda libre de siempre.
+   *
+   * Toda la decisión vive en `resolveQuickSuggestionTarget`, que está testeada aparte
+   * contra las categorías reales de la tienda (DESDEELSUR-61, BUG-11).
+   */
   const handleSuggestionClick = useCallback(
-    (suggestionQuery: string) => {
-      setQuery(suggestionQuery);
+    (suggestion: QuickSuggestion) => {
       isLocalChangeRef.current = true;
-      navigateToStore(suggestionQuery);
+      const target = resolveQuickSuggestionTarget(suggestion, categories);
+
+      if (target.kind === "query") {
+        setQuery(target.term);
+        navigateToStore(target.term);
+        return;
+      }
+
+      setQuery("");
+      const href =
+        target.kind === "href"
+          ? target.href
+          : `/store?category=${encodeURIComponent(target.category)}`;
+      // `siteHref` sólo antepone el prefijo del sitio; el href del árbol ya viene
+      // relativo a `/store`, así que se le saca esa parte antes de reconstruirlo.
+      router.push(`${siteHref("/store")}${href.slice("/store".length)}`, {
+        scroll: false,
+      });
     },
-    [navigateToStore]
+    [navigateToStore, router, siteHref, categories]
   );
 
   // Cleanup debounce on unmount
@@ -259,8 +297,10 @@ const HeaderSearchBar = () => {
         {quickSuggestions.map((suggestion) => (
           <button
             className="whitespace-nowrap rounded-full px-1.5 py-0.5 font-medium text-[--primary-color] text-xs underline decoration-[--primary-color] underline-offset-2 transition-colors hover:text-[--accent-color] hover:decoration-[--accent-color]"
-            key={suggestion.query}
-            onClick={() => handleSuggestionClick(suggestion.query)}
+            // `label` y no `query`: con un atajo por categoría `query` es undefined,
+            // y dos atajos sin query colapsarían en la misma key.
+            key={suggestion.label}
+            onClick={() => handleSuggestionClick(suggestion)}
             type="button"
           >
             {suggestion.label}

@@ -37,13 +37,21 @@ export type RouteScopeState =
 
 /** Clave: la ruta relativa a `src/api`, sin `route.ts`. Ej: `admin/banners/[id]`. */
 export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
+  'admin/sites/slug-availability': { state: 'not-applicable', reason: 'disponibilidad global del subdominio en el registro; no devuelve datos de tiendas' },
   'admin/catalog-imports': { state: 'scoped' },
   'admin/sites/[id]/checkout': { state: 'scoped' },
-  'admin/sites/checkout-context': { state: 'not-applicable', reason: 'server-only cart context binding; resolves requested site and validates its channel before an immutable binding' },
+  'admin/sites/checkout-context': {
+    state: 'not-applicable',
+    reason:
+      'server-only cart context binding; resolves requested site and validates its channel before an immutable binding',
+  },
   'admin/orders/[id]/checkout': { state: 'scoped' },
 
   // ── multistore ──────────────────────────────────────────────────
-  'admin/multistore/manifest': { state: 'not-applicable', reason: 'publica el estado del propio scoping; es de la instancia' },
+  'admin/multistore/manifest': {
+    state: 'not-applicable',
+    reason: 'publica el estado del propio scoping; es de la instancia',
+  },
 
   // abandoned-carts — routes moved to @minimalart/mercatto-plugin-abandoned-cart.
   // GET y POST resuelven la tienda con `siteFromRequest` y la propagan al
@@ -54,36 +62,143 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   'admin/app-settings': { state: 'scoped' },
 
   // ── ai-assistant ────────────────────────────────────────────────
-  'admin/ai-assistant/agents': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/draft-agent': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda — devuelve un borrador de agente y no persiste nada' },
-  'admin/ai-assistant/memory/search': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda — la memoria vive bajo un tenant unico (`default`)' },
-  'admin/ai-assistant/proposals/generate': { state: 'not-applicable', reason: 'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda' },
-  'admin/ai-assistant/agents/[id]': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/agents/[id]/documents': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/keys': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/mcp-servers': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/mcp-servers/[id]': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/memory': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/memory/[id]': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/proposals': { state: 'not-applicable', reason: 'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda' },
-  'admin/ai-assistant/proposals/[id]': { state: 'not-applicable', reason: 'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda' },
-  'admin/ai-assistant/runs': { state: 'not-applicable', reason: 'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda' },
-  'admin/ai-assistant/runs/[id]': { state: 'not-applicable', reason: 'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda' },
-  'admin/ai-assistant/skills': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/skills/[id]': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/threads': { state: 'not-applicable', reason: 'herramienta interna del operador: el hilo ya esta acotado por created_by, que es el eje correcto para algo personal — la tienda no aplica' },
-  'admin/ai-assistant/threads/[id]': { state: 'not-applicable', reason: 'herramienta interna del operador: el hilo ya esta acotado por created_by, que es el eje correcto para algo personal — la tienda no aplica' },
-  'admin/ai-assistant/threads/[id]/campaign': { state: 'not-applicable', reason: 'herramienta interna del operador: el hilo ya esta acotado por created_by, que es el eje correcto para algo personal — la tienda no aplica' },
-  'admin/ai-assistant/tools': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/workflows': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/workflows/[id]': { state: 'not-applicable', reason: 'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda' },
-  'admin/ai-assistant/workflows/runs': { state: 'not-applicable', reason: 'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda' },
-  'admin/ai-assistant/workflows/runs/[runId]': { state: 'not-applicable', reason: 'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda' },
+  'admin/ai-assistant/agents': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/draft-agent': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda — devuelve un borrador de agente y no persiste nada',
+  },
+  'admin/ai-assistant/memory/search': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda — la memoria vive bajo un tenant unico (`default`)',
+  },
+  'admin/ai-assistant/proposals/generate': {
+    state: 'not-applicable',
+    reason:
+      'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda',
+  },
+  'admin/ai-assistant/agents/[id]': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/agents/[id]/documents': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/keys': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/mcp-servers': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/mcp-servers/[id]': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/memory': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/memory/[id]': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/proposals': {
+    state: 'not-applicable',
+    reason:
+      'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda',
+  },
+  'admin/ai-assistant/proposals/[id]': {
+    state: 'not-applicable',
+    reason:
+      'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda',
+  },
+  'admin/ai-assistant/runs': {
+    state: 'not-applicable',
+    reason:
+      'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda',
+  },
+  'admin/ai-assistant/runs/[id]': {
+    state: 'not-applicable',
+    reason:
+      'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda',
+  },
+  'admin/ai-assistant/skills': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/skills/[id]': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/threads': {
+    state: 'not-applicable',
+    reason:
+      'herramienta interna del operador: el hilo ya esta acotado por created_by, que es el eje correcto para algo personal — la tienda no aplica',
+  },
+  'admin/ai-assistant/threads/[id]': {
+    state: 'not-applicable',
+    reason:
+      'herramienta interna del operador: el hilo ya esta acotado por created_by, que es el eje correcto para algo personal — la tienda no aplica',
+  },
+  'admin/ai-assistant/threads/[id]/campaign': {
+    state: 'not-applicable',
+    reason:
+      'herramienta interna del operador: el hilo ya esta acotado por created_by, que es el eje correcto para algo personal — la tienda no aplica',
+  },
+  'admin/ai-assistant/tools': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/workflows': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/workflows/[id]': {
+    state: 'not-applicable',
+    reason:
+      'configuracion del propio asistente (agentes, skills, tools, MCP): opera sobre la instancia entera, no sobre una tienda',
+  },
+  'admin/ai-assistant/workflows/runs': {
+    state: 'not-applicable',
+    reason:
+      'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda',
+  },
+  'admin/ai-assistant/workflows/runs/[runId]': {
+    state: 'not-applicable',
+    reason:
+      'registro de ejecucion del asistente sobre la instancia; su eje es la corrida, no la tienda',
+  },
 
   // ── andreani ────────────────────────────────────────────────────
-  'admin/andreani/boxes': { state: 'not-applicable', reason: 'catalogo de bultos del contrato con el carrier: es del contrato, no de una tienda' },
+  'admin/andreani/boxes': {
+    state: 'not-applicable',
+    reason: 'catalogo de bultos del contrato con el carrier: es del contrato, no de una tienda',
+  },
   'admin/andreani/fulfillments': { state: 'scoped' },
-  'admin/andreani/labels': { state: 'not-applicable', reason: 'proxy al rotulo que emite Andreani por label_url/shipment_id/tracking; el dato es del carrier — mismo alcance que labels/[id]' },
+  'admin/andreani/labels': {
+    state: 'not-applicable',
+    reason:
+      'proxy al rotulo que emite Andreani por label_url/shipment_id/tracking; el dato es del carrier — mismo alcance que labels/[id]',
+  },
   // Los DOS bulks pasaron de invisibles a `scoped` en el repaso del punto ciego:
   // tienen verbo de mutacion, no tienen GET y no tienen ningun `[param]`, asi que
   // ninguno de los tres ratchets los miraba. `labels/bulk` prometia en su cabecera
@@ -91,9 +206,15 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   // los envios de TODAS las tiendas. `tickets/bulk` es peor porque escribe afuera:
   // crea envios REALES y facturables con los `order_ids` del body.
   'admin/andreani/labels/bulk': { state: 'scoped' },
-  'admin/andreani/labels/[id]': { state: 'not-applicable', reason: 'proxy al rotulo que emite Andreani por shipment_id; el dato es del carrier' },
+  'admin/andreani/labels/[id]': {
+    state: 'not-applicable',
+    reason: 'proxy al rotulo que emite Andreani por shipment_id; el dato es del carrier',
+  },
   'admin/andreani/tickets/bulk': { state: 'scoped' },
-  'admin/andreani/tracking/[tracking_number]': { state: 'not-applicable', reason: 'proxy al tracking de Andreani; el dato es del carrier, no nuestro' },
+  'admin/andreani/tracking/[tracking_number]': {
+    state: 'not-applicable',
+    reason: 'proxy al tracking de Andreani; el dato es del carrier, no nuestro',
+  },
 
   // ── banners ─────────────────────────────────────────────────────
   // Las tres de IA generan para un banner que ES de la tienda activa, asi que
@@ -177,26 +298,43 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   // con `getCorreoClientsForSite` para esa misma tienda: si una mitad mirara la
   // instancia, el health check se contradiria solo.
   'admin/correo-argentino/health': { state: 'scoped' },
-  'admin/correo-argentino/labels': { state: 'not-applicable', reason: 'proxy al rotulo que emite Correo Argentino por tracking number; el dato es del carrier — mismo alcance que labels/[id]' },
+  'admin/correo-argentino/labels': {
+    state: 'not-applicable',
+    reason:
+      'proxy al rotulo que emite Correo Argentino por tracking number; el dato es del carrier — mismo alcance que labels/[id]',
+  },
   // Los dos bulks, igual que en Andreani: `labels/bulk` seleccionaba fulfillments de
   // todas las tiendas aunque la tabla que el operador miro estuviera filtrada, y
   // `tickets/bulk` creaba envios facturables con `order_ids` del body sin chequear
   // de quien son. Los dos entraron por el punto ciego: mutan, no tienen GET y no
   // tienen `[param]`.
   'admin/correo-argentino/labels/bulk': { state: 'scoped' },
-  'admin/correo-argentino/labels/[id]': { state: 'not-applicable', reason: 'proxy al rotulo que emite Correo Argentino; el dato es del carrier' },
+  'admin/correo-argentino/labels/[id]': {
+    state: 'not-applicable',
+    reason: 'proxy al rotulo que emite Correo Argentino; el dato es del carrier',
+  },
   'admin/correo-argentino/tickets/bulk': { state: 'scoped' },
-  'admin/correo-argentino/tracking/[tracking_number]': { state: 'not-applicable', reason: 'proxy al tracking de Correo Argentino; el dato es del carrier' },
+  'admin/correo-argentino/tracking/[tracking_number]': {
+    state: 'not-applicable',
+    reason: 'proxy al tracking de Correo Argentino; el dato es del carrier',
+  },
 
   // ── customers ───────────────────────────────────────────────────
-  'admin/customers/[id]/billing-profiles': { state: 'not-applicable', reason: 'los customers de Medusa no tienen ningún eje de canal ni de región' },
+  'admin/customers/[id]/billing-profiles': {
+    state: 'not-applicable',
+    reason: 'los customers de Medusa no tienen ningún eje de canal ni de región',
+  },
 
   // ── database-explorer ───────────────────────────────────────────
   // Moved to @minimalart/mercatto-plugin-database-explorer. The plugin owns
   // all /admin/database-explorer/* routes; all remain not-applicable by design.
 
   // ── debug ───────────────────────────────────────────────────────
-  'admin/debug/heap-snapshot': { state: 'not-applicable', reason: 'volca el heap del PROCESO de Node y lo sube a Spaces; su eje es el contenedor, no la tienda — ademas esta apagada salvo que exista DEBUG_HEAP_TOKEN' },
+  'admin/debug/heap-snapshot': {
+    state: 'not-applicable',
+    reason:
+      'volca el heap del PROCESO de Node y lo sube a Spaces; su eje es el contenedor, no la tienda — ademas esta apagada salvo que exista DEBUG_HEAP_TOKEN',
+  },
 
   // ── delivery ────────────────────────────────────────────────────
   'admin/delivery/analytics': { state: 'scoped' },
@@ -229,6 +367,12 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   // Dynamic groups — routes moved to @minimalart/mercatto-plugin-dynamic-groups.
 
   // ── email-templates ─────────────────────────────────────────────
+  // El eje NO se toma del request: sale de la ORDEN. El GET lee su sucursal
+  // elegida y el POST manda el `sales_channel_id` de esa orden en la
+  // notificación, así que un admin de otra tienda que forzara el id igual
+  // dispararía el mail con el branding de la tienda DUEÑA del pedido, no de la
+  // suya. Por eso `scoped` y no `not-applicable`.
+  'admin/orders/[id]/ready-for-pickup': { state: 'scoped' },
   'admin/email-templates': { state: 'scoped' },
   'admin/email-templates/[id]': { state: 'scoped' },
   // Los envíos REALES de la plantilla. Doble eje, porque hacen falta los dos:
@@ -238,32 +382,120 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   // desde todas y sin el segundo filtro entregaría los mails de los clientes de otra.
   'admin/email-templates/[id]/sends': { state: 'scoped' },
 
+  // ── price-lists ─────────────────────────────────────────────────
+  'admin/price-lists/[id]/sales-channel-rule': {
+    state: 'not-applicable',
+    reason:
+      'price lists are global to the Medusa instance and not scoped to a site; the rule assigns one or more sales channels to a price list for channel-scoped pricing — the eje is the price list, not the active site',
+  },
+
   // ── erp ─────────────────────────────────────────────────────────
-  'admin/erp/catalog-sync/run': { state: 'not-applicable', reason: 'corridas de sincronizacion contra el ERP unico de la instancia' },
-  'admin/erp/config/lookups': { state: 'not-applicable', reason: 'Consulta los códigos de la cuenta ERP única de la instalación mediante getConfig; no consulta recursos de una tienda.' },
-  'admin/erp/config': { state: 'not-applicable', reason: 'conexion al ERP de la empresa: es un sistema por instalacion, no por tienda' },
-  'admin/erp/invoices/[id]/download': { state: 'not-applicable', reason: 'comprobante emitido por el ERP unico de la instancia; el eje es la orden, no la tienda' },
-  'admin/erp/orders/[id]': { state: 'not-applicable', reason: 'estado de facturacion de UNA orden en el ERP unico de la instancia; el eje es la orden' },
-  'admin/erp/outbox-events': { state: 'not-applicable', reason: 'cola de salida hacia el ERP unico de la instancia' },
-  'admin/erp/price-lists': { state: 'not-applicable', reason: 'listas de precios que vienen del ERP unico de la instancia' },
-  'admin/erp/sync-logs': { state: 'not-applicable', reason: 'corridas de sincronizacion contra el ERP unico de la instancia' },
+  'admin/erp/catalog-sync/run': {
+    state: 'not-applicable',
+    reason: 'corridas de sincronizacion contra el ERP unico de la instancia',
+  },
+  'admin/erp/config/lookups': {
+    state: 'not-applicable',
+    reason:
+      'Consulta los códigos de la cuenta ERP única de la instalación mediante getConfig; no consulta recursos de una tienda.',
+  },
+  'admin/erp/config': {
+    state: 'not-applicable',
+    reason: 'conexion al ERP de la empresa: es un sistema por instalacion, no por tienda',
+  },
+  'admin/erp/config/reset-image-failures': {
+    state: 'not-applicable',
+    reason:
+      'Limpia el mapa de fallas de bajada de imagenes del ERP unico de la instalacion; no toca datos de una tienda.',
+  },
+  'admin/erp/invoices/[id]/download': {
+    state: 'not-applicable',
+    reason:
+      'comprobante emitido por el ERP unico de la instancia; el eje es la orden, no la tienda',
+  },
+  'admin/erp/orders/[id]': {
+    state: 'not-applicable',
+    reason:
+      'estado de facturacion de UNA orden en el ERP unico de la instancia; el eje es la orden',
+  },
+  'admin/erp/outbox-events': {
+    state: 'not-applicable',
+    reason: 'cola de salida hacia el ERP unico de la instancia',
+  },
+  'admin/erp/outbox-events/[id]/preview': {
+    state: 'not-applicable',
+    reason:
+      'documento de UNA venta de esa misma cola hacia el ERP unico de la instancia; solo lectura, el eje es el evento',
+  },
+  'admin/erp/outbox-events/resync': {
+    state: 'not-applicable',
+    reason:
+      'reenvia ventas de esa misma cola al ERP unico de la instancia; opera sobre erp_outbox_event y la configuracion que resuelve getConfig(), que son por instalacion y no por tienda',
+  },
+  'admin/erp/unregistered-orders': {
+    state: 'not-applicable',
+    reason:
+      'ordenes que faltan en esa misma cola del ERP unico de la instancia; el cruce es contra erp_outbox_event y el trigger de getConfig(), que son por instalacion',
+  },
+  'admin/erp/price-lists': {
+    state: 'not-applicable',
+    reason: 'listas de precios que vienen del ERP unico de la instancia',
+  },
+  'admin/erp/sync-logs': {
+    state: 'not-applicable',
+    reason: 'corridas de sincronizacion contra el ERP unico de la instancia',
+  },
   'admin/erp/sync-logs/[id]': { state: 'not-applicable', reason: 'idem sync-logs' },
-  'admin/erp/stock-sync/run': { state: 'not-applicable', reason: 'corridas de sincronizacion contra el ERP unico de la instancia' },
+  'admin/erp/stock-sync/run': {
+    state: 'not-applicable',
+    reason: 'corridas de sincronizacion contra el ERP unico de la instancia',
+  },
   'admin/erp/sync-logs/[id]/items': { state: 'not-applicable', reason: 'idem sync-logs' },
-  'admin/erp/tinting': { state: 'not-applicable', reason: 'configuracion de tintometria del ERP unico de la instancia' },
-  'admin/erp/tinting/bases/confirm': { state: 'not-applicable', reason: 'configuracion de tintometria del ERP unico de la instancia: la data maestra (bases, cartas, formulas) viene del fabricante y es la misma para toda la instalacion' },
-  'admin/erp/tinting/bases/detect': { state: 'not-applicable', reason: 'configuracion de tintometria del ERP unico de la instancia: la data maestra (bases, cartas, formulas) viene del fabricante y es la misma para toda la instalacion' },
+  'admin/erp/tinting': {
+    state: 'not-applicable',
+    reason: 'configuracion de tintometria del ERP unico de la instancia',
+  },
+  'admin/erp/tinting/bases/confirm': {
+    state: 'not-applicable',
+    reason:
+      'configuracion de tintometria del ERP unico de la instancia: la data maestra (bases, cartas, formulas) viene del fabricante y es la misma para toda la instalacion',
+  },
+  'admin/erp/tinting/bases/detect': {
+    state: 'not-applicable',
+    reason:
+      'configuracion de tintometria del ERP unico de la instancia: la data maestra (bases, cartas, formulas) viene del fabricante y es la misma para toda la instalacion',
+  },
   // La UNICA del subarbol de tintometria con eje de tienda de verdad, y por eso no
   // hereda el `not-applicable` de sus hermanas: da de alta PRODUCTOS y elige en que
   // canales se publican con un `sales_channel_ids` que llega del body. Se valida,
   // NO se sobrescribe: un `siteDefaults` acá convertiria en silencio un alta
   // multi-canal deliberada en una de un solo canal.
   'admin/erp/tinting/bases/sync-products': { state: 'scoped' },
-  'admin/erp/tinting/colors': { state: 'not-applicable', reason: 'configuracion de tintometria del ERP unico de la instancia: la data maestra (bases, cartas, formulas) viene del fabricante y es la misma para toda la instalacion' },
-  'admin/erp/tinting/formulas': { state: 'not-applicable', reason: 'configuracion de tintometria del ERP unico de la instancia: la data maestra (bases, cartas, formulas) viene del fabricante y es la misma para toda la instalacion' },
-  'admin/erp/tinting/import': { state: 'not-applicable', reason: 'configuracion de tintometria del ERP unico de la instancia: la data maestra (bases, cartas, formulas) viene del fabricante y es la misma para toda la instalacion' },
-  'admin/erp/tinting/price-probe': { state: 'not-applicable', reason: 'sonda de precio contra el ERP unico de la instancia: pregunta cuanto sale entonar un articulo, no escribe nada propio' },
-  'admin/erp/validate-connection': { state: 'not-applicable', reason: 'prueba las credenciales del ERP unico de la instancia y anota el resultado en su config; no hay credencial de ERP por tienda' },
+  'admin/erp/tinting/colors': {
+    state: 'not-applicable',
+    reason:
+      'configuracion de tintometria del ERP unico de la instancia: la data maestra (bases, cartas, formulas) viene del fabricante y es la misma para toda la instalacion',
+  },
+  'admin/erp/tinting/formulas': {
+    state: 'not-applicable',
+    reason:
+      'configuracion de tintometria del ERP unico de la instancia: la data maestra (bases, cartas, formulas) viene del fabricante y es la misma para toda la instalacion',
+  },
+  'admin/erp/tinting/import': {
+    state: 'not-applicable',
+    reason:
+      'configuracion de tintometria del ERP unico de la instancia: la data maestra (bases, cartas, formulas) viene del fabricante y es la misma para toda la instalacion',
+  },
+  'admin/erp/tinting/price-probe': {
+    state: 'not-applicable',
+    reason:
+      'sonda de precio contra el ERP unico de la instancia: pregunta cuanto sale entonar un articulo, no escribe nada propio',
+  },
+  'admin/erp/validate-connection': {
+    state: 'not-applicable',
+    reason:
+      'prueba las credenciales del ERP unico de la instancia y anota el resultado en su config; no hay credencial de ERP por tienda',
+  },
 
   // ── fiscal-documents ────────────────────────────────────────────
   'admin/fiscal-documents': { state: 'scoped' },
@@ -279,15 +511,27 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   'admin/gift-card-experience/deliveries': { state: 'scoped' },
   'admin/gift-card-experience/deliveries/[id]': { state: 'scoped' },
   'admin/gift-card-experience/designs': { state: 'scoped' },
-  'admin/gift-card-experience/permissions': { state: 'not-applicable', reason: 'devuelve los permisos del USUARIO admin autenticado (actor_id): su eje es el actor, no la tienda — el mismo criterio por el que los hilos del asistente van por created_by' },
+  'admin/gift-card-experience/permissions': {
+    state: 'not-applicable',
+    reason:
+      'devuelve los permisos del USUARIO admin autenticado (actor_id): su eje es el actor, no la tienda — el mismo criterio por el que los hilos del asistente van por created_by',
+  },
   'admin/gift-card-experience/settings': { state: 'scoped' },
 
   // ── kapso ───────────────────────────────────────────────────────
   'admin/kapso/bindings': { state: 'scoped' },
   'admin/kapso/bot-channels': { state: 'scoped' },
   'admin/kapso/floating-button': { state: 'scoped' },
-  'admin/kapso/inbox-embed': { state: 'not-applicable', reason: 'la config del bot y las credenciales YA son por tienda; templates lista las plantillas aprobadas en la WABA del proveedor (dato de Kapso, no nuestro) e inbox-embed es el iframe de su bandeja' },
-  'admin/kapso/templates': { state: 'not-applicable', reason: 'la config del bot y las credenciales YA son por tienda; templates lista las plantillas aprobadas en la WABA del proveedor (dato de Kapso, no nuestro) e inbox-embed es el iframe de su bandeja' },
+  'admin/kapso/inbox-embed': {
+    state: 'not-applicable',
+    reason:
+      'la config del bot y las credenciales YA son por tienda; templates lista las plantillas aprobadas en la WABA del proveedor (dato de Kapso, no nuestro) e inbox-embed es el iframe de su bandeja',
+  },
+  'admin/kapso/templates': {
+    state: 'not-applicable',
+    reason:
+      'la config del bot y las credenciales YA son por tienda; templates lista las plantillas aprobadas en la WABA del proveedor (dato de Kapso, no nuestro) e inbox-embed es el iframe de su bandeja',
+  },
 
   // ── landing-pages ───────────────────────────────────────────────
   'admin/landing-pages': { state: 'scoped' },
@@ -295,7 +539,11 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
 
   // ── loyalty ─────────────────────────────────────────────────────
   'admin/loyalty/campaigns': { state: 'scoped' },
-  'admin/loyalty/customers/[id]': { state: 'not-applicable', reason: 'points_account tiene UNA cuenta por cliente en toda la instancia, y es deliberado: partir el saldo por tienda dividiria en dos el de un cliente que ya compro en las dos, y esa plata es del cliente. Lo que si tiene tienda son los MOVIMIENTOS, que ya filtran' },
+  'admin/loyalty/customers/[id]': {
+    state: 'not-applicable',
+    reason:
+      'points_account tiene UNA cuenta por cliente en toda la instancia, y es deliberado: partir el saldo por tienda dividiria en dos el de un cliente que ya compro en las dos, y esa plata es del cliente. Lo que si tiene tienda son los MOVIMIENTOS, que ya filtran',
+  },
   'admin/loyalty/dashboard': { state: 'scoped' },
   'admin/loyalty/grants': { state: 'scoped' },
   'admin/loyalty/movements': { state: 'scoped' },
@@ -308,7 +556,10 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   'admin/loyalty/tiers': { state: 'scoped' },
 
   // ── maintenance ─────────────────────────────────────────────────
-  'admin/maintenance/carrefour-backfill': { state: 'not-applicable', reason: 'operación de la instancia' },
+  'admin/maintenance/carrefour-backfill': {
+    state: 'not-applicable',
+    reason: 'operación de la instancia',
+  },
 
   // ── media-library ───────────────────────────────────────────────
   // media-library — routes moved to @minimalart/mercatto-plugin-media-library.
@@ -328,16 +579,32 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   // pdf-catalogs — routes moved to @minimalart/mercatto-plugin-pdf-catalog.
 
   // ── platform ────────────────────────────────────────────────────
-  'admin/platform/catalog': { state: 'not-applicable', reason: 'registro del proyecto contra la plataforma Mercatto: es de la instancia, no de una tienda' },
-  'admin/platform/change-requests': { state: 'not-applicable', reason: 'registro del proyecto contra la plataforma Mercatto: es de la instancia, no de una tienda' },
-  'admin/platform/extensions': { state: 'not-applicable', reason: 'registro del proyecto contra la plataforma Mercatto: es de la instancia, no de una tienda' },
+  'admin/platform/catalog': {
+    state: 'not-applicable',
+    reason:
+      'registro del proyecto contra la plataforma Mercatto: es de la instancia, no de una tienda',
+  },
+  'admin/platform/change-requests': {
+    state: 'not-applicable',
+    reason:
+      'registro del proyecto contra la plataforma Mercatto: es de la instancia, no de una tienda',
+  },
+  'admin/platform/extensions': {
+    state: 'not-applicable',
+    reason:
+      'registro del proyecto contra la plataforma Mercatto: es de la instancia, no de una tienda',
+  },
 
   // ── recommendations ─────────────────────────────────────────────
   // Las tres corridas del motor agregan/recomputan POR canal para toda la
   // instalacion y son idempotentes; las lecturas hermanas (`performance`,
   // `versions`) ya filtran. `seed` crea las estrategias y placements por defecto
   // SIN canal a proposito: `NULL` = global, que es lo que el descriptor declara.
-  'admin/recommendations/aggregate': { state: 'not-applicable', reason: 'recomputo de metricas agregadas POR canal para toda la instalacion; idempotente y la lectura (performance) ya filtra' },
+  'admin/recommendations/aggregate': {
+    state: 'not-applicable',
+    reason:
+      'recomputo de metricas agregadas POR canal para toda la instalacion; idempotente y la lectura (performance) ya filtra',
+  },
   'admin/recommendations/config': { state: 'scoped' },
   'admin/recommendations/performance': { state: 'scoped' },
   'admin/recommendations/placements': { state: 'scoped' },
@@ -347,14 +614,22 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   // merchant ajustaba su placement contra un resultado que su comprador no ve.
   'admin/recommendations/preview': { state: 'scoped' },
   'admin/recommendations/products': { state: 'scoped' },
-  'admin/recommendations/rebuild': { state: 'not-applicable', reason: 'encola corridas del motor de recomputo, que trabaja sobre el catalogo de la instalacion; el drenador es unico y la corrida no tiene eje de tienda' },
+  'admin/recommendations/rebuild': {
+    state: 'not-applicable',
+    reason:
+      'encola corridas del motor de recomputo, que trabaja sobre el catalogo de la instalacion; el drenador es unico y la corrida no tiene eje de tienda',
+  },
   'admin/recommendations/relations': { state: 'scoped' },
   'admin/recommendations/relations/bulk': {
     state: 'pending',
     reason:
       'BLOQUEADA POR PRODUCTO: crear la relacion SIN canal —global, visible en todas las tiendas— es una decision deliberada y ESCRITA, no un olvido: esta en la cabecera de `RECOMMENDATION_RELATION_SITE_SCOPE` ("el POST hermano, que NO fuerza canal: una relacion creada sin canal nace global a proposito") y la comparte el POST singular de `admin/recommendations/relations`, que tampoco aplica `siteDefaults`. Ponerle el eje SOLO al bulk seria peor que dejarlo: la MISMA accion crearia global desde el form y de la tienda desde la carga masiva, y el operador no tendria como saber cual hizo cual. Se cierra decidiendo para las dos a la vez —y entonces tambien hay que decidir que pasa con las relaciones globales que ya existen—, que es una decision de producto y no de codigo',
   },
-  'admin/recommendations/seed': { state: 'not-applicable', reason: 'siembra las estrategias y placements por defecto SIN canal (NULL = todas las tiendas, que es lo que el descriptor declara con empty: all); es idempotente y no pisa lo que el merchant ya configuro' },
+  'admin/recommendations/seed': {
+    state: 'not-applicable',
+    reason:
+      'siembra las estrategias y placements por defecto SIN canal (NULL = todas las tiendas, que es lo que el descriptor declara con empty: all); es idempotente y no pisa lo que el merchant ya configuro',
+  },
   'admin/recommendations/strategies': { state: 'scoped' },
   'admin/recommendations/strategies/[id]': { state: 'scoped' },
   'admin/recommendations/versions': { state: 'scoped' },
@@ -364,7 +639,11 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   'admin/recurring-orders/[id]': { state: 'scoped' },
   'admin/recurring-orders/alerts': { state: 'scoped' },
   'admin/recurring-orders/analytics': { state: 'scoped' },
-  'admin/recurring-orders/analytics/rebuild': { state: 'not-applicable', reason: 'recomputa los snapshots por (fecha, canal) para TODOS los canales de una vez, mas la fila agregada global; es idempotente y la lectura hermana ya filtra por la tienda' },
+  'admin/recurring-orders/analytics/rebuild': {
+    state: 'not-applicable',
+    reason:
+      'recomputa los snapshots por (fecha, canal) para TODOS los canales de una vez, mas la fila agregada global; es idempotente y la lectura hermana ya filtra por la tienda',
+  },
   'admin/recurring-orders/cancellation-reasons': { state: 'scoped' },
   'admin/recurring-orders/cycles': { state: 'scoped' },
   'admin/recurring-orders/export': { state: 'scoped' },
@@ -374,8 +653,18 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   'admin/recurring-orders/plans/[plan_id]': { state: 'scoped' },
   'admin/recurring-orders/settings': { state: 'scoped' },
 
+  // ── branch-types ────────────────────────────────────────────────
+  'admin/branch-types': {
+    state: 'not-applicable',
+    reason:
+      'devuelve los tipos de sucursal de las tiendas de los canales que le pasan; el scope es esa lista de canales, no la tienda activa, porque una sucursal puede estar publicada en varias',
+  },
+
   // ── sales-channels-b2c ──────────────────────────────────────────
-  'admin/sales-channels-b2c': { state: 'not-applicable', reason: 'lista los canales; es la fuente que alimenta al propio selector' },
+  'admin/sales-channels-b2c': {
+    state: 'not-applicable',
+    reason: 'lista los canales; es la fuente que alimenta al propio selector',
+  },
 
   // ── seo-geo ─────────────────────────────────────────────────────
   'admin/seo-geo/ai-visibility': { state: 'scoped' },
@@ -407,12 +696,24 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   'admin/site-credentials': { state: 'scoped' },
 
   // ── site-templates ──────────────────────────────────────────────
-  'admin/site-templates': { state: 'not-applicable', reason: 'catálogo de plantillas de la instancia' },
+  'admin/site-templates': {
+    state: 'not-applicable',
+    reason: 'catálogo de plantillas de la instancia',
+  },
 
   // ── sites ───────────────────────────────────────────────────────
-  'admin/sites': { state: 'not-applicable', reason: 'ES el registro de tiendas; scoparlo lo volvería inutilizable' },
-  'admin/sites/[id]': { state: 'not-applicable', reason: 'ES el registro de tiendas; scoparlo lo volvería inutilizable' },
-  'admin/sites/[id]/import-job': { state: 'not-applicable', reason: 'ES el registro de tiendas; scoparlo lo volvería inutilizable' },
+  'admin/sites': {
+    state: 'not-applicable',
+    reason: 'ES el registro de tiendas; scoparlo lo volvería inutilizable',
+  },
+  'admin/sites/[id]': {
+    state: 'not-applicable',
+    reason: 'ES el registro de tiendas; scoparlo lo volvería inutilizable',
+  },
+  'admin/sites/[id]/import-job': {
+    state: 'not-applicable',
+    reason: 'ES el registro de tiendas; scoparlo lo volvería inutilizable',
+  },
 
   // ── store-config ────────────────────────────────────────────────
   'admin/store-config/ai-config': { state: 'scoped' },
@@ -420,9 +721,16 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   // moneda soportada del Store de Medusa y la region del pais, que son de la
   // instalacion. La config por tienda es `context`, que si es `scoped`. Ponerles el
   // eje partiria en N el Store unico que Medusa tiene.
-  'admin/store-config/commerce/apply': { state: 'not-applicable', reason: 'configuracion de comercio de la INSTANCIA: moneda soportada del Store unico de Medusa y region del pais. La region POR tienda la crea provision.ts aparte' },
+  'admin/store-config/commerce/apply': {
+    state: 'not-applicable',
+    reason:
+      'configuracion de comercio de la INSTANCIA: moneda soportada del Store unico de Medusa y region del pais. La region POR tienda la crea provision.ts aparte',
+  },
   'admin/store-config/commerce/context': { state: 'scoped' },
-  'admin/store-config/commerce/plan': { state: 'not-applicable', reason: 'el dry-run de commerce/apply: mismo alcance de instancia, y ademas no escribe nada' },
+  'admin/store-config/commerce/plan': {
+    state: 'not-applicable',
+    reason: 'el dry-run de commerce/apply: mismo alcance de instancia, y ademas no escribe nada',
+  },
   'admin/store-config/email-branding': { state: 'scoped' },
   // GET y POST resuelven la tienda con `siteFromRequest` y el upsert escribe con ella:
   // se lee y se escribe la MISMA capa (la propia, o la global si la tienda no tiene).
@@ -447,30 +755,78 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   // contadores de la principal) y dejaba la propia intacta.
   'admin/typesense/analytics/init': { state: 'scoped' },
   'admin/typesense/analytics/reset': { state: 'scoped' },
-  'admin/typesense/collections': { state: 'not-applicable', reason: 'lista TODAS las colecciones del cluster para administrarlas; el eje por tienda lo resuelve collections/default, que ya devuelve la de la tienda activa' },
+  'admin/typesense/collections': {
+    state: 'not-applicable',
+    reason:
+      'lista TODAS las colecciones del cluster para administrarlas; el eje por tienda lo resuelve collections/default, que ya devuelve la de la tienda activa',
+  },
   'admin/typesense/collections/[id]': { state: 'scoped' },
   'admin/typesense/collections/default': { state: 'scoped' },
-  'admin/typesense/config': { state: 'not-applicable', reason: 'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen' },
+  'admin/typesense/config': {
+    state: 'not-applicable',
+    reason:
+      'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen',
+  },
   'admin/typesense/curations': { state: 'scoped' },
   'admin/typesense/curations/[id]': { state: 'scoped' },
-  'admin/typesense/last-sync': { state: 'not-applicable', reason: 'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen' },
-  'admin/typesense/presets': { state: 'not-applicable', reason: 'en Typesense los stopwords y los presets son del CLUSTER, no de la coleccion: no se pueden separar por tienda ni aunque haya colecciones distintas' },
+  'admin/typesense/last-sync': {
+    state: 'not-applicable',
+    reason:
+      'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen',
+  },
+  'admin/typesense/presets': {
+    state: 'not-applicable',
+    reason:
+      'en Typesense los stopwords y los presets son del CLUSTER, no de la coleccion: no se pueden separar por tienda ni aunque haya colecciones distintas',
+  },
   // Mismo eje que curaciones y sinonimos —la COLECCION, no una fila—: pegaba
   // siempre contra la global, asi que el buscador del backoffice mostraba productos
   // que el storefront de esa tienda no indexa. El `collectionName` explicito del
   // body sigue ganando: esta ruta tambien sirve para inspeccionar una cualquiera
   // del cluster desde la pantalla de colecciones.
   'admin/typesense/search': { state: 'scoped' },
-  'admin/typesense/presets/[id]': { state: 'not-applicable', reason: 'en Typesense los stopwords y los presets son del CLUSTER, no de la coleccion: no se pueden separar por tienda ni aunque haya colecciones distintas' },
-  'admin/typesense/stopwords': { state: 'not-applicable', reason: 'en Typesense los stopwords y los presets son del CLUSTER, no de la coleccion: no se pueden separar por tienda ni aunque haya colecciones distintas' },
-  'admin/typesense/stopwords/[id]': { state: 'not-applicable', reason: 'en Typesense los stopwords y los presets son del CLUSTER, no de la coleccion: no se pueden separar por tienda ni aunque haya colecciones distintas' },
-  'admin/typesense/sync': { state: 'not-applicable', reason: 'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen' },
-  'admin/typesense/sync-logs': { state: 'not-applicable', reason: 'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen' },
-  'admin/typesense/sync-logs/[id]': { state: 'not-applicable', reason: 'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen' },
-  'admin/typesense/sync-logs/[id]/items': { state: 'not-applicable', reason: 'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen' },
+  'admin/typesense/presets/[id]': {
+    state: 'not-applicable',
+    reason:
+      'en Typesense los stopwords y los presets son del CLUSTER, no de la coleccion: no se pueden separar por tienda ni aunque haya colecciones distintas',
+  },
+  'admin/typesense/stopwords': {
+    state: 'not-applicable',
+    reason:
+      'en Typesense los stopwords y los presets son del CLUSTER, no de la coleccion: no se pueden separar por tienda ni aunque haya colecciones distintas',
+  },
+  'admin/typesense/stopwords/[id]': {
+    state: 'not-applicable',
+    reason:
+      'en Typesense los stopwords y los presets son del CLUSTER, no de la coleccion: no se pueden separar por tienda ni aunque haya colecciones distintas',
+  },
+  'admin/typesense/sync': {
+    state: 'not-applicable',
+    reason:
+      'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen',
+  },
+  'admin/typesense/sync-logs': {
+    state: 'not-applicable',
+    reason:
+      'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen',
+  },
+  'admin/typesense/sync-logs/[id]': {
+    state: 'not-applicable',
+    reason:
+      'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen',
+  },
+  'admin/typesense/sync-logs/[id]/items': {
+    state: 'not-applicable',
+    reason:
+      'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen',
+  },
   'admin/typesense/synonyms': { state: 'scoped' },
   'admin/typesense/synonyms/[id]': { state: 'scoped' },
-  'admin/typesense/test': { state: 'not-applicable', reason: 'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen' },
+  'admin/typesense/test': {
+    state: 'not-applicable',
+    reason:
+      'el cluster de Typesense es UNO por instancia: conexion, sonda y job de indexado no tienen eje de tienda ni aunque las colecciones se separen',
+  },
 
   // ── videos / vimeo ──────────────────────────────────────────────
   // Routes moved to @minimalart/mercatto-plugin-videos.
@@ -481,7 +837,17 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
 
   // ── whatsapp-analytics ──────────────────────────────────────────
   'admin/whatsapp-analytics': { state: 'scoped' },
+  'admin/whatsapp-flows': { state: 'scoped' },
+  'admin/whatsapp-flows/publish': { state: 'scoped' },
+  'admin/whatsapp-flows/seed': { state: 'scoped' },
+  'admin/whatsapp-flows/analytics': { state: 'scoped' },
+  'admin/whatsapp-flows/versions/[id]': { state: 'scoped' },
+  'admin/whatsapp-sessions': { state: 'scoped' },
 
   // ── whatsapp-conversations ──────────────────────────────────────
-  'admin/whatsapp-conversations': { state: 'pending', reason: 'BLOQUEADA POR PRODUCTO: whatsapp_conversation tiene phone UNIQUE en toda la instancia — una conversacion por cliente. Partirla por tienda dividiria el historial de alguien que le escribio a dos, y decidir eso es de producto. Los EVENTOS si filtran (whatsapp-analytics), que es donde esta el embudo' },
+  'admin/whatsapp-conversations': {
+    state: 'pending',
+    reason:
+      'BLOQUEADA POR PRODUCTO: whatsapp_conversation tiene phone UNIQUE en toda la instancia — una conversacion por cliente. Partirla por tienda dividiria el historial de alguien que le escribio a dos, y decidir eso es de producto. Los EVENTOS si filtran (whatsapp-analytics), que es donde esta el embudo',
+  },
 };

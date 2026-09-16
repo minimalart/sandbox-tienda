@@ -338,6 +338,48 @@ const emitOwnFleetOutForDeliveryStep = createStep(
   },
 );
 
+/**
+ * Emite `delivery.store_pickup_ready` con `{ order_id }` cuando un retiro en
+ * tienda llega al local y queda esperando al comprador. Lo consume el subscriber
+ * que manda el mail "tu pedido está listo para retirar" (DESDEELSUR-68).
+ *
+ * `at_pickup_point` ya significaba exactamente esto —"el paquete llegó al punto
+ * y espera retiro", ver DELIVERY_TRANSITIONS— así que no hace falta un estado
+ * nuevo: alcanza con avisar que se cruzó.
+ *
+ * Gatea por `provider_type === 'store_pickup'` a propósito. Andreani también
+ * pasa por `at_pickup_point` cuando deja el paquete en una sucursal SUYA, y ahí
+ * el comprador no retira de un local nuestro: mandarle este mail sería mandarlo
+ * a la dirección equivocada.
+ *
+ * Best-effort, igual que su gemelo de flota propia: el mail no puede romper la
+ * transición, y el destinatario final vuelve a gatear por idempotencia con
+ * `order.metadata.ready_for_pickup_at`.
+ */
+const emitStorePickupReadyStep = createStep(
+  'emit-store-pickup-ready',
+  async (input: { order_id: string }, { container }) => {
+    const logger = container.resolve<Logger>('logger');
+    try {
+      const eventBus = container.resolve<IEventBusModuleService>(Modules.EVENT_BUS);
+      await eventBus.emit({
+        name: 'delivery.store_pickup_ready',
+        data: { order_id: input.order_id },
+      });
+      logger.info(
+        `[transition-delivery-execution] Evento delivery.store_pickup_ready emitido para la orden ${input.order_id}`,
+      );
+      return new StepResponse({ emitted: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.warn(
+        `[transition-delivery-execution] No se pudo emitir delivery.store_pickup_ready para la orden ${input.order_id} (la transición se aplicó OK): ${message}`,
+      );
+      return new StepResponse({ emitted: false });
+    }
+  },
+);
+
 // --- Workflow ---
 
 export const transitionDeliveryExecutionWorkflow = createWorkflow(
@@ -413,6 +455,29 @@ export const transitionDeliveryExecutionWorkflow = createWorkflow(
       }));
 
       emitOwnFleetOutForDeliveryStep(ownFleetInput);
+    });
+
+    // 3a-ter) Avisar "listo para retirar" SOLO en retiro en tienda, cuando la
+    // ejecución llega al local.
+    //
+    // A diferencia del aviso de flota propia de arriba, este NO se gatea con
+    // `!already_shipped`. Ese flag dice "todavía no se proyectó el envío", no
+    // "todavía no se avisó", y son dos cosas distintas: si alguien creó el
+    // shipment a mano antes de mover el estado, el `!already_shipped` daría
+    // false y el comprador no se enteraría nunca de que puede ir a buscarlo.
+    // La garantía de "una sola vez" que pide el ticket vive donde tiene que
+    // vivir —`order.metadata.ready_for_pickup_at`, que ve también el widget— y
+    // no en un flag que significa otra cosa.
+    when({ projection }, ({ projection }) =>
+      projection.to_status === 'at_pickup_point' &&
+      projection.provider_type === 'store_pickup' &&
+      Boolean(projection.order_id),
+    ).then(() => {
+      const pickupInput = transform({ projection }, ({ projection }) => ({
+        order_id: projection.order_id as string,
+      }));
+
+      emitStorePickupReadyStep(pickupInput);
     });
 
     // 3b) Proyectar delivered (markFulfillmentAsDeliveredWorkflow) solo si el

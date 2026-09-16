@@ -59,7 +59,11 @@ export default function SportsHeader({
 
   const liveCount = useCartStore(selectTotalItems);
   const openCart = useCartStore((state) => state.openCart);
-  const cartCount = liveCount || initialCartCount;
+  // El contador del server sólo vale hasta que el store hidrata: después manda
+  // el store aunque sea 0. Con `liveCount || initialCartCount` un carrito vaciado
+  // en el cliente seguía mostrando el badge viejo del payload cacheado.
+  const cartIsHydrated = useCartStore((state) => state.isHydrated);
+  const cartCount = cartIsHydrated ? liveCount : initialCartCount;
 
   // Corazón relleno cuando hay al menos un favorito.
   const { items: wishlistItems } = useWishlist();

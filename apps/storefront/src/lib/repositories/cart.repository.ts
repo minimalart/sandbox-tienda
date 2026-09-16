@@ -5,6 +5,10 @@ import { getGaClientId } from '@lib/analytics/ga-client-id'
 import type { HttpTypes } from '@medusajs/types'
 import { sanitizeCartGiftCardCodes } from '@lib/util/gift-card-cart'
 import {
+  CART_COMPLETED_AT_FIELD,
+  isCompletedCart,
+} from '@lib/util/completed-cart'
+import {
   getActiveSalesChannelId,
   getAuthHeaders,
   getCacheTag,
@@ -254,8 +258,7 @@ export async function retrieveCart(
       {
         method: 'GET',
         query: {
-          fields:
-            '+metadata, *items, *region, *items.product, +items.product.metadata, *items.product.categories, *items.variant, *items.thumbnail, *items.metadata, +items.total, *promotions, +promotions.application_method.max_quantity, *promotions.application_method.target_rules, *promotions.application_method.target_rules.values, +shipping_methods.name, *payment_collection, *payment_collection.payment_sessions, +completed_at',
+          fields: `+metadata, *items, *region, *items.product, +items.product.metadata, *items.product.categories, *items.variant, *items.thumbnail, *items.metadata, +items.total, *promotions, +promotions.application_method.max_quantity, *promotions.application_method.target_rules, *promotions.application_method.target_rules.values, +shipping_methods.name, *payment_collection, *payment_collection.payment_sessions, +${CART_COMPLETED_AT_FIELD}`,
         },
         headers,
         cache: 'no-store',
@@ -266,10 +269,12 @@ export async function retrieveCart(
     // an order already, the cookie is pointing at a consumed cart. Drop it
     // so the storefront starts fresh on the next request, and treat the
     // cart as gone for this one.
-    const completedAt = (
-      response.cart as unknown as { completed_at?: string | Date | null }
-    )?.completed_at
-    if (completedAt) {
+    //
+    // La regla vive en `util/completed-cart.ts` porque estaba escrita SOLO acá:
+    // la otra implementación de `retrieveCart` (`data/cart.ts`) ni pedía el
+    // campo, y era la que alimentaba el layout, `/cart` y el botón del header
+    // (BUG-08).
+    if (isCompletedCart(response.cart)) {
       await removeCartId()
       return null
     }
@@ -1535,5 +1540,82 @@ export async function clearCart(): Promise<void> {
   removeCartId()
   const cartCacheTag = await getCacheTag('carts')
   revalidateTag(cartCacheTag, 'max')
+}
+
+/**
+ * Vacía DE VERDAD el carrito: borra sus line items en el backend.
+ *
+ * ── POR QUÉ EXISTE ───────────────────────────────────────────────────────────
+ *
+ * "Vaciar carrito" borraba sólo la cookie (`removeCartId`). Para el comprador el
+ * carrito quedaba vacío —la próxima visita arranca uno nuevo—, pero el carrito
+ * viejo seguía vivo en Medusa con TODOS sus productos, su email y
+ * `completed_at: null`. O sea: vaciar no vaciaba nada, ABANDONABA el carrito.
+ *
+ * Y un carrito con items, con email y sin completar es exactamente la definición
+ * de carrito abandonado, así que el cron lo detectaba y le mandaba a la persona
+ * "te quedaron productos en el carrito" — con el carrito vacío en pantalla
+ * (DESDEELSUR-61, BUG-17).
+ *
+ * El chequeo del plugin de carrito abandonado NO estaba roto: relee el carrito
+ * antes de enviar y se saltea si está vacío. Estaba mirando un carrito que
+ * REALMENTE tenía items. El bug siempre estuvo de este lado.
+ *
+ * ── DETALLES ─────────────────────────────────────────────────────────────────
+ *
+ * Secuencial y no en paralelo: cada borrado hace que Medusa recalcule los totales
+ * del carrito, y mandarlos todos juntos pone varias escrituras sobre la misma fila.
+ * Un carrito tiene unas pocas líneas; no vale la pena arriesgar por esa latencia.
+ *
+ * Si algún borrado falla se devuelve `success: false` con las que quedaron: quien
+ * llama tiene que poder revertir el vaciado optimista de la UI en vez de mostrar un
+ * carrito vacío que en el servidor no lo está — que es el mismo desfasaje que
+ * causó este bug.
+ */
+export async function emptyCartLineItems(): Promise<CartResult> {
+  const cartId = await getCartId()
+
+  // Sin cookie no hay nada que vaciar, y no es un error: el botón ya no debería
+  // estar visible. Se devuelve éxito para que la ruta siga y limpie igual.
+  if (!cartId) {
+    return { success: true, cart: null }
+  }
+
+  const headers = await getAuthHeaders()
+
+  try {
+    // `retrieveCart` ya resuelve el caso peligroso: pide `completed_at` y, si el
+    // carrito ya se convirtió en orden, suelta la cookie y devuelve null.
+    //
+    // UN CARRITO YA COMPRADO NO SE TOCA, y ese caso llega acá de verdad: al volver
+    // de la pasarela, las pantallas de éxito y de pago pendiente también piden
+    // 'clearCart' para soltar la cookie. Borrarle las líneas a una compra sería
+    // destructivo, y si Medusa rechazara el borrado la cookie quedaría apuntando
+    // al carrito comprado — exactamente el BUG-08. Tampoco haría falta: un carrito
+    // completado nunca se notifica como abandonado.
+    //
+    // Null también cubre "el carrito ya no existe". En los dos casos no hay nada
+    // que vaciar y la respuesta es éxito.
+    const cart = await retrieveCart(cartId)
+    if (!cart) {
+      return { success: true, cart: null }
+    }
+
+    const tenantSdk = await getMedusaSDK()
+    for (const item of cart.items ?? []) {
+      await tenantSdk.store.cart.deleteLineItem(cartId, item.id, {}, headers)
+    }
+
+    const cartCacheTag = await getCacheTag('carts')
+    revalidateTag(cartCacheTag, 'max')
+
+    return { success: true, cart: null }
+  } catch (error: any) {
+    return {
+      success: false,
+      cart: null,
+      error: error.message || 'Error emptying cart',
+    }
+  }
 }
 

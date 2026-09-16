@@ -16,6 +16,7 @@ import {
 } from '../../../lib/whatsapp/order-status';
 import { sendWhatsappText, sendWhatsappTyping } from '../../../lib/whatsapp/send-whatsapp-text';
 import { trackWaEvent } from '../../../lib/whatsapp/events';
+import { runFlowTurn } from '../../../lib/whatsapp/flow/runtime';
 import { routeInbound, sendMainMenu } from '../../../lib/whatsapp/router';
 import { AI_ASSISTANT_MODULE } from '../../../modules/ai-assistant';
 import {
@@ -357,6 +358,65 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
   // selección de la lista o un texto con intención reconocible, se resuelve acá y
   // el LLM no se llama. Antes TODO turno pasaba por el modelo, incluso los taps
   // (se traducían a un hint en lenguaje natural para que llamara la tool correcta).
+  // ── Grafo configurable ──────────────────────────────────────────────────────
+  // Va ANTES del router determinístico: es el que va a absorberlo. Mientras no
+  // haya un grafo publicado, `runFlowTurn` devuelve `handled: false` sin tocar
+  // nada y todo sigue exactamente como antes — publicar es lo único que cambia el
+  // comportamiento, y despublicar lo devuelve.
+  try {
+    const flowed = await runFlowTurn({
+      container,
+      waSvc,
+      phone: from,
+      sessionId,
+      siteId,
+      text: rawText,
+      selectionId: selectionId ?? null,
+    });
+    if (flowed.handled) {
+      if (waSvc) {
+        try {
+          await waSvc.appendTurn(from, rawText ?? text, '(respondido por el grafo)');
+        } catch {
+          /* noop */
+        }
+      }
+      return;
+    }
+    // El grafo activo está marcado como EXCLUSIVO: atiende todo, así que no se cae
+    // al router ni al modelo. Que no haya resuelto el turno significa que el grafo
+    // tiene un hueco, y la respuesta es el menú —nunca el silencio—.
+    //
+    // Es el apagado del LLM, y vive en la versión del grafo en vez de en un ajuste:
+    // volver atrás es publicar la versión anterior, sin tocar configuración ni
+    // deployar.
+    if (flowed.exclusive) {
+      logger.warn(
+        `[WhatsApp bot] El grafo exclusivo no resolvió el turno de ${from}: se responde con el menú.`,
+      );
+      trackWaEvent(container, {
+        siteId,
+        sessionId,
+        phone: from,
+        type: 'error',
+        payload: { where: 'flow_exclusive_gap' },
+      });
+      await sendMainMenu(from);
+      if (waSvc) {
+        try {
+          await waSvc.appendTurn(from, rawText ?? text, '(el grafo no resolvió: se ofreció el menú)');
+        } catch {
+          /* noop */
+        }
+      }
+      return;
+    }
+  } catch (err) {
+    // Mismo criterio que el router: el grafo NUNCA puede voltear un turno de
+    // venta. Si falla, se sigue con el camino de siempre.
+    logger.warn(`[WhatsApp bot] El grafo falló para ${from}: ${(err as Error).message}`);
+  }
+
   try {
     const routed = await routeInbound({
       container,

@@ -26,6 +26,40 @@ services:
     networks:
       - b2c-network
 
+  # Clon de la DB de prod para probar contra datos reales sin tocar prod. Vive
+  # aislado del `db` de arriba (puerto/volumen distinto) para no pisar la DB de
+  # dev habitual. Postgres 18 porque prod está en 18.6 y pg_restore de 15 no
+  # entiende algunos cambios de schema (extensiones, catalogs).
+  #
+  # Se levanta bajo demanda con:
+  #   docker compose --profile prod-clone up -d db-prod-clone
+  # y el backend apunta acá con DATABASE_URL sobre localhost:55432.
+  db-prod-clone:
+    image: postgres:18-alpine
+    container_name: b2c-db-prod-clone
+    profiles: ['prod-clone']
+    init: true
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: educabot
+    ports:
+      - '55432:5432'
+    # Postgres 18 cambió el layout: los datos van a un subdir versionado dentro
+    # de /var/lib/postgresql (no directo en /data como en 15). Si se monta en
+    # /var/lib/postgresql/data la imagen aborta con "unused mount/volume".
+    volumes:
+      - postgres_prod_clone_data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - b2c-network
+
   redis:
     image: redis:7-alpine
     container_name: b2c-redis
@@ -80,6 +114,10 @@ volumes:
   typesense_data:
     external: true
     name: infra_typesense_data
+  # No es external: se crea en el primer up del profile prod-clone. Así el clon
+  # de prod es descartable — `docker compose --profile prod-clone down -v` lo
+  # borra sin afectar la DB de dev.
+  postgres_prod_clone_data:
 
 networks:
   b2c-network:

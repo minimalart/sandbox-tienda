@@ -25,6 +25,15 @@ type PersonalInfoProps = {
 const PersonalInfo = ({ cart, customer, onCartUpdate }: PersonalInfoProps) => {
   const isLoggedIn = !!customer;
   const cartId = cart?.id ?? null;
+  // Estar logueado no garantiza tener nombre: el checkout guest de Medusa crea
+  // el customer solo con el email y el login con Google se engancha a ese mismo
+  // registro. Con la vista de solo lectura eso era un callejón sin salida —
+  // mostraba "—" y "Continuar" mandaba "", que el API rechaza. Cuando falta el
+  // nombre le damos el formulario para que lo complete.
+  const hasFullName = Boolean(
+    customer?.first_name?.trim() && customer?.last_name?.trim(),
+  );
+  const showAccountSummary = isLoggedIn && hasFullName;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +81,24 @@ const PersonalInfo = ({ cart, customer, onCartUpdate }: PersonalInfoProps) => {
         return;
       }
 
+      // Si el customer estaba sin nombre, guardarlo también en su perfil para
+      // que no tenga que volver a tipearlo en la próxima compra. Best-effort:
+      // el cart ya quedó guardado, un fallo acá no corta el checkout.
+      if (isLoggedIn && !hasFullName) {
+        try {
+          await fetch("/api/store/customer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "update",
+              data: { first_name, last_name },
+            }),
+          });
+        } catch {
+          // ignorado a propósito
+        }
+      }
+
       // Facturación (Factura A o consumidor final): validar + persistir al cart.
       if (billingRef.current) {
         if (!billingRef.current.validate()) {
@@ -100,7 +127,7 @@ const PersonalInfo = ({ cart, customer, onCartUpdate }: PersonalInfoProps) => {
 
   return (
     <div>
-      {isLoggedIn ? (
+      {showAccountSummary ? (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -186,6 +213,7 @@ const PersonalInfo = ({ cart, customer, onCartUpdate }: PersonalInfoProps) => {
             id="personal-email"
             label="Correo electrónico"
             placeholder="ejemplo@correo.com"
+            readOnly={isLoggedIn}
             title="Ingresá un correo electrónico válido."
             type="email"
             hasError={!!errors.email}

@@ -1,6 +1,22 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { withMirroredAddressName } from "./address-name";
+import {
+  DEFAULT_ADDRESS_NAME,
+  getAddressNamePreset,
+  withMirroredAddressName,
+} from "./address-name";
+
+test("usa Casa como nombre predeterminado", () => {
+  assert.equal(DEFAULT_ADDRESS_NAME, "Casa");
+});
+
+test("selecciona Otro cuando el nombre es personalizado", () => {
+  assert.equal(getAddressNamePreset("Casa"), "Casa");
+  assert.equal(getAddressNamePreset("Trabajo"), "Trabajo");
+  assert.equal(getAddressNamePreset("Casa de mamá"), "Otro");
+  assert.equal(getAddressNamePreset("Otro"), "Otro");
+  assert.equal(getAddressNamePreset(""), "Otro");
+});
 
 test("espeja el nombre en metadata al crear", () => {
   const out = withMirroredAddressName({

@@ -77,6 +77,10 @@ type ShippingProps = {
   disableAutoSelect?: boolean;
   cart: HttpTypes.StoreCart;
   availableShippingMethods: HttpTypes.StoreCartShippingOption[] | null;
+  // Próximo step al que ir tras "Continuar" — permite al parent decidir según policy
+  // (ej: cuando `benefits` está deshabilitado, saltar a `recipients` o `payment`).
+  // Default 'benefits' preserva el comportamiento previo para consumidores sin fix.
+  nextStep?: string;
   onCartUpdate?: (
     cart?: HttpTypes.StoreCart | null,
   ) => Promise<HttpTypes.StoreCart | null>;
@@ -271,6 +275,7 @@ const Shipping: React.FC<ShippingProps> = ({
   shippingCoverage,
   refreshingOptions = false,
   disableAutoSelect = false,
+  nextStep = 'benefits',
 }) => {
   const hasNoCoverage =
     !!shippingCoverage?.evaluated && !shippingCoverage.covered;
@@ -1043,8 +1048,8 @@ const Shipping: React.FC<ShippingProps> = ({
   );
 
   const handleSubmit = useCallback(() => {
-    goToCheckoutStep("benefits");
-  }, []);
+    goToCheckoutStep(nextStep);
+  }, [nextStep]);
 
   useEffect(() => {
     setError(null);

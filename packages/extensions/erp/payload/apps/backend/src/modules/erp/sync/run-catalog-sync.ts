@@ -59,7 +59,12 @@ import { planColorOptions } from './color-option';
 import { applyPresentationOptions, readPresentationState } from './apply-presentation-option';
 import { planPresentationOptions } from './presentation-option';
 import { resolveTitleRules } from './product-title';
-import { resolvePriceLists } from './resolve-price-lists';
+import { resolvePriceLists, type ResolvedPriceLists } from './resolve-price-lists';
+import {
+  detectOverridingPriceLists,
+  draftPriceListWarning,
+  overridingPriceListWarning,
+} from './detect-overriding-price-lists';
 
 /**
  * Catalog sync ERP → Medusa: precios (base + price lists) y, opcionalmente,
@@ -181,7 +186,9 @@ export async function sweepStaleCatalogSyncLogs(container: MedusaContainer): Pro
   return stale.length;
 }
 
-function resolveSettings(config: ErpConfigRow): Required<
+function resolveSettings(
+  config: ErpConfigRow
+): Required<
   Pick<
     ErpCatalogSyncSettings,
     | 'currency_code'
@@ -230,9 +237,9 @@ function chunkSizeOf(settings: { write_chunk_size: number }): number {
  * el planner descarta sin escribir). `price_set_id` lo completa el caller con el
  * mapa de links.
  */
-async function readVariantCatalog(
-  query: { graph(config: Record<string, unknown>): Promise<{ data: unknown[] }> }
-): Promise<Map<string, VariantCatalogEntry>> {
+async function readVariantCatalog(query: {
+  graph(config: Record<string, unknown>): Promise<{ data: unknown[] }>;
+}): Promise<Map<string, VariantCatalogEntry>> {
   type VariantRow = { id: string; sku: string | null; product_id: string | null };
   const catalog = new Map<string, VariantCatalogEntry>();
   for (let skip = 0; ; skip += VARIANT_PAGE_SIZE) {
@@ -310,7 +317,10 @@ export async function startCatalogSync(
     { take: 5 }
   )) as Array<{ id: string; updated_at?: unknown; started_at?: unknown }>;
   if (running.some((log) => Date.now() - lastActivity(log) < CATALOG_SYNC_STALE_MS)) {
-    throw new MedusaError(MedusaError.Types.CONFLICT, 'Ya hay una sincronización de catálogo en curso.');
+    throw new MedusaError(
+      MedusaError.Types.CONFLICT,
+      'Ya hay una sincronización de catálogo en curso.'
+    );
   }
 
   const log = (await service.createErpSyncLogs({
@@ -364,7 +374,11 @@ async function executeCatalogSync(
 
   const runLocked = async (job: () => Promise<void>): Promise<void> => {
     let locking: {
-      execute<T>(keys: string | string[], job: () => Promise<T>, args?: { timeout?: number }): Promise<T>;
+      execute<T>(
+        keys: string | string[],
+        job: () => Promise<T>,
+        args?: { timeout?: number }
+      ): Promise<T>;
     } | null = null;
     try {
       locking = container.resolve(Modules.LOCKING);
@@ -380,7 +394,10 @@ async function executeCatalogSync(
       await locking.execute(LOCK_KEY, job, { timeout: 5 });
     } catch (error) {
       if (error instanceof Error && /timed?[ -]?out|acquire/i.test(error.message)) {
-        throw new MedusaError(MedusaError.Types.CONFLICT, 'Otra sincronización tiene tomado el lock.');
+        throw new MedusaError(
+          MedusaError.Types.CONFLICT,
+          'Otra sincronización tiene tomado el lock.'
+        );
       }
       throw error;
     }
@@ -409,7 +426,8 @@ async function executeCatalogSync(
 
     // ── Fase A.1: catálogo del ERP (sin escribir nada) ───────────────────────
     const watermark = settings.last_synced_at ?? null;
-    const since = fullSweep || !watermark ? null : applyOverlap(watermark, settings.overlap_minutes);
+    const since =
+      fullSweep || !watermark ? null : applyOverlap(watermark, settings.overlap_minutes);
 
     let erpRows: ErpCatalogRow[];
     try {
@@ -440,7 +458,9 @@ async function executeCatalogSync(
           duration_ms: Date.now() - startedAt,
         },
       });
-      logger.info(`[erp] catalog sync ${syncLogId}: sin cambios en el ERP desde ${since ?? 'siempre'}.`);
+      logger.info(
+        `[erp] catalog sync ${syncLogId}: sin cambios en el ERP desde ${since ?? 'siempre'}.`
+      );
       return;
     }
 
@@ -596,9 +616,8 @@ async function executeCatalogSync(
     // El ERP manda la descripción como se cargó en la gestión (mayúsculas, marca
     // al inicio, `X 0,25 LTS`), así que el título nunca se copia literal: pasa por
     // las reglas de `product-title.ts`. `null` = normalización apagada.
-    const titleRules = (settings.title_rules?.enabled ?? true)
-      ? resolveTitleRules(settings.title_rules)
-      : null;
+    const titleRules =
+      (settings.title_rules?.enabled ?? true) ? resolveTitleRules(settings.title_rules) : null;
     // Solo se cuentan los títulos ESCRITOS y los que dejaron warning: el
     // "no cambió" no se cuenta porque el planner no emite detalle en ese caso
     // (sería un payload por artículo en cada corrida, para decir que no pasó nada).
@@ -666,7 +685,12 @@ async function executeCatalogSync(
         ({ plan }) => plan.product_update || plan.variant_update || plan.status === 'created'
       );
       if (actionable.length && !dryRun) {
-        const applied = await applyProductChanges(container, actionable, settings, categoryIdByCode);
+        const applied = await applyProductChanges(
+          container,
+          actionable,
+          settings,
+          categoryIdByCode
+        );
         for (const [code, message] of applied.errors) productErrors.set(code, message);
         for (const id of applied.touchedProductIds) touchedProductIds.add(id);
         for (const code of applied.created.keys()) createdCodes.add(code);
@@ -702,7 +726,8 @@ async function executeCatalogSync(
       const productState = await readProductCategoryState(container, attributionCodes);
 
       // B.1b — marca y familia a `product.metadata` (lo que indexa la búsqueda).
-      const metadataPatchList: Array<{ product_id: string; metadata: Record<string, unknown> }> = [];
+      const metadataPatchList: Array<{ product_id: string; metadata: Record<string, unknown> }> =
+        [];
       for (const row of attributionRows) {
         const state = productState.get(row.code);
         if (!state) continue;
@@ -726,7 +751,10 @@ async function executeCatalogSync(
       // B.1c — categorización aditiva.
       if (categoriesEnabled && categoryIdByCode.size) {
         const assignmentPlan = planCategoryAssignments({
-          rows: attributionRows.map((row) => ({ code: row.code, category_code: row.category_code })),
+          rows: attributionRows.map((row) => ({
+            code: row.code,
+            category_code: row.category_code,
+          })),
           productsByCode: productState,
           categoryIdByCode,
           erpOwnedCategoryIds,
@@ -905,7 +933,12 @@ async function executeCatalogSync(
       colorBackfillRan = colorPending && rows !== erpRows;
       if (colorPending && rows === erpRows && since === null) colorBackfillRan = true;
       try {
-        const plan = planColorOptions(await readColorState(container, rows.map((row) => row.code)));
+        const plan = planColorOptions(
+          await readColorState(
+            container,
+            rows.map((row) => row.code)
+          )
+        );
         colorCounts.skipped = plan.skipped;
         if (dryRun) {
           colorCounts.planned = plan.creates.length;
@@ -1150,9 +1183,7 @@ async function executeCatalogSync(
         // el guard del delta: contra el lote, una corrida incremental de 3
         // artículos con 1 baja daría 33% y bloquearía una baja perfectamente
         // legítima. "% del catálogo" es lo que el setting promete.
-        const unpublishPct = catalog.size
-          ? (statusPlan.unpublish.length / catalog.size) * 100
-          : 0;
+        const unpublishPct = catalog.size ? (statusPlan.unpublish.length / catalog.size) * 100 : 0;
         const maxUnpublishPct = settings.max_unpublish_pct ?? 10;
         const guardTripped = statusPlan.unpublish.length > 0 && unpublishPct > maxUnpublishPct;
         if (guardTripped) {
@@ -1243,22 +1274,48 @@ async function executeCatalogSync(
     });
     let priceLists: PriceListTarget[] = [];
     let priceListWarnings: string[] = [];
+    let priceListStatusById = new Map<string, string | null>();
     if (!writePriceLists && settings.price_lists?.length) {
       priceListWarnings.push(
         'Barrido completo: las price lists no se revisaron porque están apagadas para el barrido ' +
           `(${settings.price_lists.length} lista(s) mapeada(s)). El precio base sí se actualizó.`
       );
     }
-    if (writePriceLists && settings.price_lists?.length) {
-      if (dryRun) {
-        // En dry-run no se crean listas: solo se mapean las que ya existen.
-        const resolved = await resolveExistingPriceListsOnly(container, settings.price_lists);
-        priceLists = resolved.targets;
-        priceListWarnings = resolved.warnings;
-      } else {
-        const resolved = await resolvePriceLists(container, settings.price_lists);
-        priceLists = resolved.targets;
-        priceListWarnings = resolved.warnings;
+    if (writePriceLists) {
+      // En dry-run no se crean listas: solo se mapean las que ya existen.
+      const resolved: ResolvedPriceLists = dryRun
+        ? await resolveExistingPriceListsOnly(container, settings.price_lists ?? [])
+        : await resolvePriceLists(container, settings.price_lists ?? []);
+      priceLists = resolved.targets;
+      priceListWarnings = [...resolved.warnings];
+
+      /**
+       * Los dos avisos que faltaban, y que son la diferencia entre "el ERP
+       * sincroniza" y "el comprador paga lo que el ERP dice".
+       *
+       * En desdeelsur el sync corrió cada 15 minutos durante un mes con el
+       * summary en verde mientras la web cobraba la lista mayorista congelada
+       * de otra price list. Ver el detalle medido en
+       * `detect-overriding-price-lists.ts`.
+       *
+       * Nótese que esto corre AUNQUE no haya mapeos (`price_lists` vacío): la
+       * lista ajena que pisa el precio base no tiene nada que ver con cuántas
+       * listas del ERP mapeó el cliente.
+       */
+      priceListStatusById = new Map(resolved.allPriceLists.map((list) => [list.id, list.status]));
+      const draftWarning = draftPriceListWarning(priceLists, priceListStatusById);
+      if (draftWarning) priceListWarnings.push(draftWarning);
+
+      const overriding = detectOverridingPriceLists({
+        priceLists: resolved.allPriceLists,
+        managedTargets: priceLists,
+      });
+      const overridingWarning = overridingPriceListWarning(overriding);
+      if (overridingWarning) {
+        priceListWarnings.push(overridingWarning);
+        // También al log del proceso: el summary lo lee quien abre la corrida,
+        // y esto tiene que poder aparecer en una búsqueda de logs.
+        logger.warn(`[erp] catalog sync: ${overridingWarning}`);
       }
     }
 
@@ -1281,7 +1338,14 @@ async function executeCatalogSync(
       const chunk = relevantPriceSetIds.slice(i, i + PRICE_READ_CHUNK);
       const { data: prices } = (await query.graph({
         entity: 'price',
-        fields: ['id', 'amount', 'currency_code', 'min_quantity', 'price_set_id', 'price_rules.attribute'],
+        fields: [
+          'id',
+          'amount',
+          'currency_code',
+          'min_quantity',
+          'price_set_id',
+          'price_rules.attribute',
+        ],
         // `price_list_id: null` se traduce a `IS NULL`; el tipo del filtro dice
         // string[] pero el runtime acepta el escalar (el core hace lo mismo).
         filters: { price_set_id: chunk, price_list_id: null } as never,
@@ -1555,6 +1619,11 @@ async function executeCatalogSync(
           zeus_index: target.zeus_index,
           title: target.title,
           price_list_id: target.price_list_id,
+          // El estado va en el summary porque sin él la fila se lee como que la
+          // lista está funcionando. Una `draft` no aplica a ningún cliente por
+          // más precios que el sync le escriba: en desdeelsur "LISTA WEB" pasó
+          // un mes así, listada en cada corrida como si todo estuviera bien.
+          status: priceListStatusById.get(target.price_list_id) ?? null,
         })),
         reindexed_products: dryRun ? 0 : changedProductIds.size,
         create_products: settings.create_products,
@@ -1721,18 +1790,42 @@ async function applyPriceWrites(
 async function resolveExistingPriceListsOnly(
   container: MedusaContainer,
   mappings: NonNullable<ErpCatalogSyncSettings['price_lists']>
-): Promise<{ targets: PriceListTarget[]; warnings: string[] }> {
+): Promise<ResolvedPriceLists> {
   const pricing = container.resolve(Modules.PRICING) as {
-    listPriceLists(filters: Record<string, unknown>, config?: unknown): Promise<Array<{ id: string; title: string }>>;
+    listPriceLists(
+      filters: Record<string, unknown>,
+      config?: unknown
+    ): Promise<
+      Array<{
+        id: string;
+        title: string;
+        status?: string | null;
+        type?: string | null;
+        rules?: Record<string, unknown> | null;
+      }>
+    >;
   };
   const existing = await pricing.listPriceLists({}, { take: null });
+  // Mismo snapshot que en la variante real: el dry-run también tiene que poder
+  // avisar de una price list ajena que le pisa el precio base al ERP.
+  const allPriceLists = existing.map((list) => ({
+    id: list.id,
+    title: list.title ?? null,
+    status: list.status ?? null,
+    type: list.type ?? null,
+    rules: list.rules ?? null,
+  }));
   const byTitle = new Map(existing.map((list) => [list.title, list]));
   const targets: PriceListTarget[] = [];
   const warnings: string[] = [];
   for (const mapping of mappings.filter((m) => m.enabled !== false)) {
     const found = mapping.title ? byTitle.get(mapping.title) : undefined;
     if (found) {
-      targets.push({ zeus_index: mapping.zeus_index, price_list_id: found.id, title: mapping.title });
+      targets.push({
+        zeus_index: mapping.zeus_index,
+        price_list_id: found.id,
+        title: mapping.title,
+      });
     } else {
       warnings.push(
         `Dry-run: la price list "${mapping.title}" todavía no existe y no se crea en modo simulación; ` +
@@ -1740,5 +1833,5 @@ async function resolveExistingPriceListsOnly(
       );
     }
   }
-  return { targets, warnings };
+  return { targets, warnings, allPriceLists };
 }

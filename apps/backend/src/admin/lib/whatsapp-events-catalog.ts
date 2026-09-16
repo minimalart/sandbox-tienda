@@ -60,6 +60,18 @@ export const WHATSAPP_EVENTS: WhatsappEvent[] = [
     ],
   },
   {
+    // Listo para retirar (markOrderReadyForPickup: el botón del widget de la orden
+    // o la transición de la entrega a `at_pickup_point`).
+    key: 'order-ready-for-pickup',
+    labelKey: 'EVENT_ORDER_READY_FOR_PICKUP',
+    variables: [
+      { name: 'customer_name', labelKey: 'VAR_CUSTOMER_NAME' },
+      { name: 'display_id', labelKey: 'VAR_DISPLAY_ID' },
+      { name: 'store_name', labelKey: 'VAR_STORE_NAME' },
+      { name: 'store_address', labelKey: 'VAR_STORE_ADDRESS' },
+    ],
+  },
+  {
     key: 'order-cancelled',
     labelKey: 'EVENT_ORDER_CANCELLED',
     variables: ORDER_BASE,

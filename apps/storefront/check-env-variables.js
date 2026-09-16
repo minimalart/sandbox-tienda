@@ -19,8 +19,9 @@ const c = require("ansi-colors");
  *                                  revertirlo) cambiando una variable, en vez de
  *                                  revertir PRs en dos caminos de deploy no atómicos.
  *
- *   NEXT_PUBLIC_PRIMARY_HOST       Host del sitio principal. Sólo se usa para elegir
- *                                  el esquema en desarrollo (`localhost` → http).
+ *   NEXT_PUBLIC_PRIMARY_HOST       Host reservado para la principal.
+ *   NEXT_PUBLIC_BASE_URL           Origen de la principal; determina esquema/puerto.
+ *                                  El hub se deriva del sufijo sin el punto.
  *
  * Para probar en local NO hace falta tocar /etc/hosts: `*.localhost` resuelve a
  * 127.0.0.1 en Chrome y Firefox. Con `NEXT_PUBLIC_SITE_HOST_SUFFIX=.localhost`,

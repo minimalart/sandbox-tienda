@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "whatsapp",
   "name": "WhatsApp",
-  "version": "1.6.0",
+  "version": "1.18.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [],
@@ -29,6 +29,7 @@
     "KAPSO_TEMPLATE_ORDER_CANCELLED",
     "KAPSO_TEMPLATE_ORDER_CONFIRMATION",
     "KAPSO_TEMPLATE_ORDER_DELIVERY",
+    "KAPSO_TEMPLATE_ORDER_READY_FOR_PICKUP",
     "KAPSO_TEMPLATE_ORDER_TRACKING",
     "KAPSO_TEMPLATE_PASSWORD_RESET",
     "KAPSO_TEMPLATE_RECURRING_ORDER_FAILED",
@@ -86,6 +87,10 @@
     {
       "source": "payload/apps/storefront/src/modules/whatsapp",
       "target": "apps/storefront/src/modules/whatsapp"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/lib/whatsapp-suggested-templates.test.ts",
+      "target": "apps/backend/src/admin/lib/whatsapp-suggested-templates.test.ts"
     }
   ],
   "migrations": [],
@@ -101,6 +106,10 @@
     {
       "path": "apps/backend/src/admin/hooks/api/whatsapp-conversations.tsx",
       "sha256": "3b3d4e2678162b3701a9e5e77190524a03383a11cbaf48bc906e102e846eecc3"
+    },
+    {
+      "path": "apps/backend/src/admin/lib/whatsapp-suggested-templates.test.ts",
+      "sha256": "8ff3ae36b493ce0e4c7e24b60404b3aa3a45929be9daf305e121ec920126d093"
     },
     {
       "path": "apps/backend/src/admin/routes/whatsapp/asesor/page.tsx",
@@ -156,7 +165,7 @@
     },
     {
       "path": "apps/backend/src/admin/translations/whatsapp/index.ts",
-      "sha256": "7cbe82f8c66285321cc6f28c2ff4b1f8f2c20cc977fa5012b5d31052f06f9cd2"
+      "sha256": "de675d3d4d4fc9eb18a0ed7fa74c7f550bcb53331b4b8ef13d2881ca06e01ef7"
     },
     {
       "path": "apps/backend/src/api/admin/kapso/bindings/[key]/route.ts",
@@ -235,16 +244,24 @@
       "sha256": "837184e78ae11cec0a7b0f68ab6f8b1d7abda375d4a45f9fd4e9d264b7517c6b"
     },
     {
+      "path": "apps/backend/src/modules/kapso-whatsapp/service.test.ts",
+      "sha256": "04a7606c8db7d3b09fe904248fb63a4e849e2a95bd610813a7500498aa474fb9"
+    },
+    {
       "path": "apps/backend/src/modules/kapso-whatsapp/service.ts",
-      "sha256": "220d0a19aa63729e909cdaa2328e527cf0f696b5a174a53495c844ba80628621"
+      "sha256": "82f6c17d438692cb67d9873491df1574ccd916263a9bc18c1be8e24ab00f2a8e"
     },
     {
       "path": "apps/backend/src/modules/kapso-whatsapp/settings.ts",
-      "sha256": "7636bba50b8401125d2f96e69b3837e6bbcb609b678449f7439093172083986d"
+      "sha256": "8a202cedce1b62fc8f721c46298109ed766f61fdb93135e7b32c049ec4c95d71"
+    },
+    {
+      "path": "apps/backend/src/modules/kapso-whatsapp/templates/index.test.ts",
+      "sha256": "9ec7b0109e3d255d4652153d3d40f3acee650a9a331647b28cc4f1f877d68633"
     },
     {
       "path": "apps/backend/src/modules/kapso-whatsapp/templates/index.ts",
-      "sha256": "529d77c7740a27377c15e84e8c35c9af30761cb3c98049f7c16c6c24575d9258"
+      "sha256": "58279df5388f43ccb4dc0158672567012b38acded71f29a4b1bcd2e6f96fab94"
     },
     {
       "path": "apps/storefront/src/lib/data/whatsapp.ts",

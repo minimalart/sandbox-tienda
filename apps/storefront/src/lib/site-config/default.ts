@@ -119,15 +119,25 @@ export const defaultConfig: TenantConfig = {
         href: "/store",
       },
     },
-    // Featured products. Para el demo no exigimos un tag puntual: mostramos
-    // los más recientes del catálogo. Agregá `tag: "featured"` al filtro
-    // cuando tengas productos etiquetados.
+    // Featured products: la fila CURADA. Ordena por el ranking comercial
+    // (`metadata.ranking`, el mismo que manda en el buscador y en el PLP), así
+    // que lo que el merchant sube en ranking sube acá.
+    //
+    // NO usa `created_at`: esa es la fila de Novedades, y con el mismo filtro
+    // las dos filas del home traían exactamente los mismos 12 productos (sólo
+    // cambiaba la tarjeta). Con `ranking` cada una tiene criterio propio.
+    //
+    // Ojo: en un catálogo sin ningún `metadata.ranking` cargado el orden
+    // degrada a "con stock primero, luego lo más nuevo" (ver
+    // `lib/typesense/core/sort.ts`), así que hasta que el merchant cure algo
+    // esta fila se va a parecer a Novedades. Para separarlas antes de curar,
+    // apuntá el filtro a una categoría o a un `tag`.
     featuredProducts: {
       title: "Productos destacados",
       description: "Una selección de la góndola pensada para vos.",
       filter: {
         limit: 12,
-        sortBy: "created_at",
+        sortBy: "ranking",
       },
     },
     // Grillas demo adicionales. Cada una usa un filtro distinto para mostrar
@@ -150,10 +160,19 @@ export const defaultConfig: TenantConfig = {
         sortBy: "price_desc",
       },
     },
+    // Fila de precio: ordena de menor a mayor y el título lo dice.
+    //
+    // Antes se llamaba "Lo más vendido" con este mismo `price_asc`, o sea que
+    // prometía ventas y mostraba lo más barato del catálogo (sachets de 10 ml,
+    // turrones de 25 g). No hay métrica de ventas para sostener ese título: el
+    // índice de Typesense sólo tiene `price`, `created_at`, `stock_available` y
+    // `metadata.ranking` (curado a mano). Las unidades vendidas reales viven en
+    // el Motor de Recomendaciones (estrategia `popular`), no en el índice; una
+    // fila de más vendidos en el home tendría que salir de ahí.
     destacadosDelMes: {
-      title: "Lo más vendido",
-      mobileTitle: "Lo más vendido",
-      description: "Los favoritos de nuestros clientes.",
+      title: "Precios que cuidan tu bolsillo",
+      mobileTitle: "Precios bajos",
+      description: "De menor a mayor precio: lo más conveniente de la góndola.",
       filter: {
         limit: 12,
         sortBy: "price_asc",
@@ -200,11 +219,17 @@ export const defaultConfig: TenantConfig = {
       },
     },
     // Logos de marcas/partners (LogoShowcase). Reusa assets locales del demo.
+    //
+    // SÓLO MARCAS DE TERCEROS (medios de pago, logística, proveedores). La tienda
+    // NO va en su propia lista de partners: este archivo es el baseline de TODO
+    // deploy del boilerplate, y el merge de `assets` es shallow por clave, así que
+    // un sitio que no define `partners` se queda con esta lista entera. Con el logo
+    // de la tienda principal adentro, eso le metía `{"name":"Mercatto"}` en el HTML
+    // de cada página a un cliente que no tiene nada que ver (DESDEELSUR-61, BUG-10).
     partners: [
       { name: "Hop", src: "/hop.webp" },
       { name: "Andreani", src: "/andreanilogo.webp" },
       { name: "Mercado Pago", src: "/mercadopagologo.webp" },
-      { name: "Mercatto", src: "/logo_full.webp" },
     ],
     // Conocé más productos: tarjetas de acceso rápido por categoría.
     moreProducts: {
@@ -321,13 +346,16 @@ export const defaultConfig: TenantConfig = {
         placeholder: "ejemplo@correo.com",
         buttonText: "Suscribirme",
       },
-      contact: {
-        email: {
-          label: "Correo electrónico",
-          value: "hola@mercatto.com",
-          href: "mailto:hola@mercatto.com",
-        },
-      },
+      // VACÍO A PROPÓSITO — ningún dato de contacto inventado acá.
+      //
+      // `mergeMainTenant` mergea `assets.footer` POR SUBCLAVE, así que un sitio que
+      // edita sólo `footer.description` desde el backoffice hereda este `contact` tal
+      // cual y publica como suyo el dato que esté escrito acá. Es el mismo incidente
+      // del teléfono '+54 11 1234-5678' que ya se sacó del componente (ver el comentario
+      // en `templates/footer/index.tsx`): un contacto falso en producción es peor que
+      // ninguno. El footer renderiza cada campo condicionalmente (`contact.email &&`),
+      // así que vacío simplemente no muestra la fila.
+      contact: {},
       social: [],
       legal: [
         { name: "Política de privacidad", href: "/legal/legals" },

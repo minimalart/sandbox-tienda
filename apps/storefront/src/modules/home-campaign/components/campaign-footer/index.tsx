@@ -18,6 +18,12 @@ export default async function CampaignFooter() {
   const tenant = await getActiveTenant();
   const campaign = tenant.assets.campaign;
   const footer = campaign?.footer;
+  // Mismo lookup que el footer del layout default (grocery/fashion/…): footer >
+  // main > nada. NO caemos al svg genérico de Mercatto verde acá porque el
+  // template campaign vive en dominios de instituciones (colegios, ONGs) donde
+  // un logo ajeno pisa la identidad. Sin logo cargado, mantenemos el nombre
+  // como wordmark de texto — es la variante segura.
+  const footerLogo = tenant.assets.logos?.footer || tenant.assets.logos?.main;
 
   const bg = footer?.backgroundColor?.trim() || undefined;
   const fg = bg ? (pickContrastText(bg) ?? "#0f1114") : "#ffffff";
@@ -49,7 +55,15 @@ export default async function CampaignFooter() {
         className={`mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:grid-cols-2 sm:px-6 sm:py-20 ${bodyClass}`}
       >
         <div>
-          <p className={`text-lg font-semibold ${nameClass}`}>{tenant.name}</p>
+          {footerLogo ? (
+            <img
+              alt={tenant.name}
+              className="max-h-[35px] md:max-h-[40px]"
+              src={footerLogo}
+            />
+          ) : (
+            <p className={`text-lg font-semibold ${nameClass}`}>{tenant.name}</p>
+          )}
           {footer?.description ? (
             <p className="mt-3 max-w-md text-sm leading-relaxed">
               {footer.description}

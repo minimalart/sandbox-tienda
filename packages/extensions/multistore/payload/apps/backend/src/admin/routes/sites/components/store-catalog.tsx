@@ -5,6 +5,7 @@ import { sdk } from '../../../lib/client';
 import { CatalogSourceFields } from './catalog-source-fields';
 import type { DemoStore, DemoSourceType } from '../../../hooks/api/demo-stores';
 import { SITE_ID_HEADER } from '../../../lib/active-site';
+import type { ImportReport } from '../../../../lib/catalog/types';
 
 const statusLabels: Record<string, string> = {
   pending: 'En cola',
@@ -396,6 +397,7 @@ export function StoreCatalog({ demo }: { demo: DemoStore }) {
                 {w}
               </Alert>
             ))}
+            <RecoveryReport report={preview.report} />
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -504,6 +506,7 @@ export function StoreCatalog({ demo }: { demo: DemoStore }) {
                 {w}
               </Text>
             ))}
+            <RecoveryReport report={job.report} />
             {job.result?.errors?.map((e: any, i: number) => (
               <Text key={i} size="small">
                 {e.productId} {e.message}
@@ -515,6 +518,59 @@ export function StoreCatalog({ demo }: { demo: DemoStore }) {
     </div>
   );
 }
+function RecoveryReport({ report }: { report?: ImportReport }) {
+  if (!report?.queries?.length) return null;
+  return (
+    <details className="rounded border p-3 text-sm">
+      <summary className="cursor-pointer">
+        Detalle de recuperación: {report.observed ?? '—'} IDs revisados ·{' '}
+        {report.pendingCount ?? 'sin determinar'} pendientes
+      </summary>
+      <p className="py-2">
+        Los IDs revisados incluyen productos excluidos por identidad u oferta inválida. El total del
+        origen no equivale al total importable.
+      </p>
+      {report.issues?.map((issue, index) => (
+        <p key={index} className="py-1">
+          {issue.query} · página {issue.page} ({issue.stage === 'facets' ? 'filtros' : 'productos'}
+          ): {issue.status ? `HTTP ${issue.status} · ` : ''}
+          {issue.reason}
+        </p>
+      ))}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr>
+              <th>Consulta</th>
+              <th>Última página</th>
+              <th>IDs revisados</th>
+              <th>Total origen</th>
+              <th>Cobertura</th>
+            </tr>
+          </thead>
+          <tbody>
+            {report.queries.map((query, index) => (
+              <tr key={index}>
+                <td className="pr-3">{query.query}</td>
+                <td>{query.page}</td>
+                <td>{query.observed}</td>
+                <td>{query.estimatedTotal ?? 'Desconocido'}</td>
+                <td>{query.complete ? 'Completa' : 'Pendiente'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {report.pendingCoverage?.map((pending, index) => (
+        <p key={index} className="pt-2">
+          Pendiente: {pending.query} · {pending.remaining ?? 'cantidad desconocida'} productos ·{' '}
+          {pending.reason}
+        </p>
+      ))}
+    </details>
+  );
+}
+
 function Field({ label, name, ...props }: any) {
   return (
     <div className="space-y-1">

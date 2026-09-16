@@ -162,7 +162,7 @@ function flattenContent(res: any): Array<{ type: string; text: string }> {
     })
     .join('\n')
     .trim();
-  const finalText = res?.isError ? `[tool error] ${text}` : text || JSON.stringify(res ?? {});
+  const finalText = res?.isError ? `Error de herramienta MCP: ${text}` : text || JSON.stringify(res ?? {});
   return [{ type: 'text', text: finalText }];
 }
 

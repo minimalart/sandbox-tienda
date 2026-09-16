@@ -7,6 +7,7 @@ import {
   credentialIntegrationId,
   SITE_ACCOUNT_KEYS,
   isGlobalIntegration,
+  INBOUND_CONTRACT_KEYS,
 } from './credential-presentation.ts';
 
 test('shared credentials have one owner; the landing model remains extension configuration', () => {
@@ -42,7 +43,8 @@ test('Minimalart provider accounts are global, including the ARCA account CUIT',
 test('business toggles stay in extension configuration, secrets move to credentials', () => {
   for (const d of allDescriptors) {
     if (d.type === 'boolean') assert.equal(isCredentialSetting(d), false, d.key);
-    if (d.type === 'secret') assert.equal(isCredentialSetting(d), true, d.key);
+    if (d.type === 'secret')
+      assert.equal(isCredentialSetting(d), !INBOUND_CONTRACT_KEYS.has(d.key), d.key);
   }
 });
 
@@ -55,4 +57,19 @@ test('site account fields are removed from extension settings, including non-sec
   assert.equal(credentialIntegrationId('extension:fiscal-documentation'), 'arca');
   assert.equal(credentialIntegrationId('extension:whatsapp'), 'kapso');
   assert.equal(credentialIntegrationId('extension:loyalty-engine'), 'loyalty');
+});
+
+test('the inbound webhook contract stays in the extension card and writes to the instance row', () => {
+  for (const key of INBOUND_CONTRACT_KEYS) {
+    const d = findDescriptor('extension:whatsapp', key);
+    assert.ok(d, key);
+    assert.equal(d.type, 'secret', key);
+    assert.equal(d.scope, 'instance', key);
+    assert.equal(isCredentialSetting(d), false, key);
+    assert.equal(isGlobalCredential(d), false, key);
+  }
+  const account = findDescriptor('extension:whatsapp', 'KAPSO_API_KEY')!;
+  assert.equal(isCredentialSetting(account), true);
+  assert.equal(account.scope, 'site');
+  assert.deepEqual(SITE_ACCOUNT_KEYS.kapso, ['KAPSO_API_KEY']);
 });

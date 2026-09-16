@@ -75,6 +75,25 @@ export default defineSettings({
       maxLength: 512,
     },
 
+    // ─── Retiro en tienda ────────────────────────────────────────────────────
+    {
+      key: 'ORDER_PICKUP_INSTRUCTIONS',
+      env: ['ORDER_PICKUP_INSTRUCTIONS'],
+      type: 'string',
+      tier: 'runtime',
+      group: 'Retiro en tienda',
+      label: 'Qué presentar para retirar',
+      /**
+       * UNA oración. Vacío NO es un error: el ticket pide la indicación "si
+       * corresponde", así que sin valor el bloque simplemente no se dibuja. El
+       * resto —que el mail sale igual, y que la sucursal y los horarios salen de
+       * la ficha de cada sucursal y no de acá— está en el drawer.
+       */
+      help: 'Se muestra en el mail de "pedido listo para retirar"; vacío no dibuja el bloque.',
+      placeholder: 'Presentá tu DNI y el número de pedido.',
+      maxLength: 500,
+    },
+
     // ─── Plantillas de SendGrid ──────────────────────────────────────────────
     {
       key: 'COMPANY_INVITE_SENDGRID_TEMPLATE_ID',

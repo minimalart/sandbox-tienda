@@ -36,6 +36,8 @@ type StorefrontUrlResponse = {
   url: string;
   /** Base de la INSTANCIA, sin prefijo de tienda. */
   base: string;
+  hostSuffix?: string;
+  sitesBase?: string;
 };
 
 export const STOREFRONT_URL_QUERY_KEY = ['store-config', 'storefront-url'] as const;
@@ -61,14 +63,19 @@ const buildTimeFallback = (): string => {
  * agregan su propio prefijo. Con `url` el link queda `/tienda/activa/tienda/elegida`,
  * que es un 404.
  */
-export function useStorefrontBase(): string {
+export function useStorefrontOrigins() {
   const { data } = useQuery({
     queryKey: STOREFRONT_URL_QUERY_KEY,
     queryFn: () => fetchJson<StorefrontUrlResponse>('/admin/store-config/storefront-url'),
     // Sale de variables de entorno del proceso: no cambia mientras la pestaña viva.
-    staleTime: Infinity,
+    staleTime: 30_000,
     retry: false,
   });
 
-  return data?.base?.replace(/\/+$/, '') || buildTimeFallback();
+  const base = data?.base?.replace(/\/+$/, '') || buildTimeFallback();
+  return { base, sitesBase: data?.sitesBase || base, hostSuffix: data?.hostSuffix || '' };
+}
+
+export function useStorefrontBase(): string {
+  return useStorefrontOrigins().base;
 }

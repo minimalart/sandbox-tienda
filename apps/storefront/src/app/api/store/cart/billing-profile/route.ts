@@ -3,6 +3,8 @@ import { ensureCartCustomer } from "@lib/data/cart";
 import { getCartId } from "@lib/data/cookies";
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   // El cartId se resuelve server-side desde la cookie, no se confía en el cliente.
   const cartId = await getCartId();

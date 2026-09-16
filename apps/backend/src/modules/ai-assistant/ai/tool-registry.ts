@@ -3,6 +3,7 @@ import { getMcpTools } from '../../../api/mcp/_loader';
 import { callExternalTool, discoverExternalTools, type TransportKind } from './mcp-client';
 import { resolveAuthHeaders } from './mcp-auth';
 import { NATIVE_TOOL_DEFS } from './native-tools';
+import type { ToolPolicyHints } from './policy';
 
 /**
  * Agregador de tools: unifica el MCP INTERNO (`mcp-medusa`, in-process) con N
@@ -35,6 +36,7 @@ export type UnifiedTool = {
   serverId?: string;
   /** Nombre original (sin namespace) para ejecutar contra el servidor externo. */
   originalName?: string;
+  policyHints?: ToolPolicyHints;
 };
 
 type CachedTool = {
@@ -99,6 +101,11 @@ export async function discoverAllTools(store: RegistryStore): Promise<UnifiedToo
         origin: 'external',
         serverId: String(s.id),
         originalName: t.name,
+        policyHints: {
+          read_only_hint: t.read_only_hint === true,
+          trusted: s.trust_read_only_hints === true,
+          has_action: Object.prototype.hasOwnProperty.call((t.parameters as any)?.properties ?? {}, 'action'),
+        },
       });
     }
   }

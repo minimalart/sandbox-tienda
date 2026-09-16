@@ -643,6 +643,7 @@ export type McpServerTool = {
 };
 
 export type McpServer = {
+  trust_read_only_hints?: boolean;
   id: string;
   key: string;
   name: string;
@@ -666,6 +667,7 @@ export type McpServer = {
 };
 
 export type McpServerInput = {
+  trust_read_only_hints?: boolean;
   key?: string;
   name: string;
   url: string;
@@ -948,6 +950,7 @@ export const useDeleteDocument = () => {
 // ── Workflows (definiciones orquestadas) ─────────────────────────────────────
 
 export type WorkflowStep = {
+  result_contract?: Record<string, { type: 'string' | 'strings' | 'boolean'; minItems?: number; equals?: boolean }>;
   key: string;
   agent_key: string;
   task: string;

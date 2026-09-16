@@ -88,17 +88,58 @@ test('channel_array cubre el caso [] además de NULL', async () => {
   await siteFilter(scope, SITE, ARRAY_ALL);
   assert.match(calls[0]!.sql, /jsonb_array_length/);
   assert.match(calls[0]!.sql, /@> \?::jsonb/, 'el bind tiene que ir casteado a jsonb');
-  assert.deepEqual(calls[0]!.bindings, [JSON.stringify(['sc_norte', 'sc_norte_b2b'])]);
+});
+
+test('una fila atada a UN SOLO canal de la tienda entra igual', async () => {
+  // La regresión de las sucursales de Vital. El predicado era un `@>` único con el
+  // array entero —`["sc_b2c"] @> ["sc_b2c","sc_b2b"]` es FALSO—, así que una tienda
+  // B2B sólo veía lo atado a sus DOS canales a la vez: 20 sucursales sin filtro, 0
+  // filtrando por la tienda. Un OR de contenciones de UN elemento es "alguno".
+  for (const descriptor of [ARRAY_ALL, NESTED]) {
+    const { scope, calls } = fakeScope();
+    await siteFilter(scope, SITE, descriptor);
+    const { sql, bindings } = calls[0]!;
+
+    // Un `@>` ÚNICO es la forma vieja y exige AMBOS canales; tiene que haber uno por
+    // canal, unidos por OR.
+    assert.equal(
+      (sql.match(/@> \?::jsonb/g) ?? []).length,
+      2,
+      'una contención por canal de la tienda',
+    );
+    assert.match(sql, /@> \?::jsonb OR .* @> \?::jsonb/);
+    assert.deepEqual(
+      bindings,
+      [JSON.stringify(['sc_norte']), JSON.stringify(['sc_norte_b2b'])],
+      'cada bind es un array de UN elemento, no el array entero',
+    );
+  }
+});
+
+test('una tienda SIN canales no matchea nada (no la tabla entera)', async () => {
+  // `@> '[]'::jsonb` es verdadero para CUALQUIER array, así que el predicado viejo
+  // abría la tabla completa justo en el modo que existe para cerrarla.
+  const sinCanales: SiteResolution = { status: 'site', site: { ...NORTE, channel_ids: [] } };
+  for (const descriptor of [ARRAY_ALL, ARRAY_UNASSIGNED, NESTED]) {
+    const { scope, calls } = fakeScope();
+    await siteFilter(scope, sinCanales, descriptor);
+    assert.doesNotMatch(calls[0]!.sql, /@>/, 'sin canales no hay contención que evaluar');
+    assert.match(calls[0]!.sql, /FALSE/);
+    assert.deepEqual(calls[0]!.bindings, []);
+  }
 });
 
 test('filtra por LOS DOS canales de una tienda B2B', async () => {
+  // Ninguno de los dos canales puede quedar afuera del predicado. Cada forma física
+  // los lleva a su manera —el array jsonb, un bind por canal; la columna, un `ANY`
+  // con los dos— así que se compara contra el binding aplanado.
   for (const [descriptor, expected] of [
-    [ARRAY_ALL, JSON.stringify(['sc_norte', 'sc_norte_b2b'])],
-    [COLUMN_GLOBAL, ['sc_norte', 'sc_norte_b2b']],
+    [ARRAY_ALL, [JSON.stringify(['sc_norte']), JSON.stringify(['sc_norte_b2b'])]],
+    [COLUMN_GLOBAL, [['sc_norte', 'sc_norte_b2b']]],
   ] as const) {
     const { scope, calls } = fakeScope();
     await siteFilter(scope, SITE, descriptor as SiteScopeDescriptor);
-    assert.deepEqual(calls[0]!.bindings[0], expected);
+    assert.deepEqual(calls[0]!.bindings, expected);
   }
 });
 

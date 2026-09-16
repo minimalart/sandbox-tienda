@@ -10,6 +10,8 @@
  * caminos coexisten en el mismo package para no duplicar la vinculación
  * host↔plugin en varios releases separados.
  */
+export { DrawerTabs, DrawerTabPanel } from './drawer-tabs.js';
+
 export {
   SiteScopeBar,
   registerSiteScopeBar,

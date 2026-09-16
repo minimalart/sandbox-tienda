@@ -21,6 +21,8 @@ export const ALLOWED_PUCK_COMPONENTS = [
   'CollectionGrid',
   'ProductGrid',
   'ProductsList',
+  'ImageText',
+  'FeatureGrid',
   'Spacer',
 ] as const;
 
@@ -90,8 +92,11 @@ const bgFg = { background: color(), textColor: color() };
 const HeroProps = z
   .object({
     title: text(),
+    eyebrow: text(),
+    layout: z.enum(['overlay', 'split']).catch('overlay'),
     subtitle: text(),
     image: link(),
+    imagePrompt: text(),
     ctaLabel: text(),
     ctaHref: link(),
     ...bgFg,
@@ -104,8 +109,20 @@ const RichTextProps = z
   .strip();
 
 const ImageBlockProps = z
-  .object({ src: link(), alt: text(), caption: text(), ...bgFg })
+  .object({ src: link(), alt: text(), caption: text(), imagePrompt: text(), ...bgFg })
   .strip();
+
+const ImageTextProps = z.object({
+  heading: text(), text: text(), eyebrow: text(), image: link(), alt: text(), imagePrompt: text(),
+  imagePosition: z.enum(['left', 'right']).catch('left'),
+  ctaLabel: text(), ctaHref: link(), ...bgFg, accentColor: color(),
+}).strip();
+
+const FeatureGridProps = z.object({
+  heading: text(), description: text(),
+  items: z.array(z.object({ title: text(), text: text() }).strip()).max(6).default([]),
+  ...bgFg,
+}).strip();
 
 const CTAProps = z
   .object({
@@ -218,6 +235,8 @@ export const COMPONENT_PROP_SCHEMAS: Record<AllowedPuckComponent, z.ZodTypeAny> 
   CollectionGrid: CollectionGridProps,
   ProductGrid: ProductGridProps,
   ProductsList: ProductsListProps,
+  ImageText: ImageTextProps,
+  FeatureGrid: FeatureGridProps,
   Spacer: SpacerProps,
 };
 
@@ -232,6 +251,8 @@ export const PuckBlockSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('CollectionGrid'), props: CollectionGridProps }),
   z.object({ type: z.literal('ProductGrid'), props: ProductGridProps }),
   z.object({ type: z.literal('ProductsList'), props: ProductsListProps }),
+  z.object({ type: z.literal('ImageText'), props: ImageTextProps }),
+  z.object({ type: z.literal('FeatureGrid'), props: FeatureGridProps }),
   z.object({ type: z.literal('Spacer'), props: SpacerProps }),
 ]);
 

@@ -27,8 +27,46 @@ export type EmailProviderOptions = {
 // already-rendered subject/html through the email channel verbatim.
 const INLINE_TEMPLATE_KEY = '__inline__';
 
-function getSenderForChannel(_salesChannelName: string | undefined, defaultFrom: string): string {
-  return defaultFrom;
+/** Remitente tal como lo espera SendGrid: mail pelado o `{ email, name }`. */
+export type EmailSender = string | { email: string; name: string };
+
+/**
+ * Remitente CON NOMBRE VISIBLE.
+ *
+ * `EMAIL_FROM` es un mail pelado (`info@tienda.com.ar`) en toda instalación que no
+ * lo haya editado a mano, y SendGrid manda el `From:` sin display name. El cliente
+ * de correo entonces muestra el local-part: en desdeelsur todos los mails llegaban
+ * firmados **"info"**, no "Desde el sur". No es un problema de plantilla —el HTML
+ * estaba perfecto— sino del sobre, que es lo único que el destinatario ve en la
+ * bandeja antes de abrir.
+ *
+ * El nombre sale de `cde_display_name`, o sea del branding YA resuelto para la
+ * tienda de este envío: el mismo eje que el logo, los colores y el footer. No hay
+ * que configurar nada y en multitienda cada tienda firma con su propio nombre.
+ *
+ * Se devuelve `{ email, name }` en vez de armar `"Nombre <mail>"` a mano para que
+ * el escaping RFC 5322 lo haga la librería: un nombre con coma o comillas
+ * (`"Desde el sur, S.A."`) partido a mano produce un header inválido y SendGrid lo
+ * rechaza con un 400 que no dice nada útil.
+ *
+ * `configured` ya trae nombre (`"Tienda <mail>"` o `{...}`) → se respeta tal cual:
+ * quien lo escribió a mano sabe lo que quiso.
+ */
+export function senderWithDisplayName(
+  configured: string,
+  displayName: string | null | undefined
+): EmailSender {
+  const from = configured.trim();
+  // Ya viene compuesto: hay `<...>`, o sea nombre + dirección. No tocar.
+  if (from.includes('<')) return from;
+  const name = displayName?.trim();
+  if (!name) return from;
+  return { email: from, name };
+}
+
+/** El remitente como texto, para los logs. `{email,name}` daría `[object Object]`. */
+function senderForLog(sender: EmailSender): string {
+  return typeof sender === 'string' ? sender : `${sender.name} <${sender.email}>`;
 }
 
 function resolveLogoForEmail(logoUrl: string | undefined): string | undefined {
@@ -513,18 +551,19 @@ class EmailNotificationProviderService extends AbstractNotificationProviderServi
     const mailer = new MailService();
     if (apiKey) mailer.setApiKey(apiKey);
     const data = (notification.data || {}) as Record<string, unknown>;
-    const salesChannelName = data.sales_channel_name as string | undefined;
-    const from = getSenderForChannel(
-      salesChannelName,
-      readForeignSetting('extension:email-templates', 'EMAIL_FROM') || this.options.from
-    );
 
     // Inject brand presentation as DEFAULTS — caller-provided values always win.
     // This lets both code templates and DB templates receive brand colors/logo
     // without every caller passing them.
-    // Una sola resolución por envío: la usan el branding Y la plantilla.
+    // Una sola resolución por envío: la usan el branding, la plantilla Y el
+    // remitente — `from` se arma DESPUÉS de esta línea a propósito, porque el
+    // nombre visible sale de `cde_display_name`. Ver `senderWithDisplayName`.
     const siteId = await this.siteIdForNotification(data);
     const branding = await this.loadBranding(siteId);
+    const from = senderWithDisplayName(
+      readForeignSetting('extension:email-templates', 'EMAIL_FROM') || this.options.from,
+      branding.cde_display_name
+    );
     // Treat empty strings as "unset" too — callers (and seed sample_data) may
     // pass `logo_url: ''`, which `??=` would not override, blanking the logo.
     const fillEmpty = (key: string, value: unknown) => {
@@ -579,7 +618,7 @@ class EmailNotificationProviderService extends AbstractNotificationProviderServi
       templateId && templateId !== 'd-xxxxxxxx' && templateId.startsWith('d-');
 
     if (!apiKey) {
-      this.logger.info(`[EMAIL LOG] From: ${from}, To: ${notification.to}, Subject: ${subject}`);
+      this.logger.info(`[EMAIL LOG] From: ${senderForLog(from)}, To: ${notification.to}, Subject: ${subject}`);
       this.logger.debug(`[EMAIL LOG] Content: ${html.substring(0, 200)}...`);
       return { id: `log-${Date.now()}` };
     }
@@ -596,7 +635,7 @@ class EmailNotificationProviderService extends AbstractNotificationProviderServi
           ? (response.headers as Record<string, string>)['x-message-id']
           : undefined;
         this.logger.info(
-          `Email sent via SendGrid (template: ${templateId}) to ${notification.to} from ${from}`
+          `Email sent via SendGrid (template: ${templateId}) to ${notification.to} from ${senderForLog(from)}`
         );
         return { id: messageId };
       }
@@ -610,7 +649,7 @@ class EmailNotificationProviderService extends AbstractNotificationProviderServi
       const messageId = response?.headers
         ? (response.headers as Record<string, string>)['x-message-id']
         : undefined;
-      this.logger.info(`Email sent via SendGrid to ${notification.to} from ${from}`);
+      this.logger.info(`Email sent via SendGrid to ${notification.to} from ${senderForLog(from)}`);
       return { id: messageId };
     } catch (error) {
       this.logger.error(`Failed to send email to ${notification.to}:`, error as Error);

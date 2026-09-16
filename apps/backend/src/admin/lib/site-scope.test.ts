@@ -55,6 +55,7 @@ const PLUGIN_SCREEN_KEYS = new Set([
   'loyalty.niveles',
   'loyalty.recompensas',
   'loyalty.reglas',
+  'marketplaces',
   'media-library',
   'payment-benefits',
   'pdf-catalogs',

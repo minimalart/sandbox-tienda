@@ -20,12 +20,14 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
   if (action === 'cancel' && ['pending', 'running'].includes(job.status)) {
     await service.updateCatalogImports({ id: job.id, cancel_requested: true });
   } else if (action === 'retry' && ['failed', 'partial', 'cancelled'].includes(job.status)) {
-    // Replays the saved configuration and snapshot. Stable upsert repairs failed rows.
+    // Persistence failures replay the snapshot. Incomplete source coverage must
+    // run recovery again; replaying the same 2,500 rows can never fetch the rest.
     await service.updateCatalogImports({
       id: job.id,
       status: 'pending',
       cancel_requested: false,
       cursor: 0,
+      ...(job.report?.complete === false ? { products: null, report: null } : {}),
       result: {
         created: 0,
         updated: 0,

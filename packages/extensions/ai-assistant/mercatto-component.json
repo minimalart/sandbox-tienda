@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "ai-assistant",
   "name": "Asistente IA",
-  "version": "1.32.18",
+  "version": "1.34.5",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -127,7 +127,8 @@
     "apps/backend/src/modules/ai-assistant/migrations/Migration20260630160000.ts",
     "apps/backend/src/modules/ai-assistant/migrations/Migration20260630180000.ts",
     "apps/backend/src/modules/ai-assistant/migrations/Migration20260630200000.ts",
-    "apps/backend/src/modules/ai-assistant/migrations/Migration20260702130000AiAssistantReconcileMemory.ts"
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260702130000AiAssistantReconcileMemory.ts",
+    "apps/backend/src/modules/ai-assistant/migrations/Migration20260913090000AiAssistant.ts"
   ],
   "managed_files": [
     {
@@ -164,7 +165,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/ai-assistant/components/mcp-servers.tsx",
-      "sha256": "63082f2d20b4588c345199d8634e9de59e5ed3785aaebeec5d540a4715d5592e"
+      "sha256": "9d69f9b70c76652e345cd83c381761a67015652f45ef701c06a769e101f5f693"
     },
     {
       "path": "apps/backend/src/admin/routes/ai-assistant/components/memory.tsx",
@@ -176,7 +177,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/ai-assistant/components/runs.tsx",
-      "sha256": "79d767eb50e4d22ebc71bd142b84930428e77df3ce0b549f09b418650d3689a0"
+      "sha256": "77d55d8d82d3e585b9e4f3327a8404f569d7d94f757d7c726b778533b1f1cf48"
     },
     {
       "path": "apps/backend/src/admin/routes/ai-assistant/components/suggested-connectors.tsx",
@@ -196,7 +197,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/ai-assistant/components/workflows.tsx",
-      "sha256": "23d6fc0037f904f045ad2e9b505fbd1bef62f8236892e6727ed05494420b415b"
+      "sha256": "171697295755f57a8576f6b6f99a1e663c651fc3ed75488662a361c022b7b171"
     },
     {
       "path": "apps/backend/src/admin/routes/ai-assistant/config/page.tsx",
@@ -208,7 +209,11 @@
     },
     {
       "path": "apps/backend/src/admin/routes/ai-assistant/hooks.tsx",
-      "sha256": "5215005278c8a73f995c157a8f8e0c8cb4994a1a6e36327cfc5712958acd9c71"
+      "sha256": "c95be43fa9e5cc2e05d5265fccea8a6ce9a58459c2e73d315fc1016766c34747"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/ai-assistant/i18n.ts",
+      "sha256": "9a47fc03ecbfd44dd45c63ab4f37d39ac5e8f6bea381e1ece75be9414ca512e9"
     },
     {
       "path": "apps/backend/src/admin/routes/ai-assistant/lib/campaign-blocks.ts",
@@ -280,7 +285,7 @@
     },
     {
       "path": "apps/backend/src/api/admin/ai-assistant/mcp-servers/_serialize.ts",
-      "sha256": "42e5762be1c4153f97c7d209f720af9f418c95ec07829aa76f4dbe821e658482"
+      "sha256": "4caeadf1a4dd96183804521bad7cb40c562684adc70096bc637ef64e91703cb0"
     },
     {
       "path": "apps/backend/src/api/admin/ai-assistant/mcp-servers/[id]/oauth/start/route.ts",
@@ -292,11 +297,11 @@
     },
     {
       "path": "apps/backend/src/api/admin/ai-assistant/mcp-servers/[id]/route.ts",
-      "sha256": "45705f91ad743aa87128edf4ba4bc437c1a2cbf3a56b7b656ec0e7bf99f27371"
+      "sha256": "27dfc49beee60fbb9fc3858514f2a49cbeba0dd23358d7e3e3561b8bb136f6fa"
     },
     {
       "path": "apps/backend/src/api/admin/ai-assistant/mcp-servers/route.ts",
-      "sha256": "e927c57d31ba4544f1470b9d21eef2036fa3338e36fde76f9ad1fb266fbdad48"
+      "sha256": "29b6f4b64eadd49c66ae361d5b128f94edee0eb316fb45270f7aa6916357d72d"
     },
     {
       "path": "apps/backend/src/api/admin/ai-assistant/memory/[id]/feedback/route.ts",
@@ -384,7 +389,7 @@
     },
     {
       "path": "apps/backend/src/api/admin/ai-assistant/validators.ts",
-      "sha256": "bf5ead5aaa2fd6835853f5754c91f93822e88f3929615d78cb9c8761560e76fc"
+      "sha256": "96d5010a83e572ced23e5a5fbc68f69539aab754934eb876d66435612de628da"
     },
     {
       "path": "apps/backend/src/api/admin/ai-assistant/workflows/[id]/route.ts",
@@ -424,7 +429,7 @@
     },
     {
       "path": "apps/backend/src/api/mcp/oauth/authorize/route.ts",
-      "sha256": "a3e5cf7f599a5b823fa7a9e3845502579579edd56a6d57fdac6801299d266d0d"
+      "sha256": "0e9360cdbe57e41b66f11c9639993c774073b8be8d123252bfdbb4563751dc06"
     },
     {
       "path": "apps/backend/src/api/mcp/oauth/middlewares.ts",
@@ -444,7 +449,7 @@
     },
     {
       "path": "apps/backend/src/api/webhooks/kapso/route.ts",
-      "sha256": "b3b89497d49f9d974a315e886b3d49f59af5afb0b10736a4845c1f618bcd4522"
+      "sha256": "0854bbf1697e88cf55f206417340a505c5282619dd3cbfd9985eabde6e015156"
     },
     {
       "path": "apps/backend/src/jobs/embed-pending-memories.ts",
@@ -484,7 +489,7 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/agent.ts",
-      "sha256": "7fce9723ac4c73d4726419355c7efaed07989bcd908766eb8129f98dd5f684c3"
+      "sha256": "9274391863fa692d3dd9262d0d147cf29a1245979b475970236b426cf6f24f7f"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/agents.test.ts",
@@ -548,7 +553,7 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/headless.ts",
-      "sha256": "658dc75ef6b5d4c3a1cbf39cf44b7961b82da0c967928bc7a8d4a0e88898cb38"
+      "sha256": "20218b14dc0d13236fead457da0d1f3bb790fda59fea885cd10604870f9afc24"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/hooks.ts",
@@ -560,7 +565,7 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/mcp-client.ts",
-      "sha256": "9db94f818e3eed36a52bf718ef7870c9c274e92749536105b663da4e595310c8"
+      "sha256": "1a6ab449e2bdffd6f0ccdae114c93e061026a58243957bf02c68a882b92963c1"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/mcp-oauth.ts",
@@ -596,7 +601,7 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/index.ts",
-      "sha256": "d9e0247d4bf1ff893e1b5b3b5ebff2d21dd32dfdbef15859eb9db823ef3ae555"
+      "sha256": "f8d6c619740ed8e8195c02906fbaac770a4714efaa0e02341b90226aec5af04f"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/loyalty-tools.ts",
@@ -604,11 +609,11 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/names.ts",
-      "sha256": "3a12b86bfa08d0d91345a774e0a9fdc0d8a41e70473b8e87bdbee210c8fafb15"
+      "sha256": "684cae603906f1e700b721d84a01852dac57941775a9be0966b44b5a079fdba2"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/whatsapp-tools.ts",
-      "sha256": "fa5c34ebea6f858ab523533965372d502b4a4f36ad901b882b93e45254c9d928"
+      "sha256": "b65c540586f9ddddf62feb5704665f2f9015705074df5e34b089b23b6fc7d6dd"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/policy.test.ts",
@@ -616,7 +621,7 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/policy.ts",
-      "sha256": "b26077dfaf386afa23007ee233459eae66ebc915a7907bdbfc7e71fa8cb04119"
+      "sha256": "3980d228d2f4b0a5de54ef435e50aa25a5c007210f25e6f613e7b31e580cb774"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/presets.ts",
@@ -652,7 +657,7 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/run-events.ts",
-      "sha256": "48c5c472260b4abab1cdb512c6782f94c1e80a3257ec6186f4a82fefcfd3066c"
+      "sha256": "6eb91dc50063d975f08ceca2fb610eab955e7477573fab7fd7df0bccbe059b07"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/runtime-contract.test.ts",
@@ -660,7 +665,7 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/runtime.ts",
-      "sha256": "b165f5f44df55004515bcb7bdf3e4f7b6a1e484ca559d5312a7065b85fdb1ba3"
+      "sha256": "41931cf308b34faa46e5d1138cbbbabadc34805ed7ae9f3d2e85beb403038d5e"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/self-correct.test.ts",
@@ -676,11 +681,15 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/tool-registry.ts",
-      "sha256": "ac8c8ef54b388ac5e1a1668caee3b3aea3c45c29e7c34785f2850d01e32358ae"
+      "sha256": "da55953b5d128c330c9d6a3aca14124aacd921ce0303492def5014aa6556620f"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/tool-result.test.ts",
+      "sha256": "7e9a78f32cbe1d3e9bfb80f788fae067eb72da878da7d7e3495d6bf9be87265a"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/tool-result.ts",
-      "sha256": "e495e58bd920f0953f057a521a4b1a6d9a715c79d128521b1edac5c863c78f06"
+      "sha256": "75e6dc795afc453c2f36e9254fadc301b1a4953cc6396fb0250a6354944c9dca"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/tracing.ts",
@@ -700,7 +709,15 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/workflow-engine.ts",
-      "sha256": "aec36a1977c94b2e34d061d1c4b1292b782b8fcb35f6e9499587e38960aa41aa"
+      "sha256": "df045dbe4802dfafb061184c96b57f6338357bedb701b05232180829d40cd7ff"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/workflow-result.test.ts",
+      "sha256": "86117d514ce756c04c0a3cbeffdd7666f82f74bd478e680132474ca3cc8635fc"
+    },
+    {
+      "path": "apps/backend/src/modules/ai-assistant/ai/workflow-result.ts",
+      "sha256": "7a4ca72a82f3d97314afe932e68b1523018fa86730fd526c67762da6061c077b"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/workflows/campaign.ts",
@@ -799,6 +816,10 @@
       "sha256": "7ae3543fdfc01db78268c822ff2142bec53e8a286f3e7c33ee2d69b1712a1cb0"
     },
     {
+      "path": "apps/backend/src/modules/ai-assistant/migrations/Migration20260913090000AiAssistant.ts",
+      "sha256": "0b8b40cf7745d5f9637d4c3fb35f0bcc74a09d6d70afec1db7b3372166e7fb61"
+    },
+    {
       "path": "apps/backend/src/modules/ai-assistant/models/agent-memory.ts",
       "sha256": "afd4d475c7568ed286acc3df0c3cc1f883ed57ff147f03121c4d35dfa0d03472"
     },
@@ -836,7 +857,7 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/models/mcp-server.ts",
-      "sha256": "5056fc24ccce0a06b61447bae42eb357f3036ef7dd354332bdf36bb74aa5ee2b"
+      "sha256": "64ca9431973012ada0ac965dcd28ebb87cdf5df086593bf2bc3dc5eee8fc5128"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/models/memory-document.ts",

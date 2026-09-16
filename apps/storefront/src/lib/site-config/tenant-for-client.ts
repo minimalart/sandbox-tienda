@@ -1,8 +1,9 @@
 import type { TenantConfig } from "./types";
 
 /**
- * Deja fuera del payload al cliente los bloques de contenido de los templates que esta
- * tienda NO usa.
+ * Deja fuera del payload al cliente los bloques de contenido que ningún Client
+ * Component lee: los templates que esta tienda NO usa, y las secciones de home
+ * del baseline.
  *
  * ─── QUÉ PASABA ──────────────────────────────────────────────────────────────
  *
@@ -22,16 +23,37 @@ import type { TenantConfig } from "./types";
  * HTML generado los encuentra igual. Con razón: son ~100 KB por respuesta y describen
  * un catálogo que la tienda no vende.
  *
+ * ─── LA SEGUNDA MITAD (DESDEELSUR-61, BUG-10) ────────────────────────────────
+ *
+ * Recortar los templates inactivos no alcanzaba, porque el leak más grande no venía
+ * de `assets.technology` sino del PROPIO template activo. `defaultConfig` es el
+ * baseline de CUALQUIER deploy del boilerplate, pero su contenido es el de un
+ * supermercado concreto; y `mergeMainTenant` hace `{ ...base.assets, ...payload.assets }`,
+ * shallow por clave. O sea: toda sección de home que la fila del sitio no define se
+ * queda con la del demo.
+ *
+ * En el HTML de producción de desdeelsur —una pinturería— eso dejaba
+ * `{"name":"Mercatto","src":"/logo_full.webp"}` en `partners`, un `moreProducts`
+ * titulado "Recorré todo el supermercado", `collections` con "Frutas y Verduras" y
+ * heroSlides con "Ver frescos". QA lo encontró leyendo el código fuente (Ctrl+U): no
+ * se ve en pantalla, pero incumple el requisito de que no quede ninguna referencia a
+ * Mercatto en el sitio del cliente.
+ *
  * ─── POR QUÉ ES SEGURO ───────────────────────────────────────────────────────
  *
- * Los únicos lectores de estos bloques viven en `modules/home-technology`,
- * `home-fashion`, `home-tech-retail` y `home-sports`, y los cuatro se montan
- * exclusivamente detrás de su propio `template` (`(main)/layout.tsx` y
- * `demo/[slug]/page.tsx` lo chequean antes de renderizar). Un template que no está
- * activo no tiene quién lea su bloque.
+ * Mismo argumento que el recorte de templates: sólo se deja de mandar lo que nadie
+ * iba a leer del otro lado.
  *
- * El bloque del template ACTIVO se conserva entero. Esto no cambia nada de lo que se
- * ve: sólo deja de mandar lo que nadie iba a leer.
+ * Las secciones de home son SERVER-ONLY por construcción. `HomeRenderer` es un
+ * `async function` Server Component: monta los bloques del documento Puck
+ * (`assets.homeLayout`) y les pasa el contenido de `assets` ya resuelto. Los
+ * componentes de sección lo reciben como props ya serializadas — ninguno lee el
+ * tenant desde el contexto del cliente. Se verificó clave por clave: el único bloque
+ * de contenido con un lector `"use client"` es `searchSuggestions`
+ * (`modules/layout/components/header-search-bar`), y POR ESO no está en esta lista.
+ *
+ * Recortar acá y no en el merge es deliberado, por la misma razón que el recorte de
+ * templates: los Server Components tienen que seguir viendo el tenant completo.
  *
  * ─── DÓNDE APLICARLO ─────────────────────────────────────────────────────────
  *
@@ -52,6 +74,32 @@ const TEMPLATE_ASSET_KEY = {
 
 const ALL_TEMPLATE_ASSET_KEYS = Object.values(TEMPLATE_ASSET_KEY);
 
+/**
+ * Secciones de home que sólo lee el server (vía `HomeRenderer`) y por lo tanto no
+ * tienen por qué viajar en el payload RSC.
+ *
+ * AL AGREGAR UNA CLAVE ACÁ: confirmá que ningún archivo con `"use client"` la lee
+ * desde el contexto del tenant. Si algún día una sección se vuelve client-side, sacala
+ * de esta lista — de lo contrario le llega `undefined` y la sección desaparece en
+ * silencio, sin error de build ni de tipos.
+ *
+ * `searchSuggestions` NO va acá: la lee `header-search-bar`, que es un Client Component.
+ */
+const SERVER_ONLY_HOME_KEYS = [
+  "heroBanners",
+  "featuredCategories",
+  "newArrivals",
+  "featuredProducts",
+  "novedades",
+  "renovaEnergia",
+  "destacadosDelMes",
+  "collections",
+  "partners",
+  "moreProducts",
+  "resellerKits",
+  "shoppableVideos",
+] as const;
+
 export function tenantForClient(tenant: TenantConfig): TenantConfig {
   const active =
     TEMPLATE_ASSET_KEY[tenant.template as keyof typeof TEMPLATE_ASSET_KEY];
@@ -59,6 +107,9 @@ export function tenantForClient(tenant: TenantConfig): TenantConfig {
   const assets: Record<string, unknown> = { ...(tenant.assets ?? {}) };
   for (const key of ALL_TEMPLATE_ASSET_KEYS) {
     if (key !== active) delete assets[key];
+  }
+  for (const key of SERVER_ONLY_HOME_KEYS) {
+    delete assets[key];
   }
 
   return { ...tenant, assets: assets as TenantConfig["assets"] };

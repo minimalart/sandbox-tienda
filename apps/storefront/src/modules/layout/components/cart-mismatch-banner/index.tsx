@@ -7,13 +7,32 @@ import type { StoreCart, StoreCustomer } from "@medusajs/types";
 import { Button } from "@medusajs/ui";
 import { useState } from "react";
 
+/**
+ * Aviso de carrito colgado de un invitado, con la acción para pasarlo a la cuenta.
+ *
+ * ── EL TEXTO DESCRIBE EL ESTADO, NO UN FALLO ────────────────────────────────
+ *
+ * Antes decía "Algo salió mal al intentar transferir tu carrito" apenas se montaba.
+ * Pero la condición que lo monta —`shouldTransferCartToCustomer`— no es un error: es
+ * el estado NORMAL de quien cargó el carrito sin loguearse y después inició sesión.
+ * Nadie intentó ninguna transferencia todavía, así que nada pudo salir mal.
+ *
+ * En producción eso daba un aviso rojo de error mientras el carrito se veía completo
+ * en el header y al abrirlo — QA lo reportó como "falso error" con razón, porque el
+ * mensaje decía que algo había fallado cuando no había fallado nada
+ * (DESDEELSUR-61, BUG-16).
+ *
+ * Peor que el ruido: el aviso quemaba la señal. Cuando el transfer SÍ falle, el
+ * usuario ya vio mil veces ese mismo cartel sin consecuencias y no le va a dar bola.
+ * Por eso el texto de error ahora aparece SÓLO después de un fallo real.
+ */
 function CartMismatchBanner(props: {
   customer: StoreCustomer;
   cart: StoreCart;
 }) {
   const { customer, cart } = props;
   const [isPending, setIsPending] = useState(false);
-  const [actionText, setActionText] = useState("Reintentar transferencia");
+  const [hasFailed, setHasFailed] = useState(false);
 
   // No alcanza con mirar `cart.customer_id`: un carrito puede tener customer_id
   // de un INVITADO (Medusa lo crea solo al guardar el email en el paso de
@@ -27,21 +46,31 @@ function CartMismatchBanner(props: {
   const handleSubmit = async () => {
     try {
       setIsPending(true);
-      setActionText("Transfiriendo..");
+      setHasFailed(false);
 
       await transferCart();
     } catch {
-      setActionText("Reintentar transferencia");
+      setHasFailed(true);
       setIsPending(false);
     }
   };
+
+  const message = hasFailed
+    ? "No pudimos pasar tu carrito a tu cuenta"
+    : "Tenés productos en un carrito de invitado";
+
+  const actionText = isPending
+    ? "Pasando a tu cuenta.."
+    : hasFailed
+      ? "Reintentar"
+      : "Sumarlos a mi cuenta";
 
   return (
     <div className="mt-2 flex items-center justify-center gap-1 bg-orange-300 p-2 text-center text-orange-800 text-sm small:gap-2 small:p-4">
       <div className="flex flex-col items-center gap-1 small:flex-row small:gap-2">
         <span className="flex items-center gap-1">
           <ExclamationCircleSolid className="inline" />
-          Algo salió mal al intentar transferir tu carrito
+          {message}
         </span>
 
         <span>·</span>

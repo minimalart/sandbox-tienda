@@ -7,7 +7,6 @@ import { useUIStore } from "@lib/stores/ui.store";
 import { useWishlistDrawerStore } from "@lib/stores/wishlist-drawer.store";
 import BottomNav from "@modules/layout/components/bottom-nav";
 import MobileMenu from "@modules/layout/components/mobile-menu";
-import CartDrawer from "@modules/layout/components/cart-drawer";
 
 type MobileNavControllerProps = {
   customer?: HttpTypes.StoreCustomer | null;
@@ -31,7 +30,6 @@ const MobileNavController = ({
   // Zustand cart store - subscribe to cart so we re-render on hydration
   const isOpen = useCartStore((state) => state.isOpen);
   const openCart = useCartStore((state) => state.openCart);
-  const closeCart = useCartStore((state) => state.closeCart);
   const cart = useCartStore((state) => state.cart);
 
   const cartCount = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
@@ -58,11 +56,6 @@ const MobileNavController = ({
         hasSpaceDesigner={hasSpaceDesigner}
         open={isMobileMenuOpen}
         onClose={closeMobileMenu}
-      />
-      
-      <CartDrawer
-        open={isOpen}
-        onClose={closeCart}
       />
     </>
   );

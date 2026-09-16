@@ -1,4 +1,5 @@
 "use client";
+import { usesQuickViewOnly } from "@lib/site-config/template-helpers";
 
 import { getIndividualVariant } from "@lib/util/get-individual-variant";
 import { isProductInStock } from "@lib/util/is-product-in-stock";
@@ -17,6 +18,12 @@ import {
 } from "@modules/common/components/variant-labels";
 import type { HttpTypes } from "@medusajs/types";
 import ProductQuickViewModal from "@modules/common/components/quick-view-modal";
+import {
+  configuratorCtaLabel,
+  isGiftCardProduct,
+  requiresConfigurator,
+} from "@lib/util/product-configurator";
+import { Gift, Pipette } from "lucide-react";
 import { CartQuantitySelector } from "@modules/common/components/cart-quantity-selector";
 import DisneyBadge from "@modules/common/components/disney-badge";
 import { isNewProduct } from "@lib/util/is-new-product";
@@ -56,6 +63,7 @@ const FeaturedProductCard = ({
 }: FeaturedProductCardProps) => {
   const [open, setOpen] = useState(false);
   const tenant = useTenant();
+  const quickViewOnly = usesQuickViewOnly(tenant.template);
   const { areVariantLabelsVisible } = useTenantSections();
   const isSportsTemplate = tenant.template === "sports";
   const { countryCode } = useParams() as { countryCode: string };
@@ -165,6 +173,12 @@ const FeaturedProductCard = ({
     setOpen(true);
   };
 
+  // Gift cards y bases entonables se configuran en el PDP: la card lleva ahí y
+  // no ofrece ni quick view ni quick-add (ver `lib/util/product-configurator`).
+  const needsConfigurator = requiresConfigurator(product);
+  const isGiftCard = isGiftCardProduct(product);
+  const ctaLabel = configuratorCtaLabel(product);
+
   const imageSrc =
     product.thumbnail || product.images?.[0]?.url || PLACEHOLDER_IMAGE;
   const subtitle = product.description || "";
@@ -172,9 +186,13 @@ const FeaturedProductCard = ({
 
   // Etiquetas de variantes (formato + colores). Se apagan por demo desde el
   // admin; los productos sin options reales devuelven listas vacías.
-  const variantLabels = areVariantLabelsVisible
-    ? getVariantLabels(product)
-    : null;
+  // En los productos con configurador tampoco van: listar las presentaciones
+  // no aporta cuando el precio ya dice "Desde" y elegir es justamente el
+  // próximo paso en el PDP.
+  const variantLabels =
+    areVariantLabelsVisible && !needsConfigurator
+      ? getVariantLabels(product)
+      : null;
 
   const {
     hasDiscount,
@@ -219,7 +237,7 @@ const FeaturedProductCard = ({
               <NewBadge />
             </div>
           ) : null}
-          {product.id && variantId && (
+          {!quickViewOnly && product.id && variantId && (
             <WishlistButton
               className="absolute right-2 top-2 z-20 !rounded-none border border-[--sp-hairline] bg-white p-1.5 shadow-none"
               productId={product.id}
@@ -277,21 +295,27 @@ const FeaturedProductCard = ({
     );
   }
 
-  return (
-    <>
-      <article
-        className={`group relative flex w-full cursor-pointer flex-col overflow-hidden rounded-[24px] border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg ${variant === "home" ? "max-w-[291px]" : "max-w-[216px]"} ${!inStock ? "opacity-60" : ""}`}
-        aria-label={`Vista rápida de ${product.title}`}
-        onClick={handleCardClick}
-        onKeyDown={(e) => {
+  const articleClassName = `group relative flex w-full cursor-pointer flex-col overflow-hidden rounded-[24px] border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg ${variant === "home" ? "max-w-[291px]" : "max-w-[216px]"} ${!inStock ? "opacity-60" : ""}`;
+
+  // Con configurador la card ES un link al PDP; sin él, un botón que abre el
+  // quick view. Los handlers de teclado/click sólo aplican al segundo caso.
+  const interactionProps = needsConfigurator
+    ? {}
+    : {
+        "aria-label": `Vista rápida de ${product.title}`,
+        onClick: handleCardClick,
+        onKeyDown: (e: React.KeyboardEvent) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            handleCardClick(e as any);
+            handleCardClick(e as never);
           }
-        }}
-        role="button"
-        tabIndex={0}
-      >
+        },
+        role: "button",
+        tabIndex: 0,
+      };
+
+  const article = (
+      <article className={articleClassName} {...interactionProps}>
         <div className="relative flex items-center justify-center bg-[#F6F6F6] aspect-square">
           {/* Columna superior izquierda: badge de estado + colores del
               producto, en un solo stack para que no se solapen. */}
@@ -329,7 +353,7 @@ const FeaturedProductCard = ({
             />
           )}
           </div>
-          {product.id && variantId && (
+          {!quickViewOnly && product.id && variantId && (
             <WishlistButton
               className="absolute top-3 right-3 rounded-full bg-white border border-gray-200 shadow-sm p-1.5"
               productId={product.id}
@@ -353,7 +377,19 @@ const FeaturedProductCard = ({
             </div>
           )}
 
-          {isStore && inStock && (
+          {/* Mismo slot que el add-to-cart (overlay sobre la imagen), para que
+              la card mida igual que las otras de la fila. <span> y no <button>:
+              la card entera ya es el link al PDP. */}
+          {needsConfigurator && (
+            <span
+              className="absolute bottom-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[--primary-color] bg-[--primary-color] text-white"
+              title={ctaLabel ?? undefined}
+            >
+              {isGiftCard ? <Gift className="h-4 w-4" /> : <Pipette className="h-4 w-4" />}
+            </span>
+          )}
+
+          {isStore && inStock && !needsConfigurator && (
             <div className="absolute bottom-3 right-3" ref={buttonRef}>
               <CartQuantitySelector
                 quantity={quantity}
@@ -373,7 +409,10 @@ const FeaturedProductCard = ({
           <div className="mb-1">
             <div className="flex min-w-0 items-baseline gap-2 whitespace-nowrap">
               <p className="shrink-0 font-semibold text-[#111827] text-[16px] md:text-[18px] leading-tight">
-                {priceWithSymbol}
+                {/* El precio de la card es el de la variante más barata, y en
+                    estos productos el cliente todavía elige (monto de la gift
+                    card, color de la base): "Desde" evita prometer ese precio. */}
+                {needsConfigurator ? `Desde ${priceWithSymbol}` : priceWithSymbol}
               </p>
               {hasDiscount &&
                 promotionType !== "buyget" &&
@@ -396,8 +435,26 @@ const FeaturedProductCard = ({
           <h3 className="mb-1 line-clamp-2 min-h-[2.6em] font-semibold text-[#111827] text-[14px] md:text-[16px] leading-tight">
             {product.title}
           </h3>
+
         </div>
       </article>
+  );
+
+  if (needsConfigurator) {
+    return (
+      <LocalizedClientLink
+        aria-label={`${ctaLabel}: ${product.title}`}
+        className="block w-full"
+        href={`/products/${product.handle}`}
+      >
+        {article}
+      </LocalizedClientLink>
+    );
+  }
+
+  return (
+    <>
+      {article}
 
       <ProductQuickViewModal
         product={product}

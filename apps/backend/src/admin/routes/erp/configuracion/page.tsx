@@ -18,7 +18,9 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useErpConfig,
+  useErpConfigLookups,
   useErpPriceListOptions,
+  useResetImageFailures,
   useStockLocationOptions,
   useUpdateErpConfig,
   useValidateErpConnection,
@@ -30,6 +32,7 @@ import {
   type ErpZeusSettings,
 } from '../../../hooks/api';
 import { ErpSettingLabel, useErpTranslationsReady } from '../components/shared';
+import { ErpCodeField } from '../components/code-field';
 import { ExtensionSettingsCard } from '../../../components/app-settings/extension-settings-card';
 import { CardSiteContext } from '../../../components/common/card-site-context';
 import { HelpDrawer } from '../../../components/common/help-drawer';
@@ -133,6 +136,13 @@ const ErpConfigPage = () => {
   const [catMaxUnpublishPct, setCatMaxUnpublishPct] = useState('10');
   /** Bajar las fotos del ERP y dejarlas como imagen del producto. */
   const [catImportImages, setCatImportImages] = useState(false);
+  /**
+   * Lado menor mínimo aceptado, en píxeles. Se guarda como string para que el
+   * input reproduzca el pattern del resto del form (Input con .toString());
+   * `''` significa "no lo mandes" y el motor cae al default (500). `0` es un
+   * valor válido y desactiva el filtro por completo.
+   */
+  const [catImageMinDimensionPx, setCatImageMinDimensionPx] = useState('');
   const [catCategoriesSync, setCatCategoriesSync] = useState(false);
   const [catCategoriesSyncRank, setCatCategoriesSyncRank] = useState(false);
   const [catBrandsSync, setCatBrandsSync] = useState(false);
@@ -191,6 +201,23 @@ const ErpConfigPage = () => {
   const [bsaleDispatchStock, setBsaleDispatchStock] = useState(false);
   const [bsaleSendEmail, setBsaleSendEmail] = useState(false);
   const [bsalePricesIncludeTax, setBsalePricesIncludeTax] = useState(true);
+  /**
+   * Códigos válidos de la cuenta del ERP. Si el listado no llega, cada campo
+   * degrada solo a texto libre: los seis fallan por separado y un select vacío
+   * bloquearía una config que hoy se completa a mano.
+   */
+  const { data: lookups } = useErpConfigLookups();
+  const lookupProps = (kind: string) => {
+    const diagnostic = lookups?.diagnostics?.[kind];
+    return {
+      options: lookups?.options?.[kind],
+      error: lookups?.errors?.[kind],
+      // Filas que llegaron y no se pudieron leer: bug del normalizador, no algo
+      // que el operador pueda resolver escribiendo mejor.
+      unreadable: Boolean(diagnostic && diagnostic.received > 0 && diagnostic.usable === 0),
+    };
+  };
+
   const [zeusBaseUrl, setZeusBaseUrl] = useState('');
   const [zeusEcommerceId, setZeusEcommerceId] = useState('');
   const [zeusSucursal, setZeusSucursal] = useState('');
@@ -245,6 +272,9 @@ const ErpConfigPage = () => {
     setCatStatusUnpublishMissing(catalog.status_sync_unpublish_missing ?? false);
     setCatMaxUnpublishPct(catalog.max_unpublish_pct?.toString() ?? '10');
     setCatImportImages(catalog.images?.enabled ?? false);
+    setCatImageMinDimensionPx(
+      catalog.images?.min_dimension_px != null ? catalog.images.min_dimension_px.toString() : ''
+    );
     setCatCategoriesSync(catalog.categories_sync ?? false);
     setCatCategoriesSyncRank(catalog.categories_sync_rank ?? false);
     setCatBrandsSync(catalog.brands_sync ?? false);
@@ -347,6 +377,12 @@ const ErpConfigPage = () => {
     onError: (error) => toast.error(t('CONFIG_VALIDATE_FAILED', { msg: error.message })),
   });
 
+  const { mutate: resetImageFailures, isPending: isResettingImages } = useResetImageFailures({
+    onSuccess: (result) =>
+      toast.success(t('CFG_RESET_IMAGE_FAILURES_OK', { count: result.cleared })),
+    onError: (error) => toast.error(t('CFG_RESET_IMAGE_FAILURES_ERROR', { msg: error.message })),
+  });
+
   /**
    * `last_synced_at` y `categories_backfill_pending` NO se envían: los escribe
    * el motor y mandarlos desde acá los pisaría con un valor viejo. El backend
@@ -374,6 +410,12 @@ const ErpConfigPage = () => {
       max_unpublish_pct: toInt(catMaxUnpublishPct, 10),
       images: {
         enabled: catImportImages,
+        // `min_dimension_px` viaja SOLO si el operador tipeó algo — vacío deja
+        // que el motor use el default (`DEFAULT_MIN_IMAGE_DIMENSION_PX`, 500).
+        // `0` es un valor válido explícito: desactiva el filtro.
+        ...(catImageMinDimensionPx.trim() !== ''
+          ? { min_dimension_px: toInt(catImageMinDimensionPx, 500) }
+          : {}),
         // Prenderlo deja un backfill pendiente: la próxima corrida recorre el
         // catálogo completo para traer las fotos de los productos que ya están.
         // No se manda `false` nunca desde acá — lo apaga el motor al terminar bien.
@@ -1410,6 +1452,49 @@ const ErpConfigPage = () => {
                   onCheckedChange={setCatImportImages}
                 />
               </div>
+              {catImportImages && (
+                <div className="flex flex-col gap-3 pl-4">
+                  <div className="flex flex-col gap-1">
+                    <ErpSettingLabel
+                      size="xsmall"
+                      htmlFor="cat-image-min-dimension-px"
+                      label={t('CFG_IMAGE_MIN_DIMENSION_PX')}
+                      hint={t('CFG_IMAGE_MIN_DIMENSION_PX_HELP')}
+                    />
+                    <Input
+                      id="cat-image-min-dimension-px"
+                      value={catImageMinDimensionPx}
+                      onChange={(event) => setCatImageMinDimensionPx(event.target.value)}
+                      placeholder="500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <ErpSettingLabel
+                      size="xsmall"
+                      label={t('CFG_RESET_IMAGE_FAILURES')}
+                      hint={t('CFG_RESET_IMAGE_FAILURES_HELP')}
+                    />
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      className="shrink-0"
+                      isLoading={isResettingImages}
+                      disabled={isResettingImages}
+                      onClick={() => {
+                        // `window.confirm` es el pattern del resto del admin
+                        // para acciones destructivas de baja frecuencia; una
+                        // modal a medida sumaría superficie sin cambiar el UX
+                        // efectivo (una sola confirmación bloqueante).
+                        if (window.confirm(t('CFG_RESET_IMAGE_FAILURES_CONFIRM'))) {
+                          resetImageFailures();
+                        }
+                      }}
+                    >
+                      {t('CFG_RESET_IMAGE_FAILURES_BUTTON')}
+                    </Button>
+                  </div>
+                </div>
+              )}
               {/*
                 Alcance del barrido completo. Va acá y no en la grilla de números
                 porque son decisiones de "qué trabajo hace", no de calendario.
@@ -1881,31 +1966,21 @@ const ErpConfigPage = () => {
                     {t('CONFIG_ZEUS_ECOMMERCE_ID_HINT')}
                   </Text>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    {t('CONFIG_ZEUS_SUCURSAL')}
-                  </Text>
-                  <Input
-                    type="number"
-                    value={zeusSucursal}
-                    onChange={(e) => setZeusSucursal(e.target.value)}
-                    placeholder="1"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    {t('CONFIG_ZEUS_DEPOSITO')}
-                  </Text>
-                  <Input
-                    type="number"
-                    value={zeusDepositoId}
-                    onChange={(e) => setZeusDepositoId(e.target.value)}
-                    placeholder="1"
-                  />
-                  <Text size="xsmall" className="text-ui-fg-muted">
-                    {t('CONFIG_ZEUS_DEPOSITO_HINT')}
-                  </Text>
-                </div>
+                <ErpCodeField
+                  numeric
+                  label={t('CONFIG_ZEUS_SUCURSAL')}
+                  value={zeusSucursal}
+                  onChange={setZeusSucursal}
+                  {...lookupProps('sucursales')}
+                />
+                <ErpCodeField
+                  numeric
+                  label={t('CONFIG_ZEUS_DEPOSITO')}
+                  value={zeusDepositoId}
+                  onChange={setZeusDepositoId}
+                  help={t('CONFIG_ZEUS_DEPOSITO_HINT')}
+                  {...lookupProps('depositos')}
+                />
                 <div className="flex flex-col gap-1">
                   <Text size="xsmall" className="text-ui-fg-subtle">
                     {t('CONFIG_ZEUS_PTO_VTA')}
@@ -1926,16 +2001,12 @@ const ErpConfigPage = () => {
                     onChange={(e) => setZeusCodLista(e.target.value)}
                   />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    {t('CONFIG_ZEUS_COND_VENTA')}
-                  </Text>
-                  <Input
-                    value={zeusCondVenta}
-                    onChange={(e) => setZeusCondVenta(e.target.value)}
-                    placeholder="CONTADO"
-                  />
-                </div>
+                <ErpCodeField
+                  label={t('CONFIG_ZEUS_COND_VENTA')}
+                  value={zeusCondVenta}
+                  onChange={setZeusCondVenta}
+                  {...lookupProps('condiciones-ventas')}
+                />
                 <div className="flex flex-col gap-1">
                   <Text size="xsmall" className="text-ui-fg-subtle">
                     {t('CONFIG_ZEUS_TIPO_COMP')}
@@ -1946,12 +2017,12 @@ const ErpConfigPage = () => {
                     placeholder="PE"
                   />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    {t('CONFIG_ZEUS_VENDEDOR')}
-                  </Text>
-                  <Input value={zeusVendedor} onChange={(e) => setZeusVendedor(e.target.value)} />
-                </div>
+                <ErpCodeField
+                  label={t('CONFIG_ZEUS_VENDEDOR')}
+                  value={zeusVendedor}
+                  onChange={setZeusVendedor}
+                  {...lookupProps('vendedores')}
+                />
                 <div className="flex flex-col gap-1">
                   <Text size="xsmall" className="text-ui-fg-subtle">
                     {t('CONFIG_ZEUS_DEFAULT_CLIENT')}
@@ -1964,20 +2035,14 @@ const ErpConfigPage = () => {
                     {t('CONFIG_ZEUS_DEFAULT_CLIENT_HINT')}
                   </Text>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    {t('CONFIG_ZEUS_CODIGO_IVA')}
-                  </Text>
-                  <Input
-                    type="number"
-                    value={zeusCodigoIva}
-                    onChange={(e) => setZeusCodigoIva(e.target.value)}
-                    placeholder="5"
-                  />
-                  <Text size="xsmall" className="text-ui-fg-muted">
-                    {t('CONFIG_ZEUS_CODIGO_IVA_HINT')}
-                  </Text>
-                </div>
+                <ErpCodeField
+                  numeric
+                  label={t('CONFIG_ZEUS_CODIGO_IVA')}
+                  value={zeusCodigoIva}
+                  onChange={setZeusCodigoIva}
+                  help={t('CONFIG_ZEUS_CODIGO_IVA_HINT')}
+                  {...lookupProps('categorias-iva')}
+                />
                 <div className="flex flex-col gap-1">
                   <Text size="xsmall" className="text-ui-fg-subtle">
                     {t('CONFIG_ZEUS_SHIPPING_CODE')}
@@ -2000,12 +2065,12 @@ const ErpConfigPage = () => {
                     {t('CONFIG_ZEUS_TIPO_PAGO_HINT')}
                   </Text>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <Text size="xsmall" className="text-ui-fg-subtle">
-                    {t('CONFIG_ZEUS_TARJETA')}
-                  </Text>
-                  <Input value={zeusTarjeta} onChange={(e) => setZeusTarjeta(e.target.value)} />
-                </div>
+                <ErpCodeField
+                  label={t('CONFIG_ZEUS_TARJETA')}
+                  value={zeusTarjeta}
+                  onChange={setZeusTarjeta}
+                  {...lookupProps('tarjetas')}
+                />
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="zeus-create-clients">{t('CONFIG_ZEUS_CREATE_CLIENTS')}</Label>

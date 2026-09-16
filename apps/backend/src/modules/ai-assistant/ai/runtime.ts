@@ -210,7 +210,7 @@ export async function buildToolsForModel(
         resource,
         mode: !comboAllowed(scope, action, resource)
           ? ('prohibited' as const)
-          : resolveMode(name, action, resource ?? '', overrides),
+          : resolveMode(name, action, resource ?? '', overrides, t.policyHints),
       })),
     );
 
@@ -395,7 +395,7 @@ export async function execTool(
   try {
     const res = await toolRt.execute(store, name, args);
     const text = res?.content?.[0]?.text ?? JSON.stringify(res);
-    return compactToolResult(text);
+    return compactToolResult(text, name);
   } catch (e) {
     const err = e as { message?: string; status?: number };
     const msg = err.message ?? String(e);

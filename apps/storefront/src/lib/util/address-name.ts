@@ -1,3 +1,19 @@
+export const DEFAULT_ADDRESS_NAME = "Casa";
+
+export type AddressNamePreset = "Casa" | "Trabajo" | "Otro";
+
+/**
+ * Mantiene seleccionado el preset que representa al valor actual del campo.
+ * Todo nombre que no sea uno de los presets conocidos pertenece a `Otro`.
+ */
+export function getAddressNamePreset(value: string): AddressNamePreset {
+  if (value === "Casa" || value === "Trabajo") {
+    return value;
+  }
+
+  return "Otro";
+}
+
 /**
  * Espeja `address_name` dentro de `metadata.address_name`.
  *

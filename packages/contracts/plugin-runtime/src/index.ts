@@ -2,9 +2,8 @@
  * Runtime coordination contract entre el host de Mercatto y los plugins.
  *
  * Este package NO tiene lógica de negocio — es un rendez-vous a nivel proceso.
- * Todos los que lo importan (host + N plugins) comparten los mismos singletons
- * porque pnpm hoistea el package a UNA sola ubicación en `node_modules` y Node
- * cachea módulos por path físico.
+ * Host y plugins comparten un registro en globalThis, identificado por Symbol.for.
+ * No depende del hoisting: npm/pnpm pueden instalar varias copias físicas.
  *
  * ─── POR QUÉ EXISTE ─────────────────────────────────────────────────────────
  *
@@ -18,8 +17,8 @@
  * distintos (ver la nota en `snapshot.ts` del host).
  *
  * Este contract expone SETTERS que el host llama en boot y GETTERS que los
- * plugins llaman en runtime. Ambos ven las mismas variables privadas porque
- * el package es UNO solo en el proceso.
+ * plugins llaman en runtime. Las copias compatibles comparten el registro en
+ * el mismo contexto de JavaScript. Cada worker/proceso registra sus lectores.
  *
  * ─── QUIÉN LLAMA A QUIÉN ────────────────────────────────────────────────────
  *
@@ -53,7 +52,20 @@
  */
 export type AppSettingsSyncReader = (namespace: string, key: string) => unknown;
 
-let appSettingsReader: AppSettingsSyncReader | null = null;
+type UnknownReader = () => unknown;
+type SettingsRegistry = {
+  appSettingsReader: AppSettingsSyncReader | null;
+  externalReaders: Map<string, UnknownReader>;
+};
+
+// Versionar el CONTRATO, no la versión npm: las copias compatibles deben
+// encontrarse aunque tengan paths o versiones de patch diferentes.
+const registryKey = Symbol.for('mercatto.plugin-runtime.settings.v1');
+const shared = globalThis as typeof globalThis & { [registryKey]?: SettingsRegistry };
+const registry = shared[registryKey] ??= {
+  appSettingsReader: null,
+  externalReaders: new Map<string, UnknownReader>(),
+};
 
 /**
  * El host llama esto UNA VEZ en boot con su propio `resolveSettingSync`
@@ -63,7 +75,7 @@ let appSettingsReader: AppSettingsSyncReader | null = null;
  * comportamiento del plugin sin snapshot.
  */
 export function registerAppSettingsSyncReader(fn: AppSettingsSyncReader | null): void {
-  appSettingsReader = fn;
+  registry.appSettingsReader = fn;
 }
 
 /**
@@ -71,7 +83,7 @@ export function registerAppSettingsSyncReader(fn: AppSettingsSyncReader | null):
  * registró un reader: el plugin cae a `process.env` con esa señal.
  */
 export function getAppSettingsSyncReader(): AppSettingsSyncReader | null {
-  return appSettingsReader;
+  return registry.appSettingsReader;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -99,11 +111,6 @@ export function getAppSettingsSyncReader(): AppSettingsSyncReader | null {
  * lo lean con shapes distintos.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type UnknownReader = () => any;
-
-const externalReaders = new Map<string, UnknownReader>();
-
 /**
  * El host registra un getter para una key del registry. La firma pasa por
  * `unknown` en el registry para no forzar un tipo compartido — cada consumer
@@ -114,7 +121,7 @@ const externalReaders = new Map<string, UnknownReader>();
  * intencional: el host puede sobreescribir un reader default con uno propio).
  */
 export function registerExternalReader<T>(key: string, reader: () => T | null): void {
-  externalReaders.set(key, reader as UnknownReader);
+  registry.externalReaders.set(key, reader);
 }
 
 /**
@@ -123,7 +130,7 @@ export function registerExternalReader<T>(key: string, reader: () => T | null): 
  * feature off, log warning).
  */
 export function getExternalReader<T>(key: string): (() => T | null) | null {
-  const reader = externalReaders.get(key);
+  const reader = registry.externalReaders.get(key);
   return reader ? (reader as () => T | null) : null;
 }
 

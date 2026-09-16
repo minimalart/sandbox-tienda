@@ -1,4 +1,7 @@
 import { runHeadlessAnalysis } from './headless';
+import { parseWorkflowResult, resultContract, validateWorkflowResult, type ResultContract, type WorkflowBlock } from './workflow-result';
+import type { ModelProvider } from './chat-client';
+import type { ToolRuntime } from './tool-registry';
 import { memoryOptionsFromConfig } from './memory';
 import type { AiStore, MemoryRuntimeOptions } from './types';
 import { upsertCampaign, buildCampaignOutputsPatch, stepOut, strList } from './campaign';
@@ -23,6 +26,7 @@ import { validateGeneratedBlogContentHtml } from './native-tools/blog-content-qu
  */
 
 export type WorkflowStep = {
+  result_contract?: ResultContract;
   key: string;
   agent_key: string;
   task: string;
@@ -100,17 +104,6 @@ function withDerived(state: Record<string, unknown>): Record<string, unknown> {
 }
 
 /** Resultado estructurado que cada subagente emite al final: <result>{json}</result>. */
-function parseResult(text: string): Record<string, unknown> | null {
-  const m = text.match(/<result>([\s\S]*?)<\/result>/i);
-  if (!m) return null;
-  try {
-    const o = JSON.parse((m[1] ?? '').trim());
-    return o && typeof o === 'object' ? (o as Record<string, unknown>) : null;
-  } catch {
-    return null;
-  }
-}
-
 function stripResult(text: string): string {
   // Saca el bloque <result> (datos estructurados) y también cualquier <proposal>
   // (convención del análisis proactivo): en la voz de un subagente de workflow no
@@ -190,12 +183,14 @@ async function dispatchSubagent(
   images?: ChatAttachment[],
   activity?: { runId: string; stepKey: string; onEvent?: (ev: AgentEvent) => void },
   memory?: MemoryRuntimeOptions,
+  runtime?: { modelProvider?: ModelProvider; toolRuntime?: ToolRuntime; workflowContract?: ResultContract },
 ): Promise<{ text: string; data: Record<string, unknown> | null }> {
   // Presupuesto explícito: los modelos de razonamiento (gpt-5*) gastan reasoning tokens
   // que cuentan contra `max_tokens`; con el default chico truncaban la salida. reasoning
   // bajo + max_tokens holgado = artículo completo. `activity` (opcional) surfacea en vivo
   // las búsquedas/fuentes del subagente en la UI (Cadena de pensamiento del workflow).
   const raw = await runHeadlessAnalysis({
+    ...runtime,
     store,
     agentKey,
     task,
@@ -211,7 +206,7 @@ async function dispatchSubagent(
     onEvent: activity?.onEvent,
     activityContext: activity ? { runId: activity.runId, stepKey: activity.stepKey } : undefined,
   });
-  return { text: stripResult(raw), data: parseResult(raw) };
+  return { text: stripResult(raw), data: parseWorkflowResult(raw) };
 }
 
 /**
@@ -266,6 +261,8 @@ async function finalizeCampaign(
 
 /** Ejecuta (o reanuda) un workflow determinístico. */
 export async function runWorkflow(opts: {
+  modelProvider?: ModelProvider;
+  toolRuntime?: ToolRuntime;
   store: AiStore;
   nativeCtx?: NativeToolContext;
   definition: WorkflowDefinitionData;
@@ -276,11 +273,13 @@ export async function runWorkflow(opts: {
   /** Para reanudar una corrida pausada en needs_input. */
   runId?: string;
 }): Promise<WorkflowRunResult> {
-  const { definition, input = {}, threadId = null, createdBy = null, onEvent } = opts;
+  const { definition, createdBy = null, onEvent } = opts;
   const store = opts.store as RunStore;
   const nativeCtx = opts.nativeCtx;
 
   let run = opts.runId ? await store.retrieveWorkflowRun(opts.runId).catch(() => null) : null;
+  const input = opts.input ?? run?.input ?? {};
+  const threadId = opts.threadId ?? run?.thread_id ?? null;
   const state: Record<string, unknown> = (run?.state as Record<string, unknown>) ?? {};
   // Armado dinámico: solo los pasos cuyo `when` se cumple (según el input/estado).
   // Los saltados no aparecen en el checklist ni se ejecutan. Se evalúa sobre el
@@ -343,18 +342,17 @@ export async function runWorkflow(opts: {
     });
   };
   const persist = async (status?: WorkflowRunResult['status']) => {
-    await store
-      .updateWorkflowRuns({ id: runId, state, checklist, ...(status ? { status } : {}) })
-      .catch(() => {});
+    await store.updateWorkflowRuns({ id: runId, state, checklist, ...(status ? { status } : {}) });
   };
 
   // Gate de aprobación por paso: una vez aprobado, queda marcado en state.__approved.
   const approved = ((state.__approved as Record<string, boolean>) ??= {});
 
   try {
-    for (const group of groupSteps(steps)) {
+    for (const pendingGroup of groupSteps(steps)) {
+      const group = pendingGroup.filter(st => checklist.find(c => c.key === st.key)?.status !== 'completed');
       // Reanudación: saltear grupos ya completados.
-      if (group.every((st) => checklist.find((c) => c.key === st.key)?.status === 'completed')) {
+      if (group.length === 0) {
         continue;
       }
       // Pausa HITL antes de un paso que requiere aprobación y aún no se aprobó.
@@ -372,6 +370,10 @@ export async function runWorkflow(opts: {
       const results = await Promise.all(
         group.map(async (st) => {
           try {
+            const contract = resultContract(definition.key, st.key, st.result_contract);
+            if (!contract || !Object.keys(contract).length) {
+              return { st, ok: false, value: null, block: { status: 'blocked' as const, code: 'missing_contract', reason: 'El paso no tiene un contrato de resultado definido.', missing_fields: [] }, summary: 'El paso no tiene un contrato de resultado definido.', text: '' };
+            }
             const task = interpolate(st.task, { input, state: withDerived(state) });
             const { text, data } = await dispatchSubagent(
               store,
@@ -381,19 +383,13 @@ export async function runWorkflow(opts: {
               triggerImages,
               { runId, stepKey: st.key, onEvent },
               memory,
+              { modelProvider: opts.modelProvider, toolRuntime: opts.toolRuntime,
+                workflowContract: contract },
             );
-            const value: Record<string, unknown> = data ?? { text };
+            const validation = validateWorkflowResult(data, contract);
+            if (!validation.ok) return { st, ok: false, value: null, block: validation.block, summary: validation.block.reason, text: '' };
+            const value = validation.data;
             if (definition.key === 'receta' && st.key === 'redactar') {
-              // Rescate: si el redactor creó el borrador (create_blog_post lo registró
-              // en ctx.artifacts) pero no repitió el post_id en su <result>, lo
-              // completamos acá — el borrador existe y los pasos de enriquecimiento
-              // deben poder correr igual.
-              const created = nativeCtx?.artifacts?.last_blog_post;
-              if (created && typeof value.post_id !== 'string') {
-                value.post_id = created.post_id;
-                if (typeof value.slug !== 'string') value.slug = created.slug;
-                if (typeof value.preview_url !== 'string') value.preview_url = created.preview_url;
-              }
               const artifactError = await validateRecipeDraftArtifact(nativeCtx, value);
               if (artifactError) {
                 return { st, ok: false, value, summary: artifactError.slice(0, 300), text };
@@ -467,9 +463,17 @@ export async function runWorkflow(opts: {
         }),
       );
 
+      const blocks = (state.__blocked ??= {}) as Record<string, WorkflowBlock>;
       for (const r of results) {
-        state[r.st.output_key || r.st.key] = r.value;
-        setStatus(r.st.key, r.ok ? 'completed' : 'failed', r.summary);
+        const block = 'block' in r ? r.block : undefined;
+        if (r.ok) {
+          state[r.st.output_key || r.st.key] = r.value;
+          delete blocks[r.st.key];
+        } else {
+          delete state[r.st.output_key || r.st.key];
+          blocks[r.st.key] = block ?? { status: 'blocked', code: 'step_failed', reason: r.summary, missing_fields: [] };
+        }
+        setStatus(r.st.key, r.ok ? 'completed' : block && r.st.on_error !== 'continue' ? 'needs_input' : 'failed', r.summary);
         // Mensaje breve del subagente → se muestra como burbuja de chat (su "voz").
         if (r.ok && r.text.trim()) {
           onEvent?.({
@@ -487,12 +491,13 @@ export async function runWorkflow(opts: {
       // (el resumen final los reporta para que el orquestador lo diga honesto).
       const blocking = results.filter((r) => !r.ok && r.st.on_error !== 'continue');
       if (blocking.length > 0) {
-        await persist('failed');
-        onEvent?.({ type: 'workflow_done', run_id: runId, status: 'failed' });
+        const status = blocking.some(r => 'block' in r && r.block) ? 'needs_input' : 'failed';
+        await persist(status);
+        onEvent?.({ type: 'workflow_done', run_id: runId, status });
         const detail = blocking
           .map((r) => `${labelFor(r.st)}: ${r.summary}`)
           .join(' | ');
-        return { runId, status: 'failed', summary: `Un paso del workflow falló — ${detail}` };
+        return { runId, status, summary: `Workflow detenido: ${detail}` };
       }
     }
 
@@ -506,8 +511,7 @@ export async function runWorkflow(opts: {
         checklist,
         status,
         ...(status === 'completed' ? { completed_at: new Date() } : {}),
-      })
-      .catch(() => {});
+      });
 
     // Campaña comercial: volcamos los outputs de cada paso al estado de la campaña y
     // la dejamos en "preview" acá (determinístico), y devolvemos un resumen propio del

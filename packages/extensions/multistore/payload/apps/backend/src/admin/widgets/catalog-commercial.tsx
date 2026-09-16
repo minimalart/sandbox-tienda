@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sdk } from '../lib/client';
 
-export default function CatalogCommercialWidget({ data }: { data: AdminProduct }) {
+const CatalogCommercialWidget = ({ data }: { data: AdminProduct }) => {
   const client = useQueryClient();
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -178,5 +178,7 @@ export default function CatalogCommercialWidget({ data }: { data: AdminProduct }
       })}
     </Container>
   );
-}
+};
+
+export default CatalogCommercialWidget;
 export const config = defineWidgetConfig({ zone: 'product.details.after' });

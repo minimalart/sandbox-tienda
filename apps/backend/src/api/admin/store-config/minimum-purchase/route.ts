@@ -13,7 +13,7 @@ const siteOf = async (req: MedusaRequest): Promise<string | null> => {
 };
 
 /**
- * GET /admin/store-config/minimum-purchase — paginated, append-only history.
+ * GET /admin/store-config/minimum-purchase — paginated history.
  *
  * Ordered by created_at DESC (most recent change first).
  * Returns { minimum_purchases, count, limit, offset }.
@@ -54,10 +54,11 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 }
 
 /**
- * POST /admin/store-config/minimum-purchase — append a new minimum purchase record.
+ * POST /admin/store-config/minimum-purchase — add a new minimum purchase record.
  *
- * APPEND-ONLY: there are no update/delete routes by design — every change is a
- * new record so the history stays auditable.
+ * Un cambio de mínimo es un registro NUEVO con su vigencia: así el historial dice
+ * cuánto rigió y cuándo. Corregir un registro (monto mal tipeado, vigencia
+ * equivocada) o borrarlo va por `./[id]/route.ts`.
  */
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {

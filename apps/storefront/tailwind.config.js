@@ -17,6 +17,22 @@ module.exports = {
     // que sí se escanea; borrar ese comentario habría dejado sin aire a todas
     // las fotos del catálogo.
     "./src/lib/**/*.{js,ts,jsx,tsx}",
+    // Los componentes compartidos del contrato viven FUERA de `src` y entran por
+    // alias del tsconfig (`@modules/common/components/checkbox-input`,
+    // `product-image`, `scroll-carousel`). Sin este glob Tailwind no los ve y sus
+    // clases no existen en el CSS: el componente renderiza, el build pasa, el
+    // typecheck pasa, y el estilo simplemente no está.
+    //
+    // Eso fue un bug vivo en producción (DESDEELSUR-61 / BUG-06): el tilde de
+    // `CheckboxInput` se pinta con `peer-checked:opacity-100`, regla que nunca se
+    // generó — `peer:checked` no aparecía en NINGÚN chunk CSS servido. El checkbox
+    // "Necesito Factura A" alternaba los campos pero jamás se veía tildado, igual
+    // que los de login, filtros de tienda, localizador de sucursales, shop-by-look,
+    // devoluciones y suscripciones.
+    //
+    // El glob se deriva de los alias del tsconfig; `content-cubre-alias.test.ts`
+    // falla si se agrega un alias a un paquete que este array no cubre.
+    "../../packages/contracts/storefront-shared/src/**/*.{js,ts,jsx,tsx}",
     "./node_modules/@medusajs/ui/dist/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
@@ -223,8 +239,107 @@ module.exports = {
           "0%": { transform: "translateY(-100%)" },
           "100%": { transform: "translateY(0)" },
         },
+
+        // --- Botón avión (newsletter del footer y formulario de contacto) ---
+        // La etiqueta sale hacia arriba, el avión despega en diagonal dejando
+        // dos estelas, y entra el estado de éxito desde abajo.
+        "plane-label-out": {
+          "0%": { opacity: "1", transform: "translateY(0)" },
+          "100%": { opacity: "0", transform: "translateY(-120%)" },
+        },
+        "plane-fly": {
+          "0%": { opacity: "0", transform: "translate(-48px, 12px) scale(.6)" },
+          "25%": { opacity: "1", transform: "translate(0, 0) scale(1)" },
+          "55%": { opacity: "1", transform: "translate(0, 0) scale(1)" },
+          "100%": {
+            opacity: "0",
+            transform: "translate(72px, -24px) scale(.5)",
+          },
+        },
+        "plane-trail": {
+          "0%, 45%": { strokeDashoffset: "64", opacity: "0" },
+          "60%": { strokeDashoffset: "0", opacity: "1" },
+          "100%": { strokeDashoffset: "-64", opacity: "0" },
+        },
+        "plane-success-in": {
+          "0%, 55%": { opacity: "0", transform: "translateY(120%)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+
+        // --- Agregar al carrito ---
+        // El carrito entra desde la izquierda, el ítem cae dentro, el carrito
+        // acusa el golpe y se va rodando por la derecha. Cada paso reescribe
+        // el `transform` completo: un solo elemento no puede acumular dos
+        // animaciones que lo toquen.
+        "atc-cart": {
+          "0%": { transform: "translate(-48px, 0) scale(.75)" },
+          "22%, 58%": { transform: "translate(0, 0) scale(1)" },
+          "63%": { transform: "translate(0, 3px) scale(1)" },
+          "68%": { transform: "translate(0, 0) scale(1)" },
+          "82%": { opacity: "1", transform: "translate(52px, 0) rotate(-12deg)" },
+          "100%": { opacity: "0", transform: "translate(120px, 0) rotate(0deg)" },
+        },
+        "atc-item": {
+          "0%": { opacity: "0", transform: "translate(0, -42px) scale(0)" },
+          "14%, 40%": { opacity: "1", transform: "translate(0, -40px) scale(1)" },
+          "58%": { opacity: "1", transform: "translate(0, 2px) scale(.9)" },
+          "64%, 100%": { opacity: "0", transform: "translate(0, 2px) scale(0)" },
+        },
+        "atc-label": {
+          "0%": { opacity: "1", transform: "translateX(0)" },
+          "12%, 96%": { opacity: "0", transform: "translateX(-8px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+        // --- Sacar del carrito (inversa) ---
+        // Sólo con el tacho a la vista, o sea cantidad 1. El rojo cubre todo el
+        // stepper mientras el producto cae, la tapa se abre y vuelve a cerrar.
+        "atc-trash-overlay": {
+          "0%, 82%": { opacity: "1" },
+          "100%": { opacity: "0" },
+        },
+        "atc-trash-lid": {
+          "0%, 12%": { transform: "translate(0, 0) rotate(0deg)" },
+          "28%, 64%": { transform: "translate(3px, -4px) rotate(-24deg)" },
+          "80%, 100%": { transform: "translate(0, 0) rotate(0deg)" },
+        },
+        "atc-trash-bin": {
+          "0%, 18%": { transform: "scale(1)" },
+          "32%, 66%": { transform: "scale(1.08)" },
+          "80%": { transform: "scale(.94)" },
+          "92%, 100%": { transform: "scale(1)" },
+        },
+        "atc-trash-fade": {
+          "0%": { opacity: "1" },
+          "18%, 100%": { opacity: "0" },
+        },
+        "atc-trash-item": {
+          "0%": { opacity: "0", transform: "translateY(-22px) scale(.9)" },
+          "25%": { opacity: "1", transform: "translateY(-18px) scale(1)" },
+          "70%": { opacity: "1", transform: "translateY(2px) scale(.55)" },
+          "78%, 100%": { opacity: "0", transform: "translateY(4px) scale(0)" },
+        },
+        // Relevo: cuando el carrito terminó de irse, el stepper de cantidad
+        // entra en el mismo lugar que ocupaba el botón (y al revés al sacar).
+        "atc-stepper-in": {
+          "0%": { opacity: "0", transform: "scale(.88)" },
+          "60%": { opacity: "1", transform: "scale(1.04)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
       },
       animation: {
+        "plane-label-out": "plane-label-out .3s ease-in forwards",
+        "plane-fly": "plane-fly 1.1s cubic-bezier(.4,0,.2,1) forwards",
+        "plane-trail": "plane-trail 1.1s ease-out forwards",
+        "plane-success-in": "plane-success-in 1.1s cubic-bezier(.4,0,.2,1) forwards",
+        "atc-cart": "atc-cart 1.1s cubic-bezier(.4,0,.2,1) forwards",
+        "atc-item": "atc-item 1.1s cubic-bezier(.4,0,.2,1) forwards",
+        "atc-label": "atc-label 1.1s ease-in-out forwards",
+        "atc-stepper-in": "atc-stepper-in .32s cubic-bezier(.34,1.56,.64,1) both",
+        "atc-trash-overlay": "atc-trash-overlay 1.1s ease forwards",
+        "atc-trash-lid": "atc-trash-lid 1.1s cubic-bezier(.4,0,.2,1) forwards",
+        "atc-trash-bin": "atc-trash-bin 1.1s cubic-bezier(.4,0,.2,1) forwards",
+        "atc-trash-fade": "atc-trash-fade .9s ease-out forwards",
+        "atc-trash-item": "atc-trash-item 1.1s cubic-bezier(.4,0,.2,1) forwards",
         "fade-in-up": "fade-in-up 0.5s ease-out both",
         "fade-in": "fade-in 0.4s ease-out both",
         ring: "ring 2.2s cubic-bezier(0.5, 0, 0.5, 1) infinite",

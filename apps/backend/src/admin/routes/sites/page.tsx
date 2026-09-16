@@ -17,14 +17,13 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { type DemoStore, useDemoStores } from '../../hooks/api';
-import { useStorefrontBase } from '../../hooks/use-storefront-base';
+import { useStorefrontOrigins } from '../../hooks/use-storefront-base';
 import { registerDemoStoresTranslations } from '../../translations/demo-stores';
 import { ExtensionVersion } from '../../components/common/extension-version';
 import { DemoStoreActions, DemoStoreCreate } from './components';
 import {
   buildPublicUrlFrom,
   formatPublicUrlFrom,
-  SITE_HOST_SUFFIX,
   STATUS_COLOR,
   STATUS_LABEL_KEY,
 } from './lib';
@@ -56,7 +55,7 @@ const DemoStores = () => {
    * que está mal—. Ojo: `base`, no `url`; `url` es la tienda ACTIVA y acá se linkea
    * a la de la FILA.
    */
-  const storefrontBase = useStorefrontBase();
+  const { base: storefrontBase, sitesBase, hostSuffix } = useStorefrontOrigins();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [pagination, setPagination] = useState<DataTablePaginationState>({
@@ -127,7 +126,7 @@ const DemoStores = () => {
             <a
               href={buildPublicUrlFrom(row.original, {
                 baseUrl: storefrontBase,
-                hostSuffix: SITE_HOST_SUFFIX,
+                sitesBaseUrl: sitesBase, hostSuffix,
               })}
               target="_blank"
               rel="noreferrer"
@@ -140,7 +139,7 @@ const DemoStores = () => {
               */}
               {formatPublicUrlFrom(row.original, {
                 baseUrl: storefrontBase,
-                hostSuffix: SITE_HOST_SUFFIX,
+                sitesBaseUrl: sitesBase, hostSuffix,
               })}
             </a>
           ) : (
@@ -157,7 +156,7 @@ const DemoStores = () => {
         ),
       }),
     ],
-    [t, storefrontBase],
+    [t, storefrontBase, sitesBase, hostSuffix],
   );
 
   const table = useDataTable({

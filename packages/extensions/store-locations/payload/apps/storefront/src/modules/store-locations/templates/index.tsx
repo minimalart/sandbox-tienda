@@ -2,8 +2,14 @@ import type {
   BusinessHours,
   PublicStoreLocation,
 } from "@lib/data/store-locations";
+import { GEO_ZONES_AR_BY_ID } from "@lib/data/geo-zones-ar";
 import { getActiveTenant } from "@lib/site-config/active-tenant";
-import type { StoreLocatorLocation } from "@lib/types/store-locator";
+import type {
+  StoreLocatorLocation,
+  StoreLocatorZone,
+  StoreLocatorZoneConfig,
+} from "@lib/types/store-locator";
+import { resolveBranchTypes } from "@lib/util/branch-types";
 import StoreLocatorClient from "../components/store-locator-client";
 import { summarizeBusinessHours } from "../utils/business-hours";
 
@@ -17,6 +23,28 @@ type StoreLocationsTemplateProps = {
  */
 const DEFAULT_SUBTITLE =
   "Buscá por ubicación, filtrá por tipo de sucursal y encontrá el punto más conveniente para comprar o retirar.";
+
+/**
+ * Zonas persistidas → zonas con geometría, resueltas EN EL SERVIDOR.
+ *
+ * Los presets del catálogo argentino se guardan por referencia
+ * (`{ preset: 'ar-b' }`) para no meter 130 KB de polígonos en el
+ * `content_config` de cada tienda. Al cliente le llegan ya resueltas, así que
+ * el filtrado (`use-store-locator-filters`) no cambia y el catálogo entero
+ * nunca viaja al browser: sólo las zonas que la tienda prendió.
+ *
+ * Una zona apagada (`active: false`) o un preset que ya no existe en el
+ * catálogo se descartan en silencio: son datos viejos, no un error que el
+ * visitante pueda hacer algo por resolver.
+ */
+const resolveZones = (zones?: StoreLocatorZoneConfig[]): StoreLocatorZone[] =>
+  (zones ?? [])
+    .filter((zone) => zone.active !== false)
+    .flatMap((zone) => {
+      if (zone.geometry) return [{ id: zone.id, label: zone.label, geometry: zone.geometry }];
+      const preset = zone.preset ? GEO_ZONES_AR_BY_ID.get(zone.preset) : undefined;
+      return preset ? [{ id: zone.id, label: zone.label, geometry: preset.geometry }] : [];
+    });
 
 const DAY_KEYS = [
   "domingo",
@@ -76,19 +104,6 @@ const parseCoordinate = (value: string | null) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const inferCountry = (location: PublicStoreLocation) => {
-  const haystack = [location.city, location.province, location.street]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  if (haystack.includes("uruguay") || haystack.includes("montevideo")) {
-    return "Uruguay";
-  }
-
-  return "Argentina";
-};
-
 const toLocatorLocation = (
   location: PublicStoreLocation
 ): StoreLocatorLocation => {
@@ -104,7 +119,7 @@ const toLocatorLocation = (
     address,
     businessHoursSummary: hoursSummary || undefined,
     city: location.city,
-    country: inferCountry(location),
+    country: "",
     email: location.email,
     id: location.id,
     images: location.images,
@@ -147,6 +162,8 @@ export default async function StoreLocationsTemplate({
         <StoreLocatorClient
           googleMapsApiKey={googleMapsApiKey}
           layout={layout}
+          regions={resolveZones(config?.regions)}
+          categories={resolveBranchTypes(config)}
           showCategoryFilters={config?.showCategoryFilters !== false}
           showLocationFilters={config?.showLocationFilters !== false}
           stores={stores}

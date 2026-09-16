@@ -9,6 +9,7 @@ import {
 } from "@lib/util/placeholder-image";
 import type { HttpTypes } from "@medusajs/types";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
+import TintColorLabel from "@modules/common/components/tint-color-label";
 import TransportConditionBadge from "@modules/common/components/transport-condition-badge";
 import TransportConditionNotice from "@modules/common/components/transport-condition-notice";
 import InvoiceDownload from "@modules/order/components/invoice-download";
@@ -215,7 +216,7 @@ const OrderDetailsTemplate: React.FC<OrderDetailsTemplateProps> = ({ order }) =>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <LocalizedClientLink
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-ui-border-base text-ui-fg-subtle transition-colors hover:bg-ui-bg-subtle hover:text-ui-fg-base"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-ui-border-base text-[--primary-color] transition-colors hover:bg-ui-bg-subtle"
             data-testid="back-to-overview-button"
             href="/account"
           >
@@ -228,7 +229,7 @@ const OrderDetailsTemplate: React.FC<OrderDetailsTemplateProps> = ({ order }) =>
             >
               <path
                 d="M15.75 19.5L8.25 12L15.75 4.5"
-                stroke="#2e7d32"
+                stroke="currentColor"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -499,6 +500,10 @@ const OrderDetailsTemplate: React.FC<OrderDetailsTemplateProps> = ({ order }) =>
                           {item.variant.title.toLowerCase()}
                         </p>
                       )}
+                      <TintColorLabel
+                        className="max-w-full text-sm text-ui-fg-subtle"
+                        metadata={item.metadata}
+                      />
                       <TransportConditionBadge
                         className="mt-1 self-start"
                         item={item}
@@ -562,6 +567,10 @@ const OrderDetailsTemplate: React.FC<OrderDetailsTemplateProps> = ({ order }) =>
                         {item.variant.title.toLowerCase()}
                       </p>
                     )}
+                    <TintColorLabel
+                      className="max-w-full text-sm text-ui-fg-subtle"
+                      metadata={item.metadata}
+                    />
                     <p className="mt-1 text-sm text-ui-fg-subtle">
                       Cantidad:{" "}
                       <span data-testid="product-quantity">{item.quantity}</span>

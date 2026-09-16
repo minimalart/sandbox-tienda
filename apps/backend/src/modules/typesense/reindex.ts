@@ -9,7 +9,7 @@
  *   - sin promociones → borraba `has_promotion/promotions/discount/subtotal`
  * Centralizar los campos + la lógica de promociones acá evita esa divergencia.
  */
-import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
+import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import type { Logger, MedusaContainer } from '@medusajs/framework/types';
 import { QueryContext } from '@medusajs/utils';
 import { ProductMapper } from './product-mapper';
@@ -23,6 +23,38 @@ import TypeSenseService from './service';
 
 type AnyRecord = Record<string, unknown>;
 type QueryGraph = { graph: (input: unknown) => Promise<{ data: unknown[] }> };
+
+/** Forma mínima del pricing service que consumimos para leer las reglas
+ *  channel-scoped. `listPriceListRules` NO está expuesto por el joiner-config
+ *  del pricing module (solo `PriceSet`, `PriceList`, `Price`, `PricePreference`),
+ *  así que la única forma de listar reglas es vía service. */
+type PricingModuleShape = {
+  listPriceListRules: (
+    filters?: { attribute?: string | string[] },
+    config?: { relations?: string[] },
+  ) => Promise<
+    Array<{
+      id: string;
+      price_list_id: string;
+      attribute: string;
+      value: string | string[];
+      price_list?: {
+        id: string;
+        status?: string | null;
+        deleted_at?: string | null;
+        starts_at?: string | null;
+        ends_at?: string | null;
+      } | null;
+    }>
+  >;
+};
+
+/** Bundle que necesita `buildChannelPriceMap`: query.graph para `price` y
+ *  `product_variant` (sí expuestos), y el pricing service para las reglas. */
+type ChannelPriceDeps = {
+  query: QueryGraph;
+  pricing: PricingModuleShape;
+};
 
 /**
  * Campos que se piden a `query.graph` para armar un documento completo.
@@ -266,6 +298,197 @@ export async function attachActivePromotions(
   }
 }
 
+// ─── Channel-scoped price overrides ─────────────────────────────────────────
+
+/**
+ * Entry para el array `variants.channel_prices` que se indexa en Typesense.
+ * Cada entry representa el precio que aplica cuando el storefront navega el
+ * `sales_channel_id`. La clave está en que Medusa v2 no propaga
+ * `sales_channel_id` al `pricingContext` de `/store/products` (solo lo hacen
+ * `region_id`, `currency_code`, y `customer.groups.id`), así que un
+ * `price_list_rule` con `attribute='sales_channel_id'` NUNCA matchea durante
+ * el sync. Este helper lo compensa: recorre las reglas por su cuenta, arma
+ * el mapa `variant → [{ sales_channel_id, amount, ... }]` y el mapper lo
+ * serializa en el doc. El middleware `set-pricing-channel` cubre el mismo
+ * caso en runtime para las PDPs.
+ *
+ * Related ticket: EDUCABOT-9
+ */
+export type ChannelPriceEntry = {
+  sales_channel_id: string;
+  calculated_amount: number;
+  original_amount: number;
+  currency_code: string;
+};
+
+type ChannelPriceMap = Map<string, ChannelPriceEntry[]>;
+
+type ChannelPriceListRow = {
+  price_list_id: string;
+  value: string | string[];
+  price_list?: {
+    id: string;
+    status?: string | null;
+    deleted_at?: string | null;
+    starts_at?: string | null;
+    ends_at?: string | null;
+  } | null;
+};
+
+type ChannelPriceRow = {
+  amount: number;
+  currency_code: string;
+  price_list_id: string;
+  price_set_id: string;
+};
+
+type VariantWithPriceSet = {
+  id: string;
+  price_set?: { id?: string | null } | null;
+};
+
+const isActivePriceList = (pl: ChannelPriceListRow['price_list'], now: Date): boolean => {
+  if (!pl) return false;
+  if (pl.status !== 'active') return false;
+  if (pl.deleted_at) return false;
+  if (pl.starts_at && new Date(pl.starts_at) > now) return false;
+  if (pl.ends_at && new Date(pl.ends_at) < now) return false;
+  return true;
+};
+
+/**
+ * Mapa `variant_id → ChannelPriceEntry[]` derivado de las price lists ACTIVAS
+ * cuya regla `attribute='sales_channel_id'` scope el precio a uno o más canales.
+ *
+ * Restringido a `currencyCode` para que el índice quede consistente con el
+ * `calculated_price` base que ya se resuelve con esa misma moneda.
+ */
+export async function buildChannelPriceMap(
+  deps: ChannelPriceDeps,
+  currencyCode: string,
+): Promise<ChannelPriceMap> {
+  const { query, pricing } = deps;
+  const map: ChannelPriceMap = new Map();
+
+  // 1) Reglas activas cuyo attribute sea sales_channel_id.
+  //    NO usar `query.graph({ entity: 'price_list_rule' })` — el joiner-config
+  //    del pricing module (`@medusajs/pricing/dist/joiner-config.js`) sólo
+  //    expone PriceSet, PriceList, Price y PricePreference, así que Remote
+  //    Query no puede resolver ese alias y explota con "Service with alias
+  //    'price_list_rule' was not found" (incidente 2026-09-15, vaciando la
+  //    colección Typesense de EducaBot). El service `listPriceListRules` sí
+  //    está expuesto por la interfaz pública del módulo.
+  const rules = (await pricing.listPriceListRules(
+    { attribute: 'sales_channel_id' },
+    { relations: ['price_list'] },
+  )) as ChannelPriceListRow[];
+
+  const now = new Date();
+  const priceListChannels = new Map<string, string[]>();
+  for (const rule of rules) {
+    if (!isActivePriceList(rule.price_list ?? null, now)) continue;
+    const value = Array.isArray(rule.value) ? rule.value : [rule.value];
+    const cleanValues = value.filter((v): v is string => typeof v === 'string' && v.length > 0);
+    if (cleanValues.length === 0) continue;
+    priceListChannels.set(rule.price_list_id, cleanValues);
+  }
+
+  if (priceListChannels.size === 0) return map;
+
+  const priceListIds = [...priceListChannels.keys()];
+
+  // 2) Precios de esas listas (solo en la moneda del sync)
+  const { data: prices } = (await query.graph({
+    entity: 'price',
+    fields: ['amount', 'currency_code', 'price_list_id', 'price_set_id'],
+    filters: {
+      price_list_id: priceListIds,
+      currency_code: currencyCode,
+    },
+  })) as { data: ChannelPriceRow[] };
+
+  if (prices.length === 0) return map;
+
+  const priceSetIds = Array.from(new Set(prices.map((p) => p.price_set_id).filter(Boolean)));
+  if (priceSetIds.length === 0) return map;
+
+  // 3) Variantes por price_set: el link es many-to-one (una variante tiene UN
+  //    price_set, y un price_set puede estar en varias filas de link — pero
+  //    para el uso de Medusa, en la práctica es 1:1). Un `graph` sobre
+  //    `product_variant` con filter por `price_set_id` cubre todos los pares.
+  const { data: variants } = (await query.graph({
+    entity: 'product_variant',
+    fields: ['id', 'price_set.id'],
+    filters: { price_set: { id: priceSetIds } },
+  })) as { data: VariantWithPriceSet[] };
+
+  const priceSetToVariants = new Map<string, string[]>();
+  for (const v of variants) {
+    const psId = v.price_set?.id;
+    if (!psId || !v.id) continue;
+    const list = priceSetToVariants.get(psId) ?? [];
+    list.push(v.id);
+    priceSetToVariants.set(psId, list);
+  }
+
+  // 4) Materializar las entries. Al ser many-to-many (una lista → N canales) x
+  //    (un precio → una lista) x (un price_set → N variantes), el fanout aquí
+  //    puede parecer alto pero en la práctica cada set/canal es único. Dedup
+  //    por (variant_id, sales_channel_id) al final para evitar duplicados en
+  //    caso de configuraciones raras (varias reglas por la misma lista).
+  for (const price of prices) {
+    if (price.currency_code !== currencyCode) continue;
+    const channels = priceListChannels.get(price.price_list_id);
+    if (!channels?.length) continue;
+    const variantIds = priceSetToVariants.get(price.price_set_id) ?? [];
+    if (variantIds.length === 0) continue;
+
+    for (const variantId of variantIds) {
+      const list = map.get(variantId) ?? [];
+      for (const channelId of channels) {
+        // Dedup barato: si ya hay una entry para el mismo canal, saltarla
+        // (una lista más específica tendría que ganar, pero eso lo maneja
+        // Medusa a nivel de precio — acá guardamos overrides equivalentes).
+        if (list.some((e) => e.sales_channel_id === channelId)) continue;
+        list.push({
+          sales_channel_id: channelId,
+          calculated_amount: Number(price.amount),
+          // `original_amount` refleja el mismo amount de override: la lista es
+          // `override`, no `sale`, así que no hay "precio tachado". El
+          // storefront igual espera el campo con un número.
+          original_amount: Number(price.amount),
+          currency_code: price.currency_code,
+        });
+      }
+      map.set(variantId, list);
+    }
+  }
+
+  return map;
+}
+
+/**
+ * Ataca (mutando) `variants[i].channel_prices` en cada producto del batch
+ * usando el mapa pre-calculado. Idempotente: si el mapa está vacío, no toca
+ * los productos (mantiene el shape actual del doc para retro-compat).
+ */
+export function attachChannelPrices(products: AnyRecord[], map: ChannelPriceMap): number {
+  if (map.size === 0) return 0;
+  let touched = 0;
+  for (const product of products) {
+    const variants = Array.isArray(product.variants) ? (product.variants as AnyRecord[]) : [];
+    for (const variant of variants) {
+      const variantId = variant.id as string | undefined;
+      if (!variantId) continue;
+      const entries = map.get(variantId);
+      if (!entries?.length) continue;
+      variant.channel_prices = entries;
+      touched++;
+    }
+  }
+  return touched;
+}
+
 // ─── Cachés de corta vida ────────────────────────────────────────────────────
 
 /**
@@ -281,9 +504,11 @@ type Cached<T> = { value: T; expires: number };
 let categoryPathCache: Cached<CategoryPathMap> | null = null;
 let promosCache: Cached<Map<string, CompactPromotion[]>> | null = null;
 let currencyCache: Cached<string> | null = null;
+let channelPricesCache: Cached<{ currency: string; map: ChannelPriceMap }> | null = null;
 /** Promesas en vuelo: N eventos simultáneos comparten UNA sola construcción. */
 let categoryPathInflight: Promise<CategoryPathMap> | null = null;
 let promosInflight: Promise<Map<string, CompactPromotion[]>> | null = null;
+let channelPricesInflight: Promise<ChannelPriceMap> | null = null;
 
 /**
  * Invalida los cachés. La llaman el subscriber de categorías y el hook de
@@ -292,7 +517,7 @@ let promosInflight: Promise<Map<string, CompactPromotion[]>> | null = null;
  * dato que el evento venía a corregir.
  */
 export function invalidateReindexCaches(
-  what: 'categories' | 'promotions' | 'all' = 'all',
+  what: 'categories' | 'promotions' | 'channel_prices' | 'all' = 'all',
 ): void {
   if (what === 'categories' || what === 'all') {
     categoryPathCache = null;
@@ -302,7 +527,46 @@ export function invalidateReindexCaches(
     promosCache = null;
     promosInflight = null;
   }
+  if (what === 'channel_prices' || what === 'all') {
+    channelPricesCache = null;
+    channelPricesInflight = null;
+  }
   if (what === 'all') currencyCache = null;
+}
+
+/** Mapa `variant → channel_prices[]`, cacheado por `CACHE_TTL_MS` + currency.
+ *  Toma el `MedusaContainer` para resolver query.graph + pricing service, en
+ *  vez de un `QueryGraph` suelto: el service de pricing es indispensable para
+ *  leer `price_list_rule` (no expuesto por RemoteQuery). */
+export async function getCachedChannelPriceMap(
+  scope: MedusaContainer,
+  currencyCode: string,
+): Promise<ChannelPriceMap> {
+  const now = Date.now();
+  if (
+    channelPricesCache &&
+    channelPricesCache.expires > now &&
+    channelPricesCache.value.currency === currencyCode
+  ) {
+    return channelPricesCache.value.map;
+  }
+  if (channelPricesInflight) return channelPricesInflight;
+
+  const query = scope.resolve<QueryGraph>(ContainerRegistrationKeys.QUERY);
+  const pricing = scope.resolve(Modules.PRICING) as unknown as PricingModuleShape;
+
+  channelPricesInflight = buildChannelPriceMap({ query, pricing }, currencyCode)
+    .then((value) => {
+      channelPricesCache = {
+        value: { currency: currencyCode, map: value },
+        expires: Date.now() + CACHE_TTL_MS,
+      };
+      return value;
+    })
+    .finally(() => {
+      channelPricesInflight = null;
+    });
+  return channelPricesInflight;
 }
 
 /** Mapa de rutas de categoría, cacheado por `CACHE_TTL_MS`. */
@@ -398,12 +662,13 @@ const REINDEX_ID_CHUNK = 100;
  * (status != draft).
  */
 async function fetchEnrichedProducts(
-  query: QueryGraph,
+  container: MedusaContainer,
   productIds: string[],
   pathMap: CategoryPathMap,
   currencyCode: string,
   logger?: Logger,
 ): Promise<AnyRecord[]> {
+  const query = container.resolve<QueryGraph>(ContainerRegistrationKeys.QUERY);
   const { data: products } = (await query.graph({
     entity: 'product',
     fields: PRODUCT_SYNC_FIELDS as unknown as string[],
@@ -417,6 +682,13 @@ async function fetchEnrichedProducts(
 
   const enriched = products.map((p) => attachCategoryFullPaths(p, pathMap));
   await attachActivePromotions(query, enriched, logger);
+
+  // Channel-scoped price overrides. Sin esto el reindex incremental sirve el
+  // `calculated_price` base para todo el catálogo y el HOME de un site
+  // channel-scoped queda con precios equivocados hasta el próximo full sync.
+  const channelMap = await getCachedChannelPriceMap(container, currencyCode);
+  attachChannelPrices(enriched, channelMap);
+
   return enriched;
 }
 
@@ -454,7 +726,7 @@ export async function reindexProductsByIds(
   // entero cuando corre un backfill, así que acá llegan miles de ids de una.
   for (let i = 0; i < ids.length; i += REINDEX_ID_CHUNK) {
     const chunk = ids.slice(i, i + REINDEX_ID_CHUNK);
-    const enriched = await fetchEnrichedProducts(query, chunk, pathMap, currencyCode, logger);
+    const enriched = await fetchEnrichedProducts(container, chunk, pathMap, currencyCode, logger);
     for (const product of enriched) {
       foundIds.add(product.id as string);
       try {

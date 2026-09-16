@@ -1,5 +1,6 @@
 'use client';
 
+import { DEFAULT_ADDRESS_NAME, getAddressNamePreset } from '@lib/util/address-name';
 import { GOOGLE_MAPS_LIBRARIES } from '@lib/util/google-maps-loader';
 import { makeAddressSchema } from '@lib/validation/address';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
@@ -57,6 +58,12 @@ type AddressFormWithMapProps = {
   onCancel?: () => void;
   error?: string | null;
   hideNameFields?: boolean;
+  /**
+   * Oculta el selector de nombre de la dirección (Casa/Trabajo/Otro). Para una
+   * dirección que no es del comprador —el domicilio fiscal de una empresa, por
+   * ejemplo— ese nombre no significa nada y no se guarda en ningún lado.
+   */
+  hideAddressNameField?: boolean;
 };
 
 type ParsedAddress = {
@@ -120,7 +127,8 @@ function AddressNameField({
   onChange: (v: string) => void;
   disabled: boolean;
 }) {
-  const showCustomInput = value !== 'Casa' && value !== 'Trabajo';
+  const selectedTag = getAddressNamePreset(value);
+  const showCustomInput = selectedTag === 'Otro';
 
   return (
     <fieldset>
@@ -129,7 +137,7 @@ function AddressNameField({
         {ADDRESS_TAGS.map((tag) => (
           <button
             className={`rounded-full border px-4 py-1.5 font-medium text-sm transition-colors ${
-              value === tag
+              selectedTag === tag
                 ? 'border-[--primary-color] bg-[--primary-color] text-white'
                 : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
             }`}
@@ -230,7 +238,7 @@ function getInitialFormState(initialData?: Partial<AddressFormData>) {
   return {
     firstName: initialData?.firstName ?? '',
     lastName: initialData?.lastName ?? '',
-    addressName: initialData?.addressName ?? '',
+    addressName: initialData?.addressName || DEFAULT_ADDRESS_NAME,
     address1: initialData?.address1 ?? '',
     address2: initialData?.address2 ?? '',
     city: initialData?.city ?? '',
@@ -296,6 +304,7 @@ function AddressFormImpl({
   onCancel,
   error,
   hideNameFields = false,
+  hideAddressNameField = false,
 }: AddressFormWithMapProps & { isLoaded: boolean }) {
   const defaults = getInitialFormState(initialData);
   const [firstName, setFirstName] = useState(defaults.firstName);
@@ -688,7 +697,9 @@ function AddressFormImpl({
         </div>
       )}
 
-      <AddressNameField disabled={isLoading} onChange={setAddressName} value={addressName} />
+      {!hideAddressNameField && (
+        <AddressNameField disabled={isLoading} onChange={setAddressName} value={addressName} />
+      )}
 
       {/* Google Maps Autocomplete + Map */}
       <div>
@@ -786,7 +797,7 @@ function AddressFormImpl({
         </div>
       </div>
 
-      {/* Province + Dept/Piso */}
+      {/* Province + Depto/Piso/Lote */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="sr-only" htmlFor="addr-province">
@@ -804,12 +815,12 @@ function AddressFormImpl({
         </div>
         <div>
           <label className="sr-only" htmlFor="addr-address2">
-            Dept / Piso
+            Depto / Piso / Lote
           </label>
           <FormInput
             disabled={isLoading}
             id="addr-address2"
-            label="Dept / Piso"
+            label="Depto / Piso / Lote"
             onChange={(e) => setAddress2(e.target.value)}
             placeholder="Ej: 3B"
             type="text"

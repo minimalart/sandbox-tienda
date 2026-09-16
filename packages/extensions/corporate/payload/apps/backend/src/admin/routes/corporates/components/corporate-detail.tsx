@@ -1,3 +1,4 @@
+import { DrawerTabs } from '../../../components/drawer-tabs';
 import { EllipsisHorizontal } from '@medusajs/icons';
 import { LogoUploader } from '../../../components/common/logo-uploader';
 import {
@@ -93,22 +94,7 @@ export default function CorporateDetail({
           </div>
         </Drawer.Header>
         <Drawer.Body className="overflow-y-auto overflow-x-hidden">
-          <div className="mb-4 flex gap-2 overflow-x-auto border-ui-border-base border-b [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {TABS.map((tDef) => (
-              <button
-                key={tDef.id}
-                type="button"
-                onClick={() => setTab(tDef.id)}
-                className={`shrink-0 whitespace-nowrap px-3 py-2 text-sm ${
-                  tab === tDef.id
-                    ? 'border-ui-fg-base border-b-2 font-medium text-ui-fg-base'
-                    : 'text-ui-fg-subtle'
-                }`}
-              >
-                {tDef.label}
-              </button>
-            ))}
-          </div>
+          <DrawerTabs tabs={TABS} tab={tab} setTab={setTab} />
 
           {!data ? (
             <Text className="text-ui-fg-subtle">Cargando…</Text>

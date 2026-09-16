@@ -22,6 +22,7 @@ import {
   StoreLocationType,
   storeLocationQueryKey,
   useBranchConfig,
+  useBranchTypes,
   useBranchDelivery,
   useCoverages,
   useStoreLocation,
@@ -52,14 +53,6 @@ import {
   emptyDelivery,
   fromDelivery,
 } from './delivery-section';
-
-const STORE_TYPES: StoreLocationType[] = ['point_of_sale', 'wholesale', 'distribution_center'];
-
-export const STORE_TYPE_LABEL_KEY: Record<StoreLocationType, string> = {
-  point_of_sale: 'TYPE_POINT_OF_SALE',
-  wholesale: 'TYPE_WHOLESALE',
-  distribution_center: 'TYPE_DISTRIBUTION_CENTER',
-};
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
@@ -93,7 +86,7 @@ interface FormState {
 
 const emptyForm = (): FormState => ({
   name: '',
-  store_type: 'point_of_sale',
+  store_type: '',
   code: '',
   is_visible: false,
   sales_channel_ids: [],
@@ -121,7 +114,7 @@ const fromLocation = (location: StoreLocation): FormState => {
   const images = Array.isArray(location.images) ? location.images : [];
   return {
     name: location.name ?? '',
-    store_type: location.store_type ?? 'point_of_sale',
+    store_type: location.store_type ?? '',
     code: location.code ?? '',
     is_visible: !!location.is_visible,
     sales_channel_ids: Array.isArray(location.sales_channel_ids)
@@ -205,6 +198,38 @@ export const StoreLocationForm = ({
   const { data: delData } = useBranchDelivery(locationId, { enabled: isEdit && open });
   const { data: cfgData } = useBranchConfig(locationId, { enabled: isEdit && open });
 
+  /**
+   * Tipos disponibles: los que definen las tiendas de los canales elegidos en
+   * este mismo tab. `form.sales_channel_ids` es estado local, así que la lista
+   * se rearma sola al tocar el selector de canales.
+   *
+   * Un `store_type` guardado que ya no está en la lista (la tienda borró el
+   * tipo, o la sucursal se movió de canal) se agrega igual como opción marcada:
+   * sin eso el Select lo mostraría vacío y el primer guardado lo perdería en
+   * silencio.
+   */
+  const { data: typesData } = useBranchTypes(form.sales_channel_ids, { enabled: open });
+  const typeOptions = useMemo(() => {
+    const available = typesData?.branch_types ?? [];
+    if (!form.store_type || available.some((type) => type.id === form.store_type)) return available;
+    return [
+      ...available,
+      { id: form.store_type, label: t('FIELD_TYPE_ORPHAN', { id: form.store_type }), pickup: true },
+    ];
+  }, [typesData, form.store_type, t]);
+
+  /**
+   * Preselección del primer tipo cuando la sucursal todavía no tiene ninguno y
+   * la tienda sí ofrece. Reemplaza al viejo default `'point_of_sale'`, que ya
+   * no existe como valor privilegiado. Si la tienda no define tipos no se
+   * inventa nada: la sucursal queda con `''`, que es válido.
+   */
+  useEffect(() => {
+    if (!open || form.store_type) return;
+    const first = typesData?.branch_types?.[0];
+    if (first) setForm((prev) => (prev.store_type ? prev : { ...prev, store_type: first.id }));
+  }, [open, form.store_type, typesData]);
+
   // Reset everything when the modal (re)opens; seed core from the row immediately.
   const seeded = useRef({ core: false, cov: false, del: false, cfg: false });
   useEffect(() => {
@@ -267,9 +292,12 @@ export const StoreLocationForm = ({
   );
 
   const buildPayload = (): AdminCreateStoreLocation | null => {
-    if (!form.name || !form.store_type || !form.province || !form.city || !form.street) {
+    // El tipo dejó de ser obligatorio: una tienda que no clasifica sus
+    // sucursales no tiene ninguno que elegir, y forzarlo dejaría el formulario
+    // sin forma de guardar.
+    if (!form.name || !form.province || !form.city || !form.street) {
       toast.error(t('VALIDATION_REQUIRED'));
-      setActiveTab(!form.name || !form.store_type ? 'general' : 'location');
+      setActiveTab(!form.name ? 'general' : 'location');
       return null;
     }
     if (form.email && !EMAIL_RE.test(form.email)) {
@@ -504,19 +532,25 @@ export const StoreLocationForm = ({
                       <Label htmlFor="sl-type">{t('FIELD_TYPE_LABEL')}</Label>
                       <Select
                         value={form.store_type}
-                        onValueChange={(v) => set('store_type', v as StoreLocationType)}
+                        disabled={!typeOptions.length}
+                        onValueChange={(v) => set('store_type', v)}
                       >
                         <Select.Trigger id="sl-type">
-                          <Select.Value />
+                          <Select.Value placeholder={t('FIELD_TYPE_NONE')} />
                         </Select.Trigger>
                         <Select.Content>
-                          {STORE_TYPES.map((type) => (
-                            <Select.Item key={type} value={type}>
-                              {t(STORE_TYPE_LABEL_KEY[type])}
+                          {typeOptions.map((type) => (
+                            <Select.Item key={type.id} value={type.id}>
+                              {type.label}
                             </Select.Item>
                           ))}
                         </Select.Content>
                       </Select>
+                      {!typeOptions.length && (
+                        <Text size="xsmall" className="text-ui-fg-subtle">
+                          {t('FIELD_TYPE_NONE_HELP')}
+                        </Text>
+                      )}
                     </div>
                     <div className="flex flex-col gap-2">
                       <Label htmlFor="sl-code">{t('FIELD_CODE_LABEL')}</Label>

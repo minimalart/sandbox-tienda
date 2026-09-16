@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash } from 'node:crypto';
+import { checkoutCookieName } from '../server/checkout-session';
 import { cookies as nextCookies, headers as nextHeaders } from "next/headers";
 
 import { SESSION_HEADER, sessionCookieName, type CustomerSession } from '../util/customer-session';
@@ -26,7 +26,7 @@ export const getAuthHeaders = async (): Promise<{ authorization?: string; 'x-che
     const context = await getCustomerSession();
     const jar = await nextCookies();
     const cartId = jar.get(sessionCookieName(context, 'cart'))?.value;
-    if (cartId) checkoutToken = jar.get(`_checkout_${createHash('sha256').update(JSON.stringify([context.mode, context.site, cartId])).digest('hex').slice(0, 24)}`)?.value;
+    if (cartId) checkoutToken = jar.get(checkoutCookieName(context, cartId))?.value;
   } catch { /* Calls outside a storefront request have no checkout capability. */ }
   return { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(checkoutToken ? { 'x-checkout-access': checkoutToken } : {}) };
 };

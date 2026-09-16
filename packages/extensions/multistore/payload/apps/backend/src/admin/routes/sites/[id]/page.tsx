@@ -14,14 +14,13 @@ import {
   type AdminDemoStoreResponse,
   type ImportJob,
 } from '../../../hooks/api';
-import { useStorefrontBase } from '../../../hooks/use-storefront-base';
+import { useStorefrontOrigins } from '../../../hooks/use-storefront-base';
 import { HelpDrawer } from '../../../components/common/help-drawer';
 import { sdk } from '../../../lib/client';
 import { registerDemoStoresTranslations } from '../../../translations/demo-stores';
 import {
   buildPublicUrlFrom,
   formatPublicUrlFrom,
-  SITE_HOST_SUFFIX,
   STATUS_COLOR,
   STATUS_LABEL_KEY,
 } from '../lib';
@@ -167,11 +166,11 @@ const DemoStoreDetail = () => {
    * apuntaban al storefront de otra marca. Y es `base`, no `url`: `url` sería la
    * tienda ACTIVA y esta pantalla linkea a la del `[id]` de la URL.
    */
-  const storefrontBase = useStorefrontBase();
+  const { base: storefrontBase, sitesBase, hostSuffix } = useStorefrontOrigins();
   const publicUrl = (site: Parameters<typeof buildPublicUrlFrom>[0]) =>
-    buildPublicUrlFrom(site, { baseUrl: storefrontBase, hostSuffix: SITE_HOST_SUFFIX });
+    buildPublicUrlFrom(site, { baseUrl: storefrontBase, sitesBaseUrl: sitesBase, hostSuffix });
   const publicUrlLabel = (site: Parameters<typeof formatPublicUrlFrom>[0]) =>
-    formatPublicUrlFrom(site, { baseUrl: storefrontBase, hostSuffix: SITE_HOST_SUFFIX });
+    formatPublicUrlFrom(site, { baseUrl: storefrontBase, sitesBaseUrl: sitesBase, hostSuffix });
 
   const isImporting = demo?.status === 'importing' || demo?.status === 'provisioning';
   const { data: jobData } = useDemoStoreImportJob(id, {

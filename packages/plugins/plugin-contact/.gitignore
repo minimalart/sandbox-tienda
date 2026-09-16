@@ -1,6 +1,0 @@
-node_modules
-.medusa
-dist
-*.log
-.env
-.env.local

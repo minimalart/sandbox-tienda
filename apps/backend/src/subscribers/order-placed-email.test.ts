@@ -91,6 +91,133 @@ test('el total calculado gana sobre la multiplicación', () => {
   assert.equal(line.line_total_formatted, formatArs(1800));
 });
 
+/**
+ * El color entonado.
+ *
+ * La línea del carrito ya guardaba `metadata.tint` Y un `subtitle` "Color: X",
+ * escrito — según su propio comentario — "para que cualquier cosa que ya
+ * renderice subtitle (mails, panel de admin, remitos) muestre el color sin
+ * tocar nada". Ninguna de esas tres lo renderiza, y el mail ni siquiera pedía
+ * `items.metadata` al grafo: la orden mostraba el recargo de entonado cobrado
+ * sin decir nunca de qué color era.
+ */
+
+test('pide la metadata de la línea, que es donde vive el color', () => {
+  assert.match(
+    SOURCE,
+    /'items\.metadata'/,
+    'sin este campo `metadata` llega undefined y ninguna línea sale entonada',
+  );
+});
+
+test('la línea entonada expone el color ya armado', () => {
+  const line = mapOrderItem({
+    id: 'i',
+    unit_price: 104426,
+    detail: { quantity: 1 },
+    metadata: {
+      tint: {
+        version: 1,
+        cod_base: '661',
+        cod_formula: 'F 1234',
+        color_code: '82YR 83/056',
+        color_name: 'Brisa Chic',
+        color_hex: '#F2E2D8',
+      },
+    },
+  });
+  assert.equal(line.color_label, 'Brisa Chic (82YR 83/056)');
+  assert.equal(line.color_name, 'Brisa Chic');
+  assert.equal(line.color_code, '82YR 83/056');
+  assert.equal(line.color_hex, '#F2E2D8');
+});
+
+test('la línea entonada usa el título LIMPIO, sin el color pegado', () => {
+  // `title` de una línea entonada trae el color adentro — lo escribe
+  // `POST /store/tinting/line-items` para que se vea en el resumen de orden del
+  // admin, que no renderiza ni `subtitle` ni la metadata. Pero la plantilla ya
+  // pinta el color aparte con `color_label`, así que acá va `product_title`: si
+  // no, el mail diría "Vino Clásico" dos veces en la misma fila.
+  const line = mapOrderItem({
+    id: 'i',
+    title: 'Marble color fino x25 kg — Vino Clásico (09YR 05/305)',
+    product_title: 'Marble color fino x25 kg',
+    unit_price: 104426,
+    detail: { quantity: 1 },
+    metadata: {
+      tint: { version: 1, cod_base: 'RV60', cod_formula: 'F 1', color_code: '09YR 05/305', color_name: 'Vino Clásico' },
+    },
+  });
+  assert.equal(line.title, 'Marble color fino x25 kg');
+  assert.equal(line.color_label, 'Vino Clásico (09YR 05/305)');
+});
+
+test('el campo del título limpio se pide en la consulta', () => {
+  assert.match(
+    SOURCE,
+    /'items\.product_title'/,
+    'sin este campo el título llega sin `product_title` y el mail repite el color',
+  );
+});
+
+test('una orden entonada VIEJA, sin product_title, cae al título de la línea', () => {
+  // Las órdenes anteriores a este cambio tienen el título sin el color, así que
+  // caer a `title` es exactamente lo correcto. Lo que no puede pasar es que el
+  // mail salga con el título vacío.
+  const line = mapOrderItem({
+    id: 'i',
+    title: 'Marble color fino x25 kg',
+    unit_price: 104426,
+    detail: { quantity: 1 },
+    metadata: {
+      tint: { version: 1, cod_base: 'RV60', cod_formula: 'F 1', color_code: '09YR 05/305', color_name: 'Vino Clásico' },
+    },
+  });
+  assert.equal(line.title, 'Marble color fino x25 kg');
+});
+
+test('una línea sin entonar no trae ningún campo de color', () => {
+  // Las plantillas deciden con un `{{#if this.color_label}}`: si el campo
+  // llegara vacío en vez de ausente, toda línea común dibujaría el bloque.
+  const line = mapOrderItem({ id: 'i', unit_price: 4235, detail: { quantity: 1 } });
+  assert.equal(line.color_label, undefined);
+  assert.equal(line.color_hex, undefined);
+});
+
+test('una orden vieja sin nombre de color cae al código', () => {
+  const line = mapOrderItem({
+    id: 'i',
+    unit_price: 1000,
+    detail: { quantity: 1 },
+    metadata: { tint: { color_code: '82YR 83/056' } },
+  });
+  // No se repite el código entre paréntesis cuando ya es la etiqueta.
+  assert.equal(line.color_label, '82YR 83/056');
+});
+
+test('un hex que no es un hex no llega a la plantilla', () => {
+  // El valor termina dentro de un atributo `style` del HTML del mail. Handlebars
+  // escapa, pero un hex inválido tampoco pinta nada útil: mejor el gris neutro.
+  const line = mapOrderItem({
+    id: 'i',
+    unit_price: 1000,
+    detail: { quantity: 1 },
+    metadata: { tint: { color_name: 'Brisa Chic', color_hex: 'rojo; background:url(x)' } },
+  });
+  assert.equal(line.color_label, 'Brisa Chic');
+  assert.equal(line.color_hex, undefined);
+});
+
+test('un `tint` que no es un objeto no rompe el mapeo', () => {
+  const line = mapOrderItem({
+    id: 'i',
+    unit_price: 1000,
+    detail: { quantity: 1 },
+    metadata: { tint: 'Brisa Chic' as unknown as Record<string, unknown> },
+  });
+  assert.equal(line.color_label, undefined);
+});
+
 /** El mismo formato que usa el subscriber, para no acoplar el test a un literal. */
 function formatArs(value: number): string {
   return new Intl.NumberFormat('es-AR', {

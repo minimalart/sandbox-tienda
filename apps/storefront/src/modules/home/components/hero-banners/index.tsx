@@ -3,6 +3,7 @@
 import { getBannersForPlacement } from "@lib/banners";
 import { useBannersByPlacement } from "@lib/context/banners-context";
 import { useDemoSlug, useTenantBrand } from "@lib/site-config/context";
+import { internalHref, isExternalLink } from "@lib/util/internal-href";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import Reveal from "@modules/common/components/reveal";
 import { Button } from "@/components/ui/button";
@@ -117,6 +118,12 @@ const slideStyle = `
 `;
 
 type HeroSlide = Banner & {
+  /**
+   * Href ya reducido a interno cuando apunta a un host nuestro. El `cta.href`
+   * crudo sigue en el objeto por el spread, pero el JSX usa SIEMPRE este: es lo
+   * que evita que producción linkee al preview (BUG-04).
+   */
+  ctaHref: string;
   isExternal: boolean;
   titleColor: string;
   textColor: string;
@@ -125,7 +132,12 @@ type HeroSlide = Banner & {
 };
 
 const toHeroSlide = (banner: Banner): HeroSlide => {
-  const href = banner.cta.href;
+  // El href del banner sale de la base, escrito por una persona en el admin
+  // copiando de la barra del navegador: en desdeelsur quedaron guardados
+  // apuntando a `https://desdeelsur.minimalart.studio/store?...`. La regla vieja
+  // era "empieza con http ⇒ externo", así que producción abría el dominio de
+  // PREVIEW en una pestaña nueva (DESDEELSUR-61 / BUG-04).
+  const href = internalHref(banner.cta.href);
   // Título / subtítulo van sobre la imagen (fondo oscuro/reservado). Default
   // blanco preserva el treatment histórico. El operador puede pisarlo con
   // `metadata.color_font` del plugin banners.
@@ -138,7 +150,8 @@ const toHeroSlide = (banner: Banner): HeroSlide => {
     banner.ctaTextColor?.trim() || banner.textColor?.trim() || "#FFFFFF";
   return {
     ...banner,
-    isExternal: href.startsWith("http://") || href.startsWith("https://"),
+    ctaHref: href,
+    isExternal: isExternalLink(href),
     titleColor: textColor,
     textColor,
     ctaTextColor,
@@ -325,7 +338,7 @@ const HeroCarousel = () => {
                 <a
                   aria-label={slide.title}
                   className={slideClass}
-                  href={slide.cta.href}
+                  href={slide.ctaHref}
                   rel="noopener noreferrer"
                   style={slideStyleProp}
                   target="_blank"
@@ -336,7 +349,7 @@ const HeroCarousel = () => {
                 <LocalizedClientLink
                   aria-label={slide.title}
                   className={slideClass}
-                  href={slide.cta.href}
+                  href={slide.ctaHref}
                   style={slideStyleProp}
                 >
                   {content}

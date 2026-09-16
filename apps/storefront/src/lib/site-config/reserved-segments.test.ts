@@ -2,7 +2,11 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { isValidSlugShape, ROUTABLE_SEGMENTS } from "./reserved-segments.ts";
+import {
+  isValidSlugShape,
+  ROUTABLE_SEGMENTS,
+  SEGMENTS_OUTSIDE_COUNTRY_CODE,
+} from "./reserved-segments.ts";
 
 /**
  * ESTE es el test que evita el incidente silencioso: alguien agrega
@@ -100,6 +104,41 @@ describe("la lista reservada refleja el árbol real de rutas", () => {
         `OJO: sacar uno LIBERA ese slug, y si alguna tienda ya lo tomó, volver a ` +
         `agregarlo después es breaking.`,
     );
+  });
+});
+
+/**
+ * El OTRO incidente silencioso, y este ya había pasado: `app/driver` vive fuera de
+ * `[countryCode]`, el proxy reescribía `/driver` a `/{cc}/driver` —que no existe— y la
+ * mini-app del repartidor contestaba 404 entera. No hay log que lo delate: para Next es
+ * una URL que no existe, igual que un typo.
+ *
+ * Este walker ata la lista que el proxy consulta al árbol real, así una carpeta nueva
+ * fuera de `[countryCode]` falla acá y no en producción.
+ */
+describe("el proxy conoce las rutas que viven fuera de [countryCode]", () => {
+  // Sin `descendInto`: quedan sólo los segmentos que NO cuelgan de `[countryCode]`.
+  const outside = [...new Set(firstLevelSegments(APP_DIR))].sort();
+
+  it("la lista declarada es exactamente el árbol real", () => {
+    assert.deepEqual(
+      outside,
+      [...new Set(SEGMENTS_OUTSIDE_COUNTRY_CODE)].sort(),
+      `Estas rutas de primer nivel viven fuera de [countryCode] y el proxy las tiene ` +
+        `que dejar pasar sin reescribir. Si falta una, el proxy la manda a ` +
+        `/{countryCode}/<ruta> y contesta 404 sin ningún error visible. ` +
+        `Actualizá SEGMENTS_OUTSIDE_COUNTRY_CODE en reserved-segments.ts.`,
+    );
+  });
+
+  it("todas siguen siendo slugs reservados", () => {
+    // Salen de `ROUTABLE_SEGMENTS`, así que separarlas no puede liberar un slug.
+    for (const segment of outside) {
+      assert.ok(
+        ROUTABLE_SEGMENTS.includes(segment),
+        `${segment} salió de ROUTABLE_SEGMENTS: un cliente podría tomarlo como slug`,
+      );
+    }
   });
 });
 

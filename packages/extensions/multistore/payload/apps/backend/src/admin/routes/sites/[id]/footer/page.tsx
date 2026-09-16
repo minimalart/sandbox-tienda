@@ -16,8 +16,8 @@ import { ArrowDownMini, ArrowUpMini, Plus, Trash } from '@medusajs/icons';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDemoStore, useUpdateDemoStore } from '../../../../hooks/api/demo-stores';
-import { useStorefrontBase } from '../../../../hooks/use-storefront-base';
-import { buildPublicUrlFrom, formatPublicUrlFrom, SITE_HOST_SUFFIX } from '../../lib';
+import { useStorefrontOrigins } from '../../../../hooks/use-storefront-base';
+import { buildPublicUrlFrom, formatPublicUrlFrom } from '../../lib';
 
 /** Los íconos que el storefront sabe dibujar (`SocialLink.icon`). */
 const SOCIAL_ICONS = [
@@ -199,7 +199,7 @@ const SiteFooterEditor = () => {
   const { data, isLoading } = useDemoStore(id);
   const demo = data?.demo_store;
   const updateMut = useUpdateDemoStore(id);
-  const storefrontBase = useStorefrontBase();
+  const { base: storefrontBase, sitesBase, hostSuffix } = useStorefrontOrigins();
 
   const [form, setForm] = useState<FooterForm>(EMPTY);
 
@@ -315,7 +315,7 @@ const SiteFooterEditor = () => {
           <Text size="small" className="text-ui-fg-subtle">
             {formatPublicUrlFrom(demo, {
               baseUrl: storefrontBase,
-              hostSuffix: SITE_HOST_SUFFIX,
+              sitesBaseUrl: sitesBase, hostSuffix,
             })}
           </Text>
         </div>
@@ -323,7 +323,7 @@ const SiteFooterEditor = () => {
           <a
             href={buildPublicUrlFrom(demo, {
               baseUrl: storefrontBase,
-              hostSuffix: SITE_HOST_SUFFIX,
+              sitesBaseUrl: sitesBase, hostSuffix,
             })}
             target="_blank"
             rel="noreferrer"

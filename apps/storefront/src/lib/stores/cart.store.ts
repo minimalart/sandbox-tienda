@@ -453,10 +453,49 @@ export const useCartStore = create<CartStore>()(
         }
 
         // Update cart with server response
+        const localCartBeforeMerge = get().cart;
         const mergedCart = mergeServerCartWithPendingOptimisticItems(
           data.cart,
-          get().cart
+          localCartBeforeMerge
         );
+
+        // ¿El usuario sacó la línea mientras el add estaba en vuelo? Esa baja
+        // apuntó al id OPTIMISTA (`optimistic-line-…`), que el server no
+        // conoce, así que nunca se sincronizó — y el merge de acá arriba la
+        // trae de vuelta desde el server. El producto reaparecía después de
+        // tirarlo al tacho.
+        //
+        // Ahora que tenemos el id real, aplicamos la baja y la sacamos ya de la
+        // UI para que no parpadee de vuelta.
+        const removedWhileAdding =
+          !!localCartBeforeMerge &&
+          !localCartBeforeMerge.items?.some(
+            (item) => item.variant_id === variantId
+          );
+        const serverLineForVariant = (
+          (data.cart?.items ?? []) as HttpTypes.StoreCartLineItem[]
+        ).find((item) => item.variant_id === variantId);
+
+        if (removedWhileAdding && serverLineForVariant) {
+          set({
+            cart: {
+              ...mergedCart,
+              items: mergedCart.items?.filter(
+                (item) => item.variant_id !== variantId
+              ),
+            },
+          });
+          void get()._syncQuantityToServer(
+            serverLineForVariant.id,
+            0,
+            bumpCartOptimisticVersion()
+          );
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('cart-updated'));
+          }
+          return true;
+        }
+
         set({ cart: mergedCart });
 
         // Si el usuario subió la cantidad mientras el add estaba en vuelo, el

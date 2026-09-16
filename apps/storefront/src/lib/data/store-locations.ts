@@ -4,7 +4,11 @@ import { cache } from 'react';
 import { getActiveDemoSalesChannelId } from '@lib/site-config/active-tenant';
 import { getActiveSalesChannelId } from './cookies';
 
-export type StoreLocationType = 'distribution_center' | 'wholesale' | 'point_of_sale';
+/**
+ * El id del tipo de sucursal. Ya no es un enum: cada tienda define su lista en
+ * `content_config.sucursales.types`. Cadena vacía = sin tipo.
+ */
+export type StoreLocationType = string;
 
 export type BusinessHoursSlot = {
 	open: string;

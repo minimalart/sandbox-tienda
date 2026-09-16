@@ -4,8 +4,8 @@ import { Button, Heading, Text, Toaster, toast, usePrompt } from '@medusajs/ui';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDemoStore, useUpdateDemoStore } from '../../../../hooks/api/demo-stores';
-import { useStorefrontBase } from '../../../../hooks/use-storefront-base';
-import { buildPublicUrlFrom, formatPublicUrlFrom, SITE_HOST_SUFFIX } from '../../lib';
+import { useStorefrontOrigins } from '../../../../hooks/use-storefront-base';
+import { buildPublicUrlFrom, formatPublicUrlFrom } from '../../lib';
 import { DEFAULT_HOME_LAYOUT, homeConfig } from '../../../../lib/puck/home-config';
 
 const EMPTY_DATA = { content: [], root: { props: {} } } as unknown as Data;
@@ -57,7 +57,7 @@ const DemoHomeEditor = () => {
    * activa, `base` = instancia), así que el header ya no molesta y esto puede ir por el
    * `fetchJson` compartido como el resto del admin.
    */
-  const storefrontBase = useStorefrontBase();
+  const { base: storefrontBase, sitesBase, hostSuffix } = useStorefrontOrigins();
 
   if (isLoading) {
     return (
@@ -132,7 +132,7 @@ const DemoHomeEditor = () => {
             {demo.name}
           </Heading>
           <Text size="small" className="text-ui-fg-subtle">
-            {formatPublicUrlFrom(demo, { baseUrl: storefrontBase, hostSuffix: SITE_HOST_SUFFIX })}
+            {formatPublicUrlFrom(demo, { baseUrl: storefrontBase, sitesBaseUrl: sitesBase, hostSuffix })}
           </Text>
         </div>
         <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ const DemoHomeEditor = () => {
           <a
             href={buildPublicUrlFrom(demo, {
               baseUrl: storefrontBase,
-              hostSuffix: SITE_HOST_SUFFIX,
+              sitesBaseUrl: sitesBase, hostSuffix,
             })}
             target="_blank"
             rel="noreferrer"

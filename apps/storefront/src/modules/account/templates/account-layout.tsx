@@ -16,14 +16,18 @@ interface AccountLayoutProps {
   customer: HttpTypes.StoreCustomer | null;
   hasCredit?: boolean;
   hasRecurring?: boolean;
+  /**
+   * Fidelización y gift cards son OPT-OUT: estaban hardcodeadas en el nav, así que
+   * el default de la firma es `true` y sólo un `false` explícito las esconde.
+   */
+  hasLoyalty?: boolean;
+  hasGiftCards?: boolean;
   children: React.ReactNode;
 }
 
 const baseNavigation = [
   { name: "Mis pedidos", shortName: "Pedidos", href: "/account/orders", icon: Box },
   { name: "Favoritos", shortName: "Favoritos", href: "/account/wishlist", icon: Heart },
-  { name: "Mis puntos", shortName: "Puntos", href: "/account/loyalty", icon: Star },
-  { name: "Gift Cards", shortName: "Gift Cards", href: "/account/gift-cards", icon: Gift },
   { name: "Mi cuenta", shortName: "Cuenta", href: "/account/profile", icon: User },
   { name: "Mis direcciones", shortName: "Dirección", href: "/account/addresses", icon: MapPin },
   { name: "Datos de facturación", shortName: "Facturación", href: "/account/billing", icon: FileText },
@@ -41,6 +45,20 @@ const recurringNavItem = {
   shortName: "Recurrentes",
   href: "/account/subscriptions",
   icon: Repeat,
+};
+
+const loyaltyNavItem = {
+  name: "Mis puntos",
+  shortName: "Puntos",
+  href: "/account/loyalty",
+  icon: Star,
+};
+
+const giftCardsNavItem = {
+  name: "Gift Cards",
+  shortName: "Gift Cards",
+  href: "/account/gift-cards",
+  icon: Gift,
 };
 
 function classNames(...classes: string[]) {
@@ -61,13 +79,21 @@ const AccountLayout: React.FC<AccountLayoutProps> = ({
   customer,
   hasCredit = false,
   hasRecurring = false,
+  hasLoyalty = true,
+  hasGiftCards = true,
   children,
 }) => {
+  // El orden es el de siempre — Pedidos, [Recurrentes], Favoritos, Puntos, Gift
+  // Cards, Cuenta, Direcciones, Facturación, [Cta. Cte.] — sólo que ahora los
+  // ítems gateados se insertan en su posición en vez de vivir en el array base.
   const secondaryNavigation = [
     ...baseNavigation.slice(0, 1),
     // "Compras recurrentes" va pegado a "Mis pedidos": son ambos historial de compra.
     ...(hasRecurring ? [recurringNavItem] : []),
-    ...baseNavigation.slice(1),
+    ...baseNavigation.slice(1, 2),
+    ...(hasLoyalty ? [loyaltyNavItem] : []),
+    ...(hasGiftCards ? [giftCardsNavItem] : []),
+    ...baseNavigation.slice(2),
     ...(hasCredit ? [creditNavItem] : []),
   ];
   const pathname = usePathname();

@@ -3,6 +3,7 @@ import type { PuckBlock } from '@lib/data/landing-pages'
 import type { ReactNode } from 'react'
 import LandingProductsBlock from './landing-products-block'
 import { Button } from '@/components/ui/button'
+import { ImageText, FeatureGrid } from './creative-blocks'
 
 /**
  * Renders a landing page from its Puck JSON document. This is the read-only
@@ -18,6 +19,7 @@ type Props = Record<string, any>
 const wrap = 'mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8'
 
 function Hero(p: Props) {
+  if (p.layout === 'split') return <ImageText {...p} hero heading={p.title} text={p.subtitle} imagePosition="right" />
   const hasImage = Boolean(p.image)
   return (
     <section
@@ -44,6 +46,7 @@ function Hero(p: Props) {
         />
       ) : null}
       <div className={`${wrap} relative z-10 flex flex-col items-center gap-4`}>
+        {p.eyebrow ? <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: p.textColor || (hasImage ? '#fff' : undefined) }}>{p.eyebrow}</p> : null}
         {p.title ? (
           <h1
             className={`font-bold text-3xl sm:text-5xl ${
@@ -289,15 +292,17 @@ function CollectionGrid(p: Props) {
         </h2>
       ) : null}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {items.map((item, i) => (
+        {items.map((item, i) => item.href || item.handle ? (
           <LocalizedClientLink
             key={i}
-            href={item.href ?? `/store?category=${item.handle ?? ''}`}
+            href={item.href || `/store?category=${encodeURIComponent(item.handle || '')}`}
             className="flex items-center justify-center rounded-2xl border border-gray-200 px-4 py-10 text-center font-medium text-gray-800 transition hover:border-[--primary-color] hover:text-[--primary-color]"
             style={p.textColor ? { color: p.textColor } : undefined}
           >
             {item.label ?? item.handle}
           </LocalizedClientLink>
+        ) : (
+          <div key={i} className="flex items-center justify-center rounded-2xl border border-gray-200 px-4 py-10 text-center font-medium" style={p.textColor ? { color: p.textColor } : undefined}>{item.label || item.handle}</div>
         ))}
       </div>
     </section>
@@ -319,11 +324,11 @@ function ProductGrid(p: Props) {
           {p.heading}
         </h2>
       ) : null}
-      <Button asChild size="storefront" variant="storefrontOutline">
+      {href ? <Button asChild size="storefront" variant="storefrontOutline">
         <LocalizedClientLink href={href}>
           {p.ctaLabel ?? 'Ver productos'}
         </LocalizedClientLink>
-      </Button>
+      </Button> : null}
     </section>
   )
 }
@@ -342,6 +347,8 @@ const BLOCKS: Record<
   CollectionGrid,
   ProductGrid,
   ProductsList: LandingProductsBlock,
+  ImageText,
+  FeatureGrid,
 }
 
 export default function LandingRenderer({

@@ -173,3 +173,39 @@ describe('contentConfigToForm — barra inferior mobile', () => {
     assert.deepEqual(out.mobileNav, cfg.mobileNav);
   });
 });
+
+/**
+ * Ícono vs texto por entrada de la barra. El default (`icon`) es lo que hacía la
+ * barra cuando esto estaba clavado en el código, así que NO se persiste: la
+ * clave presente gana entera sobre el default del storefront.
+ */
+describe('content config — ícono o texto en la barra mobile', () => {
+  it('no persiste nada si todas quedaron en ícono', () => {
+    const cfg = formToContentConfig(emptyContentForm(), 'main', {});
+    assert.equal('mobileNavDisplay' in cfg, false);
+  });
+
+  it('persiste SÓLO las entradas puestas en texto', () => {
+    const base = emptyContentForm();
+    const cfg = formToContentConfig(
+      { ...base, mobileNavDisplay: { ...base.mobileNavDisplay, blog: 'text' } },
+      'main',
+      {},
+    );
+    assert.deepEqual(cfg.mobileNavDisplay, { blog: 'text' });
+  });
+
+  it('el formulario arranca con las 5 entradas, así ningún select queda vacío', () => {
+    const form = contentConfigToForm({ mobileNavDisplay: { promos: 'text' } } as DemoContentConfig);
+    assert.equal(Object.keys(form.mobileNavDisplay).length, DEFAULT_MOBILE_NAV.length);
+    assert.equal(form.mobileNavDisplay.promos, 'text');
+    assert.equal(form.mobileNavDisplay.blog, 'icon');
+  });
+
+  it('un valor inventado cae a ícono', () => {
+    const form = contentConfigToForm({
+      mobileNavDisplay: { blog: 'emoji' },
+    } as unknown as DemoContentConfig);
+    assert.equal(form.mobileNavDisplay.blog, 'icon');
+  });
+});

@@ -66,7 +66,7 @@ export const en = {
   FIELD_NAME: 'Name',
   FIELD_NAME_PLACEHOLDER: 'Tech Store',
   FIELD_SLUG: 'Slug',
-  FIELD_SLUG_HELP: 'Published at /tienda/{slug} and, under subdomains, {slug}.…',
+  FIELD_SLUG_HELP: 'Choose the address for this store. Use lowercase letters, numbers and hyphens.',
   FIELD_SLUG_WARNING:
     "The slug cannot be changed later: it is the store's public URL. Renaming it would break indexed links.",
   FIELD_CANONICAL_FORM: 'Canonical URL',
@@ -84,6 +84,9 @@ export const en = {
   FIELD_FOOTER_BACKGROUND: 'Footer background',
   FIELD_CHROME_BACKGROUND_HELP:
     'Leave empty to keep the background the chosen template already uses.',
+  FIELD_PROMO_BUTTON_COLOR: 'Promotions button color',
+  FIELD_PROMO_BUTTON_COLOR_HELP:
+    'Background of the "Promotions" button in the header. Leave empty to use the primary color; on light colors the label turns dark automatically.',
   FIELD_LOGO: 'Logo URL',
   FIELD_MOBILE_LOGO: 'Mobile logo URL',
   FIELD_FAVICON: 'Favicon URL',
@@ -117,72 +120,47 @@ export const en = {
   EDIT_TAB_OPERATIONS: 'Operations',
   EDIT_TAB_FEATURES: 'Features',
   CONTENT_SECTIONS_TITLE: 'Visible sections',
-  CONTENT_BLOG_TOGGLE: 'Blog',
-  CONTENT_BLOG_TOGGLE_HELP: 'Show the blog link in the menu',
-  CONTENT_CONTACT_TOGGLE: 'Contact',
-  CONTENT_CONTACT_TOGGLE_HELP: 'Show the contact link in the menu',
   CONTENT_SHOPPING_LIST_TOGGLE: 'Shopping list',
-  CONTENT_SHOPPING_LIST_TOGGLE_HELP: 'Show the shopping list link in the menu',
-  CONTENT_SUCURSALES_TOGGLE: 'Branches',
-  CONTENT_SUCURSALES_TOGGLE_HELP: 'Show the branches link in the menu',
   CONTENT_CORPORATE_TOGGLE: 'Corporate accounts',
-  CONTENT_CORPORATE_TOGGLE_HELP: 'Show the corporate accounts link in the footer',
   CONTENT_VARIANT_LABELS_TOGGLE: 'Variant labels',
-  CONTENT_VARIANT_LABELS_TOGGLE_HELP: 'Show the format/size and colours on the product card',
   CONTENT_CATEGORIES_TOGGLE: 'Categories menu',
-  CONTENT_CATEGORIES_TOGGLE_HELP: 'Show the categories menu in the desktop nav, before "Store"',
   CONTENT_CATEGORIES_LAYOUT: 'Categories menu design',
-  CONTENT_CATEGORIES_LAYOUT_HELP:
-    'How the categories entry looks in the nav. It is hidden automatically when the store has no categories.',
   CONTENT_CATEGORIES_LAYOUT_HAMBURGER: 'Hamburger menu with side submenu',
   CONTENT_CATEGORIES_LAYOUT_BUTTON: 'Solid button with dropdown',
 
-  // Mobile bottom bar — order of the one flexible slot (4th item).
-  MOBILE_NAV_TITLE: 'Mobile bottom bar',
-  MOBILE_NAV_HELP:
-    'The bar always shows 5 icons: home, Store, cart, one of the entries below and the menu. It uses the first one that is actually available, so move the one you want first to the top with the arrows. Promos only counts when the channel has active promotions, and "Find your colour" only when tinting is on with an imported colour chart.',
+  // Menu — one row per entry: visibility, order in the mobile bar and how it is
+  // drawn there. The row labels are the ones the storefront paints.
+  MENU_TITLE: 'Menu',
+  MENU_AUTO: 'Automatic',
+  MENU_DISPLAY: 'Mobile bar',
+  MENU_DISPLAY_ICON: 'Icon',
+  MENU_DISPLAY_TEXT: 'Text',
   MOBILE_NAV_MOVE_UP: 'Move up',
   MOBILE_NAV_MOVE_DOWN: 'Move down',
   MOBILE_NAV_PROMOS: 'Promos',
-  MOBILE_NAV_PROMOS_HELP: 'Only when the channel has active promotions',
   MOBILE_NAV_COLORES: 'Find your colour',
-  MOBILE_NAV_COLORES_HELP: 'Only with tinting on and the colour chart imported',
   MOBILE_NAV_SUCURSALES: 'Branches',
-  MOBILE_NAV_SUCURSALES_HELP: 'Needs the Branches toggle above',
   MOBILE_NAV_BLOG: 'Blog',
-  MOBILE_NAV_BLOG_HELP: 'Needs the Blog toggle above',
   MOBILE_NAV_CONTACTO: 'Contact',
-  MOBILE_NAV_CONTACTO_HELP: 'Needs the Contact toggle above',
   CONTENT_BLOG_NAME: 'Blog section name',
   CONTENT_BLOG_NAME_PLACEHOLDER: 'Recipes',
   CONTENT_BRANDS_LAYOUT: 'Brands section design',
-  CONTENT_BRANDS_LAYOUT_HELP:
-    'How the brand logos are shown on the home page. Only applies when the store has brands with a logo.',
   CONTENT_BRANDS_LAYOUT_CAROUSEL: 'Carousel with arrows',
   CONTENT_BRANDS_LAYOUT_MARQUEE: 'Infinite marquee',
   CONTENT_BRANDS_LAYOUT_DOTS: 'Paged with dots',
   CONTENT_MP_CHECKOUT_MODE: 'MercadoPago checkout',
-  CONTENT_MP_CHECKOUT_MODE_HELP:
-    'Which MercadoPago checkout the store offers at the payment step. Requires MERCADOPAGO_API_ENABLED on the backend for the embedded option.',
   CONTENT_MP_MODE_EXPRESS: 'Express (redirect to MercadoPago)',
   CONTENT_MP_MODE_API: 'API (embedded card/cash form)',
   CONTENT_MP_MODE_BOTH: 'Both (buyer chooses)',
   CONTENT_SUCURSALES_TITLE: 'Branches page',
-  CONTENT_SUCURSALES_HELP: 'Copy, filters and layout of the /sucursales page.',
   CONTENT_SUCURSALES_SUBTITLE: 'Subtitle',
   CONTENT_SUCURSALES_SUBTITLE_PLACEHOLDER: 'Search by location, filter by store type…',
-  CONTENT_SUCURSALES_SUBTITLE_HELP: 'Leave empty to hide the subtitle.',
   CONTENT_SUCURSALES_LAYOUT: 'Layout',
   CONTENT_SUCURSALES_LAYOUT_FULL: 'Full (search + filters + map + list below)',
   CONTENT_SUCURSALES_LAYOUT_COMPACT: 'Compact (list next to the map, no search)',
-  CONTENT_SUCURSALES_LAYOUT_HELP:
-    'Use the compact layout when there are only a few branches: the list sits next to the map and the search and filters are hidden.',
   CONTENT_SUCURSALES_LOCATION_FILTERS: 'Location filters',
-  CONTENT_SUCURSALES_LOCATION_FILTERS_HELP: 'Region checkboxes (CABA, Buenos Aires, …).',
   CONTENT_SUCURSALES_CATEGORY_FILTERS: 'Category filters',
-  CONTENT_SUCURSALES_CATEGORY_FILTERS_HELP: 'Branch type checkboxes (point of sale, wholesale, …).',
   CONTENT_CONTACT_TITLE: 'Contact info',
-  CONTENT_CONTACT_HELP: 'Shown on the contact page and the footer.',
   CONTENT_CONTACT_ADDRESS: 'Address',
   CONTENT_CONTACT_ADDRESS_PLACEHOLDER: 'Av. Corrientes 1234, Buenos Aires',
   CONTENT_CONTACT_PHONE: 'Phone',
@@ -192,8 +170,6 @@ export const en = {
   CONTENT_CONTACT_HOURS: 'Opening hours',
   CONTENT_CONTACT_HOURS_PLACEHOLDER: 'Mon to Fri, 8am to 6pm',
   CONTENT_CONTACT_PAGE_TITLE: 'Customer support card',
-  CONTENT_CONTACT_PAGE_HELP:
-    'Copy for the "Customer support" card on /contact. Empty = the default copy.',
   CONTENT_CONTACT_PAGE_HEADING: 'Card title',
   CONTENT_CONTACT_PAGE_HEADING_PLACEHOLDER: 'Atención al cliente',
   CONTENT_CONTACT_PAGE_DESCRIPTION: 'Card text',
@@ -210,17 +186,12 @@ export const en = {
   CONTENT_SL_SUBTITLE: 'Shopping list — subtitle',
   CONTENT_SL_SUBTITLE_PLACEHOLDER: 'Type what you need and we suggest products…',
   CONTENT_SEARCH_SUGGESTIONS: '"Explore:" quick suggestions',
-  CONTENT_SEARCH_SUGGESTIONS_HELP:
-    'Up to 3 shortcuts next to the header search (supermarket template only).',
   CONTENT_SUGGESTION_LABEL: 'Label',
   CONTENT_SUGGESTION_QUERY: 'Search query',
   CONTENT_SL_QUICK_TERMS: 'Shopping list — quick-add words',
   CONTENT_SL_QUICK_TERMS_PLACEHOLDER: 'Chocolates\nCereals\nCookies',
-  CONTENT_SL_QUICK_TERMS_HELP: 'One per line. Shown as quick-add chips in the modal and the page.',
   CONTENT_SEARCH_HINTS: 'Search bar hints',
   CONTENT_SEARCH_HINTS_PLACEHOLDER: 'Search products...\nDeals...',
-  CONTENT_SEARCH_HINTS_HELP:
-    'One per line. Rotating placeholder in the header, floating and mobile search.',
 
   // Detail
   DETAIL_BACK: 'Back to stores',
@@ -287,6 +258,15 @@ export const en = {
   TINTING_TOGGLE: 'Enable the color catalog page',
   TINTING_TOGGLE_HELP:
     'Adds the "Find your color" page: the shopper picks a color first and sees which bases achieve it, with add to cart. Requires the tinting switch to be on in ERP → Settings and the color chart to be imported.',
+
+  // My account (loyalty + gift cards)
+  ACCOUNT_SECTION_TITLE: 'My account',
+  LOYALTY_TOGGLE: 'Show "My points"',
+  LOYALTY_TOGGLE_HELP:
+    'Shows the loyalty section in the customer account: points balance, history and rewards. On by default. It only controls the storefront surface — the loyalty program itself is configured in Loyalty → Settings.',
+  GIFT_CARDS_TOGGLE: 'Show "Gift Cards"',
+  GIFT_CARDS_TOGGLE_HELP:
+    'Shows the gift cards section in the customer account: balance, redeem and purchase history. On by default. It only controls the storefront surface — issuing gift cards is configured in Gift Cards → Settings.',
 };
 
 export const es: typeof en = {
@@ -351,7 +331,7 @@ export const es: typeof en = {
   FIELD_NAME: 'Nombre',
   FIELD_NAME_PLACEHOLDER: 'Tienda Tecnología',
   FIELD_SLUG: 'Slug',
-  FIELD_SLUG_HELP: 'Se publica en /tienda/{slug} y, bajo subdominios, en {slug}.…',
+  FIELD_SLUG_HELP: 'Elegí la dirección de esta tienda. Usá minúsculas, números y guiones.',
   FIELD_SLUG_WARNING:
     'El slug NO se puede cambiar después: es la URL pública de la tienda. Renombrarlo rompería los links ya compartidos.',
   FIELD_CANONICAL_FORM: 'URL canónica',
@@ -369,6 +349,9 @@ export const es: typeof en = {
   FIELD_FOOTER_BACKGROUND: 'Fondo del footer',
   FIELD_CHROME_BACKGROUND_HELP:
     'Dejalos vacíos para conservar el fondo que ya usa la plantilla elegida.',
+  FIELD_PROMO_BUTTON_COLOR: 'Color del botón de promociones',
+  FIELD_PROMO_BUTTON_COLOR_HELP:
+    'Fondo del botón "Promociones" del header. Dejalo vacío para usar el color principal; sobre colores claros el texto pasa a oscuro solo.',
   FIELD_LOGO: 'URL del logo',
   FIELD_MOBILE_LOGO: 'URL del logo mobile',
   FIELD_FAVICON: 'URL del favicon',
@@ -402,74 +385,47 @@ export const es: typeof en = {
   EDIT_TAB_OPERATIONS: 'Operación',
   EDIT_TAB_FEATURES: 'Funciones',
   CONTENT_SECTIONS_TITLE: 'Secciones visibles',
-  CONTENT_BLOG_TOGGLE: 'Blog',
-  CONTENT_BLOG_TOGGLE_HELP: 'Mostrar el link del blog en el menú',
-  CONTENT_CONTACT_TOGGLE: 'Contacto',
-  CONTENT_CONTACT_TOGGLE_HELP: 'Mostrar el link de contacto en el menú',
   CONTENT_SHOPPING_LIST_TOGGLE: 'Lista de compras',
-  CONTENT_SHOPPING_LIST_TOGGLE_HELP: 'Mostrar el link de lista de compras en el menú',
-  CONTENT_SUCURSALES_TOGGLE: 'Sucursales',
-  CONTENT_SUCURSALES_TOGGLE_HELP: 'Mostrar el link de sucursales en el menú',
   CONTENT_CORPORATE_TOGGLE: 'Cuentas corporativas',
-  CONTENT_CORPORATE_TOGGLE_HELP: 'Mostrar el link de cuentas corporativas en el footer',
   CONTENT_VARIANT_LABELS_TOGGLE: 'Etiquetas de variantes',
-  CONTENT_VARIANT_LABELS_TOGGLE_HELP: 'Mostrar el formato/medida y los colores en la card',
   CONTENT_CATEGORIES_TOGGLE: 'Menú de categorías',
-  CONTENT_CATEGORIES_TOGGLE_HELP:
-    'Mostrar el menú de categorías en el nav de escritorio, antes de "Tienda"',
   CONTENT_CATEGORIES_LAYOUT: 'Diseño del menú de categorías',
-  CONTENT_CATEGORIES_LAYOUT_HELP:
-    'Cómo se ve la entrada de categorías en el nav. Se oculta solo si la tienda no tiene categorías.',
   CONTENT_CATEGORIES_LAYOUT_HAMBURGER: 'Menú hamburguesa con submenú lateral',
   CONTENT_CATEGORIES_LAYOUT_BUTTON: 'Botón sólido con desplegable',
 
-  // Barra inferior mobile — orden del único lugar flexible (el 4º ítem).
-  MOBILE_NAV_TITLE: 'Barra inferior mobile',
-  MOBILE_NAV_HELP:
-    'La barra siempre muestra 5 íconos: home, Tienda, carrito, una de estas entradas y el menú. Usa la primera que esté realmente disponible, así que subí con las flechas la que quieras primero. Promos sólo cuenta si el canal tiene promociones activas, y "Buscá tu color" sólo con tintometría prendida y la carta importada.',
+  // Menú — una fila por entrada: si se ve, en qué posición entra a la barra
+  // mobile y cómo se dibuja ahí.
+  MENU_TITLE: 'Menú',
+  MENU_AUTO: 'Automático',
+  MENU_DISPLAY: 'Barra mobile',
+  MENU_DISPLAY_ICON: 'Ícono',
+  MENU_DISPLAY_TEXT: 'Texto',
   MOBILE_NAV_MOVE_UP: 'Subir',
   MOBILE_NAV_MOVE_DOWN: 'Bajar',
   MOBILE_NAV_PROMOS: 'Promos',
-  MOBILE_NAV_PROMOS_HELP: 'Sólo si el canal tiene promociones activas',
   MOBILE_NAV_COLORES: 'Buscá tu color',
-  MOBILE_NAV_COLORES_HELP: 'Sólo con tintometría prendida y la carta importada',
   MOBILE_NAV_SUCURSALES: 'Sucursales',
-  MOBILE_NAV_SUCURSALES_HELP: 'Necesita el switch de Sucursales de arriba',
   MOBILE_NAV_BLOG: 'Blog',
-  MOBILE_NAV_BLOG_HELP: 'Necesita el switch de Blog de arriba',
   MOBILE_NAV_CONTACTO: 'Contacto',
-  MOBILE_NAV_CONTACTO_HELP: 'Necesita el switch de Contacto de arriba',
   CONTENT_BLOG_NAME: 'Nombre de la sección de blog',
   CONTENT_BLOG_NAME_PLACEHOLDER: 'Recetas',
   CONTENT_BRANDS_LAYOUT: 'Diseño de la sección de marcas',
-  CONTENT_BRANDS_LAYOUT_HELP:
-    'Cómo se muestran los logos de marcas en el home. Solo aplica si la tienda tiene marcas con logo.',
   CONTENT_BRANDS_LAYOUT_CAROUSEL: 'Carrusel con flechas',
   CONTENT_BRANDS_LAYOUT_MARQUEE: 'Marquesina infinita',
   CONTENT_BRANDS_LAYOUT_DOTS: 'Paginado con puntos',
   CONTENT_MP_CHECKOUT_MODE: 'Checkout de MercadoPago',
-  CONTENT_MP_CHECKOUT_MODE_HELP:
-    'Qué checkout de MercadoPago ofrece la tienda en el paso de pago. La opción embebida requiere MERCADOPAGO_API_ENABLED en el backend.',
   CONTENT_MP_MODE_EXPRESS: 'Express (redirección a MercadoPago)',
   CONTENT_MP_MODE_API: 'API (formulario embebido: tarjeta/efectivo)',
   CONTENT_MP_MODE_BOTH: 'Ambos (elige el comprador)',
   CONTENT_SUCURSALES_TITLE: 'Página de sucursales',
-  CONTENT_SUCURSALES_HELP: 'Textos, filtros y layout de la página /sucursales.',
   CONTENT_SUCURSALES_SUBTITLE: 'Subtítulo',
   CONTENT_SUCURSALES_SUBTITLE_PLACEHOLDER: 'Buscá por ubicación, filtrá por tipo de sucursal…',
-  CONTENT_SUCURSALES_SUBTITLE_HELP: 'Dejalo vacío para no mostrar el subtítulo.',
   CONTENT_SUCURSALES_LAYOUT: 'Layout',
   CONTENT_SUCURSALES_LAYOUT_FULL: 'Completo (buscador + filtros + mapa + listado abajo)',
   CONTENT_SUCURSALES_LAYOUT_COMPACT: 'Compacto (listado al lado del mapa, sin buscador)',
-  CONTENT_SUCURSALES_LAYOUT_HELP:
-    'Usá el layout compacto cuando hay pocas sucursales: el listado va al lado del mapa y se ocultan el buscador y los filtros.',
   CONTENT_SUCURSALES_LOCATION_FILTERS: 'Filtros de ubicación',
-  CONTENT_SUCURSALES_LOCATION_FILTERS_HELP: 'Checkboxes de región (CABA, Buenos Aires, …).',
   CONTENT_SUCURSALES_CATEGORY_FILTERS: 'Filtros de categoría',
-  CONTENT_SUCURSALES_CATEGORY_FILTERS_HELP:
-    'Checkboxes de tipo de sucursal (punto de venta, mayorista, …).',
   CONTENT_CONTACT_TITLE: 'Datos de contacto',
-  CONTENT_CONTACT_HELP: 'Se muestran en la página de contacto y en el footer.',
   CONTENT_CONTACT_ADDRESS: 'Dirección',
   CONTENT_CONTACT_ADDRESS_PLACEHOLDER: 'Av. Corrientes 1234, Buenos Aires',
   CONTENT_CONTACT_PHONE: 'Teléfono',
@@ -479,8 +435,6 @@ export const es: typeof en = {
   CONTENT_CONTACT_HOURS: 'Horario de atención',
   CONTENT_CONTACT_HOURS_PLACEHOLDER: 'Lun a Vie de 8 a 18 hs',
   CONTENT_CONTACT_PAGE_TITLE: 'Tarjeta "Atención al cliente"',
-  CONTENT_CONTACT_PAGE_HELP:
-    'Textos de la tarjeta "Atención al cliente" de /contact. Vacío = el copy por defecto.',
   CONTENT_CONTACT_PAGE_HEADING: 'Título de la tarjeta',
   CONTENT_CONTACT_PAGE_HEADING_PLACEHOLDER: 'Atención al cliente',
   CONTENT_CONTACT_PAGE_DESCRIPTION: 'Texto de la tarjeta',
@@ -497,18 +451,12 @@ export const es: typeof en = {
   CONTENT_SL_SUBTITLE: 'Lista de compras — subtítulo',
   CONTENT_SL_SUBTITLE_PLACEHOLDER: 'Escribí lo que necesitás y te sugerimos productos…',
   CONTENT_SEARCH_SUGGESTIONS: 'Accesos rápidos de "Explorar:"',
-  CONTENT_SEARCH_SUGGESTIONS_HELP:
-    'Hasta 3 atajos al lado del buscador del header (solo plantilla supermercado).',
   CONTENT_SUGGESTION_LABEL: 'Etiqueta',
   CONTENT_SUGGESTION_QUERY: 'Búsqueda',
   CONTENT_SL_QUICK_TERMS: 'Lista de compras — palabras rápidas',
   CONTENT_SL_QUICK_TERMS_PLACEHOLDER: 'Chocolates\nCereales\nGalletitas',
-  CONTENT_SL_QUICK_TERMS_HELP:
-    'Una por línea. Se muestran como chips "Agregá rápido" en el modal y la página.',
   CONTENT_SEARCH_HINTS: 'Textos del buscador',
   CONTENT_SEARCH_HINTS_PLACEHOLDER: 'Buscar productos...\nOfertas...',
-  CONTENT_SEARCH_HINTS_HELP:
-    'Uno por línea. Placeholder rotativo del buscador del header, flotante y mobile.',
 
   DETAIL_BACK: 'Volver a tiendas',
   DETAIL_IMPORT_PROGRESS: 'Progreso de importación',
@@ -575,6 +523,15 @@ export const es: typeof en = {
   TINTING_TOGGLE: 'Habilitar la página de colores',
   TINTING_TOGGLE_HELP:
     'Agrega la página "Buscá tu color": el comprador elige primero el color y ve con qué bases se logra, con opción de agregar al carrito. Necesita el switch de tintometría prendido en ERP → Configuración y la carta de colores importada.',
+
+  // Mi cuenta (fidelización + gift cards)
+  ACCOUNT_SECTION_TITLE: 'Mi cuenta',
+  LOYALTY_TOGGLE: 'Mostrar "Mis puntos"',
+  LOYALTY_TOGGLE_HELP:
+    'Muestra la sección de fidelización en la cuenta del cliente: saldo de puntos, historial y recompensas. Viene prendido. Sólo controla la vidriera — el programa de puntos se configura en Fidelización → Configuración.',
+  GIFT_CARDS_TOGGLE: 'Mostrar "Gift Cards"',
+  GIFT_CARDS_TOGGLE_HELP:
+    'Muestra la sección de gift cards en la cuenta del cliente: saldo, canje e historial de compras. Viene prendido. Sólo controla la vidriera — la emisión de gift cards se configura en Gift Cards → Configuración.',
 };
 
 export function registerDemoStoresTranslations(i18n: I18nInstance): void {

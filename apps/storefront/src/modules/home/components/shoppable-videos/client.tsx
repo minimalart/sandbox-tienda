@@ -20,8 +20,7 @@ import VimeoPlayer, {
   type VimeoPlayerHandle,
 } from '@modules/common/components/vimeo-player'
 import { useAddToCartAnimation } from '@lib/context/add-to-cart-animation'
-import LocalizedClientLink from '@modules/common/components/localized-client-link'
-import { HttpTypes } from '@medusajs/types'
+import ProductQuickViewModal from '@modules/common/components/quick-view-modal'
 import {
   useCallback,
   useEffect,
@@ -31,13 +30,6 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 
-const getStoreCategoryHref = (product?: HttpTypes.StoreProduct) => {
-  if (!product) return '/store'
-  const category = product.categories?.[product.categories.length - 1]
-  if (!category?.name) return '/store'
-  return `/store?category=${encodeURIComponent(category.name)}`
-}
-
 const ShoppableVideosClient = ({
   videos,
   title = 'Viví la experiencia',
@@ -46,6 +38,15 @@ const ShoppableVideosClient = ({
 }: ShoppableVideosClientProps) => {
   const [activeIndex, setActiveIndex] = useState<number>(0)
   const [addingId, setAddingId] = useState<string | null>(null)
+  // Quick view del producto del clip. Reemplaza el link a la CATEGORIA que tenia
+  // la card: quien toca la card quiere ver ese producto, no la grilla de su
+  // categoria. El item se conserva al cerrar para la animacion de salida.
+  const [quickViewItem, setQuickViewItem] = useState<ShoppableVideo | null>(null)
+  const [quickViewOpen, setQuickViewOpen] = useState(false)
+  const openQuickView = useCallback((item: ShoppableVideo) => {
+    setQuickViewItem(item)
+    setQuickViewOpen(true)
+  }, [])
   // El usuario elige una sola vez: el sonido queda persistente entre clips,
   // fullscreen y reels hasta que vuelva a cambiarlo.
   const [soundOn, setSoundOn] = useState(false)
@@ -412,7 +413,7 @@ const ShoppableVideosClient = ({
             <div className='mt-5 flex justify-center'>
               <ShoppableProductCard
                 item={videos[activeIndex]}
-                productHref={getStoreCategoryHref(activeProduct)}
+                onOpen={() => openQuickView(videos[activeIndex])}
                 addingId={addingId}
                 getCartCount={getCartCount}
                 onAddToCart={handleAddToCart}
@@ -432,12 +433,26 @@ const ShoppableVideosClient = ({
         addingId={addingId}
         getCartCount={getCartCount}
         handleAddToCartFor={handleAddToCartFor}
-        getProductHref={(product) =>
-          product ? getStoreCategoryHref(product) : ''
-        }
+        onOpenProduct={(item) => {
+          // El overlay va en z-[12000] y el quick view en z-[10000]: se cierra el
+          // fullscreen y el detalle se abre encima del home.
+          setExpandedIndex(null)
+          openQuickView(item)
+        }}
         soundOn={soundOn}
         setSoundOn={setSoundOn}
         onClose={() => setExpandedIndex(null)}
+      />
+    )}
+
+    {quickViewItem?.product && (
+      <ProductQuickViewModal
+        product={quickViewItem.product}
+        region={quickViewItem.region}
+        open={quickViewOpen}
+        onClose={() => setQuickViewOpen(false)}
+        inStock={isProductInStock(quickViewItem.product)}
+        countryCode={quickViewItem.region.countries?.[0]?.iso_2 || 'ar'}
       />
     )}
     </>
@@ -454,7 +469,7 @@ type ExpandedVideoOverlayProps = {
     e: React.MouseEvent,
     item: ShoppableVideo,
   ) => Promise<void>
-  getProductHref: (product?: HttpTypes.StoreProduct) => string
+  onOpenProduct: (item: ShoppableVideo) => void
   soundOn: boolean
   setSoundOn: React.Dispatch<React.SetStateAction<boolean>>
 }
@@ -475,7 +490,7 @@ const ExpandedVideoOverlay = ({
   addingId,
   getCartCount,
   handleAddToCartFor,
-  getProductHref,
+  onOpenProduct,
   soundOn,
   setSoundOn,
 }: ExpandedVideoOverlayProps) => {
@@ -555,7 +570,7 @@ const ExpandedVideoOverlay = ({
           addingId={addingId}
           getCartCount={getCartCount}
           handleAddToCartFor={handleAddToCartFor}
-          getProductHref={getProductHref}
+          onOpenProduct={onOpenProduct}
           soundOn={soundOn}
           setSoundOn={setSoundOn}
         />
@@ -643,7 +658,7 @@ const ExpandedVideoOverlay = ({
             <div className='absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/70 to-transparent p-3 pt-12'>
               <ShoppableProductCard
                 item={item}
-                productHref={getProductHref(item.product)}
+                onOpen={() => onOpenProduct(item)}
                 addingId={addingId}
                 getCartCount={getCartCount}
                 onAddToCart={(e) => handleAddToCartFor(e, item)}
@@ -668,7 +683,7 @@ type MobileReelsProps = {
     e: React.MouseEvent,
     item: ShoppableVideo,
   ) => Promise<void>
-  getProductHref: (product?: HttpTypes.StoreProduct) => string
+  onOpenProduct: (item: ShoppableVideo) => void
   soundOn: boolean
   setSoundOn: React.Dispatch<React.SetStateAction<boolean>>
 }
@@ -684,7 +699,7 @@ const MobileReels = ({
   addingId,
   getCartCount,
   handleAddToCartFor,
-  getProductHref,
+  onOpenProduct,
   soundOn,
   setSoundOn,
 }: MobileReelsProps) => {
@@ -786,7 +801,7 @@ const MobileReels = ({
         <div className='absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/70 to-transparent px-3 pb-7 pt-12'>
           <ShoppableProductCard
             item={currentItem}
-            productHref={getProductHref(product)}
+            onOpen={() => onOpenProduct(currentItem)}
             addingId={addingId}
             getCartCount={getCartCount}
             onAddToCart={(e) => handleAddToCartFor(e, currentItem)}
@@ -801,7 +816,8 @@ const MobileReels = ({
 
 type ShoppableProductCardProps = {
   item: ShoppableVideo
-  productHref: string
+  /** Abre el quick view del producto (thumbnail, titulo y precio). */
+  onOpen: () => void
   addingId: string | null
   getCartCount: (variantId: string, productId?: string) => number
   onAddToCart: (e: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>
@@ -812,7 +828,7 @@ type ShoppableProductCardProps = {
 
 const ShoppableProductCard = ({
   item,
-  productHref,
+  onOpen,
   addingId,
   getCartCount,
   onAddToCart,
@@ -844,9 +860,11 @@ const ShoppableProductCard = ({
     <div
       className={`flex items-center gap-3 rounded-2xl bg-white px-3 ${className}`}
     >
-      <LocalizedClientLink
-        href={productHref}
-        className='flex min-w-0 flex-1 items-center gap-3'
+      <button
+        type='button'
+        aria-label={`Ver detalle de ${product.title ?? 'producto'}`}
+        className='flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[--primary-color]'
+        onClick={onOpen}
       >
         <div className='h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-gray-100'>
           <img
@@ -896,7 +914,7 @@ const ShoppableProductCard = ({
               )}
           </div>
         </div>
-      </LocalizedClientLink>
+      </button>
       <button
         aria-label={inStock ? 'Agregar al carrito' : 'Sin stock'}
         className='inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-[--primary-color] bg-[--primary-color] text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50'

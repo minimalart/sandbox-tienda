@@ -1,6 +1,6 @@
 {
   "name": "@repo/extension-seo-geo",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "private": true,
   "description": "SEO & GEO component source package",
   "dependencies": {

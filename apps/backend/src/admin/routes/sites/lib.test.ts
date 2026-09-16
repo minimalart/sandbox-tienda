@@ -41,11 +41,11 @@ describe('URL pública de una tienda', () => {
     );
   });
 
-  it("canonical_form 'path' → ruta, aunque el sufijo esté configurado", () => {
+  it("canonical_form 'path' → ruta sobre el hub del sufijo", () => {
     const site = { slug: 'moda', canonical_form: 'path' as const };
     assert.equal(
       buildPublicUrlFrom(site, { baseUrl: BASE, hostSuffix: SUFFIX }),
-      `${BASE}/${SITE_PATH_PREFIX}/moda`,
+      `https://mercatto.ar/${SITE_PATH_PREFIX}/moda`,
     );
     assert.equal(
       formatPublicUrlFrom(site, { baseUrl: BASE, hostSuffix: SUFFIX }),

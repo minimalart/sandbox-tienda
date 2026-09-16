@@ -18,8 +18,8 @@ export default function LogoutConfirmModal({
   return (
     <Dialog className="relative z-50" onClose={onClose} open={open}>
       <DialogBackdrop className="fixed inset-0 bg-black/30 transition-opacity" />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <DialogPanel className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+      <div className="fixed inset-0 z-50 flex cursor-modal-close items-center justify-center p-4">
+        <DialogPanel className="cursor-auto w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
           <div className="flex flex-col gap-3 text-center">
             <h3 className="font-bold text-gray-900 text-xl">
               ¿Querés cerrar sesión?

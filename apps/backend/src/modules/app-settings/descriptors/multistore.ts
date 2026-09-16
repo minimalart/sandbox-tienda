@@ -1,4 +1,5 @@
 import importerSettings from './fragments/catalog-import';
+import { normalizeSiteSuffix } from '../../../lib/multistore/site-hosts';
 import { defineSettings } from './types';
 
 /**
@@ -106,8 +107,20 @@ export default defineSettings({
       label: 'Base pública del storefront',
       // Una oración. Por qué esta variable existe además de `STOREFRONT_URL` está
       // en el bloque de arriba, que es donde se decide y no donde se muestra.
-      help: 'Dominio desde el que se sirve el storefront; el listado de tiendas le agrega `/tienda/<slug>` para armar el link de cada una (vacío = se deduce del entorno).',
+      help: 'Dirección pública de la tienda principal. Las secundarias usan el dominio de tiendas configurado; vacío conserva la configuración del entorno.',
       placeholder: 'https://tienda.midominio.com',
+    },
+
+    {
+      key: 'MULTISTORE_SITE_HOST_SUFFIX',
+      env: ['MULTISTORE_SITE_HOST_SUFFIX'],
+      type: 'string',
+      tier: 'runtime',
+      group: 'URL pública',
+      label: 'Dominio de las tiendas',
+      help: 'Dominio wildcard configurado en el storefront. Cada tienda usa su subdominio; requiere DNS y certificado previamente habilitados.',
+      placeholder: '.tiendas.ejemplo.com',
+      refine: value => !value || normalizeSiteSuffix(String(value)) ? null : 'Ingresá un dominio válido, sin protocolo, puerto ni rutas.',
     },
 
     // ─── Importación de catálogo ─────────────────────────────────────────────

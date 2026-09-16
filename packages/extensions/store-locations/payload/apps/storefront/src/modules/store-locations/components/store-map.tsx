@@ -1,6 +1,10 @@
 "use client";
 
-import type { StoreLocatorLocation } from "@lib/types/store-locator";
+import type {
+  StoreLocatorCategory,
+  StoreLocatorLocation,
+} from "@lib/types/store-locator";
+import { branchTypeLabel, branchTypeStyle } from "@lib/util/branch-types";
 import { handleImageError } from "@lib/util/placeholder-image";
 import { GoogleMap, InfoWindow, Marker } from "@react-google-maps/api";
 import { Clock, MapPin, X } from "lucide-react";
@@ -14,6 +18,8 @@ type StoreMapProps = {
   isLoaded: boolean;
   hasApiKey: boolean;
   onLocateMe?: () => void;
+  /** Los tipos que configuró la tienda: de acá salen el color del pin y la etiqueta. */
+  types: StoreLocatorCategory[];
 };
 
 const mapContainerStyle = {
@@ -26,24 +32,15 @@ const defaultCenter = {
   lng: -58.3816,
 };
 
+/** Verde histórico del pin, sólo como red por si no hay --primary-color. */
+const FALLBACK_PIN = "#059669";
+
 const mapOptions: google.maps.MapOptions = {
   disableDefaultUI: false,
   fullscreenControl: true,
   mapTypeControl: false,
   streetViewControl: false,
   zoomControl: true,
-};
-
-const TYPE_LABELS: Record<StoreLocatorLocation["type"], string> = {
-  distribution_center: "Centro de distribucion",
-  wholesale: "Mayorista",
-  point_of_sale: "Punto de venta",
-};
-
-const TYPE_COLORS: Record<StoreLocatorLocation["type"], string> = {
-  distribution_center: "#475569",
-  wholesale: "#2563EB",
-  point_of_sale: "#059669",
 };
 
 export default function StoreMap({
@@ -54,21 +51,28 @@ export default function StoreMap({
   isLoaded,
   hasApiKey,
   onLocateMe,
+  types,
 }: StoreMapProps) {
   const [map, setMap] = useState<google.maps.Map | null>(null);
 
-  // Resolve the active tenant primary (set inline on <html>) so point-of-sale
-  // markers follow demo branding instead of a hardcoded green. Google Maps
-  // needs a concrete color string, so we read the computed CSS var at runtime.
+  // Resolve the active tenant primary (set inline on <html>) so markers of the
+  // "primary" palette color follow demo branding instead of a hardcoded green.
+  // Google Maps needs a concrete color string, so we read the computed CSS var
+  // at runtime.
   const primaryColor = useMemo(() => {
-    if (typeof window === "undefined") return TYPE_COLORS.point_of_sale;
+    if (typeof window === "undefined") return FALLBACK_PIN;
     const v = getComputedStyle(document.documentElement)
       .getPropertyValue("--primary-color")
       .trim();
-    return v || TYPE_COLORS.point_of_sale;
+    return v || FALLBACK_PIN;
   }, []);
+  /**
+   * El color del pin sale del tipo configurado. El token `primary` no tiene hex
+   * propio (`pin: null`): usa el color de la tienda, que es lo que hacía "Punto
+   * de venta" antes de que los tipos fueran configurables.
+   */
   const colorForType = (type: StoreLocatorLocation["type"]): string =>
-    type === "point_of_sale" ? primaryColor : TYPE_COLORS[type];
+    branchTypeStyle(types, type).pin ?? primaryColor;
 
   const storesWithCoords = useMemo(
     () =>
@@ -247,9 +251,11 @@ export default function StoreMap({
                       <h3 className="font-semibold text-gray-900 text-sm">
                         {selectedStore.name}
                       </h3>
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 font-medium text-[11px] text-gray-600">
-                        {TYPE_LABELS[selectedStore.type]}
-                      </span>
+                      {branchTypeLabel(types, selectedStore.type) && (
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 font-medium text-[11px] text-gray-600">
+                          {branchTypeLabel(types, selectedStore.type)}
+                        </span>
+                      )}
                     </div>
                     <button
                       aria-label="Cerrar"

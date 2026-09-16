@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "typesense",
   "name": "Typesense",
-  "version": "1.4.1",
+  "version": "1.5.1",
   "kind": "extension",
   "status": "ready",
   "dependencies": [],
@@ -26,36 +26,36 @@
   ],
   "files": [
     {
-      "source": "payload/apps/backend/src/modules/typesense",
-      "target": "apps/backend/src/modules/typesense"
-    },
-    {
-      "source": "payload/apps/backend/src/api/admin/typesense",
-      "target": "apps/backend/src/api/admin/typesense"
-    },
-    {
-      "source": "payload/apps/backend/src/api/store/typesense",
-      "target": "apps/backend/src/api/store/typesense"
-    },
-    {
-      "source": "payload/apps/backend/src/api/store/custom/typesense-sync",
-      "target": "apps/backend/src/api/store/custom/typesense-sync"
-    },
-    {
-      "source": "payload/apps/backend/src/admin/translations/typesense",
-      "target": "apps/backend/src/admin/translations/typesense"
+      "source": "payload/apps/backend/src/admin/hooks/api/typesense.tsx",
+      "target": "apps/backend/src/admin/hooks/api/typesense.tsx"
     },
     {
       "source": "payload/apps/backend/src/admin/routes/typesense",
       "target": "apps/backend/src/admin/routes/typesense"
     },
     {
-      "source": "payload/apps/backend/src/admin/hooks/api/typesense.tsx",
-      "target": "apps/backend/src/admin/hooks/api/typesense.tsx"
+      "source": "payload/apps/backend/src/admin/translations/typesense",
+      "target": "apps/backend/src/admin/translations/typesense"
     },
     {
-      "source": "payload/apps/storefront/src/lib/typesense",
-      "target": "apps/storefront/src/lib/typesense"
+      "source": "payload/apps/backend/src/api/admin/price-lists/[id]/sales-channel-rule/route.test.ts",
+      "target": "apps/backend/src/api/admin/price-lists/[id]/sales-channel-rule/route.test.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/price-lists/[id]/sales-channel-rule/route.ts",
+      "target": "apps/backend/src/api/admin/price-lists/[id]/sales-channel-rule/route.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/typesense",
+      "target": "apps/backend/src/api/admin/typesense"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/whatsapp-advisor/audit/_scope.test.ts",
+      "target": "apps/backend/src/api/admin/whatsapp-advisor/audit/_scope.test.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/whatsapp-advisor/audit/_scope.ts",
+      "target": "apps/backend/src/api/admin/whatsapp-advisor/audit/_scope.ts"
     },
     {
       "source": "payload/apps/backend/src/api/admin/whatsapp-advisor/audit/route.ts",
@@ -66,12 +66,24 @@
       "target": "apps/backend/src/api/admin/whatsapp-advisor/config/route.ts"
     },
     {
+      "source": "payload/apps/backend/src/api/store/custom/typesense-sync",
+      "target": "apps/backend/src/api/store/custom/typesense-sync"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/typesense",
+      "target": "apps/backend/src/api/store/typesense"
+    },
+    {
       "source": "payload/apps/backend/src/jobs/typesense-stock-reconcile.ts",
       "target": "apps/backend/src/jobs/typesense-stock-reconcile.ts"
     },
     {
       "source": "payload/apps/backend/src/jobs/typesense-sync-log-prune.ts",
       "target": "apps/backend/src/jobs/typesense-sync-log-prune.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/modules/typesense",
+      "target": "apps/backend/src/modules/typesense"
     },
     {
       "source": "payload/apps/backend/src/scripts/typesense-relevance-eval.ts",
@@ -112,6 +124,10 @@
     {
       "source": "payload/apps/backend/src/workflows/hooks/promotion-changed-typesense.ts",
       "target": "apps/backend/src/workflows/hooks/promotion-changed-typesense.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/typesense",
+      "target": "apps/storefront/src/lib/typesense"
     }
   ],
   "migrations": [
@@ -311,6 +327,14 @@
       "sha256": "ffd287382c098ef562b0a2344b2cfbbd85e6fd58a9fde3414d4b114498249778"
     },
     {
+      "path": "apps/backend/src/api/admin/price-lists/[id]/sales-channel-rule/route.test.ts",
+      "sha256": "9b6f2a01139638bdfdebf2aca9f99cf57347034005eacc7ad0b0552842d66c97"
+    },
+    {
+      "path": "apps/backend/src/api/admin/price-lists/[id]/sales-channel-rule/route.ts",
+      "sha256": "ce9929b6f0f6ae9613ecc5736d32191d1bc1ec782a02ee3677b5f56d931390a3"
+    },
+    {
       "path": "apps/backend/src/api/admin/typesense/analytics/init/route.ts",
       "sha256": "c7809e0ebbef4d1e5821357abfcaea8b680133500b7d8d19c311c0b857e47e00"
     },
@@ -403,8 +427,16 @@
       "sha256": "4e4c336ff99180b97ac28fac31250f09ef60e2d241a77f4c3696f1fd46bb4bee"
     },
     {
+      "path": "apps/backend/src/api/admin/whatsapp-advisor/audit/_scope.test.ts",
+      "sha256": "ea01973776030c0e435b5476aa6205196640132e234c1d17c9f4c2a9cbdf834b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/whatsapp-advisor/audit/_scope.ts",
+      "sha256": "6de790eb649cc978744c8d7be667b04fd674dbaedf103969cf3edee27c938a0d"
+    },
+    {
       "path": "apps/backend/src/api/admin/whatsapp-advisor/audit/route.ts",
-      "sha256": "c33acb65fe79fff9744a8e1487fd475109434eab2b415d602cfeb7e1e9aa1897"
+      "sha256": "1e711e637ea0887d34f13efca258681bf9a1e5f7a1dd3eea10550813e1d727e2"
     },
     {
       "path": "apps/backend/src/api/admin/whatsapp-advisor/config/route.ts",
@@ -412,7 +444,7 @@
     },
     {
       "path": "apps/backend/src/api/store/custom/typesense-sync/loader.ts",
-      "sha256": "d442ced5e5d141fb507694dd52cf7dd41ca3ba4c565a6c126ddc8b2f337267e2"
+      "sha256": "486d6ae93114673a6215c067a231466f4ef9fd9e8997b3613aca8a7d54be1fdd"
     },
     {
       "path": "apps/backend/src/api/store/custom/typesense-sync/route.ts",
@@ -460,7 +492,7 @@
     },
     {
       "path": "apps/backend/src/modules/typesense/product-mapper.ts",
-      "sha256": "ae100766fc81c48087dd437ce8e85899591610a310cda801540b72661db2630a"
+      "sha256": "72c95949937474f4ccbddc5511d95cb16c8a5fb57ba0deba538bd1b557bdd3b0"
     },
     {
       "path": "apps/backend/src/modules/typesense/reindex-queue.ts",
@@ -468,7 +500,7 @@
     },
     {
       "path": "apps/backend/src/modules/typesense/reindex.ts",
-      "sha256": "4c36a1c6d82c8346c381263d13705b1b6b1b3842496aea63e460a33acdbfc73a"
+      "sha256": "b862c875ed4022f2ffcf98fdfbd7e820273b96c2b0e0642504be36840762e24a"
     },
     {
       "path": "apps/backend/src/modules/typesense/run-sync.ts",
@@ -480,7 +512,7 @@
     },
     {
       "path": "apps/backend/src/modules/typesense/schema.ts",
-      "sha256": "903f4b327edad8dd355d98cee0d45b6c9fb8eb20e9f2ae1dd968ac675756b84f"
+      "sha256": "50682550231c13c5c7f06c85496fe139bd40ddb67edc889f14c5a1d61fc9a861"
     },
     {
       "path": "apps/backend/src/modules/typesense/search-defaults.test.ts",
@@ -640,7 +672,7 @@
     },
     {
       "path": "apps/storefront/src/lib/typesense/search-browser.ts",
-      "sha256": "f8a4f6aafa7956fcfc650b9b91cb73095d577a40d32b3cff99c09601ea981a0c"
+      "sha256": "b5f97d39dcca6ee84d25bc788e5fc46594f17caaea181f31c09ccd4c855710f7"
     },
     {
       "path": "apps/storefront/src/lib/typesense/search-core.ts",
@@ -648,7 +680,7 @@
     },
     {
       "path": "apps/storefront/src/lib/typesense/types.ts",
-      "sha256": "34ba64845efa7a54c0fc9f1aaca99d7f50197928ebb0d34c68877fe2211ec4a6"
+      "sha256": "63969d56b8f0963c9b839a8bc3c6b5837e755b72f1d521dc82d490c1e0066f34"
     }
   ],
   "integrations": {

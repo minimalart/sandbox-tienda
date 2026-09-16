@@ -107,6 +107,7 @@ export const AdminDraftAgentSchema = z.object({
 export type AdminDraftAgentType = z.infer<typeof AdminDraftAgentSchema>;
 
 export const AdminSaveMcpServerSchema = z.object({
+  trust_read_only_hints: z.boolean().optional(),
   key: z.string().optional(),
   name: z.string().min(1, 'El nombre es obligatorio'),
   url: z.string().url('URL inválida'),
@@ -188,6 +189,11 @@ export type AdminUploadDocumentType = z.infer<typeof AdminUploadDocumentSchema>;
 // ─── Workflows ──────────────────────────────────────────────────────────────
 
 const workflowStepSchema = z.object({
+  result_contract: z.record(z.string(), z.object({
+    type: z.enum(['string', 'strings', 'boolean']),
+    minItems: z.number().int().nonnegative().optional(),
+    equals: z.boolean().optional(),
+  })).optional(),
   key: z.string().min(1),
   agent_key: z.string().min(1),
   task: z.string().min(1),

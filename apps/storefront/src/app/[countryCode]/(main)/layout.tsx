@@ -212,6 +212,7 @@ export default async function PageLayout(props: {
 								<CampaignHeader initialCartCount={cartCount} hasSpaceDesigner={hasSpaceDesigner} />
 							) : (
 								<SmartHeader
+									categories={navCategories}
 									hasSpaceDesigner={hasSpaceDesigner}
 									hasTinting={tintingGate.catalogReady}
 									topbar={<HomeTopbar />}
@@ -264,9 +265,10 @@ export default async function PageLayout(props: {
 							) : (
 								<Footer />
 							)}
+							{/* Una sola instancia: SmartHeader monta Nav para mobile y desktop. */}
+							<CartDrawerMount themeClassName={isSportsTemplate ? 'sports-cart' : undefined} />
 							{usesCustomChrome ? (
 								<>
-									<CartDrawerMount themeClassName={isSportsTemplate ? 'sports-cart' : undefined} />
 									{/* El drawer de favoritos no vive en el chrome grocery
 									    (MobileNavController); lo montamos acá para que los templates
 									    por vertical (sports/tech/fashion) también puedan abrirlo,

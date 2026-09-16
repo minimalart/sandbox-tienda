@@ -3,12 +3,24 @@ import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import { listShippingOptionsForCartWithPricingWorkflow, addShippingMethodToCartWorkflow } from '@medusajs/core-flows';
 import { CheckoutPolicySchema, mergeCheckoutPolicy, resolveCheckoutPolicy, type CheckoutPolicy } from './policy';
-import { assertCoverage, cartFingerprint, CheckoutError, reconcileUnits, type Person } from './assignments';
+import { assertCoverage, cartFingerprint, cartFingerprintComponents, CheckoutError, reconcileUnits, type Person } from './assignments';
 
 export const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 export const policyVersion = (policy: CheckoutPolicy) => digest(JSON.stringify(policy));
+/**
+ * Log de diagnostico del fingerprint (#1046). Resolver el logger NUNCA puede
+ * tirar abajo un checkout: un container sin `logger` registrado (el fixture de
+ * `runtime.integration.test.ts`, un script suelto) lo convierte en no-op.
+ */
+function debugLog(scope: any, message: string) {
+  try { scope.resolve(ContainerRegistrationKeys.LOGGER)?.info?.(message); } catch { /* sin logger: silencio */ }
+}
 const db = (scope: any): any => scope.resolve(ContainerRegistrationKeys.PG_CONNECTION);
-export const SESSION_FIELDS = ['id', 'completed_at', 'email', 'customer_id', 'sales_channel_id', 'region_id', 'currency_code', 'total', 'metadata', '*items', '*items.variant', '*items.variant.product', '*items.variant.product.shipping_profile', '*shipping_address', '*billing_address', '*shipping_methods', '*payment_collection', '*payment_collection.payment_sessions'];
+// Fields para query.graph con sintaxis dot-star: en Medusa v2 es la única forma
+// de traer relations cross-module (Cart → Product → ShippingProfile del ProductModule).
+// `retrieveCart` del CartModule no expande relations que atraviesan otros módulos.
+// El patrón viejo `*items` traía items vacíos; hay que usar `items.*` y expandir cada nested.
+export const SESSION_FIELDS = ['*', 'items.*', 'items.variant.*', 'items.variant.product.*', 'items.variant.product.shipping_profile.*', 'shipping_address.*', 'billing_address.*', 'shipping_methods.*', 'payment_collection.*', 'payment_collection.payment_sessions.*'];
 export async function checkoutCart(scope: any, id: string) {
   const { data } = await scope.resolve(ContainerRegistrationKeys.QUERY).graph({ entity: 'cart', fields: SESSION_FIELDS, filters: { id } });
   if (!data[0]) throw new CheckoutError('CART_NOT_FOUND', 'Carrito no encontrado.', 'contact');
@@ -44,13 +56,27 @@ async function resolvePickup(scope: any, cart: any) {
   const locations = await storePickupLocations(scope, cart.sales_channel_id);
   cart.checkout_pickup = cart.shipping_methods.every((m: any) => locations.some((l: any) => l.id === m.data?.branch_id));
 }
+async function applyDefaultAddress(scope: any, cart: any, policy: CheckoutPolicy) {
+  if (policy.steps.address !== false || !policy.defaults.shipping_address) return false;
+  if (cart.shipping_address?.address_1) return false;
+  const person: Record<string, string | null> = { first_name: null, last_name: null, phone: null };
+  if (cart.customer_id) {
+    const customer = await scope.resolve(Modules.CUSTOMER).retrieveCustomer(cart.customer_id).catch(() => null);
+    if (customer?.first_name) person.first_name = customer.first_name;
+    if (customer?.last_name) person.last_name = customer.last_name;
+    if (customer?.phone) person.phone = customer.phone;
+  }
+  await scope.resolve(Modules.CART).updateCarts(cart.id, { shipping_address: { ...policy.defaults.shipping_address, ...person } });
+  return true;
+}
 async function simplifyDelivery(scope: any, cart: any, policy: CheckoutPolicy) {
   if (policy.steps.delivery || cart.shipping_methods?.length || !(cart.items ?? []).some((i: any) => i.requires_shipping !== false)) return false;
   const { result: options } = await listShippingOptionsForCartWithPricingWorkflow(scope).run({ input: { cart_id: cart.id } });
-  // Count every available choice, not just the first pickup or cheapest option.
-  if (options.length !== 1 || options[0].insufficient_inventory || !Number.isFinite(Number(options[0].amount))) return false;
-  const option = options[0];
   const profiles = new Set(cart.items.filter((i: any) => i.requires_shipping !== false).map((i: any) => i.variant?.product?.shipping_profile_id ?? i.variant?.product?.shipping_profile?.id));
+  const eligible = options.filter((o: any) => !o.insufficient_inventory && Number.isFinite(Number(o.amount)));
+  const defaultId = policy.defaults.shipping_option_id;
+  const option = defaultId ? eligible.find((o: any) => o.id === defaultId) : (eligible.length === 1 ? eligible[0] : null);
+  if (!option) return false;
   if (profiles.size !== 1 || !profiles.has(option.shipping_profile_id)) return false;
   let data: Record<string, unknown> = {};
   if (option.data?.pickup_kind === 'store') {
@@ -103,9 +129,20 @@ export async function writePolicy(scope: any, siteId: string, patch: unknown, ex
   return db(scope).transaction(async (trx: any) => {
     const site = await trx('demo_store').where({ id: siteId }).whereNull('deleted_at').forUpdate().first();
     if (!site) throw new CheckoutError('SITE_NOT_FOUND', 'Tienda no encontrada.', 'configuration');
-    const current = resolveCheckoutPolicy(site.content_config?.checkout);
+    // Parse alineado con readPolicy: sin esto los campos legacy strippeados por Zod (recipients.title/help pre-PR#1011) alteran el hash y CHECKOUT_REVISION_CONFLICT se dispara sin cambios reales.
+    const current = resolveCheckoutPolicy(CheckoutPolicySchema.parse(site.content_config?.checkout ?? {}));
     if (policyVersion(current) !== expectedVersion) throw new CheckoutError('CHECKOUT_REVISION_CONFLICT', 'La configuración cambió. Volvé a cargarla antes de guardar.', 'configuration');
     const policy = mergeCheckoutPolicy(current, parsed);
+    if (policy.steps.address === false && !policy.defaults.shipping_address) throw new CheckoutError('CHECKOUT_DEFAULT_ADDRESS_REQUIRED', 'Cargá una dirección por defecto para poder ocultar el paso de dirección.', 'configuration');
+    if (policy.steps.delivery === false && !policy.defaults.shipping_option_id) throw new CheckoutError('CHECKOUT_DEFAULT_SHIPPING_REQUIRED', 'Elegí un método de envío por defecto para poder ocultar el paso de entrega.', 'configuration');
+    if (policy.defaults.shipping_option_id) {
+      const channels = [site.sales_channel_id, site.b2b_sales_channel_id].filter(Boolean);
+      const { data } = await scope.resolve(ContainerRegistrationKeys.QUERY).graph({ entity: 'shipping_option', fields: ['id', 'service_zone.fulfillment_set.location.sales_channels.id'], filters: { id: policy.defaults.shipping_option_id } });
+      const opt = data[0];
+      if (!opt) throw new CheckoutError('CHECKOUT_DEFAULT_SHIPPING_INVALID', 'El método de envío por defecto no existe.', 'configuration');
+      const optChannels: string[] = opt.service_zone?.fulfillment_set?.location?.sales_channels?.map((c: any) => c.id) ?? [];
+      if (!optChannels.some((c) => channels.includes(c))) throw new CheckoutError('CHECKOUT_DEFAULT_SHIPPING_INVALID', 'El método de envío por defecto no pertenece a esta tienda.', 'configuration');
+    }
     if (policy.recipients.enabled && policy.recipients.scope === 'selected' && !policy.recipients.product_ids.length) throw new CheckoutError('CHECKOUT_PRODUCTS_REQUIRED', 'Seleccioná al menos un producto.', 'configuration');
     if (policy.recipients.product_ids.length) {
       const { data } = await scope.resolve(ContainerRegistrationKeys.QUERY).graph({ entity: 'product', fields: ['id', 'sales_channels.id'], filters: { id: policy.recipients.product_ids } });
@@ -171,7 +208,10 @@ export async function beginCheckout(req: any, cart: any) {
   }
   if (pinned?.mutation_until && new Date(pinned.mutation_until).getTime() > Date.now()) throw new CheckoutError('CHECKOUT_REVISION_CONFLICT', 'Hay una actualización del carrito en curso. Volvé a intentar.', 'review');
   if (pinned && new Date(pinned.expires_at).getTime() < Date.now()) await invalidateCheckoutPayment(req.scope, cart);
-  let deliveryChanged = await simplifyDelivery(req.scope, cart, pinned?.policy ?? resolveCheckoutPolicy(site.content_config.checkout));
+  const resolvedPolicy = pinned?.policy ?? resolveCheckoutPolicy(site.content_config.checkout);
+  let deliveryChanged = false;
+  if (await applyDefaultAddress(req.scope, cart, resolvedPolicy)) { cart = await checkoutCart(req.scope, cart.id); deliveryChanged = true; }
+  if (await simplifyDelivery(req.scope, cart, resolvedPolicy)) deliveryChanged = true;
   // Prepare only opaque references before payment; personal documents never enter cart metadata.
   const cartService = req.scope.resolve(Modules.CART);
   if (!cart.email && cart.customer_id) {
@@ -226,11 +266,12 @@ export function effectiveFlow(cart: any, policy: CheckoutPolicy, recipientsCompl
     { id: 'delivery', key: 'delivery', complete: shippingComplete, applicable: physical },
     { id: 'billing', key: 'billing', complete: billingComplete, applicable: billingRequired },
     { id: 'recipients', key: null, complete: recipientsComplete, applicable: policy.recipients.enabled },
-    { id: 'benefits', key: null, complete: true, applicable: true },
+    { id: 'benefits', key: 'benefits', complete: true, applicable: true },
     { id: 'payment', key: 'payment', complete: Number(cart.total) === 0 || !!cart.payment_collection?.payment_sessions?.some((p: any) => ['pending', 'requires_more', 'authorized', 'captured'].includes(p.status)), applicable: Number(cart.total) !== 0 },
     { id: 'review', key: 'review', complete: true, applicable: true },
   ];
-  return { address_required: addressRequired, shipping_required: physical, billing_required: billingRequired, blocks: blocks.map(b => ({ ...b, visible: b.applicable && (!b.complete || !b.key || policy.steps[b.key as keyof typeof policy.steps]), reason: !b.complete ? 'Se necesita información para completar la compra.' : 'Información completa.' })), ready: !!cart.email && addressComplete && shippingComplete && billingComplete && recipientsComplete };
+  // `!== false` es explícito: undefined = permitido; sólo `false` oculta el paso incluso si faltan datos.
+  return { address_required: addressRequired, shipping_required: physical, billing_required: billingRequired, blocks: blocks.map(b => ({ ...b, visible: b.applicable && (!b.key || policy.steps[b.key as keyof typeof policy.steps] !== false), reason: !b.complete ? 'Se necesita información para completar la compra.' : 'Información completa.' })), ready: !!cart.email && addressComplete && shippingComplete && billingComplete && recipientsComplete };
 }
 export async function saveRecipients(req: any, cart: any, input: { revision: number; people: Person[]; assignments: { unit_id: string; person_id: string }[]; global_person_id: string | null; keep_unit_ids?: string[] }) {
   if (cart.completed_at) throw new CheckoutError('CHECKOUT_COMPLETED', 'El pedido ya fue confirmado.', 'review');
@@ -262,7 +303,9 @@ export async function prepareCheckoutPayment(scope: any, cart: any) {
   const session = site ? await sessionFor(scope, cart.id) : null;
   if (!site?.content_config?.checkout && !session) return;
   if (!session || new Date(session.expires_at).getTime() < Date.now()) throw new CheckoutError('CHECKOUT_NOT_STARTED', 'Revisá el checkout antes de pagar.', 'review');
-  if (session.fingerprint !== cartFingerprint(cart)) throw new CheckoutError('CHECKOUT_REVISION_CONFLICT', 'El carrito cambió. Revisá la compra antes de pagar.', 'review');
+  const _fp = cartFingerprint(cart);
+  debugLog(scope, `[CHECKOUT_DEBUG] prepareCheckoutPayment cart=${cart.id} sessionFp=${session.fingerprint} cartFp=${_fp} match=${session.fingerprint === _fp} components=${JSON.stringify(cartFingerprintComponents(cart))}`);
+  if (session.fingerprint !== _fp) throw new CheckoutError('CHECKOUT_REVISION_CONFLICT', 'El carrito cambió. Revisá la compra antes de pagar.', 'review');
   assertCoverage(session.units, session.people, cart.items ?? [], session.policy);
   if (!effectiveFlow(cart, session.policy, true).ready) throw new CheckoutError('CHECKOUT_REQUIRED', 'Completá los datos pendientes antes de pagar.', 'review');
   const id = randomUUID();
@@ -291,7 +334,9 @@ export async function validateCheckoutCompletion(scope: any, cart: any) {
   await resolvePickup(scope, cart);
   await shippingEligibility(scope, cart);
   const snapshot = session?.snapshot_id ? await db(scope)('site_checkout_snapshot').where({ id: session.snapshot_id, cart_id: cart.id, site_id: site.id }).first() : null;
-  if (!snapshot || snapshot.fingerprint !== cartFingerprint(cart)) throw new CheckoutError('CHECKOUT_REVISION_CONFLICT', 'Revisá el checkout antes de finalizar la compra.', 'review');
+  const _fp = cartFingerprint(cart);
+  debugLog(scope, `[CHECKOUT_DEBUG] validateCheckoutCompletion cart=${cart.id} snapshotFp=${snapshot?.fingerprint ?? 'NO_SNAPSHOT'} cartFp=${_fp} match=${snapshot?.fingerprint === _fp} components=${JSON.stringify(cartFingerprintComponents(cart))}`);
+  if (!snapshot || snapshot.fingerprint !== _fp) throw new CheckoutError('CHECKOUT_REVISION_CONFLICT', 'Revisá el checkout antes de finalizar la compra.', 'review');
   assertCoverage(snapshot.units, snapshot.people, cart.items ?? [], snapshot.policy);
   if (!effectiveFlow(cart, snapshot.policy, true).ready) throw new CheckoutError('CHECKOUT_REQUIRED', 'La entrega o los datos de la compra cambiaron. Revisá el checkout.', 'review');
   assertPaymentMatchesCart(cart);

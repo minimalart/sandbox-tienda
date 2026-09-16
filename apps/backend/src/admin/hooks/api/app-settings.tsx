@@ -125,26 +125,56 @@ export const useAppSettings = (
     ...options,
   });
 
+/**
+ * El error del POST, con el BODY del 400 adentro.
+ *
+ * El `FetchError` del js-sdk se queda sólo con `message`, `statusText` y `status`
+ * (`normalizeResponse` en `@medusajs/js-sdk/dist/client.js`): el `errors` por
+ * campo que devuelve `buildWritePlan` se perdía en el camino, `fieldErrorsFrom`
+ * devolvía `{}` siempre y la card mostraba el toast genérico "Hay ajustes
+ * inválidos" sin pintar en rojo el campo culpable. Por eso el guardado va por
+ * `fetch` nativo y no por el SDK.
+ */
+export class AppSettingsRequestError extends Error {
+  readonly status: number;
+  readonly response: { status: number; data: unknown };
+
+  constructor(message: string, status: number, data: unknown) {
+    super(message);
+    this.name = 'AppSettingsRequestError';
+    this.status = status;
+    this.response = { status, data };
+  }
+}
+
 export const useUpdateAppSettings = (
   siteId?: string | null,
-  options?: UseMutationOptions<AdminAppSettingsResponse, FetchError, UpdateAppSettingsInput>
+  options?: UseMutationOptions<AdminAppSettingsResponse, Error, UpdateAppSettingsInput>
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: UpdateAppSettingsInput) =>
-      sdk.client.fetch<AdminAppSettingsResponse>('/admin/app-settings', {
+    mutationFn: async (data: UpdateAppSettingsInput) => {
+      const res = await fetch('/admin/app-settings', {
         method: 'POST',
+        // La sesión del admin va por cookie: sin esto el POST sale anónimo.
+        credentials: 'include',
         // El `x-site-id` explícito es lo que hace seguro el cambio de tienda sin
         // recarga: sin él, guardar después de cambiar escribiría en la anterior.
         headers: { 'Content-Type': 'application/json', ...siteHeaders(siteId) },
-        body: data,
-      }),
-    onSuccess: (data: any, variables: any, context: any) => {
+        body: JSON.stringify(data),
+      });
+      const body = (await res.json().catch(() => null)) as { message?: string } | null;
+      if (!res.ok) {
+        throw new AppSettingsRequestError(body?.message ?? res.statusText, res.status, body);
+      }
+      return body as unknown as AdminAppSettingsResponse;
+    },
+    onSuccess: (...args) => {
       // Invalida el scope del namespace Y el global: guardar desde la card de
       // una extensión tiene que actualizar también el buscador central, que
       // consulta sin namespace.
       queryClient.invalidateQueries({ queryKey: ['admin-app-settings'] });
-      options?.onSuccess?.(data, variables, context);
+      options?.onSuccess?.(...args);
     },
     ...options,
   });
@@ -152,8 +182,9 @@ export const useUpdateAppSettings = (
 
 /**
  * Errores por campo que devuelve el 400 (`{ message, errors: { KEY: '...' } }`).
- * `FetchError` del js-sdk expone el body en `.message`/`.response`, así que se
- * normaliza acá una sola vez en vez de en cada formulario.
+ * Lee `response.data`, que es lo que `AppSettingsRequestError` conserva del body;
+ * con cualquier otro error (red, SDK) devuelve `{}` y el formulario cae al
+ * `message`. Se normaliza acá una sola vez en vez de en cada formulario.
  */
 export function fieldErrorsFrom(error: unknown): Record<string, string> {
   const body = (error as { response?: { data?: unknown } } | undefined)?.response?.data;

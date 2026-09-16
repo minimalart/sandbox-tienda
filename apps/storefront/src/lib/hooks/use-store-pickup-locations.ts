@@ -31,7 +31,14 @@ type RawStoreLocation = {
   province?: string | null;
   lat?: string | null;
   lng?: string | null;
-  store_type?: "distribution_center" | "wholesale" | "point_of_sale";
+  /**
+   * Si la sucursal se ofrece como punto de retiro. Lo calcula la API route
+   * (`app/api/store/store-locations/route.ts`) a partir del flag "Permite
+   * retiro" del tipo que le puso la tienda: acá, del lado del cliente, no hay
+   * acceso al tenant. Ausente = se muestra, para no esconder sucursales si la
+   * route no lo pudo resolver.
+   */
+  pickup?: boolean;
 };
 
 const STORE_LOCATIONS_URL = "/api/store/store-locations";
@@ -43,9 +50,10 @@ const toNum = (v?: string | null): number | null => {
 };
 
 /**
- * Trae las sucursales para retiro en tienda. Excluye los centros de
- * distribución (no son puntos de retiro al público). Auto-fetch cuando
- * `enabled` es true.
+ * Trae las sucursales para retiro en tienda. Excluye los tipos que la tienda
+ * marcó como "no permite retiro" — antes era un `!== "distribution_center"`
+ * clavado acá, que con tipos configurables por tienda dejaba pasar cualquier
+ * tipo nuevo. Auto-fetch cuando `enabled` es true.
  */
 export function useStorePickupLocations(enabled: boolean) {
   const [locations, setLocations] = useState<StorePickupLocation[]>([]);
@@ -66,7 +74,7 @@ export function useStorePickupLocations(enabled: boolean) {
         store_locations?: RawStoreLocation[];
       };
       const mapped = (data.store_locations ?? [])
-        .filter((l) => l.store_type !== "distribution_center")
+        .filter((l) => l.pickup !== false)
         .map((l) => ({
           id: l.id,
           name: l.name,

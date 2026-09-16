@@ -20,6 +20,12 @@ export async function POST(
 
   await ensureDemoStoreTables(req.scope);
 
+  const [existing] = await service.listDemoStores({ slug: input.slug });
+  if (existing) {
+    res.status(409).json({ message: 'Ese subdominio ya está en uso. Elegí otro.' });
+    return;
+  }
+
   // Origen `sales_channel`: el canal de origen pasa a SER el canal de la demo, así
   // que se valida que sea adoptable ANTES de provisionar (existe, no es el canal
   // por defecto de la tienda, no es de otra demo). Sin esto la demo se crea, se le
@@ -30,9 +36,12 @@ export async function POST(
     await assertAdoptableSalesChannel(req.scope, { salesChannelId: adoptSalesChannelId });
   }
 
-  const demo = await service.createDemoStores({
+  let demo;
+  try {
+    demo = await service.createDemoStores({
     name: input.name,
     slug: input.slug,
+    canonical_form: input.canonical_form ?? 'host',
     template_code: input.template_code,
     country_code: input.country_code,
     currency_code: input.currency_code,
@@ -46,8 +55,18 @@ export async function POST(
     b2b_enabled: input.b2b_enabled,
     recurring_enabled: input.recurring_enabled,
     tinting_enabled: input.tinting_enabled,
+    loyalty_enabled: input.loyalty_enabled,
+    gift_cards_enabled: input.gift_cards_enabled,
     status: 'provisioning',
-  });
+    });
+  } catch (error) {
+    const failure = error as { code?: string; type?: string; cause?: { code?: string } };
+    if (failure.code === '23505' || failure.cause?.code === '23505' || failure.type === 'duplicate_error') {
+      res.status(409).json({ message: 'Ese subdominio ya está en uso. Elegí otro.' });
+      return;
+    }
+    throw error;
+  }
 
   // Provision operational config synchronously (fast: creates SC/region/etc).
   let provision;

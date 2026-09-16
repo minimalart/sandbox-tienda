@@ -49,7 +49,15 @@ export const POST = async (
     oauth_client_id: body.oauth_client_id?.trim() || null,
     oauth_scope: body.oauth_scope?.trim() || null,
     enabled: body.enabled ?? existing.enabled,
+    trust_read_only_hints: body.trust_read_only_hints ?? existing.trust_read_only_hints ?? false,
   };
+  if (body.url.trim() !== existing.url) {
+    patch.tools_cache = null;
+    patch.tools_count = 0;
+    patch.health = 'unknown';
+    patch.last_discovered_at = null;
+    patch.trust_read_only_hints = body.trust_read_only_hints ?? false;
+  }
   // Token estático: solo si llega no vacío. Si pasa a none/oauth, se limpia.
   if (authType === 'bearer' || authType === 'header') {
     if (body.secret) patch.auth_secret_enc = encryptSecret(body.secret);

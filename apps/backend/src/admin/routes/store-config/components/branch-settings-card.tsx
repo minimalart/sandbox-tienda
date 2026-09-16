@@ -88,7 +88,7 @@ export const BranchSettingsCard = () => {
           <div className="pr-4">
             <Label htmlFor="set-barcode-scanner">Activar scanner presencial</Label>
             <Text size="small" className="text-ui-fg-subtle">
-              Muestra en mobile un acceso para escanear cÃ³digos de barras y agregar productos al carrito.
+              Muestra en mobile un acceso para escanear códigos de barras y agregar productos al carrito.
             </Text>
           </div>
           <Switch
@@ -124,11 +124,19 @@ export const BranchSettingsCard = () => {
               aplica con multi-sucursal activo.
             </Text>
           </div>
+          {/*
+            Sin `|| !multiBranch` en los dos sub-toggles. Con multi-sucursal apagado
+            este switch se dibujaba PRENDIDO (su default es `true`) y a la vez gris e
+            inerte: el operador lo veía activo, hacía clic y no pasaba nada — "está
+            roto". El valor guardado es independiente y el storefront ya exige las
+            dos claves para dibujar la barra, así que no hay nada que proteger acá:
+            que se pueda apagar (o pre-configurar) aunque multi-sucursal esté apagado.
+          */}
           <Switch
             id="set-branch-gate-prompt"
             checked={branchGatePrompt}
             onCheckedChange={onToggleBranchGatePrompt}
-            disabled={isPending || saving || !multiBranch}
+            disabled={isPending || saving}
           />
         </div>
 
@@ -143,7 +151,7 @@ export const BranchSettingsCard = () => {
             id="set-require-coverage"
             checked={requireCoverage}
             onCheckedChange={onToggleRequireCoverage}
-            disabled={isPending || saving || !multiBranch}
+            disabled={isPending || saving}
           />
         </div>
       </div>

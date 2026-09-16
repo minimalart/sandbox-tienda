@@ -829,6 +829,155 @@ describe('OdooErpAdapter — notifySale', () => {
   });
 });
 
+/**
+ * Contrato del envío al ERP con campos opcionales (Alumnos / escuela).
+ *
+ * Regla dura: el `sale.order.create` NUNCA se rompe porque el custom field no
+ * exista en Odoo. El adapter sondea `fields_get` una vez cada 5min y filtra
+ * los campos ausentes silenciosamente. Con los campos creados, viajan; sin
+ * ellos, se omiten y la orden se crea igual con el resto de los datos.
+ */
+describe('OdooErpAdapter — notifySale con custom fields opcionales (Alumnos)', () => {
+  const basePayload: ErpSalePayload = {
+    event_key: 'order.placed:order_school',
+    order_id: 'order_school',
+    display_id: 100,
+    created_at: '2026-09-15T12:00:00Z',
+    country_code: 'AR',
+    currency_code: 'ars',
+    customer: {
+      id: 'cus_1', email: 'ana@example.com', first_name: 'Ana', last_name: 'García',
+      phone: '+541155555555', document: { type: 'CUIT', number: '20-40123456-1' },
+    },
+    items: [{ sku: 'EDU-KIT-4', title: 'Kit robótica', quantity: 1, unit_price: 100, total: 100 }],
+    totals: { subtotal: 100, discount: 0, shipping: 0, tax: 0, total: 100 },
+    payment: { provider_id: 'pp_mp', captured_amount: 100, currency_code: 'ars' },
+    shipping: { method: 'Standard', address: { street: 'X', city: 'CABA', province: 'CABA', postal_code: 'C1043', country_code: 'AR' } },
+    school: { external_ref: 'san_agustin', name: 'Colegio San Agustín', source_site_id: 'ds_01' },
+    student_assignments: {
+      schema_version: '1.0',
+      items: [{
+        sku: 'EDU-KIT-4', quantity: 1,
+        recipients: [{ external_id: 'p-1', first_name: 'Juan', last_name: 'Pérez', document: '45123456', grade: '4A', quantity: 1 }],
+      }],
+    },
+  };
+
+  function withProbe(
+    presentFields: string[],
+    otherResponders: Record<string, (call: CallRecord) => unknown> = {}
+  ): (call: CallRecord) => unknown {
+    return (call) => {
+      const key = `${call.model}.${call.method}`;
+      if (key === 'sale.order.fields_get') {
+        const requested = (call.args[0] as string[]) ?? [];
+        // Odoo omite silenciosamente los fields que no existen — repliquemos ese contrato.
+        return Object.fromEntries(requested.filter((f) => presentFields.includes(f)).map((f) => [f, { type: 'char' }]));
+      }
+      const responder = otherResponders[key];
+      if (!responder) throw new Error(`Unexpected call: ${key} — args=${JSON.stringify(call.args)}`);
+      return responder(call);
+    };
+  }
+
+  const successResponders = {
+    'sale.order.search_read': () => [],
+    'res.partner.search_read': () => [],
+    'res.partner.create': () => 501,
+    'product.product.search_read': () => [{ id: 11, default_code: 'EDU-KIT-4' }],
+    'sale.order.create': () => 999,
+    'sale.order.action_confirm': () => true,
+  };
+
+  it('todos los custom fields existen → viajan los 4 en el create', async () => {
+    const { factory, calls } = fakeClient(withProbe([...['x_school_external_ref', 'x_school_name', 'x_source_site_id', 'x_student_assignments']], successResponders));
+    const adapter = new OdooErpAdapter(factory);
+    const result = await adapter.notifySale(basePayload, ctx());
+    assert.equal(result.status, 'sent');
+    const orderCreate = calls.find((c) => c.model === 'sale.order' && c.method === 'create');
+    const body = orderCreate?.args[0] as Record<string, unknown>;
+    assert.equal(body.x_school_external_ref, 'san_agustin');
+    assert.equal(body.x_school_name, 'Colegio San Agustín');
+    assert.equal(body.x_source_site_id, 'ds_01');
+    // student_assignments viaja como JSON.stringify (compat con Text y Jsonb)
+    assert.equal(typeof body.x_student_assignments, 'string');
+    const parsed = JSON.parse(body.x_student_assignments as string);
+    assert.equal(parsed.schema_version, '1.0');
+    assert.equal(parsed.items[0].sku, 'EDU-KIT-4');
+  });
+
+  it('ningún custom field existe → orden se crea sin ellos, no rompe', async () => {
+    const { factory, calls } = fakeClient(withProbe([], successResponders));
+    const adapter = new OdooErpAdapter(factory);
+    const result = await adapter.notifySale(basePayload, ctx());
+    assert.equal(result.status, 'sent');
+    const orderCreate = calls.find((c) => c.model === 'sale.order' && c.method === 'create');
+    const body = orderCreate?.args[0] as Record<string, unknown>;
+    assert.equal('x_school_external_ref' in body, false);
+    assert.equal('x_school_name' in body, false);
+    assert.equal('x_source_site_id' in body, false);
+    assert.equal('x_student_assignments' in body, false);
+    // Los fields core siguen ahí — la orden se creó completa
+    assert.equal(body.client_order_ref, 'order_school');
+    assert.equal(body.partner_id, 501);
+    assert.ok(Array.isArray(body.order_line));
+  });
+
+  it('subset: solo los fields presentes se envían, los faltantes se omiten', async () => {
+    const { factory, calls } = fakeClient(withProbe(['x_school_name', 'x_student_assignments'], successResponders));
+    const adapter = new OdooErpAdapter(factory);
+    await adapter.notifySale(basePayload, ctx());
+    const body = (calls.find((c) => c.model === 'sale.order' && c.method === 'create')?.args[0]) as Record<string, unknown>;
+    assert.equal(body.x_school_name, 'Colegio San Agustín');
+    assert.equal(typeof body.x_student_assignments, 'string');
+    assert.equal('x_school_external_ref' in body, false);
+    assert.equal('x_source_site_id' in body, false);
+  });
+
+  it('probe falla (network error) → orden se crea sin los custom fields, no rompe', async () => {
+    const { factory, calls } = fakeClient((call) => {
+      const key = `${call.model}.${call.method}`;
+      if (key === 'sale.order.fields_get') throw new Error('ECONNREFUSED');
+      const r = (successResponders as any)[key];
+      if (!r) throw new Error(`Unexpected: ${key}`);
+      return r(call);
+    });
+    const adapter = new OdooErpAdapter(factory);
+    const result = await adapter.notifySale(basePayload, ctx());
+    assert.equal(result.status, 'sent');
+    const body = (calls.find((c) => c.model === 'sale.order' && c.method === 'create')?.args[0]) as Record<string, unknown>;
+    assert.equal('x_school_name' in body, false);
+    assert.equal('x_student_assignments' in body, false);
+  });
+
+  it('cache: dos envíos consecutivos hacen UN solo fields_get', async () => {
+    const { factory, calls } = fakeClient(withProbe(['x_school_name'], successResponders));
+    const adapter = new OdooErpAdapter(factory);
+    await adapter.notifySale(basePayload, ctx());
+    await adapter.notifySale({ ...basePayload, order_id: 'order_school_2', event_key: 'order.placed:order_school_2' }, ctx());
+    const probes = calls.filter((c) => c.model === 'sale.order' && c.method === 'fields_get');
+    assert.equal(probes.length, 1, 'segundo envío debe reusar cache — evita un round-trip por orden');
+  });
+
+  it('multi-tenant: dos baseUrl distintas sondean por separado', async () => {
+    const { factory, calls } = fakeClient(withProbe(['x_school_name'], successResponders));
+    const adapter = new OdooErpAdapter(factory);
+    await adapter.notifySale(basePayload, ctx({ ...DEFAULT_SETTINGS, base_url: 'http://tenant-a:8069' }));
+    await adapter.notifySale({ ...basePayload, order_id: 'o2', event_key: 'e2' }, ctx({ ...DEFAULT_SETTINGS, base_url: 'http://tenant-b:8069' }));
+    const probes = calls.filter((c) => c.model === 'sale.order' && c.method === 'fields_get');
+    assert.equal(probes.length, 2, 'cada tenant Odoo tiene que sondear independiente');
+  });
+
+  it('sin payload.school ni payload.student_assignments → NO sondea (tienda principal)', async () => {
+    const { factory, calls } = fakeClient(withProbe([], successResponders));
+    const adapter = new OdooErpAdapter(factory);
+    const mainStorePayload: ErpSalePayload = { ...basePayload, school: null, student_assignments: null };
+    await adapter.notifySale(mainStorePayload, ctx());
+    const probes = calls.filter((c) => c.model === 'sale.order' && c.method === 'fields_get');
+    assert.equal(probes.length, 0, 'sin data extra, saltear la sonda ahorra un round-trip');
+  });
+});
+
 describe('OdooRpcClient — construcción y config', () => {
   // Sanity check del cliente real: el body JSON-RPC lleva db + uid + api_key
   // en args, y el context incluye allowed_company_ids cuando la config lo trae.

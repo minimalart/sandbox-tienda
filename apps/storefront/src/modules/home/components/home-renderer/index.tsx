@@ -14,6 +14,7 @@ import PromoBanner from "@modules/home/components/promo-banner";
 import ShopByLookSlot from "@modules/home/components/shop-by-look";
 import ShoppableVideos from "@modules/home/components/shoppable-videos";
 import CampaignHero from "@modules/home-campaign/components/campaign-hero";
+import CampaignKits from "@modules/home-campaign/components/campaign-kits";
 import LandingRenderer from "@modules/landing-page/components/landing-renderer";
 
 /**
@@ -63,7 +64,9 @@ export default async function HomeRenderer({
   const blocks = Array.isArray(content) ? content : [];
   // Contenido real del demo: base sobre la que se aplican los overrides del
   // bloque (un bloque con la tarjeta vacía no debe borrar la sección).
-  const assets = (await getActiveTenant()).assets;
+  const tenant = await getActiveTenant();
+  const assets = tenant.assets;
+  const template = tenant.template;
 
   const renderBlock = (block: HomeLayoutBlock) => {
     const p = (block.props ?? {}) as Record<string, any>;
@@ -164,6 +167,29 @@ export default async function HomeRenderer({
       }
 
       case "ProductosDestacados": {
+        // En el template `campaign` la fila de productos NO usa el carousel
+        // compartido: renderiza `CampaignKits`, un feed lineal con infinite
+        // scroll y la card canónica de Mercatto. Por diseño, `cardVariant`,
+        // `viewAllCard`, `promotions` y las fuentes `query` del bloque Puck
+        // NO aplican acá; sólo se traducen título, subtítulo y filtro básico.
+        if (template === "campaign") {
+          const limit = Number(p.limit) > 0 ? Number(p.limit) : 4;
+          return (
+            <CampaignKits
+              countryCode={countryCode}
+              config={{
+                title: p.title || "Productos",
+                subtitle: p.description || undefined,
+                filter: {
+                  collectionId:
+                    (p.source === "collection" && p.value) || undefined,
+                  tag: (p.source === "tag" && p.value) || undefined,
+                  limit,
+                },
+              }}
+            />
+          );
+        }
         const preset = p.preset ?? "featuredProducts";
         const viewAllCard = p.viewAllLabel
           ? { label: p.viewAllLabel, href: p.viewAllHref || "/store" }
@@ -187,6 +213,12 @@ export default async function HomeRenderer({
           const config = presetBase
             ? ({
                 ...presetBase,
+                // Título en mobile: el del bloque si lo pusieron, si no el del
+                // preset. Un título propio del bloque SIN mobile propio anula
+                // el del preset: quedaba el corto del template en mobile y el
+                // editado en desktop, dos títulos distintos para la misma fila.
+                mobileTitle:
+                  p.mobileTitle || (p.title ? undefined : presetBase.mobileTitle),
                 filter: {
                   ...(presetBase.filter ?? {}),
                   ...(limit ? { limit } : {}),
@@ -200,6 +232,7 @@ export default async function HomeRenderer({
               productCategory={preset}
               config={config}
               cardVariant={p.cardVariant ?? "default"}
+              layout={p.layout === "grid-4" ? "grid-4" : "carousel"}
               title={p.title || undefined}
               description={p.description || undefined}
               viewAllCard={viewAllCard}
@@ -212,6 +245,11 @@ export default async function HomeRenderer({
         const base = preset !== "custom" ? (assets as any)[preset] : undefined;
         const config = {
           title: p.title || base?.title || undefined,
+          // Igual que arriba: sin `mobileTitle` propio, un título del bloque
+          // manda también en mobile (antes la fila de promos decía "Ofertas de
+          // la semana" completo en mobile, donde no entra).
+          mobileTitle:
+            p.mobileTitle || (p.title ? undefined : base?.mobileTitle) || undefined,
           description: p.description ?? base?.description ?? undefined,
           filter: {
             // `> 0` y no `||`: un limit negativo guardado en el documento pasaba
@@ -227,6 +265,7 @@ export default async function HomeRenderer({
             countryCode={countryCode}
             config={config}
             cardVariant={p.cardVariant ?? "default"}
+            layout={p.layout === "grid-4" ? "grid-4" : "carousel"}
             onlyPromotions={p.source === "promotions"}
             viewAllCard={viewAllCard}
           />

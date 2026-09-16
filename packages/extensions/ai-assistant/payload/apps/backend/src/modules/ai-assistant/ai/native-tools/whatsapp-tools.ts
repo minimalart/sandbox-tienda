@@ -6,6 +6,8 @@ import {
   searchWaProducts,
   hydrateWaVariants,
   getWaVariantDetail,
+  listWaProductPresentations,
+  listWaPinnedProducts,
 } from '../../../../lib/whatsapp/search-products';
 import {
   resolveWaOrderContext,
@@ -233,6 +235,33 @@ export const WHATSAPP_TOOL_DEFS: NativeToolDef[] = [
     },
   },
   {
+    name: NATIVE_TOOL.waListPresentations,
+    description:
+      'Publica las PRESENTACIONES comprables de un producto (1 L, 4 L, 20 L…) para que el paso siguiente del recorrido las ofrezca como lista. NO le manda nada al cliente: sólo deja las opciones listas. Es para los recorridos dibujados, no para vos.',
+    parameters: {
+      type: 'object',
+      properties: {
+        variant_id: { type: 'string', description: 'Una variante del producto; se listan las hermanas.' },
+        product_id: { type: 'string', description: 'Alternativa a variant_id.' },
+        save_as: { type: 'string', description: 'Clave de `vars` donde se publican. Por defecto "presentations".' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: NATIVE_TOOL.waListPinned,
+    description:
+      'Publica los productos que el operador ELIGIÓ A MANO para este paso del recorrido, para que la pregunta siguiente los ofrezca como lista. NO le manda nada al cliente. Es para los recorridos dibujados, no para vos: los ids los pone el editor, no los inventes.',
+    parameters: {
+      type: 'object',
+      properties: {
+        product_ids: { type: 'array', items: { type: 'string' }, description: 'Ids de producto, en el orden en que se muestran.' },
+        save_as: { type: 'string', description: 'Clave de `vars` donde se publican. Por defecto "pinned".' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
     name: NATIVE_TOOL.waClearCart,
     description:
       'Vacía TODO el pedido en armado (borra todos los ítems). Usalo cuando el cliente quiere "empezar de nuevo", "arrancar un pedido nuevo", "vaciar el carrito" o descartar lo que había. Confirmá brevemente después.',
@@ -432,11 +461,35 @@ async function runAdd(args: Record<string, unknown>, ctx: NativeToolContext): Pr
   if (ctx.didSearch) {
     return 'NO agregues nada todavía: le acabás de mostrar la lista y el cliente aún no eligió. Esperá a que toque una opción. (Solo agregá cuando llegue una selección explícita del cliente.)';
   }
-  // Guardrail: la variante DEBE existir en el catálogo. Mata ids alucinados y el
-  // "producto fantasma": nunca se agrega algo que no salió de una búsqueda/selección real.
+  // Guardrail: la variante DEBE existir en el catálogo Y estar en los canales de
+  // venta del bot. Mata ids alucinados, el "producto fantasma" y lo que no se vende
+  // por chat (`getWaVariantDetail` devuelve null en los tres casos).
   const exists = await getWaVariantDetail(ctx.container, variantId).catch(() => null);
   if (!exists) {
-    return 'No puedo agregar eso: no encontré esa variante en el catálogo. Buscá primero con wa_search_products y usá el variant_id que devuelve; nunca inventes ids.';
+    /**
+     * ACÁ HAY QUE HABLARLE AL CLIENTE, no sólo devolverle un texto al modelo.
+     *
+     * Este mismo tool lo llama el ROUTER cuando el cliente toca un producto
+     * (`handleVariantTap`), y ahí nadie lee lo que devuelve: el turno se da por
+     * atendido y el cliente se queda MIRANDO LA NADA. Y es el caso más probable
+     * de todos, porque un carrusel viejo sigue arriba en la conversación con sus
+     * botones vivos: se toca un producto que ya no está en el canal y, sin este
+     * mensaje, el bot enmudece.
+     */
+    if (!ctx.sentUserMessage) {
+      await sendWhatsappButtons({
+        to: phone,
+        body: 'Ese producto no está disponible para comprar por acá 😕 ¿Buscamos otra cosa?',
+        // `act:close` y NO `act:review`: el router no tiene ningún caso `review`,
+        // así que ese botón se tocaba y no pasaba nada. El que abre la revisión
+        // del pedido es `close` (§18), aunque se lea "Cerrar compra".
+        buttons: [
+          { id: 'act:search', title: 'Buscar otro' },
+          { id: 'act:close', title: 'Ver mi pedido' },
+        ],
+      }).catch(() => null);
+    }
+    return 'No puedo agregar eso: la variante no existe o no está en los canales de venta del bot. Ya le avisé al cliente; NO mandes otro mensaje en este turno.';
   }
   const qty = int(args.quantity, 1);
   // Consumimos la selección: si el modelo llama add otra vez en ESTE mismo turno,
@@ -542,6 +595,79 @@ async function runRemove(args: Record<string, unknown>, ctx: NativeToolContext):
   const items = await svc(ctx).removeFromDraft(phone, variantId);
   track(ctx, 'removed_from_cart', { variant_id: variantId, lines: items.length });
   return `OK: quitado. El pedido tiene ${items.length} producto(s).`;
+}
+
+/**
+ * Publica las presentaciones comprables de un producto en el `vars` del recorrido.
+ *
+ * Es la primera acción PRODUCTORA: no le habla al cliente, deja opciones listas
+ * para que el `ask_list` siguiente las muestre con `optionsFrom`. Con eso se puede
+ * dibujar "¿Qué presentación necesitás?", que hasta ahora no se podía porque las
+ * opciones del editor son fijas y las presentaciones dependen del producto que el
+ * cliente acaba de elegir.
+ *
+ * El `value` de cada opción es el `variant_id`, así que lo que el cliente elija cae
+ * en `answers.<nodo>` listo para `wa_add_to_cart`.
+ */
+async function runListPresentations(args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
+  const key = str(args.save_as) || 'presentations';
+  // Sin recorrido no hay dónde publicar. No es un error: la tool simplemente no
+  // aplica fuera del grafo, y decirlo es mejor que escribir en el aire.
+  if (!ctx.waFlowVars) return 'Esta acción sólo sirve dentro de un recorrido dibujado.';
+
+  const variantId = str(args.variant_id);
+  const productId = str(args.product_id);
+  if (!variantId && !productId) {
+    ctx.waFlowVars[key] = [];
+    return 'Error: hace falta variant_id o product_id.';
+  }
+
+  const options = await listWaProductPresentations(ctx.container, { variantId, productId }).catch(() => []);
+  ctx.waFlowVars[key] = options;
+  if (options.length === 0) {
+    return `No encontré presentaciones comprables. Quedó "${key}" vacío: el paso que las muestre no va a poder mandar el mensaje.`;
+  }
+  return `Publiqué ${options.length} presentación/es en vars.${key}.`;
+}
+
+/**
+ * Publica en el `vars` del recorrido los productos que el operador eligió a mano.
+ *
+ * Es la cuarta fuente de opciones, y la única que no calcula nada: el documento
+ * pide "{{producto recomendado 1/2/3}}" y eso es una decisión comercial. Los ids
+ * los pone el `ProductSelector` del editor, en el orden en que quedaron.
+ *
+ * Los productos fuera del canal del bot se filtran en `listWaPinnedProducts`:
+ * fijar a mano es CURACIÓN, no un permiso de venta.
+ */
+async function runListPinned(args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
+  const key = str(args.save_as) || 'pinned';
+  if (!ctx.waFlowVars) return 'Esta acción sólo sirve dentro de un recorrido dibujado.';
+
+  // El editor puede guardar el arreglo o —si alguien lo escribió a mano— una lista
+  // separada por comas. Las dos formas valen; lo que no es ninguna, queda vacío.
+  const raw = args.product_ids;
+  const ids = Array.isArray(raw)
+    ? raw.map((v) => String(v ?? '').trim()).filter(Boolean)
+    : String(raw ?? '')
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean);
+
+  if (ids.length === 0) {
+    ctx.waFlowVars[key] = [];
+    return `No hay productos elegidos. Quedó "${key}" vacío: el paso que los muestre no va a poder mandar el mensaje.`;
+  }
+
+  const options = await listWaPinnedProducts(ctx.container, ids).catch(() => []);
+  ctx.waFlowVars[key] = options;
+  if (options.length === 0) {
+    return `Ninguno de los ${ids.length} productos elegidos se puede vender por chat (revisá que estén en el canal de venta del bot). Quedó "${key}" vacío.`;
+  }
+  if (options.length < ids.length) {
+    return `Publiqué ${options.length} de ${ids.length} en vars.${key}. Los que faltan no están en el canal de venta del bot.`;
+  }
+  return `Publiqué ${options.length} producto/s en vars.${key}.`;
 }
 
 async function runClearCart(_args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
@@ -874,6 +1000,10 @@ export async function runWhatsappNativeTool(
       return runSetQuantity(args, ctx);
     case NATIVE_TOOL.waClearCart:
       return runClearCart(args, ctx);
+    case NATIVE_TOOL.waListPresentations:
+      return runListPresentations(args, ctx);
+    case NATIVE_TOOL.waListPinned:
+      return runListPinned(args, ctx);
     case NATIVE_TOOL.waGuidedStart:
       return runGuidedStart(args, ctx);
     default:

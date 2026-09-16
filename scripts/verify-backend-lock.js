@@ -45,6 +45,20 @@ if (!fs.existsSync(lockPath)) {
       if (!(name in declared)) problems.push(`${field}: el lock tiene ${name}, que el package.json ya no declara`);
     }
   }
+
+  // A matching root is insufficient: old nested runtimes can still hide the
+  // host's settings reader from published plugins after an otherwise valid ci.
+  const runtime = '@minimalart/mercatto-plugin-runtime';
+  if (manifest.dependencies?.[runtime]) {
+    const rootPath = `node_modules/${runtime}`;
+    const version = lock.packages?.[rootPath]?.version;
+    if (!version) problems.push(`falta el runtime del host en ${rootPath}`);
+    for (const [location, entry] of Object.entries(lock.packages || {})) {
+      if (location.endsWith(rootPath) && entry.version !== version) {
+        problems.push(`runtime diferente al host: ${location} usa ${entry.version}, host ${version}`);
+      }
+    }
+  }
 }
 
 if (problems.length) {

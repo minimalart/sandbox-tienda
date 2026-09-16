@@ -42,7 +42,7 @@ Tabla `store_location` (módulo `apps/backend/src/modules/store-location/`):
 | --- | --- | --- |
 | `id` | text PK | prefijo `sloc` |
 | `code` | text nullable | código interno |
-| `store_type` | text | `'distribution_center' \| 'wholesale' \| 'point_of_sale'` (default `point_of_sale`) |
+| `store_type` | text | El id de uno de los tipos que definió la TIENDA en `content_config.sucursales.types` (ver `docs/store-locator-filters.md`). Texto libre, sin enum en la base: hasta la 1.12.0 los tres valores estaban clavados en el validador. Cadena vacía = sin tipo. |
 | `name` | text | requerido |
 | `province` / `city` / `street` | text | requeridos |
 | `phone` / `whatsapp` / `email` / `website` | text nullable | contacto |
@@ -66,10 +66,16 @@ Tabla `store_location` (módulo `apps/backend/src/modules/store-location/`):
   por nombre/ciudad/provincia (case-insensitive vía `$ilike`, soportado por los
   filtros de MikroORM que MedusaService pasa through). Devuelve
   `{ store_locations, count, limit, offset }`.
-- `POST /admin/store-locations` — crea. Requeridos: `name`, `store_type`,
-  `province`, `city`, `street`. Validación zod en
+- `POST /admin/store-locations` — crea. Requeridos: `name`, `province`, `city`,
+  `street`. `store_type` es opcional (una tienda puede no clasificar sus
+  sucursales) y sólo se valida su FORMA de slug, no contra la lista de ningún
+  sitio: la sucursal puede estar publicada en varios canales. Validación zod en
   `src/api/admin/store-locations/validators.ts` (email válido, `images` máx. 3
   URLs, `delivery_pin` 100000–999999).
+- `GET /admin/branch-types?sales_channel_ids=a,b` — los tipos de sucursal
+  disponibles: la unión de los que definen las tiendas de esos canales. Sin
+  canales, los de todas. Sin la extensión `multistore`, los tres históricos.
+  Es lo que llena el Select de la ficha de sucursal.
 - `GET /admin/store-locations/:id` — detalle.
 - `POST /admin/store-locations/:id` — update parcial.
 - `DELETE /admin/store-locations/:id` — soft delete (vía
@@ -248,8 +254,8 @@ script de Maps se carga por script tag dinámico — no agrega dependencias.
   `GET {NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/store-locations` con header
   `x-publishable-api-key` (revalidate 60s; ante error devuelve `[]`).
 - Template: `apps/storefront/src/modules/store-locations/templates/index.tsx` —
-  cards responsive con nombre, badge de tipo (Punto de venta / Mayorista /
-  Centro de distribución), dirección, teléfono / WhatsApp / email como links
+  cards responsive con nombre, badge del tipo configurado por la tienda (con su
+  color de la paleta; sin tipo no hay badge), dirección, teléfono / WhatsApp / email como links
   (`tel:` / `wa.me` / `mailto:`), resumen legible de horarios (ej. "Lun a Vie
   09:00–18:00") y link "Cómo llegar" a Google Maps si hay coordenadas. Incluye
   empty state.

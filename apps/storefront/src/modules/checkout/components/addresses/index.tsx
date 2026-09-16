@@ -509,17 +509,32 @@ const Addresses = ({
       if (multiBranchEnabled) {
         if (shipping_coords?.latitude && shipping_coords?.longitude) {
           try {
-            const resolution = await resolveAndSetBranch(
+            await resolveAndSetBranch(
               shipping_coords.latitude,
               shipping_coords.longitude,
             );
-            if (requireBranchCoverage && !resolution.covered) {
-              setError(
-                "Todavía no tenemos cobertura de envío para esta dirección.",
-              );
-              setIsSubmitting(false);
-              return;
-            }
+            // SIN COBERTURA NO SE BLOQUEA EL CHECKOUT — se avanza igual.
+            //
+            // Acá había un `return` cuando `requireBranchCoverage && !covered`, y
+            // dejaba al comprador trabado en el paso de direcciones con "Todavía no
+            // tenemos cobertura de envío para esta dirección", sin manera de llegar
+            // a las opciones de entrega. O sea: quien vive fuera del radio de reparto
+            // no podía ni siquiera elegir RETIRAR POR LA SUCURSAL, que no depende de
+            // ninguna cobertura (DESDEELSUR-61, BUG-13).
+            //
+            // Ese bloqueo además DUPLICABA —contradiciéndolo— el gate que ya corre en
+            // el backend: `shippingCoverageGate` recalcula la cobertura con la
+            // dirección del cart y `filterOptionsByCoverage` descarta SÓLO la flota
+            // propia a domicilio, dejando en pie el retiro en tienda, el retiro por
+            // sucursal del carrier y los envíos por Andreani/Correo. El paso de
+            // entrega ya avisa además con `no-coverage-warning`.
+            //
+            // Dicho de otra forma: el comportamiento que el equipo definió —sacar el
+            // envío estándar, no bloquear todo— ya estaba implementado del lado del
+            // backend, y este `return` era lo único que lo rompía. El resultado de la
+            // resolución se sigue necesitando por su efecto: fija el canal de la
+            // sucursal en el cart, que es lo que hace que el gate del backend después
+            // pueda decidir.
           } catch (branchErr) {
             console.error(
               "[checkout] branch resolution failed (non-blocking):",
@@ -778,10 +793,10 @@ const Addresses = ({
           className="fixed inset-0 bg-gray-500/75 transition-opacity data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in"
           transition
         />
-        <div className="fixed inset-0 z-[10000] w-screen overflow-y-auto">
+        <div className="fixed inset-0 z-[10000] w-screen cursor-modal-close overflow-y-auto">
           <div className="flex min-h-full items-end justify-center p-0 text-center sm:items-center sm:p-4">
             <DialogPanel
-              className="relative w-full max-w-none transform rounded-t-2xl bg-white px-4 pt-5 pb-6 text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in sm:my-8 sm:w-full sm:max-w-2xl sm:rounded-lg sm:p-6 data-closed:sm:translate-y-0 data-closed:sm:scale-95"
+              className="cursor-auto relative w-full max-w-none transform rounded-t-2xl bg-white px-4 pt-5 pb-6 text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in sm:my-8 sm:w-full sm:max-w-2xl sm:rounded-lg sm:p-6 data-closed:sm:translate-y-0 data-closed:sm:scale-95"
               transition
             >
               <DialogTitle

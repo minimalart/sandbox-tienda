@@ -39,6 +39,15 @@ export type NativeToolContext = {
   /** WhatsApp: teléfono del cliente de la conversación actual (para scopear el
    * borrador de carrito y prefijar el checkout link). Lo setea el webhook. */
   waPhone?: string | null;
+  /**
+   * WhatsApp: el `vars` del recorrido que está corriendo, para que una acción
+   * pueda PUBLICAR opciones que la pregunta siguiente muestra (`optionsFrom`).
+   *
+   * Es el mismo objeto que se persiste al final del turno, así que escribir acá
+   * sobrevive al turno. Sólo lo setea `flow/runtime.ts`: fuera de un recorrido no
+   * existe, y una tool tiene que tolerar que no esté.
+   */
+  waFlowVars?: Record<string, unknown>;
   /** WhatsApp: marca que en ESTE turno ya se corrió una búsqueda (se mostró la
    * lista de opciones). Sirve de guardrail: si es true, wa_add_to_cart NO agrega
    * (el cliente todavía no eligió una fila). Se resetea por turno. */

@@ -58,6 +58,7 @@ export const EXTENSION_MULTISTORE: Record<string, readonly MultistoreCapability[
   'gift-cards': ['data', 'config'],
   'landing-pages': ['data'],
   loyalty: ['data'],
+  marketplaces: ['data', 'config'],
   mercadopago: ['credentials'],
   multistore: ['data', 'config'],
   // Las tres, y la de credenciales es la que importa: `BREVO_API_KEY` es

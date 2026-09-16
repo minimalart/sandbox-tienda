@@ -58,11 +58,25 @@ jobs:
       - name: Validate project catalog
         run: pnpm site:catalog:validate
 
+      # LOS TRES VERIFICADORES SON INDEPENDIENTES Y TIENEN QUE REPORTAR TODOS.
+      # Por defecto un step que falla aborta los que siguen, y eso convirtió a
+      # este job en un semáforo de una sola luz: en desdeelsur, `site:components:verify`
+      # venía fallando por payloads desincronizados del erp, así que
+      # `backend:lock:verify` NUNCA llegó a ejecutarse — y el lock del backend viajó
+      # roto hasta producción, donde el deploy murió con un ENOENT sobre
+      # packages/plugins/plugin-marketplaces. El detector existía, estaba bien escrito
+      # y estaba enterrado detrás de otro rojo.
+      #
+      # `!cancelled()` y no `always()`: ante una cancelación no queremos seguir
+      # corriendo steps. Ninguno de los tres toca la red ni necesita node_modules,
+      # así que correrlos igual no cuesta nada y cada rojo dice lo suyo.
       - name: Verify extension payloads
+        if: ${{ !cancelled() }}
         run: pnpm site:components:verify
 
       # DigitalOcean corre `npm ci` en apps/backend, que aborta si el lock quedó
       # atrás del package.json. Sin este chequeo, un lock stale no se ve hasta que
       # rompe el deploy de producción. Es offline, igual que los de arriba.
       - name: Verify backend npm lock
+        if: ${{ !cancelled() }}
         run: pnpm backend:lock:verify

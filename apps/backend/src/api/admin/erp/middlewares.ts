@@ -7,6 +7,7 @@ import {
   PostErpTintingImportSchema,
   PostErpTintingProbeSchema,
   PostErpOrderBillingDepositoSchema,
+  PostErpOutboxResyncSchema,
   PostErpTintingSyncProductsSchema,
   UpsertErpConfigSchema,
   ValidateConnectionSchema,
@@ -44,6 +45,11 @@ export const adminErpMiddlewares: MiddlewareRoute[] = [
     matcher: '/admin/erp/validate-connection',
     method: ['POST'],
     middlewares: [validateAndTransformBody(ValidateConnectionSchema)],
+  },
+  {
+    matcher: '/admin/erp/outbox-events/resync',
+    method: ['POST'],
+    middlewares: [validateAndTransformBody(PostErpOutboxResyncSchema)],
   },
   {
     matcher: '/admin/erp/tinting/import',

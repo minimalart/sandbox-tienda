@@ -45,6 +45,8 @@ export const NATIVE_TOOL = {
   waSetQuantity: 'wa_set_quantity',
   waClearCart: 'wa_clear_cart',
   waGuidedStart: 'wa_guided_start',
+  waListPresentations: 'wa_list_presentations',
+  waListPinned: 'wa_list_pinned',
 } as const;
 
 export const NATIVE_TOOL_NAMES: ReadonlySet<string> = new Set(Object.values(NATIVE_TOOL));

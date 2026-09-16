@@ -1,4 +1,5 @@
 "use client";
+import { usesQuickViewOnly } from "@lib/site-config/template-helpers";
 
 import { useTenant, useTenantSections } from "@lib/site-config/context";
 import { isImpulseTemplate as isImpulseTpl } from "@lib/site-config/template-helpers";
@@ -53,6 +54,7 @@ export default function TypesenseProductCard({
   subscriptionBenefit,
 }: TypesenseProductCardProps) {
   const tenant: TenantConfig = useTenant();
+  const quickViewOnly = usesQuickViewOnly(tenant.template);
   const { areVariantLabelsVisible } = useTenantSections();
   const [isOpen, setIsOpen] = useState(false);
   const [variantSheetOpen, setVariantSheetOpen] = useState(false);
@@ -308,7 +310,7 @@ export default function TypesenseProductCard({
             />
           )}
           </div>
-          {product.id && individualVariantId && (
+          {!quickViewOnly && product.id && individualVariantId && (
             <WishlistButton
               className={
                 isSportsTemplate
@@ -352,11 +354,11 @@ export default function TypesenseProductCard({
               cada zona tiene una acción clara y no se solapan los hovers.
               En sports no hay quick view: la card entera lleva al PDP. */}
           {!isSportsTemplate && (
-            requiresConfigurator ? (
+            requiresConfigurator && !quickViewOnly ? (
               <LocalizedClientLink
                 href={configuratorHref}
                 aria-label={`Personalizar ${product.title}`}
-                className="pointer-events-none absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/40 opacity-0 transition-opacity duration-200 group-hover/image:pointer-events-auto group-hover/image:opacity-100"
+                className={`absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/40 opacity-0 transition-opacity duration-200 ${quickViewOnly ? "hover:opacity-100 focus-visible:opacity-100" : "pointer-events-none group-hover/image:pointer-events-auto group-hover/image:opacity-100"}`}
               >
                 <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 font-semibold text-[#111827] text-sm shadow-md transition hover:bg-gray-100">
                   {/* El regalo es de la gift card; una base entonable se
@@ -374,7 +376,7 @@ export default function TypesenseProductCard({
                 type="button"
                 onClick={handleQuickView}
                 aria-label={`Vista rápida de ${product.title}`}
-                className="pointer-events-none absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/40 opacity-0 transition-opacity duration-200 group-hover/image:pointer-events-auto group-hover/image:opacity-100"
+                className={`absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/40 opacity-0 transition-opacity duration-200 ${quickViewOnly ? "hover:opacity-100 focus-visible:opacity-100" : "pointer-events-none group-hover/image:pointer-events-auto group-hover/image:opacity-100"}`}
               >
                 <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 font-semibold text-[#111827] text-sm shadow-md transition hover:bg-gray-100">
                   <Eye className="size-4" />
@@ -406,7 +408,7 @@ export default function TypesenseProductCard({
                     const isDesktop =
                       typeof window !== "undefined" &&
                       window.matchMedia("(min-width: 1024px)").matches;
-                    if (isDesktop) {
+                    if (isDesktop || quickViewOnly) {
                       openModal();
                     } else {
                       setVariantSheetOpen(true);
@@ -500,7 +502,11 @@ export default function TypesenseProductCard({
               <div className="mb-1">
                 <div className="flex min-w-0 items-baseline gap-2 whitespace-nowrap">
                   <p className="shrink-0 font-semibold text-[#111827] text-[16px] md:text-[18px] leading-tight">
-                    {isTintable ? `Desde ${priceWithSymbol}` : priceWithSymbol}
+                    {/* Igual que la base entonable, la gift card muestra el
+                        monto más chico: el cliente elige el suyo en el PDP. */}
+                    {requiresConfigurator
+                      ? `Desde ${priceWithSymbol}`
+                      : priceWithSymbol}
                   </p>
                   {hasDiscount &&
                     promotionType !== "buyget" &&
@@ -540,7 +546,7 @@ export default function TypesenseProductCard({
         </div>
       </article>
 
-      {!isSportsTemplate && !requiresConfigurator && (
+      {!isSportsTemplate && (!requiresConfigurator || quickViewOnly) && (
         <ProductQuickViewModal
           product={product}
           open={isOpen}

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "b2b",
   "name": "B2B",
-  "version": "1.23.0",
+  "version": "1.23.4",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -165,7 +165,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/companies/page.tsx",
-      "sha256": "b5a6b0aa840be2db64b164a7982fbca1eb4b03aad1deeb40efb09ce8e57a8aaa"
+      "sha256": "78fadf5ccd462caee6228f6e85692e89fd540f5b4587237ce7f5e65e4427663d"
     },
     {
       "path": "apps/backend/src/admin/routes/companies/settings/page.tsx",
@@ -541,7 +541,7 @@
     },
     {
       "path": "apps/storefront/src/lib/data/company.ts",
-      "sha256": "b7137b51da7bc2c2a527dafadc01b457643d35aa719e0dc34e3f81044d6b0c3d"
+      "sha256": "0da2f7b5e1239842eca91b05bd70e681113eb0ab09726e176b801f57fc4b8fbb"
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/b2b-brand.tsx",
@@ -549,7 +549,7 @@
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/b2b-checkout-flow.tsx",
-      "sha256": "01dec1f304df391d8808a30cfa00339b4dd4c05d27e785ff248bfc98f703df69"
+      "sha256": "b5aeedc40815cee163e69f1170a76bcebd550c43e74214823284a8cd9fa6992b"
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/b2b-gate-screen.tsx",
@@ -573,7 +573,7 @@
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/company-users.tsx",
-      "sha256": "b8ddc869f6e61f9b0d9e879acb7d09de6822d8f4ab90113cd10515c33bf3332a"
+      "sha256": "73ac917c40c6b47803e0da12f57d4155c9c8dfce0c9f8802c255dd1312070513"
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/order-row-actions.tsx",
@@ -601,7 +601,7 @@
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/register-form.tsx",
-      "sha256": "abc61a581796d6829e621d4f84fdbb35debd4a15f3a63a7aa2f6fdef95fdc9ee"
+      "sha256": "2bbacf09364792c7d97877aeb78635b9b7a1954f5c0eb70b519dd19dbb9c9823"
     },
     {
       "path": "apps/storefront/src/modules/b2b/lib/order-status.ts",

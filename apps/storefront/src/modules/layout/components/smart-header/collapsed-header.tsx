@@ -19,6 +19,7 @@ import { useWishlistDrawerStore } from "@lib/stores/wishlist-drawer.store";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import UserAvatar from "@modules/common/components/user-avatar";
 import HeaderSearchBar from "@modules/layout/components/header-search-bar";
+import type { CategoryNode } from "@lib/util/quick-suggestion-target";
 import { ShoppingCart } from "lucide-react";
 import { usePathname, useParams } from "next/navigation";
 import { useMemo } from "react";
@@ -51,6 +52,13 @@ type CollapsedHeaderProps = {
   /** Tintometría con carta cargada: muestra el link "Buscá tu color". */
   hasTinting?: boolean;
   hasSpaceDesigner?: boolean;
+  /**
+   * Árbol de categorías, sólo para el buscador embebido: sin él los atajos
+   * "Explorar:" de ESTE header caerían en búsqueda de texto mientras los del header
+   * normal navegan por categoría, y el mismo botón haría dos cosas distintas según
+   * cuánto scrolleaste (DESDEELSUR-61, BUG-11).
+   */
+  categories?: CategoryNode[];
 };
 
 export default function CollapsedHeader({
@@ -60,6 +68,7 @@ export default function CollapsedHeader({
   initials,
   hasTinting = false,
   hasSpaceDesigner = false,
+  categories = [],
 }: CollapsedHeaderProps) {
   const pathname = usePathname();
   const { countryCode } = useParams() as { countryCode: string };
@@ -144,7 +153,7 @@ export default function CollapsedHeader({
 
           {/* Search bar (reuse) */}
           <div className="flex-1 max-w-md [&_div]:p-0 [&_input]:py-1.5 [&_input]:text-xs [&_[data-ghost-overlay]]:!py-1.5 [&_[data-ghost-overlay]]:!pl-9 [&_[data-ghost-overlay]]:text-xs [&_.hidden]:!hidden">
-            <HeaderSearchBar />
+            <HeaderSearchBar categories={categories} />
           </div>
 
           <span className="h-5 w-px bg-gray-300 flex-shrink-0" />

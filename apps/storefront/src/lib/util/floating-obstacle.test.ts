@@ -137,3 +137,88 @@ test("toFloatingBand invierte el eje al sistema de `bottom`", () => {
 
   assert.deepEqual(band, { top: 100, bottom: 24, left: 0, right: 400 });
 });
+
+/**
+ * Regresión de DESDEELSUR-61 / BUG-05, medida sobre el home de producción.
+ *
+ * Números reales tomados del sitio en vivo (viewport 1440x900):
+ *
+ *   cookie-consent  layer 3  rect y[686,776]  x[0,1440]   alto 90
+ *   back-to-top     layer 2  rect y[788,828]  x[1376,1416]  alto 40
+ *
+ * El aviso de cookies terminaba en `bottom: 124px` — flotando en el medio de la
+ * página y tapando una card entera del catálogo — porque esquivaba un botón de
+ * 40px parado en la esquina derecha. `overlapsHorizontally` daba `true` con
+ * cualquier solape mayor a 0, y una barra de ancho completo solapa a TODO lo que
+ * esté abajo.
+ *
+ * Un elemento de ancho completo no tiene ninguna columna libre a la que
+ * correrse: subirlo no lo destapa, sólo tapa el contenido de más arriba. QA lo
+ * reportó como "el cartel de cookies tapa el CTA principal del home".
+ */
+test("BUG-05: una barra de ancho completo NO esquiva un botón lateral chico", () => {
+  const backToTop: FloatingObstacleBand = {
+    // Medidas de producción, ya en el sistema de `bottom` (viewport 900).
+    bottom: 72,
+    top: 112,
+    left: 1376,
+    right: 1416,
+    layer: FLOATING_LAYER.tray,
+  };
+
+  const offset = resolveFloatingBottomOffset({
+    self: { height: 90, left: 0, right: 1440 },
+    obstacles: [backToTop],
+    layer: FLOATING_LAYER.notice,
+    baseOffset: 0,
+    viewportHeight: 900,
+  });
+
+  // Pegado al borde, que es lo que pidió QA ("debería ser sticky").
+  assert.equal(offset, 0);
+});
+
+test("BUG-05: pero sí esquiva una barra de ancho completo (nav mobile)", () => {
+  // El caso para el que se escribió el módulo no se toca: acá el obstáculo cubre
+  // el 100% del ancho propio.
+  const nav: FloatingObstacleBand = {
+    bottom: 0,
+    top: 76,
+    left: 0,
+    right: 390,
+    layer: FLOATING_LAYER.edgeBar,
+  };
+
+  const offset = resolveFloatingBottomOffset({
+    self: { height: 90, left: 0, right: 390 },
+    obstacles: [nav],
+    layer: FLOATING_LAYER.notice,
+    baseOffset: 0,
+    viewportHeight: 844,
+  });
+
+  assert.equal(offset, 76 + FLOATING_GAP);
+});
+
+test("BUG-05: un botón flotante chico sigue esquivando al nav de ancho completo", () => {
+  // La asimetría es deliberada: la fracción se mide contra el ancho PROPIO. El
+  // nav cubre el 100% del ancho del botón, así que el botón sube; el botón cubre
+  // el 14% del ancho del nav, así que el nav no se movería por él.
+  const nav: FloatingObstacleBand = {
+    bottom: 0,
+    top: 76,
+    left: 0,
+    right: 390,
+    layer: FLOATING_LAYER.edgeBar,
+  };
+
+  const offset = resolveFloatingBottomOffset({
+    self: { height: 56, left: 320, right: 376 },
+    obstacles: [nav],
+    layer: FLOATING_LAYER.floatingButton,
+    baseOffset: 0,
+    viewportHeight: 844,
+  });
+
+  assert.equal(offset, 76 + FLOATING_GAP);
+});

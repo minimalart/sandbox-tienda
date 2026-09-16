@@ -242,7 +242,9 @@ class ErpModuleService extends MedusaService({
    * Credenciales descifradas de la config, o `null` si no hay o el blob no
    * valida (p. ej. rotó `JWT_SECRET`: hay que re-ingresarlas).
    */
-  getDecryptedCredentials(config: Pick<ErpConfigRow, 'credentials_enc'>): Record<string, string> | null {
+  getDecryptedCredentials(
+    config: Pick<ErpConfigRow, 'credentials_enc'>
+  ): Record<string, string> | null {
     const plain = tryDecryptSecret(config.credentials_enc);
     if (!plain) return null;
     try {
@@ -277,7 +279,16 @@ class ErpModuleService extends MedusaService({
     } = {}
   ): Promise<ErpConfigRow> {
     const existing = await this.getConfig();
-    const values: Record<string, unknown> = { ...patch };
+    // `{ ...patch }` arrastraba claves con valor `undefined` de body parciales
+    // (típico: la UI manda solo `settings`, sin los root flags). El update de
+    // MikroORM lee esos `undefined` como "unset" y tira contra las columnas
+    // NOT NULL del modelo ("must pass a non-undefined value to enabled").
+    // Filtrar acá cubre a todos los callers del service, no solo al handler
+    // que arrancó el bug.
+    const values: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(patch)) {
+      if (value !== undefined) values[key] = value;
+    }
 
     const incoming = opts.credentials ?? {};
     const toRemove = (opts.removeCredentialKeys ?? []).filter(Boolean);
@@ -325,7 +336,9 @@ class ErpModuleService extends MedusaService({
    * devuelve `{created: false}` con la fila previa; la carrera entre dos
    * procesos la cierra el unique index (el error de duplicado se re-lee).
    */
-  async enqueueOutboxEvent(input: EnqueueOutboxInput): Promise<{ created: boolean; event: ErpOutboxEventRow }> {
+  async enqueueOutboxEvent(
+    input: EnqueueOutboxInput
+  ): Promise<{ created: boolean; event: ErpOutboxEventRow }> {
     const findExisting = async (): Promise<ErpOutboxEventRow | null> => {
       const [event] = await this.listErpOutboxEvents({ event_key: input.event_key }, { take: 1 });
       return (event as unknown as ErpOutboxEventRow) ?? null;
@@ -383,13 +396,24 @@ class ErpModuleService extends MedusaService({
 
   async markOutboxSent(
     id: string,
-    opts: { external_ref?: string | null; response?: unknown; duplicate?: boolean }
+    opts: {
+      external_ref?: string | null;
+      response?: unknown;
+      request?: unknown;
+      duplicate?: boolean;
+    }
   ): Promise<void> {
     await this.updateErpOutboxEvents({
       id,
       status: opts.duplicate ? ('duplicate' as const) : ('sent' as const),
       sent_at: new Date(),
       external_ref: opts.external_ref ?? null,
+      // `undefined` NO pisa lo guardado: el poll del comprobante vuelve a
+      // llamar acá cuando la venta ya se envió, y ese segundo paso no tiene el
+      // documento a mano. Escribir null ahí borraría la evidencia del envío.
+      ...(opts.request === undefined
+        ? {}
+        : { request_payload: sanitizePayload(opts.request) as Record<string, unknown> | null }),
       response_payload: (opts.response === undefined
         ? null
         : sanitizePayload(opts.response)) as Record<string, unknown> | null,
@@ -438,7 +462,10 @@ class ErpModuleService extends MedusaService({
   }
 
   /** Falla definitiva: agotó los reintentos o el payload es irrecuperable. */
-  async markOutboxDeadLetter(id: string, opts: { attempts: number; error: unknown }): Promise<void> {
+  async markOutboxDeadLetter(
+    id: string,
+    opts: { attempts: number; error: unknown }
+  ): Promise<void> {
     await this.updateErpOutboxEvents({
       id,
       status: 'dead_letter' as const,
@@ -464,6 +491,37 @@ class ErpModuleService extends MedusaService({
       attempts: 0,
       next_retry_at: null,
       claimed_at: null,
+    });
+    return (await this.retrieveErpOutboxEvent(id)) as unknown as ErpOutboxEventRow;
+  }
+
+  /**
+   * Resync manual: deja la fila en `pending` con el payload RECIÉN ARMADO.
+   *
+   * A diferencia de `requeueOutboxEvent`, no valida el estado — quién puede
+   * volver a mandarse lo decide `outbox/resync-decision.ts`, que es puro y
+   * testeado, y esta capa sólo escribe. Reemplazar el payload es el punto:
+   * habilita recuperar un `skipped`, cuyo payload guardado no es una venta sino
+   * `{ reason: 'sales_notify_disabled' }`.
+   *
+   * `last_error` se limpia porque el error viejo ya no describe esta fila; si el
+   * reenvío vuelve a fallar, el processor lo escribe de nuevo.
+   */
+  async resetOutboxEventForResync(
+    id: string,
+    payload: Record<string, unknown> | unknown
+  ): Promise<ErpOutboxEventRow> {
+    await this.updateErpOutboxEvents({
+      id,
+      status: 'pending' as const,
+      payload: sanitizePayload(payload) as Record<string, unknown> | null,
+      attempts: 0,
+      next_retry_at: null,
+      claimed_at: null,
+      last_error: null,
+      external_ref: null,
+      response_payload: null,
+      sent_at: null,
     });
     return (await this.retrieveErpOutboxEvent(id)) as unknown as ErpOutboxEventRow;
   }
@@ -563,13 +621,20 @@ class ErpModuleService extends MedusaService({
     const collection = input.collection?.trim() || base.collection || undefined;
 
     const [color] = (await this.listErpTintingColors(
-      collection ? { code: colorCode, collection, active: true } : { code: colorCode, active: true },
+      collection
+        ? { code: colorCode, collection, active: true }
+        : { code: colorCode, active: true },
       { take: 1 }
     )) as unknown as TintingColorRow[];
     if (!color) return null;
 
     const [override] = (await this.listErpTintingFormulas(
-      { color_code: colorCode, collection: color.collection, base_article_code: articleCode, active: true },
+      {
+        color_code: colorCode,
+        collection: color.collection,
+        base_article_code: articleCode,
+        active: true,
+      },
       { take: 1 }
     )) as unknown as TintingFormulaRow[];
 
@@ -861,7 +926,10 @@ class ErpModuleService extends MedusaService({
       if (current.active !== true) diff.active = true;
       // Ausente = no tocar: el detector re-corre sobre bases que alguien ya
       // marcó como vendibles sin entonar y no puede desmarcarlas.
-      if (row.sellable_untinted !== undefined && current.sellable_untinted !== row.sellable_untinted) {
+      if (
+        row.sellable_untinted !== undefined &&
+        current.sellable_untinted !== row.sellable_untinted
+      ) {
         diff.sellable_untinted = row.sellable_untinted;
       }
 

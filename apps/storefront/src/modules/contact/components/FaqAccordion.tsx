@@ -1,4 +1,5 @@
 'use client'
+import { internalHref, isExternalLink } from '@lib/util/internal-href'
 import { Fragment, useState } from 'react'
 
 type FaqItem = { question: string; answer: string }
@@ -13,8 +14,13 @@ function parseAnswer(text: string) {
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index))
     }
-    const [, linkText, href] = match
-    const isExternal = href.startsWith('http')
+    const [, linkText, rawHref] = match
+    // El texto de la FAQ lo escribe una persona en el admin, y los links en
+    // markdown salen pegados de la barra del navegador. "Empieza con http ⇒
+    // externo" mandaba al visitante al dominio de preview (mismo mecanismo que
+    // BUG-04 en los banners del home).
+    const href = internalHref(rawHref)
+    const isExternal = isExternalLink(href)
     parts.push(
       <a
         key={match.index}

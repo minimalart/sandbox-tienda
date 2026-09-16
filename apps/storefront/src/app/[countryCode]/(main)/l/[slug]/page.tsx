@@ -4,21 +4,28 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 type Params = { countryCode: string; slug: string }
-
-export async function generateMetadata(props: {
+type Props = {
   params: Promise<Params>
-}): Promise<Metadata> {
+  searchParams: Promise<{ preview?: string }>
+}
+
+export const dynamic = 'force-dynamic'
+
+const isPreview = (value?: string) => value === '1' || value === 'true'
+
+export async function generateMetadata(props: Props): Promise<Metadata> {
   const { slug } = await props.params
-  const landing = await getLandingPageBySlug(slug)
+  const preview = isPreview((await props.searchParams).preview)
+  const landing = await getLandingPageBySlug(slug, undefined, preview)
   if (!landing) {
-    return { title: 'No encontrado' }
+    return { title: 'No encontrado', ...(preview ? { robots: { index: false, follow: false } } : {}) }
   }
   const title = landing.seo?.title || landing.title
   const description = landing.seo?.description || landing.description || undefined
   return {
     title,
     description,
-    robots: landing.seo?.noindex ? { index: false, follow: false } : undefined,
+    robots: preview || landing.seo?.noindex ? { index: false, follow: false } : undefined,
     openGraph: {
       title,
       description,
@@ -27,11 +34,10 @@ export async function generateMetadata(props: {
   }
 }
 
-export default async function LandingPageRoute(props: {
-  params: Promise<Params>
-}) {
+export default async function LandingPageRoute(props: Props) {
   const { slug, countryCode } = await props.params
-  const landing = await getLandingPageBySlug(slug)
+  const preview = isPreview((await props.searchParams).preview)
+  const landing = await getLandingPageBySlug(slug, undefined, preview)
   if (!landing) {
     notFound()
   }

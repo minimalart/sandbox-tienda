@@ -4,6 +4,7 @@ import { zodResolver } from "@lib/util/zod-resolver"
 import FormInput from '@modules/common/components/form-input'
 import PhoneInput from '@modules/common/components/phone-input'
 import Textarea from '@modules/common/components/textarea'
+import { PlaneFlight } from '@modules/common/components/plane-button'
 import { useContactForm } from '@lib/hooks/use-contact-form'
 import { useUtm } from '@lib/hooks/use-utm'
 import { extractPhoneParts } from '@lib/util/phone'
@@ -202,11 +203,13 @@ export default function ContactForm() {
       <div className='flex justify-center pt-6'>
         <button
           type='submit'
-          disabled={isLoading}
-          className='inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[--primary-color] px-10 py-3 font-sans font-semibold text-base text-white transition-colors hover:bg-[--primary-color-dark] disabled:cursor-not-allowed disabled:opacity-50'
+          disabled={isLoading || success}
+          className='relative inline-flex min-h-[44px] items-center gap-2 overflow-hidden rounded-xl bg-[--primary-color] px-10 py-3 font-sans font-semibold text-base text-white transition-colors hover:bg-[--primary-color-dark] disabled:cursor-not-allowed disabled:opacity-50'
         >
-          <SendIcon />
-          {isLoading ? 'Enviando...' : 'Enviá tu consulta'}
+          <PlaneFlight isSuccess={success} successLabel='¡Enviado!'>
+            <SendIcon />
+            {isLoading ? 'Enviando...' : 'Enviá tu consulta'}
+          </PlaneFlight>
         </button>
       </div>
     </form>

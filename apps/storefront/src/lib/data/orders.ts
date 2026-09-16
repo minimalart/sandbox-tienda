@@ -97,6 +97,41 @@ export const listOrders = async (
     });
 };
 
+/** Orden que es de este cliente pero todavía no está atada a su cuenta. */
+export type ClaimableOrder = {
+  id: string;
+  display_id: number | null;
+  created_at: string | null;
+  total: number | null;
+  currency_code: string | null;
+};
+
+/**
+ * Órdenes compradas como invitado con el email de esta cuenta.
+ *
+ * Cuando alguien compra como invitado usando un email que ya tiene cuenta,
+ * Medusa cuelga la orden de un customer INVITADO con id propio, y
+ * `GET /store/orders` filtra por `customer_id` — la compra no aparece nunca en
+ * "Mis pedidos" (DESDEELSUR-61 / BUG-07). Este listado es lo que permite que la
+ * persona se entere de que la orden existe; vincularla la sigue haciendo
+ * `createTransferRequest`, el flujo de Medusa que confirma por mail.
+ *
+ * Devuelve `[]` ante cualquier error a propósito: es un bloque extra de la
+ * página de pedidos y no tiene por qué tirar abajo el listado normal.
+ */
+export const listClaimableOrders = async (): Promise<ClaimableOrder[]> => {
+  const headers = { ...(await getAuthHeaders()) };
+  if (!headers.authorization) return [];
+
+  return sdk.client
+    .fetch<{ orders: ClaimableOrder[] }>(
+      "/store/customers/me/claimable-orders",
+      { method: "GET", headers, cache: "no-store" },
+    )
+    .then((response) => response.orders ?? [])
+    .catch(() => []);
+};
+
 export const createTransferRequest = async (
   state: {
     success: boolean;

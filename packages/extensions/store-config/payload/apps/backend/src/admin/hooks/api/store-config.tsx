@@ -18,6 +18,8 @@ export interface MinimumPurchase {
   starts_at: string;
   ends_at: string | null;
   note: string | null;
+  /** `null` = fila GLOBAL, la que hereda toda tienda sin serie propia. */
+  site_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -91,6 +93,64 @@ export const useCreateMinimumPurchase = (
   });
 };
 
+/** Todos opcionales: la ruta mergea sobre la fila guardada. `ends_at: null` la deja sin fin. */
+export interface AdminUpdateMinimumPurchase {
+  id: string;
+  amount?: number;
+  currency_code?: string;
+  starts_at?: string;
+  ends_at?: string | null;
+  note?: string | null;
+}
+
+export const useUpdateMinimumPurchase = (
+  options?: UseMutationOptions<AdminMinimumPurchaseResponse, FetchError, AdminUpdateMinimumPurchase>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, ...data }: AdminUpdateMinimumPurchase) =>
+      sdk.client.fetch<AdminMinimumPurchaseResponse>(
+        `/admin/store-config/minimum-purchase/${encodeURIComponent(id)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: data,
+        }
+      ),
+    onSuccess: (data: any, variables: any, context: any) => {
+      queryClient.invalidateQueries({ queryKey: minimumPurchaseQueryKey.lists() });
+      options?.onSuccess?.(data, variables, context);
+    },
+    ...options,
+  });
+};
+
+export interface AdminDeleteMinimumPurchaseResponse {
+  id: string;
+  object: 'minimum_purchase';
+  deleted: boolean;
+}
+
+export const useDeleteMinimumPurchase = (
+  options?: UseMutationOptions<AdminDeleteMinimumPurchaseResponse, FetchError, string>
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      sdk.client.fetch<AdminDeleteMinimumPurchaseResponse>(
+        `/admin/store-config/minimum-purchase/${encodeURIComponent(id)}`,
+        { method: 'DELETE' }
+      ),
+    onSuccess: (data: any, variables: any, context: any) => {
+      queryClient.invalidateQueries({ queryKey: minimumPurchaseQueryKey.lists() });
+      options?.onSuccess?.(data, variables, context);
+    },
+    ...options,
+  });
+};
+
 // ── Store settings (toggles: multi-branch, etc.) ────────────────────────────
 
 export interface StoreSettings {
@@ -150,6 +210,7 @@ export interface SiteGateSite {
   password: string;
   /** Ruta pública donde aplica el gate (`/` o `/demo/{slug}`). */
   path: string;
+  public_url?: string;
   demo_id?: string;
 }
 

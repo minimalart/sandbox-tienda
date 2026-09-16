@@ -114,6 +114,19 @@ export type TypesenseProductDocument = {
       original_amount: number;
       currency_code: string;
     };
+    /**
+     * Overrides por sales channel (EDUCABOT-9). Presente solo si el sync
+     * encontró un `price_list_rule` con `attribute='sales_channel_id'` que
+     * aplica a esta variante. El hook `useProductPromotion` matchea por
+     * el channel activo del `ChannelContext` y prefiere este precio sobre
+     * `calculated_price` cuando corresponde.
+     */
+    channel_prices?: Array<{
+      sales_channel_id: string;
+      calculated_amount: number;
+      original_amount: number;
+      currency_code: string;
+    }>;
   }>;
   sales_channels: Array<{ id: string; name: string }>;
   promotions: Array<{

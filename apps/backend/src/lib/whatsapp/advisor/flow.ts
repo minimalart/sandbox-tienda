@@ -173,10 +173,14 @@ async function offerNoResultsExits(phone: string): Promise<boolean> {
 export async function advanceAdvisor(input: AdvisorFlowInput): Promise<boolean> {
   const { container, svc, phone, sessionId } = input;
   const siteId = input.siteId ?? null;
-  const track = (type: WaEventType, payload?: AnyRecord) =>
+  // `step` es opcional pero NO decorativo: el recorrido lo usa para decir de qué
+  // dimensión habla cada línea. Sin él en la firma, todo lo que sale por acá llega
+  // al admin sin dimensión y se renderiza vacío.
+  const track = (type: WaEventType, payload?: AnyRecord, step?: string) =>
     trackWaEvent(container, {
       phone,
       type,
+      step,
       payload: payload ?? null,
       usedAi: false,
       sessionId,
@@ -184,6 +188,17 @@ export async function advanceAdvisor(input: AdvisorFlowInput): Promise<boolean> 
     });
 
   const config = await getAdvisorConfig(container);
+  /**
+   * La compuerta va también ACÁ y no sólo en `startAdvisor`, porque hay un camino
+   * que no pasa por él: con una sesión viva y una dimensión pendiente, un simple
+   * "Hola" entra por `planGreeting` → `resume_guided` y llama a `advanceAdvisor`
+   * DIRECTO. Una sesión que alcanzó a arrancar el asesor antes de apagarlo
+   * resucitaba la pregunta con cada saludo, durante las 12 h que vive la sesión.
+   *
+   * Devolver `false` deja que el llamador siga con lo suyo: en el saludo, mandar el
+   * menú, que es lo que el cliente esperaba.
+   */
+  if (!config.enabled) return false;
   const ctx = await resolveWaOrderContext(container);
   let answers = input.answers;
 
@@ -239,7 +254,7 @@ export async function advanceAdvisor(input: AdvisorFlowInput): Promise<boolean> 
   }
 
   if (search.found === 0) {
-    track('no_results', { answers, filter_by: search.filterBy });
+    track('no_results', { reason: 'filters_empty', answers, filter_by: search.filterBy });
     await svc.patchSession(phone, { step: null, pending_dimension: null });
     return offerNoResultsExits(phone);
   }
@@ -260,7 +275,7 @@ export async function advanceAdvisor(input: AdvisorFlowInput): Promise<boolean> 
       pending_dimension: step.dimension.key,
       answers: answers as Record<string, string>,
     });
-    track('guided_answered', { asked: step.dimension.key, remaining: search.found });
+    track('guided_asked', { remaining: search.found }, step.dimension.key);
     const sent = await askDimension(phone, step.dimension, step.options);
     if (sent) return true;
     // Si no se pudo mandar la pregunta, mejor mostrar productos que cortar.
@@ -294,6 +309,15 @@ export async function startAdvisor(
   seedAnswers: AdvisorAnswers = {},
   siteId: string | null = null,
 ): Promise<boolean> {
+  // La tienda puede no tener asesor (ver `AdvisorConfig.enabled`). Se chequea ACÁ y
+  // no en cada llamador porque son TRES —el botón del menú, la tool del modelo y el
+  // nodo del grafo— y alcanza con que uno se olvide para que el cliente reciba un
+  // cuestionario de otro rubro.
+  const enabled = await getAdvisorConfig(container)
+    .then((c) => c.enabled)
+    .catch(() => true);
+  if (!enabled) return false;
+
   const resolvedSessionId = sessionId ?? (await svc.getSession(phone)).session_id;
   trackWaEvent(container, {
     phone,

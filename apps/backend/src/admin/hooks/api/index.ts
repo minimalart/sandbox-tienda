@@ -24,4 +24,6 @@ export * from './store-locations';
 export * from './typesense';
 export * from './variants';
 export * from './whatsapp-advisor';
+export * from './whatsapp-flows';
+export * from './whatsapp-sessions';
 export * from './whatsapp-conversations';

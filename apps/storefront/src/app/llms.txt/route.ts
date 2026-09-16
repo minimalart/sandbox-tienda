@@ -1,3 +1,4 @@
+import { getSitesHubRequestOrigin, listPublicSites, publicListingUrl } from "@lib/site-config/list-sites";
 import { listCategories } from "@lib/data/categories";
 import { listCollections } from "@lib/data/collections";
 import { listProductsForSeo } from "@lib/data/products";
@@ -75,6 +76,10 @@ function line(title: string, url: string, description?: string) {
 }
 
 export async function GET() {
+  const hub = await getSitesHubRequestOrigin();
+  if (hub) return new Response('# Tiendas\n\n' + (await listPublicSites()).map(site => `- [${site.name}](${publicListingUrl(site)})`).join('\n'), {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
   const baseUrl = (await getCanonicalOrigin()).replace(/\/$/, "");
   // Esta ruta está excluida del matcher del proxy, pero `getActiveSiteSlug()` tiene el
   // fallback por `Host` puesto justamente para ella (ver `active-tenant.ts`).
@@ -205,7 +210,7 @@ export async function GET() {
   return new Response(body, {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+      "Cache-Control": "no-store",
     },
   });
 }

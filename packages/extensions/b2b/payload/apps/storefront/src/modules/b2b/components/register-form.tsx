@@ -4,6 +4,7 @@ import { registerCompany } from "@lib/data/company";
 import { useArcaLookup } from "@lib/hooks/use-arca-lookup";
 import { useDemoHref } from "@lib/site-config/context";
 import { validateCuit } from "@lib/util/cuit";
+import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import FormInput from "@modules/common/components/form-input";
 import PasswordInput from "@modules/common/components/password-input";
 import TaxConditionRadios, {
@@ -237,6 +238,29 @@ export default function CompanyRegisterForm() {
           {loading ? "Procesando..." : "Crear empresa"}
         </button>
       </form>
+
+      {/*
+        Salida de la pantalla. El portal B2B no monta el header ni el
+        bottom-nav del B2C, así que sin este bloque /b2b/register era un
+        callejón sin salida: el único camino de vuelta era el botón del
+        navegador. Espeja el bloque inverso del login ("¿Tu empresa todavía no
+        está registrada?").
+      */}
+      <div className="mt-6 border-gray-100 border-t pt-4 text-center">
+        <p className="mb-2 text-gray-500 text-sm">¿Tu empresa ya está registrada?</p>
+        <LocalizedClientLink
+          href="/b2b/login"
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-[--primary-color] px-4 py-3 font-semibold text-[--primary-color] text-sm transition-colors hover:bg-[--primary-color]/5"
+        >
+          Volver al ingreso
+        </LocalizedClientLink>
+        <LocalizedClientLink
+          href="/"
+          className="mt-3 inline-flex min-h-[44px] items-center justify-center text-gray-500 text-sm underline transition-colors hover:text-gray-700"
+        >
+          Volver a la tienda
+        </LocalizedClientLink>
+      </div>
     </div>
   );
 }

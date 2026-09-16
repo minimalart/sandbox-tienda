@@ -1,3 +1,4 @@
+import { getSitesHubRequestOrigin, listPublicSites, publicListingUrl } from "@lib/site-config/list-sites";
 import { SITE_PATH_SEGMENT } from "@lib/site-config/resolve-site";
 import { isSiteGateEnabled } from "@lib/site-config/site-gate";
 import { getCanonicalOrigin, isCanonicalForm } from "@lib/util/site-url";
@@ -43,6 +44,11 @@ const PRIVATE_PATHS = [
  * `true` y el origen es `getBaseURL()`.
  */
 export default async function robots(): Promise<MetadataRoute.Robots> {
+  const hub = await getSitesHubRequestOrigin();
+  if (hub && !(await isSiteGateEnabled())) return {
+    rules: [{ userAgent: '*', allow: '/', disallow: PRIVATE_PATHS.flatMap(path => [path, `/${SITE_PATH_SEGMENT}/*${path}`]) }],
+    sitemap: `${hub}/sitemap.xml`, host: hub,
+  };
   const [canonical, isCanonical, gated] = await Promise.all([
     getCanonicalOrigin(),
     isCanonicalForm(),

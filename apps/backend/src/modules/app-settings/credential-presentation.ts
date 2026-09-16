@@ -42,8 +42,24 @@ export const isGlobalCredential = (d: SettingDescriptor): boolean =>
   ].includes(d.namespace) &&
     accountField(d));
 
+/**
+ * Inbound webhook contracts: secrets that are NOT an account.
+ *
+ * They look like account fields (`type: 'secret'`, group "Credenciales") but the
+ * credentials drawer has no room for them. Its entries are keyed by integration id,
+ * and `credentialIntegrationId('extension:whatsapp')` is already taken by the
+ * per-site Kapso account: `allEntries` dedupes by that id, so a second `kapso` entry
+ * would silently replace the first one, and `canAccess` would only ever open it in
+ * the per-site view — writing the instance-only secrets to a site row.
+ *
+ * They are read by `api/webhooks/kapso/route.ts` BEFORE the request says which site
+ * it belongs to (the GET challenge has no site at all), so they are declared
+ * `scope: 'instance'` and belong in the extension's own settings card.
+ */
+export const INBOUND_CONTRACT_KEYS = new Set(['KAPSO_WEBHOOK_SECRET', 'KAPSO_WEBHOOK_VERIFY_TOKEN']);
+
 export const isCredentialSetting = (d: SettingDescriptor): boolean =>
-  isGlobalCredential(d) || accountField(d);
+  !INBOUND_CONTRACT_KEYS.has(d.key) && (isGlobalCredential(d) || accountField(d));
 
 export const credentialIntegrationId = (namespace: string): string =>
   ({

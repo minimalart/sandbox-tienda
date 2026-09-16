@@ -10,6 +10,7 @@ import {
   useUpdateAppSettings,
 } from '../../hooks/api/app-settings';
 import { useActiveSite } from '../../hooks/use-active-site';
+import { buildSavePayload, isBlankDraft } from './save-payload';
 import { SettingField, type SettingFieldController } from './setting-field';
 import { SettingFieldSkeleton } from './setting-field-skeleton';
 import { SettingsSiteContext } from './settings-site-context';
@@ -178,7 +179,15 @@ export const ExtensionSettingsCard = ({
 
   if (descriptors.length === 0) return null;
 
-  const dirty = Object.keys(draft).length > 0 || unset.length > 0;
+  // Lo que VIAJA, no lo que se tocó: un campo opcional que quedó en blanco no
+  // viaja (y con override guardado viaja como `unset`). Ver `save-payload.ts`.
+  const payload = buildSavePayload({
+    typeOf: (key) => declared?.settings.find((d) => d.key === key)?.type,
+    isSet: (key) => stateByKey.get(key)?.is_set === true,
+    draft,
+    unset,
+  });
+  const dirty = Object.keys(payload.values).length > 0 || payload.unset.length > 0;
   // `isError` entra acá y no sólo en el `disabled` de cada input: sin baseline
   // cargado, "Guardar" mandaría un `unset`/`draft` vacíos que el backend
   // aceptaría como no-op, pero el botón quedaría habilitado sobre una card que
@@ -195,7 +204,7 @@ export const ExtensionSettingsCard = ({
 
   const onSave = async () => {
     try {
-      await save({ namespace, values: draft, unset });
+      await save({ namespace, values: payload.values, unset: payload.unset });
       setErrors({});
       toast.success('Ajustes guardados');
       onSaved?.();
@@ -229,7 +238,18 @@ export const ExtensionSettingsCard = ({
     replacingSecret: replacing.includes(key),
     error: errors[key],
     disabled,
-    onChange: (value) => setDraft((prev) => ({ ...prev, [key]: value })),
+    onChange: (value) => {
+      // Vaciar un campo que no tenía override guardado deja el borrador como
+      // estaba: no hay nada que guardar, así que tampoco "Sin guardar" ni Guardar
+      // habilitado. Con override guardado el `''` se queda en el borrador (el
+      // input tiene que verse vacío) y `buildSavePayload` lo convierte en unset.
+      const type = declared?.settings.find((d) => d.key === key)?.type;
+      if (!isSecret && !stateByKey.get(key)?.is_set && isBlankDraft(type, value)) {
+        setDraft(({ [key]: _dropped, ...rest }) => rest);
+        return;
+      }
+      setDraft((prev) => ({ ...prev, [key]: value }));
+    },
     onRestore: () => {
       setDraft(({ [key]: _dropped, ...rest }) => rest);
       setUnset((prev) => (prev.includes(key) ? prev : [...prev, key]));

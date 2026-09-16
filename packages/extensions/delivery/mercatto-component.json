@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "delivery",
   "name": "Delivery",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -244,7 +244,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/delivery/zones/conflicts/zones-map.tsx",
-      "sha256": "bd13f90c0c1d2b62730e0185a9a9269d495b75894a0d378686421f8b76a5df7b"
+      "sha256": "62cd97c4bf409db88c013517996a8b6422bf51100a0e041e1cbe3f2467e86be7"
     },
     {
       "path": "apps/backend/src/admin/routes/delivery/zones/page.tsx",
@@ -736,7 +736,7 @@
     },
     {
       "path": "apps/backend/src/workflows/transition-delivery-execution.ts",
-      "sha256": "63b282c2f55aaa6d2e9fb1a22b8e30eeda5e2b04db3af509b21d9173c2126f3f"
+      "sha256": "8902c4a9d8c9fd3b15e24cc99457d60957004265adac71dfbbee5f2979769b5c"
     },
     {
       "path": "apps/backend/src/workflows/update-route-stops.ts",
@@ -764,11 +764,15 @@
     },
     {
       "path": "apps/storefront/src/app/driver/layout.tsx",
-      "sha256": "c871584454c9a64eb19b2a8cf9a8be0f23512f96cbff23ad410b99e3c8dab09f"
+      "sha256": "614bd18edbe7035f51be2a1588cfa2aba55c94281512e902ddba34466e5199a1"
     },
     {
       "path": "apps/storefront/src/app/driver/login/page.tsx",
-      "sha256": "00a18a77ff889bf14610ceb7032f140c4565864c71af5e83e8df9e39f8847f19"
+      "sha256": "ee8748c552be540dae7b151b3c779ddbb375f434c9bc07a459dc561dea4b83d6"
+    },
+    {
+      "path": "apps/storefront/src/app/driver/manifest.webmanifest/route.ts",
+      "sha256": "04a923b796f346a1a8b1e4ad998d6112836b89672fbacf46863570ce7aa5ed7f"
     },
     {
       "path": "apps/storefront/src/app/driver/page.tsx",
@@ -777,6 +781,10 @@
     {
       "path": "apps/storefront/src/modules/driver/components/barcode-scanner.tsx",
       "sha256": "7f0424bee71cdfa2520796ada250509e8354984d9686dbd1a9b9fa49cdd8b71e"
+    },
+    {
+      "path": "apps/storefront/src/modules/driver/components/login-form.tsx",
+      "sha256": "d2792932548199fad7630c638a066989fc13b34ffd944407ca5faed8216bbe16"
     },
     {
       "path": "apps/storefront/src/modules/driver/components/photo-capture.tsx",

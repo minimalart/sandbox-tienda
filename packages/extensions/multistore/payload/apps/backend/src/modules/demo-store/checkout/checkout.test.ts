@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { CheckoutPolicySchema, resolveCheckoutPolicy, mergeCheckoutPolicy } from './policy.ts';
 import { assertCoverage, reconcileUnits, validatePeople, mapOrderUnits, cartFingerprint, PersonSchema } from './assignments.ts';
-import { effectiveFlow, cartSite } from './runtime.ts';
+import { effectiveFlow, cartSite, policyVersion } from './runtime.ts';
 
 const policy = resolveCheckoutPolicy({ recipients: { enabled: true } });
 const person = () => ({ id: randomUUID(), document: '30111222', first_name: 'Persona', last_name: 'Prueba' });
@@ -12,18 +12,22 @@ const line = (id = 'line-a', quantity = 2) => ({ id, product_id: 'product-a', va
 describe('per-site checkout policy', () => {
   it('preserves legacy defaults and explicit false with field inheritance', () => {
     assert.equal(resolveCheckoutPolicy().recipients.enabled, false);
+    // El carrusel de sugerencias arranca prendido y cada tienda puede apagarlo.
+    assert.equal(resolveCheckoutPolicy().suggestions.enabled, true);
+    assert.equal(resolveCheckoutPolicy({ suggestions: { enabled: false } }).suggestions.enabled, false);
+    assert.equal(mergeCheckoutPolicy({ suggestions: { enabled: false } }, {}).suggestions.enabled, false);
     const a = mergeCheckoutPolicy({ steps: { contact: false, payment: false } }, { steps: { address: false } });
     assert.equal(a.steps.contact, false); assert.equal(a.steps.payment, false); assert.equal(a.steps.address, false); assert.equal(a.steps.delivery, true);
     a.recipients.product_ids.push('test'); assert.deepEqual(resolveCheckoutPolicy().recipients.product_ids, []);
   });
   it('rejects null, unknown keys, HTML, invalid retention and nonboolean visibility', () => {
-    for (const value of [null, { steps: null }, { steps: { address: 'false' } }, { disable_validation: true }, { steps: { stock: false } }, { recipients: { title: '<script>' } }, { recipients: { retention_days: 0 } }]) assert.equal(CheckoutPolicySchema.safeParse(value).success, false);
+    for (const value of [null, { steps: null }, { steps: { address: 'false' } }, { disable_validation: true }, { steps: { stock: false } }, { sections: { contact: { title: '<script>' } } }, { sections: { contact: { foo: 'bar' } } }, { recipients: { retention_days: 0 } }]) assert.equal(CheckoutPolicySchema.safeParse(value).success, false);
   });
-  it('recovers mandatory information despite hidden preferences', () => {
+  it('hides configured steps and marks the flow not ready when data is missing', () => {
     const p = resolveCheckoutPolicy({ steps: { address: false, contact: false, delivery: false } });
     const flow = effectiveFlow({ items: [{ requires_shipping: true }], total: 10 }, p, true);
-    assert.equal(flow.ready, false); assert.equal(flow.blocks.find(b => b.id === 'address')?.visible, true);
-    assert.equal(flow.blocks.find(b => b.id === 'personal')?.visible, true);
+    assert.equal(flow.ready, false); assert.equal(flow.blocks.find(b => b.id === 'address')?.visible, false);
+    assert.equal(flow.blocks.find(b => b.id === 'personal')?.visible, false);
   });
   it('omits delivery for digital carts and home addresses for verified pickup', () => {
     const digital = effectiveFlow({ email: 'fixture@example.test', items: [{ requires_shipping: false }], total: 0 }, policy, true);
@@ -35,6 +39,35 @@ describe('per-site checkout policy', () => {
   });
   it('module absence is a compatible no-op', async () => {
     assert.equal(await cartSite({ resolve: () => { throw new Error('absent'); } }, {}), null);
+  });
+  it('resolves benefits default and honours explicit step overrides', () => {
+    const resolved = resolveCheckoutPolicy({ steps: { address: false } });
+    assert.equal(resolved.steps.address, false);
+    assert.equal(resolved.steps.benefits, true);
+  });
+  it('preserves sections without dropping other keys and rejects unknown section fields', () => {
+    const resolved = resolveCheckoutPolicy({ sections: { contact: { title: 'Hola' } } });
+    assert.deepEqual(resolved.sections, { contact: { title: 'Hola' } });
+    const merged = mergeCheckoutPolicy({ sections: { address: { title: 'Envío' } } }, { sections: { contact: { subtitle: 'Escribinos' } } });
+    assert.equal(merged.sections.address?.title, 'Envío');
+    assert.equal(merged.sections.contact?.subtitle, 'Escribinos');
+    assert.equal(CheckoutPolicySchema.safeParse({ sections: { contact: { unknown: 'x' } } }).success, false);
+  });
+  it('strips legacy recipients.title and recipients.help so old JSON in DB still parses', () => {
+    const legacy = { recipients: { enabled: true, title: 'Alumno', help: 'Indicá quién recibirá cada artículo.' } };
+    const parsed = CheckoutPolicySchema.safeParse(legacy);
+    assert.equal(parsed.success, true);
+    assert.equal((parsed as any).data.recipients.enabled, true);
+    assert.equal('title' in (parsed as any).data.recipients, false);
+    assert.equal('help' in (parsed as any).data.recipients, false);
+  });
+  it('policyVersion is stable across parse: legacy JSON hashes the same as its stripped form', () => {
+    // Sin parse, resolveCheckoutPolicy spreadea recipients.title/help sobre el output y el hash cambia.
+    // writePolicy dependía de eso; el bug reventaba con CHECKOUT_REVISION_CONFLICT en cada save.
+    const legacyRaw = { recipients: { enabled: true, title: 'Alumno', help: 'Indicá quién recibirá cada artículo.' } };
+    const legacyParsed = CheckoutPolicySchema.parse(legacyRaw);
+    assert.equal(policyVersion(resolveCheckoutPolicy(legacyParsed)), policyVersion(resolveCheckoutPolicy(legacyParsed)));
+    assert.notEqual(policyVersion(resolveCheckoutPolicy(legacyRaw as any)), policyVersion(resolveCheckoutPolicy(legacyParsed)));
   });
 });
 describe('recipient unit identity', () => {
@@ -76,7 +109,12 @@ describe('recipient unit identity', () => {
     // completeCartFields projects customer.* and region.* instead of their FK fields.
     assert.equal(cartFingerprint({ ...cart, customer_id: 'customer-a', region_id: 'region-a' }), cartFingerprint({ ...cart, customer: { id: 'customer-a' }, region: { id: 'region-a' } }));
     assert.notEqual(cartFingerprint({ ...cart, shipping_methods: [{ shipping_option_id: 'pickup', amount: 0, data: { branch_id: 'a' } }] }), cartFingerprint({ ...cart, shipping_methods: [{ shipping_option_id: 'pickup', amount: 0, data: { branch_id: 'b' } }] }));
-    assert.notEqual(cartFingerprint(cart), cartFingerprint({ ...cart, total: 11 }));
+    // `total` NO entra en el fingerprint a proposito (ver cartFingerprintComponents):
+    // q.graph y el cart refrescado por completeCartWorkflow divergen en ese campo y
+    // daban CHECKOUT_REVISION_CONFLICT falsos al finalizar. El precio se protege por
+    // items[unit_price] + shipping_methods[amount] + assertPaymentMatchesCart.
+    assert.equal(cartFingerprint(cart), cartFingerprint({ ...cart, total: 11 }));
+    assert.notEqual(cartFingerprint(cart), cartFingerprint({ ...cart, items: [{ ...line(), unit_price: 999 }] }));
     assert.notEqual(cartFingerprint(cart), cartFingerprint({ ...cart, items: [line('line-a', 3)] }));
   });
   it('selected products only and disabled capability leave other units untouched', () => {

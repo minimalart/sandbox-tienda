@@ -388,7 +388,7 @@ function ShippingAddressNewFormImpl({
           autoComplete="address-line2"
           data-testid="shipping-company-input"
           id="s-company"
-          label="Depto / Piso"
+          label="Depto / Piso / Lote"
           name="shipping_address.company"
           onChange={handleChange}
           placeholder="Ej: 3B"

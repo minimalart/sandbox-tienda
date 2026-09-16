@@ -17,6 +17,7 @@ import { getRegion } from "@lib/data/regions";
  * drop-in replacement de `getTenant()` justamente para esto, y cae a `getTenant()` solo si
  * la fila no está.
  */
+import { usesQuickViewOnly } from "@lib/site-config/template-helpers";
 import { getActiveTenant } from "@lib/site-config/active-tenant";
 import { canonicalUrl } from "@lib/util/site-url";
 import {
@@ -50,7 +51,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     getActiveTenant(),
   ]);
 
-  if (!product) {
+  if (!product || usesQuickViewOnly(tenant.template)) {
     notFound();
   }
 
@@ -119,7 +120,7 @@ export default async function ProductPage(props: Props) {
     getActiveTenant(),
   ]);
 
-  if (!product) {
+  if (!product || usesQuickViewOnly(tenant.template)) {
     notFound();
   }
 

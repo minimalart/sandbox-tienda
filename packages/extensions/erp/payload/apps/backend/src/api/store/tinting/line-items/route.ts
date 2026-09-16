@@ -8,7 +8,11 @@ import {
   TintingQuoteError,
 } from '../../../../modules/erp/tinting/quote';
 import type { ErpConfigSettings } from '../../../../modules/erp/types';
-import { buildTintMetadata, tintLineSubtitle } from '../../../../modules/erp/tinting/line-metadata';
+import {
+  buildTintMetadata,
+  tintLineSubtitle,
+  tintLineTitle,
+} from '../../../../modules/erp/tinting/line-metadata';
 import { loadCartContext, loadVariantInfo } from '../context';
 import type { PostStoreTintingLineItemType } from '../validators';
 
@@ -82,6 +86,13 @@ export async function POST(
             variant_id: variant.variant_id,
             quantity: body.quantity,
             unit_price: quote.unit_price,
+            // El color va en el TÍTULO de la línea, no sólo en `subtitle` y en
+            // `metadata.tint`: el resumen de orden del admin no renderiza
+            // ninguno de los dos, así que el operador tenía que bajar hasta la
+            // última tarjeta de la página para saber qué color preparar. Ver
+            // `tintLineTitle` para el detalle y para qué consumidores tienen
+            // que seguir leyendo `product_title`.
+            title: tintLineTitle(variant.product_title, selection),
             subtitle: tintLineSubtitle(selection),
             metadata: buildTintMetadata({
               selection,

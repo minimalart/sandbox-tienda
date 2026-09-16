@@ -6,6 +6,12 @@ import {
   type AdvisorDimension,
 } from '../../../../modules/typesense/advisor';
 import { getAdvisorConfig } from '../../../../lib/whatsapp/advisor/config';
+import {
+  TECHNICAL_DIMENSIONS,
+  TECHNICAL_SCOPE_LABEL,
+  familyIsMapped,
+  inTechnicalScope,
+} from './_scope';
 
 import { siteFromRequest } from '../../../../lib/multistore/request';
 
@@ -52,6 +58,13 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const counts: Record<AdvisorDimension, Record<string, number>> = {
     surface: {}, product_type: {}, environment: {}, special_use: {}, base: {},
   };
+  /**
+   * Denominador y huecos POR DIMENSIÓN: las técnicas sólo cuentan los productos
+   * a los que la pregunta les llegaría (ver `TECHNICAL_DIMENSIONS`).
+   */
+  const scoped = Object.fromEntries(
+    ADVISOR_DIMENSIONS.map((dim) => [dim, { denominator: 0, unknown: 0 }]),
+  ) as Record<AdvisorDimension, { denominator: number; unknown: number }>;
   /** Categorías/familias que NINGUNA regla toca, con cuántos productos arrastran. */
   const unmappedCategories = new Map<string, { count: number; name: string }>();
   const unmappedFamilies = new Map<string, number>();
@@ -85,6 +98,8 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
 
       const attributes = classifyProduct(product, rules);
       if (attributes) {
+        const technical = inTechnicalScope(attributes.advisor_product_type);
+
         for (const dim of ADVISOR_DIMENSIONS) {
           const values = attributes[`advisor_${dim}` as keyof typeof attributes];
           if (values.length === 0) {
@@ -92,11 +107,20 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
           }
           for (const value of values) {
             counts[dim][value] = (counts[dim][value] ?? 0) + 1;
-            if (value === rules.unknown_value && sampleLimit > 0) {
-              const key = `${dim}:${value}`;
-              const list = (samples[key] ??= []);
-              if (list.length < sampleLimit) list.push(String(product.title ?? product.id));
-            }
+          }
+
+          // Fuera de alcance: no suma al denominador ni aporta ejemplos. Un
+          // "Abre balde plástico" en los samples de `environment:unknown` manda
+          // a buscar una regla que no hay que escribir.
+          if (TECHNICAL_DIMENSIONS.has(dim) && !technical) continue;
+
+          scoped[dim].denominator++;
+          const isHole = values.length === 0 || values.includes(rules.unknown_value);
+          if (!isHole) continue;
+          scoped[dim].unknown++;
+          if (sampleLimit > 0) {
+            const list = (samples[`${dim}:${rules.unknown_value}`] ??= []);
+            if (list.length < sampleLimit) list.push(String(product.title ?? product.id));
           }
         }
       }
@@ -120,9 +144,9 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       }
       const family = product.metadata?.family ?? product.metadata?.zeus_familia;
       if (typeof family === 'string' && family) {
-        const folded = family.toLowerCase();
-        const mapped = Object.keys(rules.by_family).some((key) => folded.startsWith(key.toLowerCase()));
-        if (!mapped) unmappedFamilies.set(family, (unmappedFamilies.get(family) ?? 0) + 1);
+        if (!familyIsMapped(family, rules.by_family)) {
+          unmappedFamilies.set(family, (unmappedFamilies.get(family) ?? 0) + 1);
+        }
       }
     }
 
@@ -134,6 +158,9 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
    * sin clasificar es un hueco. `special_use` NO entra — vacío significa "sin uso
    * especial", así que medirlo como cobertura daría un 2% alarmante y falso; para
    * esa dimensión se informa cuántos productos tienen alguno.
+   *
+   * Cada fila lleva su `denominator`, y las técnicas además el `scope` que lo
+   * acota: el porcentaje de una dimensión no se puede leer contra `total`.
    */
   const coverage = Object.fromEntries(
     ADVISOR_DIMENSIONS.map((dim) => {
@@ -141,11 +168,18 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
         const assigned = total - (counts[dim]['(vacío)'] ?? 0);
         return [dim, { measured: false, assigned, note: 'vacío = no aplica, no es un hueco' }];
       }
-      const unknown = (counts[dim][rules.unknown_value] ?? 0) + (counts[dim]['(vacío)'] ?? 0);
-      const known = total - unknown;
+      const { denominator, unknown } = scoped[dim];
+      const known = denominator - unknown;
       return [
         dim,
-        { measured: true, known, unknown, percent: total ? Math.round((known / total) * 1000) / 10 : 0 },
+        {
+          measured: true,
+          known,
+          unknown,
+          percent: denominator ? Math.round((known / denominator) * 1000) / 10 : 0,
+          denominator,
+          ...(TECHNICAL_DIMENSIONS.has(dim) ? { scope: TECHNICAL_SCOPE_LABEL } : {}),
+        },
       ];
     }),
   );

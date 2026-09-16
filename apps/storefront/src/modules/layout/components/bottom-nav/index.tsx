@@ -27,8 +27,12 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ShoppingCart } from "lucide-react";
 import { resolveNavIcon } from "./nav-icon";
-import { pickMobileNavSlot, resolveMobileNavOrder } from "./slots";
-import type { MobileNavSlotId } from "@lib/site-config/types";
+import {
+  pickMobileNavSlot,
+  resolveMobileNavDisplay,
+  resolveMobileNavOrder,
+} from "./slots";
+import type { MobileNavDisplay, MobileNavSlotId } from "@lib/site-config/types";
 
 type BottomNavItem = {
   id: string;
@@ -36,6 +40,12 @@ type BottomNavItem = {
   Icon: ComponentType<SVGProps<SVGSVGElement>> | string;
   href?: string;
   action?: "menu" | "cart";
+  /**
+   * Sólo el ítem flexible: 'text' dibuja el label sin ícono. Los cuatro fijos
+   * son siempre ícono — home y carrito son círculos y el menú es la
+   * hamburguesa, así que no hay nada que elegir ahí.
+   */
+  display?: MobileNavDisplay;
 };
 
 /**
@@ -115,6 +125,7 @@ const BottomNav = ({
     isSucursalesVisible,
     isTintingHidden,
     mobileNav,
+    mobileNavDisplay,
   } = useTenantSections();
   // Sin promociones activas en el canal, "Promos" no se ofrece: la PLP filtrada
   // saldría vacía. Antes eso dejaba la barra en 4 columnas con el carrito
@@ -152,6 +163,7 @@ const BottomNav = ({
       label: flexSlotId === "blog" ? blogSectionName || slot.label : slot.label,
       href: slot.href,
       Icon: slot.Icon,
+      display: resolveMobileNavDisplay(mobileNavDisplay, flexSlotId),
     });
   }
 
@@ -236,6 +248,9 @@ const BottomNav = ({
             pendingId === item.id ||
             (pendingId === null && isItemActive(item));
           const isHome = item.id === "home";
+          // Sólo el ítem flexible puede venir en modo texto; los fijos no traen
+          // `display`.
+          const textOnly = item.display === "text";
           const isCart = item.id === "cart";
           const baseClasses = classNames(
             "relative inline-flex h-full flex-col items-center gap-1 text-xs transition-transform duration-150 ease-out",
@@ -320,13 +335,19 @@ const BottomNav = ({
                     : undefined
                 }
               >
-                {iconNode}
+                {/*
+                  `display: 'text'` (elegido por tienda en la ficha) dibuja sólo
+                  el label: sin el ícono la celda queda vacía arriba, así que el
+                  texto sube un punto y se centra en toda la altura de la píldora.
+                */}
+                {textOnly ? null : iconNode}
                 {item.label && (
                   <span
                     className={classNames(
                       // `max-w` + truncate: el label del lugar flexible puede ser
                       // el nombre del blog de la tienda, que es texto libre.
-                      "max-w-[64px] truncate text-[10px] leading-tight",
+                      "max-w-[64px] truncate leading-tight",
+                      textOnly ? "text-[11px]" : "text-[10px]",
                       active ? "font-semibold" : "font-medium"
                     )}
                   >

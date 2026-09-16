@@ -45,6 +45,7 @@ import { buildSystemPrompt } from './prompt';
 import { analysisPreset, whatsappPreset } from './presets';
 import { EventBus, type ClassifiedToolCall, type RunEventSink } from './run-events';
 import type { RunStatus } from './tracing';
+import { WORKFLOW_RESULT_INSTRUCTIONS, blockedResult, parseWorkflowResult, validateWorkflowResult, type ResultContract } from './workflow-result';
 import {
   buildToolsForModel,
   effectiveMemoryTypes,
@@ -66,6 +67,7 @@ import type {
 
 /** Lo que hay que decidir para correr un turno sin hilo. */
 type StatelessTurn = {
+  workflow?: { contract?: ResultContract };
   store: AiStore;
   llm: ModelProvider;
   toolRt: ToolRuntime;
@@ -116,6 +118,14 @@ async function runStatelessTurn(t: StatelessTurn): Promise<string> {
   const capability = t.capability;
   let finalStatus: RunStatus = 'complete';
   let errorMsg: string | undefined;
+  const finish = (text: string): string => {
+    if (!t.workflow) return text;
+    const result = validateWorkflowResult(parseWorkflowResult(text), t.workflow.contract);
+    if (result.ok) return '<result>' + JSON.stringify(result.data) + '</result>';
+    finalStatus = result.block.code === 'permissions_blocked' ? 'needs_approval' : 'error';
+    errorMsg = result.block.reason;
+    return '<result>' + JSON.stringify(result.block) + '</result>';
+  };
 
   const hooks = t.hooks;
   const hookAgent: HookAgent = { key: agent.key, model: t.model, maxTokens: t.maxTokens };
@@ -126,7 +136,7 @@ async function runStatelessTurn(t: StatelessTurn): Promise<string> {
       const stepCtx = { run: bus.meta, step, maxSteps: t.maxSteps, agent: hookAgent };
       if (hooks.beforeStep) {
         const decision = await hooks.beforeStep(stepCtx);
-        if (decision?.stop) return decision.message ?? '';
+        if (decision?.stop) return finish(decision.message ?? '');
       }
       await bus.emit({ type: 'step_started', at: Date.now(), idx: step, agentKey: agent.key });
       let request: ChatRequest = {
@@ -173,7 +183,7 @@ async function runStatelessTurn(t: StatelessTurn): Promise<string> {
           agentKey: agent.key,
           outcome: 'answered',
         });
-        return assistant.content ?? '';
+        return finish(assistant.content ?? '');
       }
 
       await bus.emit({
@@ -185,6 +195,7 @@ async function runStatelessTurn(t: StatelessTurn): Promise<string> {
         status: 'complete',
       });
 
+      const policyTools = await toolRt.discover(store);
       for (const tc of assistant.tool_calls) {
         const args = safeParseArgs(tc.function.arguments);
         const action = actionFromArgs(args);
@@ -194,7 +205,7 @@ async function runStatelessTurn(t: StatelessTurn): Promise<string> {
         const mode =
           !scope || !comboAllowed(scope, action, resource || null)
             ? ('prohibited' as const)
-            : resolveMode(tc.function.name, action, resource, overrides);
+            : resolveMode(tc.function.name, action, resource, overrides, policyTools.find(t => t.definition.name === tc.function.name)?.policyHints);
         const call: ClassifiedToolCall = {
           id: tc.id,
           name: tc.function.name,
@@ -235,7 +246,14 @@ async function runStatelessTurn(t: StatelessTurn): Promise<string> {
           text = await execTool(store, toolRt, tc.function.name, call.args, t.nativeCtx);
         } else {
           executed = false;
-          text = t.refusal;
+          const cause = !scope || !comboAllowed(scope, action, resource || null)
+            ? 'El perfil del agente no permite esta herramienta o acción.'
+            : mode === 'prohibited' ? 'La política del administrador prohíbe esta acción.'
+            : mode === 'ask' ? 'La política requiere confirmación humana y el workflow automático no puede concederla.'
+            : 'La herramienta está deshabilitada en este modo de análisis.';
+          text = t.workflow
+            ? 'Bloqueado por permisos: ' + tc.function.name + '. ' + cause
+            : t.refusal + ' Causa: ' + cause;
         }
         if (hooks.afterToolExecute) {
           const patch = await hooks.afterToolExecute({
@@ -267,6 +285,9 @@ async function runStatelessTurn(t: StatelessTurn): Promise<string> {
                 text,
               },
         );
+        if (!executed && t.workflow) {
+          return finish('<result>' + JSON.stringify(blockedResult('permissions_blocked', text)) + '</result>');
+        }
       }
       await bus.emit({
         type: 'step_completed',
@@ -309,7 +330,7 @@ async function runStatelessTurn(t: StatelessTurn): Promise<string> {
       completionTokens: closing.usage?.completion_tokens,
       finishReason: closing.finish_reason,
     });
-    return closing.content ?? '';
+    return finish(closing.content ?? '');
   } catch (e) {
     finalStatus = 'error';
     errorMsg = (e as Error).message;
@@ -357,6 +378,7 @@ async function seedMemory(
  * `generate-proposals` y los subagentes del motor de workflows.
  */
 export async function runHeadlessAnalysis(opts: {
+  workflowContract?: ResultContract;
   store: AiStore;
   agentKey: string;
   task: string;
@@ -394,7 +416,8 @@ export async function runHeadlessAnalysis(opts: {
   // menos las prohibidas globalmente) y no sólo su allow-list de chat: así puede
   // proponer crear promos, ajustar precios, reponer inventario. Las escrituras no
   // se ejecutan acá.
-  const tools = await buildToolsForModel(store, toolRt, overrides, null, [], {
+  const allowedTools = opts.activityContext ? agent.allowedTools : null;
+  const tools = await buildToolsForModel(store, toolRt, overrides, allowedTools, [], {
     search: Boolean(memory?.enabled),
   });
   const memoryTexts = await seedMemory(store, agent, task, memory, injectedIds);
@@ -406,7 +429,7 @@ export async function runHeadlessAnalysis(opts: {
         instructions: agent.instructions,
         skillTexts: agent.skillTexts,
         memoryTexts,
-      }),
+      }) + (opts.activityContext ? '\n\n' + WORKFLOW_RESULT_INSTRUCTIONS + '\nContrato de campos requeridos: ' + JSON.stringify(opts.workflowContract ?? {}) : ''),
     },
     { role: 'user', content: await userContent(task, opts.attachments) },
   ];
@@ -429,6 +452,7 @@ export async function runHeadlessAnalysis(opts: {
     overrides,
     agent,
     bus: preset.bus,
+    workflow: opts.activityContext ? { contract: opts.workflowContract } : undefined,
     messages,
     tools,
     model: effModel,
@@ -438,9 +462,9 @@ export async function runHeadlessAnalysis(opts: {
     memory,
     nativeCtx: opts.nativeCtx,
     injectedIds,
-    // Coherente con el `null` que se le pasó a `buildToolsForModel`: el analista
-    // ve y puede correr toda la superficie de lectura, no sólo su allow-list de chat.
-    capability: { allow: null },
+    // Los workflows respetan el perfil configurado; el análisis proactivo conserva
+    // su superficie completa para preparar propuestas.
+    capability: { allow: allowedTools },
     hooks: opts.hooks ?? NO_HOOKS,
     refusal:
       'No ejecutado (modo análisis headless): esta acción requiere confirmación humana. Proponela en un bloque <proposal> en vez de ejecutarla.',
@@ -449,7 +473,7 @@ export async function runHeadlessAnalysis(opts: {
     // pide su tarea; el <proposal> es SÓLO del análisis proactivo (si se colara en
     // un workflow, ensuciaría el chat con JSON crudo).
     closing: opts.activityContext
-      ? 'Cerrá ahora sin más tool calls: escribí SOLO 1 oración breve de lo que hiciste y después el bloque final OBLIGATORIO <result>{…}</result> con los datos que te pidió tu tarea. NO uses bloques <proposal>.'
+      ? WORKFLOW_RESULT_INSTRUCTIONS
       : 'Cerrá ahora: con lo que ya juntaste, devolvé las propuestas en bloques <proposal>…</proposal> sin más tool calls.',
   });
 }

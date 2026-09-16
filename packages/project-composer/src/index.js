@@ -229,6 +229,33 @@ function writeExtensionIntegrationFiles(targetRoot, selection) {
     renderWhatsappFloatingSlot(ids)
   );
   writeSpaceDesignerIntegrationFiles(targetRoot, ids);
+  writeMarketplacesIntegrationFiles(targetRoot, ids);
+}
+
+function writeMarketplacesIntegrationFiles(targetRoot, ids) {
+  if (ids.includes('marketplaces')) return;
+  const source = path.resolve(targetRoot, 'packages/plugins/plugin-marketplaces');
+  if (!isInside(targetRoot, source) || source === path.resolve(targetRoot)) throw new Error('Unsafe marketplace plugin path');
+  fs.rmSync(source, { recursive: true, force: true });
+  const manifestPath = path.join(targetRoot, 'apps/backend/package.json');
+  const manifest = readJson(manifestPath);
+  delete manifest.dependencies['@minimalart/mercatto-plugin-marketplaces'];
+  writeJson(manifestPath, manifest);
+  const lockPath = path.join(targetRoot, 'apps/backend/package-lock.json');
+  if (fs.existsSync(lockPath)) {
+    const lock = readJson(lockPath);
+    delete lock.packages?.['']?.dependencies?.['@minimalart/mercatto-plugin-marketplaces'];
+    delete lock.packages?.['node_modules/@minimalart/mercatto-plugin-marketplaces'];
+    delete lock.packages?.['../../packages/plugins/plugin-marketplaces'];
+    writeJson(lockPath, lock);
+  }
+  const pnpmPath=path.join(targetRoot,'pnpm-lock.yaml');
+  if(fs.existsSync(pnpmPath)) {
+    let lock=fs.readFileSync(pnpmPath,'utf8');
+    lock=lock.replace(/^  packages\/plugins\/plugin-marketplaces:\r?\n[\s\S]*?(?=^  \S|^\S)/m,'');
+    lock=lock.replace(/^      ['"]?@minimalart\/mercatto-plugin-marketplaces['"]?:\r?\n(?:^        .*\r?\n)+/gm,'');
+    fs.writeFileSync(pnpmPath,lock);
+  }
 }
 
 function writeSpaceDesignerIntegrationFiles(targetRoot, ids) {
@@ -564,4 +591,4 @@ async function composeProject({ sourceRoot, output, manifest, allowDirty = false
   }
 }
 
-module.exports = { assertRelativeImportsResolve, composeProject, derivePorts, isInside, validateBlueprint, writeSpaceDesignerIntegrationFiles };
+module.exports = { assertRelativeImportsResolve, composeProject, derivePorts, isInside, validateBlueprint, writeSpaceDesignerIntegrationFiles, writeMarketplacesIntegrationFiles };

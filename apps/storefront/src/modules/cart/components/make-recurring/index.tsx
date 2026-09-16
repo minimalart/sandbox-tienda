@@ -180,8 +180,8 @@ export default function MakeRecurring({
 
       <Dialog className='relative z-50' onClose={close} open={open}>
         <DialogBackdrop className='fixed inset-0 bg-black/30 transition-opacity' />
-        <div className='fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4'>
-          <DialogPanel className='w-full max-w-md rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl'>
+        <div className='fixed inset-0 z-50 flex cursor-modal-close items-end justify-center sm:items-center sm:p-4'>
+          <DialogPanel className='cursor-auto w-full max-w-md rounded-t-2xl bg-white p-6 shadow-xl sm:rounded-2xl'>
             {done ? (
               <div className='flex flex-col items-center gap-3 text-center'>
                 <span className='flex h-12 w-12 items-center justify-center rounded-full bg-[--mc-green-soft]'>

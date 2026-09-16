@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { type DemoStore, useDeleteDemoStore, useRetryDemoStoreImport } from '../../../hooks/api';
-import { useStorefrontBase } from '../../../hooks/use-storefront-base';
-import { buildPublicUrlFrom, SITE_HOST_SUFFIX } from '../lib';
+import { useStorefrontOrigins } from '../../../hooks/use-storefront-base';
+import { buildPublicUrlFrom } from '../lib';
 import { DemoStoreEdit } from './demo-store-edit';
 
 export const DemoStoreActions = ({ demo }: { demo: DemoStore }) => {
@@ -13,7 +13,7 @@ export const DemoStoreActions = ({ demo }: { demo: DemoStore }) => {
   const navigate = useNavigate();
   const prompt = usePrompt();
   const [editOpen, setEditOpen] = useState(false);
-  const storefrontBase = useStorefrontBase();
+  const { base: storefrontBase, sitesBase, hostSuffix } = useStorefrontOrigins();
 
   const { mutateAsync: deleteDemo } = useDeleteDemoStore(demo.id, {
     onSuccess: () => toast.success(t('DELETE_SUCCESS')),
@@ -90,7 +90,7 @@ export const DemoStoreActions = ({ demo }: { demo: DemoStore }) => {
                 window.open(
                   buildPublicUrlFrom(demo, {
                     baseUrl: storefrontBase,
-                    hostSuffix: SITE_HOST_SUFFIX,
+                    sitesBaseUrl: sitesBase, hostSuffix,
                   }),
                   '_blank',
                 )

@@ -2,6 +2,7 @@ import type { SubscriberArgs, SubscriberConfig } from '@medusajs/framework';
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import type { INotificationModuleService, Logger } from '@medusajs/framework/types';
 import { getAdminNotificationEmail } from '../modules/email/admin-recipient';
+import { buildPickupContext } from '../modules/email/pickup-context';
 
 type OrderAddress = {
   first_name?: string | null;
@@ -18,7 +19,21 @@ type OrderAddress = {
 
 type OrderItem = {
   id: string;
+  /**
+   * Se pide SÓLO para el retiro en tienda: es el eje para llegar al inventario
+   * (variante → inventory item → nivel por ubicación) y así decirle al operador
+   * cuánto hay de esta línea EN LA SUCURSAL que eligió el comprador.
+   */
+  variant_id?: string | null;
   title?: string | null;
+  /**
+   * Titulo del PRODUCTO, sin el color. En las lineas entonadas `title` lleva el
+   * color pegado — lo escribe `POST /store/tinting/line-items` para que se vea
+   * en el resumen de orden del admin, que no renderiza ni `subtitle` ni la
+   * metadata. Las plantillas ya pintan el color por su cuenta con
+   * `color_label`, asi que aca se usa este para no decirlo dos veces.
+   */
+  product_title?: string | null;
   variant_title?: string | null;
   /**
    * OJO: `quantity` NO es una columna de la linea. Es del DETALLE VERSIONADO
@@ -32,6 +47,8 @@ type OrderItem = {
   thumbnail?: string | null;
   /** El detalle versionado crudo. Se lee como respaldo de `quantity`. */
   detail?: { quantity?: number | null; total?: number | null } | null;
+  /** Metadata de la LINEA. De aca sale `tint` (el color entonado). */
+  metadata?: Record<string, unknown> | null;
 };
 
 type OrderGraphResult = {
@@ -51,7 +68,12 @@ type OrderGraphResult = {
   shipping_address?: OrderAddress;
   billing_address?: OrderAddress;
   items?: OrderItem[];
-  shipping_methods?: { name?: string | null }[];
+  /**
+   * `data` viaja además del nombre porque ahí vive `store_id`: es el respaldo de
+   * `metadata.store_id` para saber qué sucursal eligió el comprador cuando la
+   * orden es de retiro en tienda. Ver `modules/email/pickup-context.ts`.
+   */
+  shipping_methods?: { name?: string | null; data?: Record<string, unknown> | null }[];
 };
 
 /**
@@ -89,12 +111,68 @@ export function quantityOf(item: {
  * Una linea del mail. Se exporta para poder testear la aritmetica sin levantar el
  * contenedor: es el punto exacto donde una cantidad en 0 se volvia un precio en $0.
  */
+/**
+ * El color entonado de la linea, si la tiene.
+ *
+ * Se lee a mano en vez de importar `readTintMetadata` del modulo `erp` A
+ * PROPOSITO: este subscriber lo posee la extension `email-templates`, y una
+ * instalacion puede tener los mails sin el ERP. Un import cruzado dejaria el
+ * backend sin bootear en esa combinacion. Son ocho lineas duplicadas contra un
+ * acople entre extensiones — y la lectura es tolerante justamente porque el
+ * objeto viene de ordenes viejas, no de nosotros.
+ *
+ * Contrato de `metadata.tint` (lo escribe `POST /store/tinting/line-items`):
+ * `{ version, cod_base, cod_formula, color_code, color_name, collection,
+ * color_hex, lista, quoted_unit_price }`.
+ */
+export function tintOfItem(item: OrderItem): {
+  color_name: string;
+  color_code: string;
+  color_hex: string | null;
+  color_label: string;
+} | null {
+  const tint = item.metadata?.tint as Record<string, unknown> | undefined;
+  if (!tint || typeof tint !== 'object') return null;
+  const name = typeof tint.color_name === 'string' ? tint.color_name : '';
+  const code = typeof tint.color_code === 'string' ? tint.color_code : '';
+  if (!name && !code) return null;
+  const label = name || code;
+  const suffix = code && label !== code ? ` (${code})` : '';
+  return {
+    color_name: name,
+    color_code: code,
+    // Sin hex conocido va `null`: la plantilla dibuja un gris neutro. Inventar
+    // un color seria mostrarle al comprador una pintura que no es la que recibe.
+    //
+    // Se valida la FORMA y no solo el tipo porque este valor termina dentro de
+    // un atributo `style` del HTML del mail. Handlebars escapa, pero un hex que
+    // no es un hex tampoco pinta nada util.
+    color_hex: typeof tint.color_hex === 'string' && /^#[0-9A-Fa-f]{6}$/.test(tint.color_hex)
+      ? tint.color_hex
+      : null,
+    color_label: `${label}${suffix}`,
+  };
+}
+
 export function mapOrderItem(item: OrderItem) {
   const quantity = quantityOf(item);
   const unitPrice = Number(item.unit_price) || 0;
+  const tint = tintOfItem(item);
   return {
-    title: item.title ?? undefined,
+    // Entonada va el titulo LIMPIO: el color lo pinta la plantilla aparte, con
+    // `color_label`. Sin entonar el valor es exactamente el de antes.
+    title: (tint ? item.product_title : null) ?? item.title ?? undefined,
     variant_title: item.variant_title ?? undefined,
+    /**
+     * `color_label` es el unico campo que las plantillas necesitan mirar: viene
+     * ya armado ("Brisa Chic (82YR 83/056)") y ausente cuando la linea no va
+     * entonada, asi que un `{{#if}}` alcanza. Los sueltos quedan para quien
+     * quiera maquetar distinto.
+     */
+    color_label: tint?.color_label,
+    color_name: tint?.color_name || undefined,
+    color_code: tint?.color_code || undefined,
+    color_hex: tint?.color_hex ?? undefined,
     quantity,
     unit_price: unitPrice,
     unit_price_formatted: formatMoney(item.unit_price),
@@ -212,9 +290,19 @@ export default async function handleOrderPlacedEmail({
         'billing_address.*',
         'items.id',
         'items.title',
+        // Sin esto el mail de una linea entonada diria el color DOS VECES: una
+        // pegada al titulo y otra en el chip de `color_label`.
+        'items.product_title',
         'items.variant_title',
         'items.unit_price',
         'items.thumbnail',
+        /**
+         * El color entonado vive en `metadata.tint` de la LINEA, y sin pedirlo
+         * explicitamente `query.graph` no lo trae: el mail salia con la pintura
+         * y el recargo de entonado cobrado, pero sin decir nunca de que color.
+         * Mismo campo que ya pide el outbox del ERP para armar la venta.
+         */
+        'items.metadata',
         /**
          * `items.detail.*` ES EL ARREGLO, y sin esto el mail sale con "0 x $precio"
          * y TOTAL $0 en todas las lineas.
@@ -245,7 +333,13 @@ export default async function handleOrderPlacedEmail({
          * mapeo de `orderItems` lo usa si esta y si no multiplica precio por cantidad.
          */
         'items.detail.quantity',
+        // Retiro en tienda. `items.variant_id` es el eje hacia el inventario y
+        // `shipping_methods.data` el respaldo de `metadata.store_id`: el
+        // storefront escribe la sucursal en la metadata del carrito, pero una
+        // orden vieja (o creada por otra vía) puede tenerla sólo en el método.
+        'items.variant_id',
         'shipping_methods.name',
+        'shipping_methods.data',
       ],
       filters: { id: orderId },
     })) as { data: OrderGraphResult[] };
@@ -313,8 +407,43 @@ export default async function handleOrderPlacedEmail({
   const shippingDisplay =
     Number(order.shipping_total) > 0 ? `$ ${formatMoney(order.shipping_total)}` : 'Gratis';
 
+  /**
+   * Contexto de retiro en tienda. `null` para una orden de envío a domicilio, y
+   * entonces ninguna de las dos plantillas dibuja nada nuevo.
+   *
+   * Se pide UNA sola vez con `withStock` aunque el mail del cliente no use el
+   * inventario: la consulta es la misma para los dos y repetirla sería pagar dos
+   * veces por la misma respuesta. El reparto se hace abajo — `pickup_items` es
+   * información OPERATIVA y no viaja al comprador.
+   *
+   * Nunca lanza (ver pickup-context.ts): si la sucursal no se puede leer, el
+   * aviso de las 24 h sale igual y lo único que falta es el nombre del local.
+   */
+  const pickup = await buildPickupContext(container, order, { withStock: true });
+  if (pickup?.pickup_has_stock_issues) {
+    logger.info(
+      `[Order Email] Orden ${order.id} de retiro en ${pickup.pickup_store?.name ?? 'sucursal desconocida'}: hay líneas sin stock suficiente en esa sucursal.`,
+    );
+  }
+
   // Datos compartidos por ambas plantillas (usuario y admin).
   const sharedData = {
+    /**
+     * El aviso de las 24 h y el nombre del local: los ve el cliente Y el operador.
+     *
+     * Las dos van SIEMPRE, con valor real, y no sólo cuando hay retiro. La
+     * pantalla de análisis de envíos (`admin/email-templates/[id]/sends`) marca
+     * como FALTANTE toda variable declarada que no viaja en el payload, así que
+     * emitirlas condicionalmente pintaría en rojo todos los mails de envío a
+     * domicilio por dos datos que esos mails no necesitan.
+     *
+     * `false` y `null` no son lo mismo para esa pantalla y acá eso juega a favor:
+     * `is_store_pickup: false` se lee `ok` (es una respuesta) y `pickup_store:
+     * null` se lee `vacío` (no hay sucursal porque no hay retiro), que es
+     * exactamente lo que pasó. Ninguna de las dos es una alarma.
+     */
+    is_store_pickup: Boolean(pickup),
+    pickup_store: pickup?.pickup_store ?? null,
     order_id: order.id,
     sales_channel_id: order.sales_channel_id ?? undefined,
     display_id: order.display_id ?? undefined,
@@ -377,7 +506,18 @@ export default async function handleOrderPlacedEmail({
         to: adminEmail,
         channel: 'email',
         template: 'order-notification-admin',
-        data: { ...sharedData, recipient_type: 'creator' },
+        data: {
+          ...sharedData,
+          recipient_type: 'creator',
+          // SÓLO al buzón interno. Es la disponibilidad real de cada línea en la
+          // sucursal elegida: le sirve al operador para saber si puede preparar
+          // el pedido, y mandársela al comprador sería contarle el inventario.
+          // Mismo criterio que arriba: valor real siempre. Array vacío y `false`
+          // dicen "no hay retiro", que es una respuesta; ausentes dirían "falta
+          // un dato", que es una alarma falsa en toda venta a domicilio.
+          pickup_items: pickup?.pickup_items ?? [],
+          pickup_has_stock_issues: Boolean(pickup?.pickup_has_stock_issues),
+        },
       });
     } catch (error) {
       logger.warn(

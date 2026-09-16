@@ -19,6 +19,19 @@ type AnyRecord = Record<string, any>;
  * mostrar productos anticipadamente, máximo de resultados).
  */
 export type AdvisorConfig = {
+  /**
+   * `false` = esta tienda NO ofrece el asesor guiado.
+   *
+   * Las preguntas del asesor (`ADVISOR_FLOW`) son de PINTURERÍA y viven en código:
+   * superficie, base, ambiente. Una tienda de otro rubro que nunca configuró esto
+   * se lo comía igual, porque el default cae en `PAINT_ADVISOR_RULES`: en un
+   * mayorista de almacén, tocar "Necesito ayuda" contestaba "¿sobre qué superficie
+   * lo vas a aplicar?". Hasta que las dimensiones sean administrables (§26),
+   * poder apagarlo es la única salida honesta.
+   *
+   * Default `true` para no cambiarle el comportamiento a quien ya lo usa.
+   */
+  enabled: boolean;
   /** Reglas de clasificación que aplica el indexado de Typesense. */
   rules: AdvisorRules;
   /** Cuántos productos como máximo se ofrecen de una (§16). */
@@ -30,6 +43,7 @@ export type AdvisorConfig = {
 };
 
 export const ADVISOR_CONFIG_DEFAULTS: AdvisorConfig = {
+  enabled: true,
   rules: PAINT_ADVISOR_RULES,
   max_results: 5,
   show_threshold: 5,
@@ -49,6 +63,9 @@ const positiveInt = (value: unknown, fallback: number): number => {
 export function mergeAdvisorConfig(raw: unknown): AdvisorConfig {
   const src = (raw ?? {}) as AnyRecord;
   return {
+    // Sólo un `false` explícito lo apaga: cualquier otra cosa —ausente, basura—
+    // deja el asesor como estaba.
+    enabled: src.enabled !== false,
     // Si lo guardado no tiene reglas usables, se cae a las del rubro por defecto
     // en vez de quedar sin asesor.
     rules: normalizeAdvisorRules(src.rules) ?? ADVISOR_CONFIG_DEFAULTS.rules,

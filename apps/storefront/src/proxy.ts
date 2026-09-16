@@ -1,12 +1,16 @@
+import { isSitesHubHost, sitesHubOrigin, normalizeSiteSuffix } from '@lib/site-config/site-hosts'
+import { resolveHostSlug, normalizeHost } from '@lib/site-config/resolve-site'
 import { applyCustomerSessionHeaders, resolveCustomerSession } from '@lib/util/customer-session'
 import { readRequestHost } from '@lib/site-config/resolve-site'
 import { type NextRequest, NextResponse } from 'next/server'
+import { isMarketplaceIngress } from '@lib/marketplaces/bridge'
 import {
   parseUtmFromSearch,
   buildUtmCookieValue,
   UTM_COOKIE_NAME,
   UTM_COOKIE_MAX_AGE,
 } from '@lib/util/utm'
+import { SEGMENTS_OUTSIDE_COUNTRY_CODE } from '@lib/site-config/reserved-segments'
 import {
   resolveSite,
   SITE_PATH_SEGMENT,
@@ -76,6 +80,9 @@ function applyUtmCookie(request: NextRequest, response: NextResponse): void {
 // la navegación actual: describe un pago viejo que nunca se cerró.
 const MP_BACK_BUTTON_WINDOW_MS = 15 * 60 * 1000 // 15 min
 
+/** Lookup de `SEGMENTS_OUTSIDE_COUNTRY_CODE`, para no recorrer el array por request. */
+const OUTSIDE_COUNTRY_CODE = new Set(SEGMENTS_OUTSIDE_COUNTRY_CODE)
+
 const REC_SESSION_COOKIE = '_rec_sid'
 const REC_SESSION_MAX_AGE = 60 * 60 * 24 * 30 // 30 días
 
@@ -105,6 +112,14 @@ function applyRecommendationSessionCookie(
  * - Si llega una URL limpia, se hace rewrite interno para que Next matchee [countryCode].
  */
 export default async function proxy(request: NextRequest) {
+  // Provider callbacks keep their exact path even during storefront maintenance.
+  // Ownership is recovered by the backend from OAuth state / authenticated ML data.
+  if (isMarketplaceIngress(request.nextUrl.pathname)) {
+    const target = request.nextUrl.clone()
+    target.pathname = `/api${target.pathname}`
+    return NextResponse.rewrite(target)
+  }
+
   // API routes: quedan FUERA del flujo de rewrite/redirect (no se reescriben a
   // /[countryCode] ni se les aplica mantenimiento), pero sí necesitan el
   // contexto del demo. Los fetch client-side del storefront (p.ej. la página
@@ -225,6 +240,15 @@ export default async function proxy(request: NextRequest) {
    * es una sub-ruta como cualquier otra y tiene que heredar el slug, o
    * `listBlogPosts`/`listBlogCategories` traen los posts del catálogo principal.
    */
+  const hubHost = readRequestHost(request)?.toLowerCase().replace(/:\d+$/, '')
+  if (hubHost?.startsWith('www.') && isSitesHubHost(hubHost, process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX)) {
+    const hub = sitesHubOrigin(process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX, process.env.NEXT_PUBLIC_BASE_URL || request.url)
+    if (hub) return NextResponse.redirect(new URL(request.nextUrl.pathname + request.nextUrl.search, hub), 308)
+  }
+  const suffix = normalizeSiteSuffix(process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX)
+  if (suffix && hubHost?.endsWith(suffix) && hubHost !== normalizeHost(process.env.NEXT_PUBLIC_PRIMARY_HOST) && !isSitesHubHost(hubHost, suffix) && !resolveHostSlug(hubHost)) {
+    return new NextResponse('Tienda no encontrada', { status: 404 })
+  }
   const site = resolveSite(request)
 
   const { session } = resolveCustomerSession(request.url, null, readRequestHost(request), site)
@@ -324,6 +348,28 @@ export default async function proxy(request: NextRequest) {
 
   // 2. Static assets: passthrough sin rewrite.
   if (request.nextUrl.pathname.includes('.')) {
+    return NextResponse.next(requestInit)
+  }
+
+  /**
+   * 2b. Rutas que viven FUERA de `[countryCode]`: passthrough sin rewrite.
+   *
+   * El rewrite de abajo existe para que una URL limpia matchee la carpeta
+   * `[countryCode]`, y `app/driver` y `app/maintenance` NO cuelgan de ahí: mandarlas a
+   * `/{cc}/driver` es mandarlas a una ruta que no existe. La mini-app del repartidor
+   * contestaba 404 ENTERA por esto —login incluido— y no dejaba rastro en ningún log,
+   * porque desde Next es sólo una URL inexistente. `llms.txt` y las demás con punto ya
+   * salían por el bloque de arriba; `driver` no tiene punto y nadie lo notó.
+   *
+   * `/maintenance` entra por el mismo motivo: con el modo mantenimiento prendido, el
+   * bloque del principio reescribe TODO a `/maintenance` salvo la propia
+   * `/maintenance`, y esa —la única que un visitante puede pedir directo— caía acá y
+   * terminaba en `/{cc}/maintenance`.
+   *
+   * Los headers de identidad del sitio (`requestInit`) SÍ viajan: `/driver` necesita
+   * resolver su tienda igual que cualquier página.
+   */
+  if (firstPathSegment && OUTSIDE_COUNTRY_CODE.has(firstPathSegment)) {
     return NextResponse.next(requestInit)
   }
 

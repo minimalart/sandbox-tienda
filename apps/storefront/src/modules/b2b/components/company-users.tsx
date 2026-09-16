@@ -26,6 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FormInput from "@modules/common/components/form-input";
 import ResponsiveCombobox from "@modules/common/components/responsive-combobox";
+import TaxConditionRadios from "@modules/common/components/tax-condition-radios";
 import AddressFormWithMap, {
   type AddressFormData,
 } from "@modules/common/components/address-form-with-map";
@@ -51,10 +52,6 @@ const STATUS_LABEL: Record<string, string> = {
   invited: "Invitado",
   disabled: "Inactivo",
 };
-const TAX_CONDITIONS = [
-  { value: "responsable_inscripto", label: "Responsable Inscripto" },
-  { value: "exento", label: "Exento" },
-];
 const ROLE_OPTIONS: Array<{ value: CompanyRole; label: string }> = [
   { value: "buyer", label: "Comprador" },
   { value: "admin", label: "Administrador" },
@@ -139,7 +136,13 @@ export default function CompanyUsers({
 
         {isManager ? (
           <TabsContent value="facturacion" className="mt-4">
-            <FacturacionTab metadata={metadata} flash={flash} onSaved={() => router.refresh()} />
+            <FacturacionTab
+              company={company}
+              metadata={metadata}
+              googleMapsApiKey={googleMapsApiKey}
+              flash={flash}
+              onSaved={() => router.refresh()}
+            />
           </TabsContent>
         ) : null}
 
@@ -285,11 +288,15 @@ function DatosTab({
 }
 
 function FacturacionTab({
+  company,
   metadata,
+  googleMapsApiKey,
   flash,
   onSaved,
 }: {
+  company: NonNullable<MyCompany["company"]>;
   metadata: Record<string, unknown>;
+  googleMapsApiKey: string;
   flash: (t: "ok" | "err", m: string) => void;
   onSaved: () => void;
 }) {
@@ -298,15 +305,65 @@ function FacturacionTab({
     ...initial,
     tax_condition: normalizeInvoiceATaxCondition(initial.tax_condition),
   });
+  const [editingAddress, setEditingAddress] = useState(false);
   const [busy, setBusy] = useState(false);
   const set = (k: keyof CompanyBilling, v: string) => setF((p) => ({ ...p, [k]: v }));
 
-  const save = async () => {
+  // Los datos de la empresa mandan; lo que quedó guardado en el billing de
+  // antes sobrevive como fallback para no borrarlo al guardar.
+  const legalName = company.legal_name?.trim() || initial.legal_name?.trim() || company.name;
+  const taxId = company.tax_id?.trim() || initial.tax_id?.trim() || "";
+  const addressSummary = [
+    f.address_line_1,
+    f.address_line_2,
+    f.city,
+    f.province,
+    f.postal_code,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  // Razón social y CUIT son los de la empresa (pestaña Datos): no se vuelven a
+  // pedir acá. Se espejan dentro de `billing` al guardar para que el admin y
+  // cualquier consumidor del bloque de facturación lo sigan viendo completo.
+  const persist = async (next: CompanyBilling) => {
+    const billing: CompanyBilling = {
+      ...next,
+      legal_name: legalName,
+      tax_id: taxId || undefined,
+    };
     setBusy(true);
-    const r = await updateMyCompany({ metadata: { ...metadata, billing: f } });
+    const r = await updateMyCompany({ metadata: { ...metadata, billing } });
     setBusy(false);
-    if (!r.ok) return flash("err", r.error);
+    if (!r.ok) {
+      flash("err", r.error);
+      return false;
+    }
+    setF(billing);
+    return true;
+  };
+
+  const save = async () => {
+    if (!(await persist(f))) return;
     flash("ok", "Datos de facturación guardados.");
+    onSaved();
+  };
+
+  const onAddressSubmit = async (d: AddressFormData) => {
+    const ok = await persist({
+      ...f,
+      address_line_1: d.address1,
+      address_line_2: d.address2 || undefined,
+      city: d.city,
+      province: d.province,
+      postal_code: d.postalCode,
+      billing_phone: d.phone || f.billing_phone,
+      lat: d.latitude != null ? String(d.latitude) : undefined,
+      lng: d.longitude != null ? String(d.longitude) : undefined,
+    });
+    if (!ok) return;
+    setEditingAddress(false);
+    flash("ok", "Domicilio fiscal guardado.");
     onSaved();
   };
 
@@ -316,32 +373,79 @@ function FacturacionTab({
         <CardTitle className="text-base">Datos de facturación</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormInput label="Razón social" value={f.legal_name ?? ""} onChange={(e) => set("legal_name", e.target.value)} />
-          <FormInput label="CUIT" placeholder="30-12345678-9" value={f.tax_id ?? ""} onChange={(e) => set("tax_id", e.target.value)} />
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">Condición frente al IVA</span>
-            <ResponsiveCombobox
-              placeholder="Condición frente al IVA"
-              searchPlaceholder="Buscar condición..."
-              value={normalizeInvoiceATaxCondition(f.tax_condition)}
-              onValueChange={(value) =>
-                set("tax_condition", normalizeInvoiceATaxCondition(value))
-              }
-              options={TAX_CONDITIONS}
-            />
-          </div>
-          <FormInput label="Email de facturación" type="email" placeholder="facturacion@empresa.com" value={f.billing_email ?? ""} onChange={(e) => set("billing_email", e.target.value)} />
-          <FormInput label="Teléfono" value={f.billing_phone ?? ""} onChange={(e) => set("billing_phone", e.target.value)} />
-          <FormInput label="Domicilio fiscal" placeholder="Calle y número" value={f.address_line_1 ?? ""} onChange={(e) => set("address_line_1", e.target.value)} />
-          <FormInput label="Localidad" value={f.city ?? ""} onChange={(e) => set("city", e.target.value)} />
-          <FormInput label="Provincia" value={f.province ?? ""} onChange={(e) => set("province", e.target.value)} />
-          <FormInput label="Código postal" value={f.postal_code ?? ""} onChange={(e) => set("postal_code", e.target.value)} />
+        <div className="rounded-lg border border-border bg-muted/40 p-3">
+          <p className="text-sm font-medium text-foreground">{legalName}</p>
+          <p className="text-xs text-muted-foreground">
+            CUIT: {taxId || "sin cargar"} · La razón social y el CUIT se editan en la pestaña Datos.
+          </p>
         </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <TaxConditionRadios
+            name="company-billing-tax-condition"
+            value={normalizeInvoiceATaxCondition(f.tax_condition)}
+            onChange={(value) => set("tax_condition", value)}
+          />
+          <FormInput
+            label="Email de facturación"
+            type="email"
+            placeholder="facturacion@empresa.com"
+            value={f.billing_email ?? ""}
+            onChange={(e) => set("billing_email", e.target.value)}
+          />
+        </div>
+
+        {/* Domicilio fiscal: mismo formulario con mapa que Direcciones y el checkout. */}
+        <div className="flex items-start justify-between gap-2 rounded-lg border border-border p-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">Domicilio fiscal</p>
+            {addressSummary ? (
+              <>
+                <p className="text-xs text-muted-foreground">{addressSummary}</p>
+                {f.billing_phone ? (
+                  <p className="text-xs text-muted-foreground">{f.billing_phone}</p>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">Todavía no está cargado.</p>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            onClick={() => setEditingAddress(true)}
+          >
+            {addressSummary ? "Editar" : "Cargar"}
+          </Button>
+        </div>
+
         <div className="flex justify-end">
           <Button onClick={save} disabled={busy}>Guardar facturación</Button>
         </div>
       </CardContent>
+
+      <AddressModal
+        busy={busy}
+        googleMapsApiKey={googleMapsApiKey}
+        hideAddressNameField
+        initialData={{
+          address1: f.address_line_1 ?? "",
+          address2: f.address_line_2 ?? "",
+          city: f.city ?? "",
+          province: f.province ?? "",
+          postalCode: f.postal_code ?? "",
+          phone: f.billing_phone ?? "",
+          latitude: f.lat != null && f.lat !== "" ? Number(f.lat) : null,
+          longitude: f.lng != null && f.lng !== "" ? Number(f.lng) : null,
+          countryCode: "ar",
+        }}
+        onClose={() => setEditingAddress(false)}
+        onSubmit={onAddressSubmit}
+        open={editingAddress}
+        submitLabel="Guardar domicilio fiscal"
+        title="Domicilio fiscal"
+      />
     </Card>
   );
 }
@@ -430,43 +534,83 @@ function DireccionesTab({
         )}
       </CardContent>
 
-      {/* Modal con mapa (mismo componente que el checkout B2B) */}
-      <Dialog
-        className="relative z-[10000]"
-        onClose={() => {
-          if (!busy) setDraft(null);
-        }}
+      <AddressModal
+        busy={busy}
+        googleMapsApiKey={googleMapsApiKey}
+        initialData={draft?.id ? addrToFormData(draft) : { countryCode: "ar" }}
+        onClose={() => setDraft(null)}
+        onSubmit={onSubmit}
         open={!!draft}
-      >
-        <DialogBackdrop
-          className="fixed inset-0 bg-gray-500/75 transition-opacity data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in"
-          transition
-        />
-        <div className="fixed inset-0 z-[10000] w-screen overflow-y-auto">
-          <div className="flex min-h-full items-end justify-center p-0 text-center sm:items-center sm:p-4">
-            <DialogPanel
-              className="relative w-full max-w-none transform rounded-t-2xl bg-white px-4 pt-5 pb-6 text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in sm:my-8 sm:w-full sm:max-w-2xl sm:rounded-lg sm:p-6 data-closed:sm:translate-y-0 data-closed:sm:scale-95"
-              transition
-            >
-              <DialogTitle as="h3" className="mb-4 text-center font-semibold text-gray-900 text-lg">
-                {draft?.id ? "Editar dirección" : "Agregar dirección"}
-              </DialogTitle>
-              {draft ? (
-                <AddressFormWithMap
-                  googleMapsApiKey={googleMapsApiKey}
-                  hideNameFields
-                  initialData={draft.id ? addrToFormData(draft) : { countryCode: "ar" }}
-                  isLoading={busy}
-                  onCancel={() => setDraft(null)}
-                  onSubmit={onSubmit}
-                  submitLabel="Guardar dirección"
-                />
-              ) : null}
-            </DialogPanel>
-          </div>
-        </div>
-      </Dialog>
+        submitLabel="Guardar dirección"
+        title={draft?.id ? "Editar dirección" : "Agregar dirección"}
+      />
     </Card>
+  );
+}
+
+/**
+ * Modal con el formulario de dirección + mapa (el estándar del storefront:
+ * autocompletado de Google, pin arrastrable y campos que se autocompletan).
+ * Lo usan Direcciones y el domicilio fiscal de Facturación.
+ */
+function AddressModal({
+  open,
+  title,
+  submitLabel,
+  initialData,
+  busy,
+  googleMapsApiKey,
+  hideAddressNameField,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  title: string;
+  submitLabel: string;
+  initialData: Partial<AddressFormData>;
+  busy: boolean;
+  googleMapsApiKey: string;
+  hideAddressNameField?: boolean;
+  onClose: () => void;
+  onSubmit: (d: AddressFormData) => void | Promise<void>;
+}) {
+  return (
+    <Dialog
+      className="relative z-[10000]"
+      onClose={() => {
+        if (!busy) onClose();
+      }}
+      open={open}
+    >
+      <DialogBackdrop
+        className="fixed inset-0 bg-gray-500/75 transition-opacity data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in"
+        transition
+      />
+      <div className="fixed inset-0 z-[10000] w-screen cursor-modal-close overflow-y-auto">
+        <div className="flex min-h-full items-end justify-center p-0 text-center sm:items-center sm:p-4">
+          <DialogPanel
+            className="cursor-auto relative w-full max-w-none transform rounded-t-2xl bg-white px-4 pt-5 pb-6 text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in sm:my-8 sm:w-full sm:max-w-2xl sm:rounded-lg sm:p-6 data-closed:sm:translate-y-0 data-closed:sm:scale-95"
+            transition
+          >
+            <DialogTitle as="h3" className="mb-4 text-center font-semibold text-gray-900 text-lg">
+              {title}
+            </DialogTitle>
+            {open ? (
+              <AddressFormWithMap
+                googleMapsApiKey={googleMapsApiKey}
+                hideAddressNameField={hideAddressNameField}
+                hideNameFields
+                initialData={initialData}
+                isLoading={busy}
+                onCancel={onClose}
+                onSubmit={onSubmit}
+                submitLabel={submitLabel}
+              />
+            ) : null}
+          </DialogPanel>
+        </div>
+      </div>
+    </Dialog>
   );
 }
 

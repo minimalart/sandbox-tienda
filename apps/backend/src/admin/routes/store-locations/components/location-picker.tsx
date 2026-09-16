@@ -1,7 +1,7 @@
 import { Input, Label, Text } from '@medusajs/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getGoogleMapsApiKey, loadGoogleMaps } from './google-maps-loader';
+import { getGoogleMapsApiKey, loadGoogleMaps } from '../../../components/geo/google-maps-loader';
 
 /**
  * Google Maps address picker for the store-location form.

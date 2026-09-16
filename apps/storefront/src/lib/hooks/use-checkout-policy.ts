@@ -1,20 +1,34 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import { browserCustomerSession, sessionCookieName } from '../util/customer-session';
+import { createCheckoutRequestQueue } from '../util/checkout-request-queue';
 
-export type CheckoutPerson = { id: string; document: string; first_name: string; last_name: string };
+export type CheckoutPerson = { id: string; document?: string; first_name: string; last_name: string; grade?: string };
 export type CheckoutUnit = { id: string; line_id: string; person_id: string | null };
+export type CheckoutSectionCopy = { title?: string; subtitle?: string };
 export type CheckoutState = {
   cart_changed?: boolean;
   configured: boolean; revision: number; version: string;
-  policy: { steps: Record<string, boolean>; recipients: { enabled: boolean; title: string; help: string } };
+  policy: {
+    steps: Record<string, boolean>;
+    sections?: Partial<Record<'contact' | 'address' | 'delivery' | 'billing' | 'benefits' | 'payment' | 'review' | 'recipients', CheckoutSectionCopy>>;
+    recipients: { enabled: boolean };
+    /** Carrusel de sugerencias arriba del checkout. Ausente (sesion vieja) = se muestra. */
+    suggestions?: { enabled: boolean };
+  };
   people: CheckoutPerson[]; units: CheckoutUnit[]; global_person_id: string | null; conflicts: string[]; recipients_complete: boolean;
   flow: { ready: boolean; address_required: boolean; shipping_required: boolean; billing_required: boolean; blocks: { id: string; complete: boolean; visible: boolean; applicable: boolean; reason: string }[] };
 };
+const queueCheckoutRequest = createCheckoutRequestQueue();
 export async function checkoutRequest(body: Record<string, unknown>): Promise<CheckoutState> {
-  const response = await fetch('/api/store/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' });
-  const data = await response.json();
-  if (!response.ok) throw Object.assign(new Error(data.message || 'No se pudo guardar el checkout.'), { code: data.code, block: data.block, fields: data.errors, units: data.units });
-  return data;
+  const key = sessionCookieName(browserCustomerSession(), 'checkout');
+  const pagePath = window.location.pathname;
+  return queueCheckoutRequest(key, async () => {
+    const response = await fetch('/api/store/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-storefront-page': pagePath }, body: JSON.stringify(body), cache: 'no-store' });
+    const data = await response.json();
+    if (!response.ok) throw Object.assign(new Error(data.message || 'No se pudo guardar el checkout.'), { code: data.code, block: data.block, fields: data.errors, units: data.units });
+    return data;
+  }, navigator.locks);
 }
 export function useCheckoutPolicy(cart: any) {
   const [state, setState] = useState<CheckoutState | null>(null);

@@ -9,6 +9,7 @@ import { passwordResetTemplate } from './password-reset';
 import { kitCdeNotificationTemplate } from './kit-cde-notification';
 import { orderTrackingTemplate } from './order-tracking';
 import { orderCancelledTemplate } from './order-cancelled';
+import { orderReadyForPickupTemplate } from './order-ready-for-pickup';
 import { orderInvoiceTemplate } from './order-invoice';
 import { stockSyncReportTemplate } from './stock-sync-report';
 import { inviteTemplate } from './invite';
@@ -35,6 +36,7 @@ export const templates = {
   'kit-cde-notification': kitCdeNotificationTemplate,
   'order-tracking': orderTrackingTemplate,
   'order-cancelled': orderCancelledTemplate,
+  'order-ready-for-pickup': orderReadyForPickupTemplate,
   'order-invoice': orderInvoiceTemplate,
   'stock-sync-report': stockSyncReportTemplate,
   'admin-invite': inviteTemplate,

@@ -10,6 +10,15 @@ const errors = [];
 const owners = new Map();
 
 for (const extension of catalog.extensions) {
+  if(extension.type==='plugin') {
+    const descriptorPath=path.join(root,'packages','plugins',`plugin-${extension.id}`,'mercatto-plugin.json');
+    const packagePath=path.join(root,'packages','plugins',`plugin-${extension.id}`,'package.json');
+    if(!fs.existsSync(descriptorPath)||!fs.existsSync(packagePath)){errors.push(`${extension.id}: missing plugin package or descriptor`);continue;}
+    const descriptor=JSON.parse(fs.readFileSync(descriptorPath,'utf8')),pkg=JSON.parse(fs.readFileSync(packagePath,'utf8'));
+    if(descriptor.id!==extension.id||descriptor.version!==extension.version||pkg.version!==extension.version||pkg.name!==extension.packageName)errors.push(`${extension.id}: catalog and plugin identity differ`);
+    if(JSON.stringify(descriptor.dependencies??[])!==JSON.stringify(extension.dependencies??[]))errors.push(`${extension.id}: catalog and plugin dependencies differ`);
+    continue;
+  }
   const packageRoot = path.join(root, 'packages', 'extensions', extension.id);
   const manifestPath = path.join(packageRoot, 'mercatto-component.json');
   if (!fs.existsSync(manifestPath)) {
@@ -41,6 +50,7 @@ for (const extension of catalog.extensions) {
 }
 
 for (const extension of catalog.extensions) {
+  if(extension.type==='plugin')continue;
   if (!definitions[extension.id]) errors.push(`${extension.id}: missing ownership definition`);
 }
 if (catalog.extensions.some((extension) => extension.id === 'demo-creator')) {

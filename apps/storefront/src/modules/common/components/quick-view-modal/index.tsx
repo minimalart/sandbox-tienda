@@ -9,6 +9,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { isNewProduct } from "@lib/util/is-new-product";
+import { usesQuickViewOnly } from "@lib/site-config/template-helpers";
 import { useTenant } from "@lib/site-config/context";
 import {
   PLACEHOLDER_IMAGE,
@@ -74,6 +75,12 @@ type ProductQuickViewModalProps = {
   inStock?: boolean;
   useSecondImage?: boolean;
   countryCode?: string;
+  /**
+   * Sin salidas a otras paginas: ni chips de categoria ni "Ver ficha completa".
+   * Lo usa el checkout, donde el quick view existe justamente para que el
+   * cliente vea el detalle y agregue SIN irse del checkout.
+   */
+  lockNavigation?: boolean;
 };
 
 const ProductQuickViewModal = ({
@@ -84,14 +91,18 @@ const ProductQuickViewModal = ({
   inStock,
   useSecondImage,
   countryCode,
+  lockNavigation = false,
 }: ProductQuickViewModalProps) => {
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [hydratedProduct, setHydratedProduct] =
     useState<QuickViewProduct | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const suppressImageClickRef = useRef(false);
   const tenant = useTenant();
+  const quickViewOnly = usesQuickViewOnly(tenant.template);
   const params = useParams<{ countryCode?: string }>();
   const activeCountryCode = countryCode || params?.countryCode || "ar";
   const salesChannelId = tenant.medusa?.salesChannelId;
@@ -110,7 +121,7 @@ const ProductQuickViewModal = ({
   }, [open, openQuickView, closeQuickView]);
 
   useEffect(() => {
-    if (!open || !product.id) {
+    if (!open || (!product.id && !product.handle)) {
       setHydratedProduct(null);
       return;
     }
@@ -122,7 +133,10 @@ const ProductQuickViewModal = ({
     }
 
     setHydratedProduct(null);
-    query.set("id", product.id);
+    setLoading(true);
+    setLoadFailed(false);
+    if (product.id) query.set("id", product.id);
+    else if (product.handle) query.set("handle", product.handle);
 
     fetch(`/api/store/product?${query}`, {
       cache: "no-store",
@@ -132,16 +146,19 @@ const ProductQuickViewModal = ({
       .then((data: { product?: QuickViewProduct } | null) => {
         if (!controller.signal.aborted) {
           setHydratedProduct(data?.product ?? null);
+          setLoadFailed(!data?.product);
         }
       })
       .catch((error) => {
         if (error?.name !== "AbortError") {
           console.warn("[QuickView] Failed to hydrate product:", error);
+          setLoadFailed(true);
         }
-      });
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
 
     return () => controller.abort();
-  }, [open, product.id, activeCountryCode, salesChannelId]);
+  }, [open, product.id, product.handle, activeCountryCode, salesChannelId]);
 
   const displayProduct: QuickViewProduct = hydratedProduct
     ? {
@@ -271,11 +288,11 @@ const ProductQuickViewModal = ({
             transition={{ duration: 0.3, ease: "easeOut" }}
           />
 
-          <div className="fixed inset-0 z-[10000] w-screen overflow-y-auto">
+          <div className="fixed inset-0 z-[10000] w-screen cursor-modal-close overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-3 text-center sm:p-6">
               <DialogPanel
                 as="div"
-                className="relative w-full max-w-[410px] transform max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-[14px] bg-white text-left shadow-2xl sm:my-8 sm:max-h-[calc(100dvh-4rem)] sm:max-w-[980px]"
+                className="cursor-auto relative w-full max-w-[410px] transform max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-[14px] bg-white text-left shadow-2xl sm:my-8 sm:max-h-[calc(100dvh-4rem)] sm:max-w-[980px]"
               >
                 <motion.div
                   animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -394,11 +411,18 @@ const ProductQuickViewModal = ({
                       </div>
 
                       <div className="min-w-0 text-left sm:pt-2">
-                        {displayProduct.categories &&
+                        {!quickViewOnly && displayProduct.categories &&
                           displayProduct.categories.length > 0 && (
                             <div className="mb-3 flex flex-wrap gap-1.5">
                               {displayProduct.categories.map((cat, index) =>
-                                cat.handle || cat.name ? (
+                                (cat.handle || cat.name) && lockNavigation ? (
+                                  <span
+                                    className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
+                                    key={cat.id}
+                                  >
+                                    {cat.name || cat.handle}
+                                  </span>
+                                ) : cat.handle || cat.name ? (
                                   <LocalizedClientLink
                                     className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-[--primary-color] hover:text-white"
                                     // El filtro de la tienda usa el NOMBRE de la
@@ -424,8 +448,10 @@ const ProductQuickViewModal = ({
                           )}
 
                         <h2 className="mb-3 font-bold text-[22px] leading-tight text-gray-950 sm:text-[28px]">
-                          {displayProduct.title}
+                          {displayProduct.title || "Producto"}
                         </h2>
+                        {loading && !product.id && <p role="status" className="mb-3 text-sm text-gray-600">Cargando producto…</p>}
+                        {loadFailed && !product.id && <p role="alert" className="mb-3 text-sm text-gray-600">No pudimos cargar el producto. Cerrá esta ventana y volvé a intentarlo.</p>}
 
                         {displayProduct.description && (
                           <p className="mb-3 line-clamp-2 text-gray-600 text-sm leading-relaxed sm:mb-6 sm:line-clamp-4 sm:text-base">
@@ -457,7 +483,7 @@ const ProductQuickViewModal = ({
                           )}
                         </div>
 
-                        <div className="mt-4 flex items-center gap-2 border-y border-gray-100 py-2.5 sm:mt-8 sm:py-3 sm:border-b-0">
+                        {!quickViewOnly && <div className="mt-4 flex items-center gap-2 border-y border-gray-100 py-2.5 sm:mt-8 sm:py-3 sm:border-b-0">
                           {displayProduct.id && displayProduct.variants?.[0]?.id && (
                             <div className="pr-4">
                               <WishlistButton
@@ -485,23 +511,25 @@ const ProductQuickViewModal = ({
                             <ShareIcon className="h-5 w-5 text-gray-500 transition-colors group-hover:text-[--primary-color]" />
                             Compartir
                           </button>
-                        </div>
+                        </div>}
                       </div>
                     </div>
                   </div>
 
                   <div className="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-8 sm:pb-8">
                     <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <LocalizedClientLink
+                      {!quickViewOnly && !lockNavigation && <LocalizedClientLink
                         href={`/products/${displayProduct.handle}`}
                         className="inline-flex items-center justify-center gap-2 font-semibold text-[--primary-color] text-sm sm:justify-start"
                         onClick={onClose}
                       >
                         Ver ficha completa
                         <ChevronRightIcon className="h-4 w-4" />
-                      </LocalizedClientLink>
-                      <div className="w-full sm:w-auto">
-                        {displayProduct.is_giftcard || isTintableProduct(displayProduct as never) ? (
+                      </LocalizedClientLink>}
+                      <div className={`w-full sm:w-auto ${quickViewOnly || lockNavigation ? "sm:ml-auto" : ""}`}>
+                        {(displayProduct.is_giftcard || isTintableProduct(displayProduct as never)) && quickViewOnly ? (
+                          <p className="text-sm text-gray-600">Este producto requiere personalización y no está disponible en esta campaña.</p>
+                        ) : displayProduct.is_giftcard || isTintableProduct(displayProduct as never) ? (
                           // Las gift cards se personalizan (diseño, monto,
                           // destinatario, entrega) en su propia página. El quick
                           // view no puede hacer eso, así que forzamos la
@@ -514,7 +542,7 @@ const ProductQuickViewModal = ({
                             Personalizar gift card
                             <ChevronRightIcon className="h-4 w-4" />
                           </LocalizedClientLink>
-                        ) : (
+                        ) : displayProduct.id ? (
                           <ProductActions
                             inline
                             product={displayProduct as HttpTypes.StoreProduct}
@@ -523,7 +551,7 @@ const ProductQuickViewModal = ({
                             inStock={inStock}
                             selection={variantSelection}
                           />
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>

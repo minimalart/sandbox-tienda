@@ -7,6 +7,10 @@ import { getActiveSitePrefix } from "@lib/site-config/active-tenant";
 import { withSitePrefix } from "@lib/site-config/site-path";
 import { getTenant } from "@lib/site-config/resolver";
 import medusaError from "@lib/util/medusa-error";
+import {
+  CART_COMPLETED_AT_FIELD,
+  isCompletedCart,
+} from "@lib/util/completed-cart";
 import type { HttpTypes } from "@medusajs/types";
 import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
@@ -307,6 +311,32 @@ export async function signout(_countryCode?: string) {
   redirect(withSitePrefix("/account", await getActiveSitePrefix()));
 }
 
+/**
+ * ¿El carrito de la cookie ya se convirtió en orden?
+ *
+ * Fetch mínimo (`id,completed_at`) a propósito: es un guard, no una lectura del
+ * carrito. Ante cualquier error devuelve `false` — "no sé" no es "sí".
+ */
+async function isCartAlreadyCompleted(
+  cartId: string,
+  headers: Record<string, string>,
+): Promise<boolean> {
+  try {
+    const { cart } = await sdk.client.fetch<HttpTypes.StoreCartResponse>(
+      `/store/carts/${cartId}`,
+      {
+        method: "GET",
+        query: { fields: `id,${CART_COMPLETED_AT_FIELD}` },
+        headers,
+        cache: "no-store",
+      },
+    );
+    return isCompletedCart(cart);
+  } catch {
+    return false;
+  }
+}
+
 export async function transferCart() {
   const cartId = await getCartId();
 
@@ -315,6 +345,21 @@ export async function transferCart() {
   }
 
   const headers = await getAuthHeaders();
+
+  // Un carrito que ya es orden no se transfiere: la cookie puede seguir
+  // apuntando a la compra recién hecha (la orden la crea el webhook de
+  // MercadoPago y la pantalla de éxito no siempre llega a limpiarla). Sin este
+  // corte, loguearse volvía a enganchar el carrito comprado a la cuenta y sus
+  // ítems reaparecían marcados "Sin stock", bloqueando la próxima compra
+  // (DESDEELSUR-61 / BUG-08).
+  //
+  // Sólo se corta con una respuesta que CONFIRMA `completed_at`: si el fetch
+  // falla no se asume nada y se intenta el transfer igual, porque cancelarlo por
+  // un error de red dejaría el carrito legítimo colgado del invitado — el bug
+  // que ya documenta `cart-customer-transfer.ts`.
+  if (await isCartAlreadyCompleted(cartId, headers)) {
+    return;
+  }
 
   await sdk.store.cart.transferCart(cartId, {}, headers);
 

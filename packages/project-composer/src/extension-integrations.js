@@ -166,8 +166,9 @@ function renderAdminI18n(ids) {
   return [
     ...imports,
     "import { en as widgetsEn, es as widgetsEs } from '../translations/widgets';",
-    '', 'export default {', '  en: {', ...entries('En'), '    widgets: widgetsEn,', '  },',
-    '  es: {', ...entries('Es'), '    widgets: widgetsEs,', '  },', '};', '',
+    "import { en as drawerTabsEn, es as drawerTabsEs } from '../translations/drawer-tabs';",
+    '', 'export default {', '  en: {', ...entries('En'), '    widgets: widgetsEn,', '    drawerTabs: drawerTabsEn,', '  },',
+    '  es: {', ...entries('Es'), '    widgets: widgetsEs,', '    drawerTabs: drawerTabsEs,', '  },', '};', '',
   ].join('\n');
 }
 

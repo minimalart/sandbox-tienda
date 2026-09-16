@@ -1,4 +1,5 @@
 import { Badge, Text } from '@medusajs/ui';
+import { useWorkflowTranslation } from '../i18n';
 import { useState } from 'react';
 import { useRuns, useRun, type AgentRun } from '../hooks';
 
@@ -24,6 +25,7 @@ const STEP_COLOR: Record<string, BadgeColor> = {
 };
 
 const RunSteps = ({ id }: { id: string }) => {
+  const t = useWorkflowTranslation();
   const { data, isLoading } = useRun(id);
   if (isLoading) return <Text className="txt-small text-ui-fg-subtle">Cargando pasos…</Text>;
   const steps = data?.steps ?? [];
@@ -38,9 +40,10 @@ const RunSteps = ({ id }: { id: string }) => {
           <code className="text-ui-fg-muted">{s.name ?? '—'}</code>
           {s.status ? (
             <span className={s.status === 'error' ? 'text-red-600' : 'text-ui-fg-subtle'}>
-              {s.status}
+              {s.detail?.outcome === 'permissions_blocked' ? t('permissionsBlocked') : s.type === 'model' && s.status !== 'error' ? t('modelResponded') : s.status}
             </span>
           ) : null}
+          {typeof s.detail?.reason === 'string' ? <Text className="text-ui-fg-subtle">{s.detail.reason}</Text> : null}
           {s.tokens ? <span className="text-ui-fg-muted">{s.tokens} tok</span> : null}
           {s.duration_ms != null ? <span className="text-ui-fg-muted">{s.duration_ms} ms</span> : null}
         </div>
@@ -50,6 +53,7 @@ const RunSteps = ({ id }: { id: string }) => {
 };
 
 export const Runs = () => {
+  const t = useWorkflowTranslation();
   const { data, isLoading } = useRuns();
   const [open, setOpen] = useState<string | null>(null);
   const runs = data?.runs ?? [];
@@ -73,7 +77,7 @@ export const Runs = () => {
             onClick={() => setOpen(open === r.id ? null : r.id)}
           >
             <Badge size="2xsmall" color={STATUS_COLOR[r.status] ?? 'grey'}>
-              {r.status}
+              {r.status === 'complete' ? t('turnEnded') : r.status === 'needs_approval' ? t('permissionsBlocked') : r.status}
             </Badge>
             <code className="txt-small text-ui-fg-base">{r.agent_key}</code>
             <Badge size="2xsmall" color="grey">

@@ -18,6 +18,7 @@ import OlfactoryNotes from '@modules/products/components/olfactory-notes'
 import OtherPresentations from '@modules/products/components/other-presentations'
 import ProductActions from '@modules/products/components/product-actions'
 import type { KitProductDetails } from '@modules/products/components/product-actions'
+import ProductBackButton from '@modules/products/components/product-back-button'
 import ProductMedia from '@modules/products/components/product-media'
 import TintConfigurator from '@modules/products/components/tint-configurator'
 import PaymentBenefits from '@modules/products/components/payment-benefits'
@@ -224,6 +225,7 @@ const ProductTemplate = async ({
       />
       <main className='mx-auto max-w-7xl px-4 pt-6 sm:px-6 sm:pt-10 lg:px-8 lg:pt-12'>
         <div className='mx-auto max-w-2xl lg:max-w-none'>
+          <ProductBackButton />
           {/* Product */}
           <div className='lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-12'>
             {/* Image gallery */}

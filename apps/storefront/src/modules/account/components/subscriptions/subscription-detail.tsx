@@ -405,7 +405,7 @@ export default function SubscriptionDetail({
           <div className='mt-3 grid gap-3 sm:grid-cols-2'>
             {([
               ['first_name', 'Nombre'], ['last_name', 'Apellido'],
-              ['address_1', 'Calle y número'], ['address_2', 'Piso / departamento'],
+              ['address_1', 'Calle y número'], ['address_2', 'Piso / departamento / lote'],
               ['city', 'Ciudad'], ['province', 'Provincia'],
               ['postal_code', 'Código postal'], ['phone', 'Teléfono'],
             ] as const).map(([field, label]) => (

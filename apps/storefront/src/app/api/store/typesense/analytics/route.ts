@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { query } = body;
+    const { query, hasResults } = body;
 
     if (!query) {
       return NextResponse.json(
@@ -18,12 +18,21 @@ export async function POST(request: NextRequest) {
 
     // Call backend public API to track the search query
     const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+    const publishableApiKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
     const response = await fetch(`${backendUrl}/store/typesense/analytics`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // El browser no puede mandarla (`sendBeacon` no admite headers custom);
+        // desde acá sí, que es media razón por la que el beacon pasa por el proxy.
+        ...(publishableApiKey
+          ? { "x-publishable-api-key": publishableApiKey }
+          : {}),
       },
-      body: JSON.stringify({ query }),
+      // `hasResults` se reenvía: es el dato que distingue una búsqueda que no
+      // encontró NADA de una normal, o sea justo el que sirve para decidir qué
+      // falta en el catálogo. El proxy lo recibía y lo tiraba.
+      body: JSON.stringify({ query, hasResults }),
     });
 
     if (!response.ok) {

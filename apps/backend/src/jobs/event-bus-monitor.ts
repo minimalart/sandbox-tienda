@@ -11,6 +11,11 @@ import {
   type EventBusRedisClientLike,
   type EventBusWorkerLike,
 } from '../lib/event-bus-health';
+import {
+  describeSupervisor,
+  requestSupervisorRestart,
+  type EventBusWorkerSupervisorLike,
+} from '../lib/event-bus-worker-supervisor';
 
 /**
  * El único vigilante del event bus que sobrevive a que el event bus se muera.
@@ -65,6 +70,12 @@ import {
 type RedisEventBusInternals = {
   queue_?: EventBusQueueLike;
   bullWorker_?: EventBusWorkerLike;
+  /**
+   * Lo expone el módulo envuelto (`modules/event-bus-redis`), que es el dueño del
+   * ciclo de vida del worker. Ausente en una instalación que siga apuntando
+   * `event_bus` al paquete de Medusa pelado.
+   */
+  workerSupervisor?: EventBusWorkerSupervisorLike | null;
 };
 
 const minutesToMs = (value: string | undefined, fallback: number): number => {
@@ -107,7 +118,12 @@ const escapeHtml = (value: string): string =>
 function resolveQueue(
   container: MedusaContainer,
 ):
-  | { ok: true; queue: EventBusQueueLike; worker: EventBusWorkerLike | null }
+  | {
+      ok: true;
+      queue: EventBusQueueLike;
+      worker: EventBusWorkerLike | null;
+      supervisor: EventBusWorkerSupervisorLike | null;
+    }
   | { ok: false; verdict: EventBusVerdict } {
   if (!redisEventBusExpected()) {
     return {
@@ -162,7 +178,56 @@ function resolveQueue(
   const worker =
     bullWorker && typeof bullWorker.isRunning === 'function' ? bullWorker : null;
 
-  return { ok: true, queue, worker };
+  const supervisor =
+    service.workerSupervisor && typeof service.workerSupervisor.restartNow === 'function'
+      ? service.workerSupervisor
+      : null;
+
+  return { ok: true, queue, worker, supervisor };
+}
+
+type AdminRecipientModule = {
+  getAdminNotificationEmail: (container: MedusaContainer) => Promise<string | null>;
+};
+
+/**
+ * El helper del destinatario, probando LAS DOS formas del especificador.
+ *
+ * `'../modules/email/admin-recipient.js'` a secas venía FALLANDO SIEMPRE en
+ * producción, y con la extensión de email perfectamente instalada. Log de
+ * desdeelsur del 2026-09-09, en cada tick de la caída:
+ *
+ *   Cannot find module '/workspace/apps/backend/src/modules/email/admin-recipient.js'
+ *     imported from /workspace/apps/backend/src/jobs/event-bus-monitor.ts
+ *
+ * Mirá los DOS paths: el job corre desde `src/` —no desde `dist/`—, así que el
+ * `.js` resuelve al lado del `.ts` y ahí ese archivo no existe. El comentario
+ * original decía que apuntaba al build; no apuntaba. Resultado: el monitor
+ * detectó la caída en cada tick durante ~50 minutos y el aviso murió en el log
+ * con "no hay destinatario configurado", teniendo `info@desdelsur.com.ar`
+ * configurado todo el tiempo. Un `catch` vacío lo tapó hasta que se le puso un
+ * log (PR #1001) y entonces la causa apareció en el primer tick.
+ *
+ * Se prueban las dos porque las dos son legítimas según cómo se ejecute: `.js`
+ * cuando corre el build (`moduleResolution: nodenext` lo exige al compilar), sin
+ * extensión cuando corre el fuente con strip de tipos. Un `catch` por rama y el
+ * motivo de cada una viaja al llamador, que ahora lo loguea.
+ */
+async function importAdminRecipient(): Promise<AdminRecipientModule> {
+  try {
+    return (await import('../modules/email/admin-recipient.js')) as AdminRecipientModule;
+  } catch (jsError) {
+    try {
+      // Runtime-only source fallback: NodeNext resolves the compiled .js import
+      // above, while the source loader resolves this extensionless specifier.
+      const sourceModule: string = '../modules/email/admin-recipient';
+      return (await import(sourceModule)) as AdminRecipientModule;
+    } catch {
+      // Se propaga el error de la PRIMERA forma: es la que aplica en producción
+      // compilada, así que es el mensaje que hay que leer si algún día falla ahí.
+      throw jsError;
+    }
+  }
 }
 
 /**
@@ -203,7 +268,7 @@ async function resolveRecipient(
      * Y si algún día esa resolución cambiara, no rompe nada: cae en el `catch` y
      * el aviso sale igual por `ADMIN_EMAIL` — el `logger.error` ni se entera.
      */
-    const { getAdminNotificationEmail } = await import('../modules/email/admin-recipient.js');
+    const { getAdminNotificationEmail } = await importAdminRecipient();
     const to = await getAdminNotificationEmail(container);
     if (to) return to;
     logger.warn(
@@ -397,30 +462,58 @@ async function withDeadline<T>(promise: Promise<T>, label: string): Promise<T> {
  * dicho, en el log, que no lo puede curar nadie desde acá.
  */
 async function reviveConnection(worker: EventBusWorkerLike, logger: Logger): Promise<string> {
-  if (!worker.client) return 'no la expone el worker';
+  const blocking = worker.blockingConnection;
+
+  // El camino bueno: `reconnect()` de BullMQ sobre la conexión BLOQUEANTE, que es
+  // la que se muere. Ver la nota del tipo en `lib/event-bus-health.ts`.
+  if (blocking && typeof blocking.reconnect === 'function') {
+    try {
+      await withDeadline(
+        Promise.resolve(blocking.reconnect()),
+        'el reconnect() de la conexión bloqueante',
+      );
+      logger.error('[event-bus-monitor] reconnect() de la conexión bloqueante OK.');
+      return 'bloqueante, reconnect() de BullMQ OK';
+    } catch (error) {
+      return `bloqueante, reconnect() falló (${messageOf(error)})`;
+    }
+  }
+
+  // Sin `reconnect()` se mira el estado, prefiriendo SIEMPRE la bloqueante. Y se
+  // dice CUÁL se miró: un `ready` de la conexión equivocada es peor que no medir.
+  const source = blocking?.client
+    ? { label: 'bloqueante', promise: blocking.client }
+    : worker.client
+      ? { label: 'la del worker (NO la bloqueante)', promise: worker.client }
+      : null;
+  if (!source) return 'no la expone el worker';
 
   let client: EventBusRedisClientLike;
   try {
-    client = await withDeadline(Promise.resolve(worker.client), 'el cliente de Redis del worker');
+    client = await withDeadline(Promise.resolve(source.promise), `el cliente ${source.label}`);
   } catch (error) {
     // Que el `client` no resuelva ES el síntoma: la conexión no logra establecerse.
-    return `ilegible (${messageOf(error)})`;
+    return `${source.label}, ilegible (${messageOf(error)})`;
   }
 
   const status = client.status ?? 'desconocido';
   // `connect()` sobre una conexión viva o en curso RECHAZA ("Redis is already
   // connecting/connected"), así que estos estados se dejan en paz.
   if (['ready', 'connect', 'connecting', 'reconnecting'].includes(status)) {
-    return `en \`${status}\`, no hace falta tocarla`;
+    return `${source.label} en \`${status}\`, no hace falta tocarla`;
   }
-  if (typeof client.connect !== 'function') return `en \`${status}\`, sin \`connect()\``;
+  if (typeof client.connect !== 'function') {
+    return `${source.label} en \`${status}\`, sin \`connect()\``;
+  }
 
   try {
     await withDeadline(Promise.resolve(client.connect()), 'la reconexión');
-    logger.error(`[event-bus-monitor] Conexión del worker reabierta desde \`${status}\`.`);
-    return `estaba en \`${status}\` y se reabrió`;
+    logger.error(
+      `[event-bus-monitor] Conexión ${source.label} reabierta desde \`${status}\`.`,
+    );
+    return `${source.label} estaba en \`${status}\` y se reabrió`;
   } catch (error) {
-    return `estaba en \`${status}\` y reabrirla falló (${messageOf(error)})`;
+    return `${source.label} estaba en \`${status}\` y reabrirla falló (${messageOf(error)})`;
   }
 }
 
@@ -471,6 +564,23 @@ async function tryRearmWorker(
     });
 
   return 'attempted';
+}
+
+/**
+ * Desde el módulo envuelto (`modules/event-bus-redis`), el ciclo de vida del worker
+ * tiene UN dueño: su supervisor, que ya está esperando su backoff para
+ * reconstruirlo. Acá sólo se le pide que corte esa espera. Lo que NO se hace es
+ * llamar a `run()` por cuenta propia: sobre un Worker cuya conexión bloqueante
+ * quedó envenenada rechaza para siempre, que es exactamente lo que el re-arme
+ * directo hizo en cada tick del 2026-09-09 — y además dos dueños del mismo worker
+ * se pisan (`Worker is already running`). Devuelve `true` si el supervisor se hizo
+ * cargo; `false` deja caer al `run()` directo, que sigue siendo el camino para una
+ * instalación que apunte `event_bus` al paquete de Medusa pelado.
+ */
+function delegateRearm(supervisor: EventBusWorkerSupervisorLike | null, logger: Logger): boolean {
+  const request = requestSupervisorRestart(supervisor);
+  logger.error(`[event-bus-monitor] Re-arme: ${request.line}`);
+  return request.handled;
 }
 
 export default async function eventBusMonitorJob(container: MedusaContainer): Promise<void> {
@@ -530,7 +640,13 @@ export default async function eventBusMonitorJob(container: MedusaContainer): Pr
     return;
   }
 
-  const text = report ?? verdict.detail;
+  // El estado del supervisor va en el mismo aviso: dice si el worker ya se está
+  // reconstruyendo solo (y cuántas veces lo hizo) o si esto es una caída de verdad.
+  const supervisorLine =
+    resolved.ok && resolved.supervisor
+      ? `\n\nSupervisor del worker: ${describeSupervisor(resolved.supervisor.snapshot())}`
+      : '';
+  const text = (report ?? verdict.detail) + supervisorLine;
   if (!alertThrottle.shouldEmit(verdict.kind)) return;
 
   logger.error(`[event-bus-monitor] ${text}`);
@@ -548,8 +664,15 @@ export default async function eventBusMonitorJob(container: MedusaContainer): Pr
    *
    * Sólo para `worker-not-running`. Con `subscriber-stuck` o `queue-stalled` el worker
    * SÍ está corriendo: rearmarlo no aplica y taparía la causa real.
+   *
+   * Y si el servicio expone el supervisor del módulo envuelto, el re-arme es SUYO:
+   * ver `delegateRearm`. El `run()` directo queda como fallback.
    */
-  if (verdict.kind === 'worker-not-running' && resolved.ok) {
+  if (
+    verdict.kind === 'worker-not-running' &&
+    resolved.ok &&
+    !delegateRearm(resolved.supervisor, logger)
+  ) {
     await tryRearmWorker(resolved.worker, logger);
   }
 }

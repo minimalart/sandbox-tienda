@@ -19,6 +19,7 @@ export type SiteRef = {
   slug: string;
   name: string;
   is_main: boolean;
+  canonical_form?: 'host' | 'path' | null;
   /** `[sales_channel_id, b2b_sales_channel_id]` sin nulls ni duplicados. */
   channel_ids: string[];
   region_id: string | null;

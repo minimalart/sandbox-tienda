@@ -952,3 +952,100 @@ describe('ZeusErpAdapter.fetchCategories', () => {
     }
   });
 });
+
+/**
+ * El documento emitido tiene que quedar disponible: el outbox guardaba la
+ * intención y el acuse, pero no lo que efectivamente viajó, y los parámetros
+ * fiscales sólo existen ahí.
+ */
+describe('ZeusErpAdapter — documento emitido y vista previa', () => {
+  const previewCtx = (extra: ErpZeusSettings = {}) =>
+    ctx({
+      ecommerce_id: 'medusa',
+      sucursal: 1,
+      deposito_id: 2,
+      pto_vta: 3,
+      cond_venta: 'CONTADO',
+      tipo_comp: 'PE',
+      ...extra,
+    });
+
+  const handler =
+    (opts: { clientFound?: boolean } = {}) =>
+    (url: URL, _init: RequestInit, call: Call) => {
+      if (url.pathname.endsWith('/clientes/search')) {
+        return opts.clientFound === false
+          ? { status: 200, body: [] }
+          : { status: 200, body: [{ codigo: 'CLI-945603', activo: true }] };
+      }
+      if (url.pathname.endsWith('/clientes') && call.method === 'POST') {
+        return { status: 200, body: { codigo: 'CLI-NUEVO' } };
+      }
+      if (url.pathname.endsWith('/pedidos') && call.method === 'POST') {
+        return { status: 201, body: [{ idtransac: 44744305, numero_comp: 24619, sucursal: 1 }] };
+      }
+      return { status: 404, body: '' };
+    };
+
+  it('notifySale devuelve en `request` exactamente el body que se posteó', async () => {
+    const { impl, calls } = fakeFetch(handler());
+    const result = await new ZeusErpAdapter(impl).notifySale(salePayload, previewCtx());
+
+    const pedido = calls.find((c) => c.url.pathname.endsWith('/pedidos'))!;
+    assert.deepEqual(result.request, pedido.body);
+    // No es una referencia al mismo objeto por casualidad: tiene los parámetros
+    // fiscales, que es lo que el ERP pide auditar y no está en `ErpSalePayload`.
+    const doc = (result.request as any[])[0];
+    assert.equal(doc.sucursal, 1);
+    assert.equal(doc.deposito, 2);
+    assert.equal(doc.pto_vta, 3);
+    assert.equal(doc.cond_venta, 'CONTADO');
+    assert.equal(doc.tipo_comp, 'PE');
+  });
+
+  it('un 409 (duplicate) también devuelve el documento', async () => {
+    const { impl } = fakeFetch((url, _init, call) =>
+      url.pathname.endsWith('/pedidos') && call.method === 'POST'
+        ? { status: 409, body: 'conflicto' }
+        : handler()(url, _init, call)
+    );
+    const result = await new ZeusErpAdapter(impl).notifySale(salePayload, previewCtx());
+    assert.equal(result.status, 'duplicate');
+    assert.equal((result.request as any[])[0].id_ecommerce, 'order_1');
+  });
+
+  it('previewSale con clientCode no toca la red y arma el mismo documento', async () => {
+    const { impl: sendImpl, calls: sendCalls } = fakeFetch(handler());
+    const sent = await new ZeusErpAdapter(sendImpl).notifySale(salePayload, previewCtx());
+    const enviado = (sendCalls.find((c) => c.url.pathname.endsWith('/pedidos'))!.body as any[])[0];
+
+    const { impl, calls } = fakeFetch(handler());
+    const preview = await new ZeusErpAdapter(impl).previewSale(salePayload, previewCtx(), {
+      clientCode: enviado.codigo_cliente,
+    });
+
+    assert.equal(calls.length, 0, 'la vista previa no debe salir a la red');
+    assert.deepEqual(preview.request, sent.request);
+    assert.deepEqual(preview.warnings, []);
+  });
+
+  it('previewSale sin clientCode BUSCA el cliente pero nunca lo crea', async () => {
+    const { impl, calls } = fakeFetch(handler({ clientFound: false }));
+    const preview = await new ZeusErpAdapter(impl).previewSale(salePayload, previewCtx());
+
+    assert.equal(
+      calls.some((c) => c.url.pathname.endsWith('/clientes') && c.method === 'POST'),
+      false,
+      'una vista previa no puede dar de alta un cliente en el ERP'
+    );
+    assert.equal((preview.request as any[])[0].codigo_cliente, '(sin resolver)');
+    assert.equal(preview.warnings.length, 1);
+  });
+
+  it('previewSale sin clientCode usa el código encontrado y lo declara', async () => {
+    const { impl } = fakeFetch(handler());
+    const preview = await new ZeusErpAdapter(impl).previewSale(salePayload, previewCtx());
+    assert.equal((preview.request as any[])[0].codigo_cliente, 'CLI-945603');
+    assert.match(preview.warnings[0]!, /recién ahora/);
+  });
+});

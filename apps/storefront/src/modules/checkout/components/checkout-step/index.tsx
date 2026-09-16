@@ -5,10 +5,19 @@ import {
   ChevronDownIcon,
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
+import { useEffect, useState } from "react";
+
+/**
+ * Debe coincidir con la duración de la transición de `grid-template-rows` del
+ * cuerpo del paso (`duration-500` más abajo). El contenido se desmonta recién
+ * cuando el colapso terminó, para que la animación de cierre se vea completa.
+ */
+const COLLAPSE_MS = 500;
 
 type CheckoutStepProps = {
   stepNumber: number;
   title: string;
+  subtitle?: string;
   icon?: React.ReactNode;
   isOpen: boolean;
   isCompleted: boolean;
@@ -52,6 +61,7 @@ function getStepShadowClass(
 export default function CheckoutStep({
   stepNumber,
   title,
+  subtitle,
   icon,
   isOpen,
   isCompleted,
@@ -60,6 +70,28 @@ export default function CheckoutStep({
   children,
 }: CheckoutStepProps) {
   const isToggleable = isCompleted && !isOpen && !!onEdit;
+
+  // Montaje perezoso + desmontaje diferido: el contenido no se monta hasta que
+  // el paso se abre por primera vez (así el brick de pago y demás vistas
+  // pesadas no arrancan de entrada), y al cerrarse sigue montado mientras dura
+  // la transición para que el colapso se anime en lugar de desaparecer.
+  const [mounted, setMounted] = useState(isOpen);
+  // `expanded` va un tick de animación por detrás de `isOpen`: mientras el
+  // cuerpo se mueve necesita `overflow: hidden` para recortar, pero una vez
+  // abierto hay que liberarlo o los popovers internos (el autocompletado de
+  // dirección, por ejemplo) quedarían cortados.
+  const [expanded, setExpanded] = useState(isOpen);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMounted(true);
+      const timer = setTimeout(() => setExpanded(true), COLLAPSE_MS);
+      return () => clearTimeout(timer);
+    }
+    setExpanded(false);
+    const timer = setTimeout(() => setMounted(false), COLLAPSE_MS);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
 
   const HeaderContent = (
     <>
@@ -116,7 +148,7 @@ export default function CheckoutStep({
       </div>
 
       <ChevronDownIcon
-        className={`h-4 w-4 shrink-0 text-[--chevron-color] transition-transform duration-200 sm:h-5 sm:w-5 ${
+        className={`h-4 w-4 shrink-0 text-[--chevron-color] transition-transform duration-[400ms] ease-in-out motion-reduce:transition-none sm:h-5 sm:w-5 ${
           isOpen ? "rotate-180" : ""
         }`}
       />
@@ -125,7 +157,7 @@ export default function CheckoutStep({
 
   return (
     <div
-      className={`rounded-xl transition-shadow ${getStepShadowClass(
+      className={`rounded-xl transition-[box-shadow,border-color] duration-300 ease-in-out motion-reduce:transition-none ${getStepShadowClass(
         isOpen,
         isCompleted,
         isEditing,
@@ -144,8 +176,26 @@ export default function CheckoutStep({
         <div className="flex items-center gap-2 px-4 py-3 sm:gap-3 sm:px-5 sm:py-4">{HeaderContent}</div>
       )}
 
-      {/* Body */}
-      {isOpen && <div className="px-5 py-5">{children}</div>}
+      {/* Body — colapsa y expande animando `grid-template-rows` entre 0fr y
+          1fr, que interpola contra la altura real del contenido sin medirla. */}
+      <div
+        aria-hidden={!isOpen}
+        className={`grid transition-[grid-template-rows] duration-500 ease-in-out motion-reduce:transition-none ${
+          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+        inert={!isOpen}
+      >
+        <div className={`min-h-0 ${expanded ? "" : "overflow-hidden"}`}>
+          {mounted && (
+            <div className="px-5 py-5">
+              {subtitle && (
+                <p className="mb-4 text-sm text-gray-600">{subtitle}</p>
+              )}
+              {children}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

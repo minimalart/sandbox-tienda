@@ -282,3 +282,41 @@ test('un bloque sin renderer se degrada en su posición, no desaparece', async (
     'el bloque degradado salió fuera de su posición',
   );
 });
+
+/**
+ * El color entonado en el mail.
+ *
+ * El bloque `LineItems` se genera POR CÓDIGO a partir de sus props, no se guarda
+ * como markup en el design. Por eso el color se agrega acá y no en el JSON de
+ * cada plantilla: es el único camino que alcanza a las instancias que tienen las
+ * plantillas editadas a mano.
+ *
+ * OJO con el alcance real: `html` es un cache derivado. Un design ya guardado NO
+ * incorpora este markup hasta que alguien vuelva a publicar la plantilla desde
+ * el editor (`PATCH /admin/email-templates/:id` re-renderiza el design).
+ */
+
+test('el bloque de items renderiza el color entonado, condicionado', async () => {
+  const doc: PuckEmailDocument = {
+    content: [
+      { type: 'LineItems', props: { id: 'items', source: 'order_items', currency: '$' } },
+    ],
+  };
+  const html = await renderPuckEmailHtml(doc);
+
+  // El `{{#if}}` tiene que llegar INTACTO a Handlebars: si el renderer lo
+  // escapara, toda línea común dibujaría un "Color:" vacío.
+  assert.match(html, /\{\{#if this\.color_label\}\}/);
+  assert.match(html, /Color: \{\{this\.color_label\}\}/);
+  assert.match(html, /\{\{\/if\}\}/);
+});
+
+test('el swatch cae a un gris neutro cuando la carta no tiene hex', async () => {
+  // Inventar un color sería mostrarle al comprador una pintura que no es la que
+  // va a recibir. El `{{else}}` es lo que lo evita.
+  const doc: PuckEmailDocument = {
+    content: [{ type: 'LineItems', props: { id: 'items' } }],
+  };
+  const html = await renderPuckEmailHtml(doc);
+  assert.match(html, /\{\{#if this\.color_hex\}\}\{\{this\.color_hex\}\}\{\{else\}\}#d1d5db\{\{\/if\}\}/);
+});

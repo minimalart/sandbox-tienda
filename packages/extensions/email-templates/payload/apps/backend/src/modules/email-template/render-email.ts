@@ -281,10 +281,78 @@ const BLOCKS: Record<string, BlockRenderer> = {
       imgCell +
       '<td style="padding:15px;vertical-align:middle;">' +
       '<p style="margin:0 0 5px 0;font-size:16px;color:#333333;font-weight:bold;">{{this.title}}</p>' +
+      /*
+       * Color entonado. Va ACA, en el bloque generado por codigo, y no en el
+       * JSON de cada plantilla: las plantillas viven en la base y varias
+       * instancias las tienen editadas a mano, asi que un cambio de markup solo
+       * llega a todas por este camino. Con `color_label` ausente (la linea no va
+       * entonada) el `{{#if}}` no emite nada.
+       *
+       * El swatch es una celda de tabla con `background-color` y no un `<span>`
+       * con borde redondeado: Outlook ignora `border-radius` y descarta los
+       * `display:inline-block`, y un cuadradito que se ve en todos lados es
+       * mejor que un circulo que en la mitad de los clientes no aparece.
+       */
+      '{{#if this.color_label}}<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 5px 0;"><tr>' +
+      '<td width="12" height="12" style="width:12px;height:12px;background-color:{{#if this.color_hex}}{{this.color_hex}}{{else}}#d1d5db{{/if}};border:1px solid #e5e7eb;font-size:0;line-height:0;">&nbsp;</td>' +
+      '<td style="padding-left:6px;font-size:14px;color:#666666;">Color: {{this.color_label}}</td>' +
+      '</tr></table>{{/if}}' +
       `<p style="margin:0;font-size:14px;color:#666666;">{{this.quantity}} x ${cur} {{this.unit_price_formatted}}</p>` +
       '</td>' +
       `<td style="padding:15px;text-align:right;vertical-align:middle;font-size:16px;color:#333333;font-weight:bold;white-space:nowrap;">${cur} {{this.line_total_formatted}}</td>` +
       '</tr></table>{{/each}}';
+    return createElement('div', { key, dangerouslySetInnerHTML: { __html: html } });
+  },
+
+  /**
+   * Sucursal de RETIRO EN TIENDA.
+   *
+   * El comprador que elige "Retiro en tienda" recibia el mismo mail que el que
+   * pide envio a domicilio: confirmacion de la compra y ni una palabra de DONDE
+   * la retira. El dato existia —`buildPickupContext` lo arma desde la sucursal
+   * elegida en el checkout— y no lo consumia ninguna plantilla.
+   *
+   * Va por codigo y no como RawHtml en el JSON de cada fila por el mismo motivo
+   * que `LineItems`: las plantillas viven en la base y hay instalaciones con el
+   * diseno editado a mano, asi que un bloque nuevo solo llega a todas por aca.
+   *
+   * DOBLE GATE a proposito. `is_store_pickup` dice que la orden es de retiro;
+   * `pickup_store` dice que ademas se pudo LEER la sucursal (el contexto la deja
+   * ausente cuando la resolucion falla, sin tirar). Gatear solo por el primero
+   * imprimiria el encabezado "Retiralo en" sobre una caja vacia, que es peor que
+   * no decir nada: el cliente se queda esperando una direccion que no llega.
+   *
+   * Todo tablas y nada de flex/grid: Outlook las ignora y el bloque se desarma.
+   */
+  PickupStore: ({ title, showHours, showMap }, key) => {
+    const heading =
+      typeof title === 'string' && title.trim() ? title.trim() : 'Retiralo en';
+    const withHours = showHours !== 'no' && showHours !== false;
+    const withMap = showMap !== 'no' && showMap !== false;
+    const hours = withHours
+      ? '{{#if hours.length}}<tr><td style="padding:8px 15px 0;font-size:14px;color:#666666;">' +
+        '<strong style="color:#333333;">Horarios</strong><br>' +
+        '{{#each hours}}{{this}}<br>{{/each}}' +
+        '</td></tr>{{/if}}'
+      : '';
+    const map = withMap
+      ? '{{#if map_url}}<tr><td style="padding:8px 15px 0;font-size:14px;">' +
+        '<a href="{{map_url}}" style="color:{{../primary_color}};text-decoration:underline;">Ver en el mapa</a>' +
+        '</td></tr>{{/if}}'
+      : '';
+    const html =
+      '{{#if is_store_pickup}}{{#with pickup_store}}' +
+      '<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" ' +
+      'style="margin:0 0 16px;background-color:#f8f9fa;border-radius:8px;">' +
+      `<tr><td style="padding:15px 15px 0;font-size:16px;color:{{../primary_color}};font-weight:bold;">${heading}</td></tr>` +
+      '<tr><td style="padding:8px 15px 0;font-size:16px;color:#333333;font-weight:bold;">{{name}}</td></tr>' +
+      '{{#if address}}<tr><td style="padding:4px 15px 0;font-size:14px;color:#666666;">{{address}}</td></tr>{{/if}}' +
+      '{{#if phone}}<tr><td style="padding:4px 15px 0;font-size:14px;color:#666666;">Tel: {{phone}}</td></tr>{{/if}}' +
+      hours +
+      map +
+      '<tr><td style="height:15px;font-size:0;line-height:0;">&nbsp;</td></tr>' +
+      '</table>' +
+      '{{/with}}{{/if}}';
     return createElement('div', { key, dangerouslySetInnerHTML: { __html: html } });
   },
 

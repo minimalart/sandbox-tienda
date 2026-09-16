@@ -96,8 +96,38 @@ export const toFloatingBand = (
   right: rect.right,
 });
 
-const overlapsHorizontally = (a: FloatingBand, b: FloatingBand): boolean =>
-  a.left < b.right && b.left < a.right;
+/**
+ * Fracción MÍNIMA del ancho propio que un obstáculo tiene que cubrir para
+ * obligarnos a subir.
+ *
+ * Sin este piso alcanzaba 1px de solape, y eso rompía a los elementos de ancho
+ * completo: en el home de desdeelsur el aviso de cookies (1440px de ancho)
+ * esquivaba al botón "volver arriba" (40px, en la esquina derecha) y terminaba
+ * en `bottom: 124px` — flotando en el medio de la página y tapando una card
+ * entera del catálogo en TODO el ancho, en vez de quedar pegado al borde
+ * (DESDEELSUR-61 / BUG-05).
+ *
+ * Subir sólo tiene sentido cuando el obstáculo cubre una parte real de lo
+ * nuestro: un elemento de ancho completo no tiene ninguna columna libre a la que
+ * correrse, así que esquivar un botón lateral no lo destapa — sólo mueve el
+ * problema al contenido de abajo. La fracción se mide contra el ancho PROPIO, no
+ * contra el del obstáculo: así un botón flotante chico sigue esquivando al nav
+ * mobile de ancho completo (lo cubre al 100% de SU ancho), que es el caso para
+ * el que se escribió este módulo.
+ */
+export const MIN_HORIZONTAL_OVERLAP_RATIO = 0.25;
+
+const overlapsHorizontally = (a: FloatingBand, b: FloatingBand): boolean => {
+  const overlap = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  if (overlap <= 0) return false;
+
+  const selfWidth = a.right - a.left;
+  // Un ancho propio no medible (0) no puede dar una fracción: cualquier solape
+  // cuenta, que es el comportamiento conservador de siempre.
+  if (selfWidth <= 0) return true;
+
+  return overlap / selfWidth >= MIN_HORIZONTAL_OVERLAP_RATIO;
+};
 
 const overlapsVertically = (a: FloatingBand, b: FloatingBand): boolean =>
   a.bottom < b.top && b.bottom < a.top;

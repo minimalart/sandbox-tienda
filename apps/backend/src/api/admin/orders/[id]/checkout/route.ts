@@ -7,7 +7,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
   res.setHeader('Cache-Control', 'private, no-store');
   try {
     const query: any = req.scope.resolve(ContainerRegistrationKeys.QUERY);
-    const { data } = await query.graph({ entity: 'order', fields: ['id', 'sales_channel_id', '*items'], filters: { id: req.params.id } });
+    const { data } = await query.graph({ entity: 'order', fields: ['id', 'sales_channel_id', 'items.*'], filters: { id: req.params.id } });
     const order = data[0];
     if (!order) return res.status(404).json({ message: 'Pedido no encontrado.' });
     const { data: links } = await query.graph({ entity: 'order_cart', fields: ['cart_id'], filters: { order_id: order.id } });
@@ -24,5 +24,5 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
     try { await authorizeCheckoutAdmin(req, snapshot.site_id, true); canView = true; } catch { /* masked view remains available */ }
     if (reveal) await pg('site_checkout_access_log').insert({ actor_id: actor, site_id: snapshot.site_id, order_id: order.id });
     return res.json({ checkout: { site_id: snapshot.site_id, version: snapshot.policy_version, people: reveal ? snapshot.people : maskedPeople(snapshot.people), units: mapOrderUnits(snapshot.units, order.items), can_view_documents: canView } });
-  } catch (error) { return checkoutErrorResponse(res, error); }
+  } catch (error) { return checkoutErrorResponse(res, error, req); }
 }

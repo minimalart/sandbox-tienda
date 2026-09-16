@@ -183,7 +183,7 @@ test('una clave heredada del prototipo no cuenta como presente', () => {
 
 // ─── order-confirmation: el payload real más grande ───────────────────────────
 
-test('order-confirmation real: las 14 declaradas están y sobran 11 sin declarar', () => {
+test('order-confirmation real: las 16 declaradas están y sobran 11 sin declarar', () => {
   /**
    * Claves reales de los 8 `order-confirmation` de desdeelsur. Los valores están
    * simplificados; las CLAVES son las de la base, que es lo que el análisis mira.
@@ -197,6 +197,14 @@ test('order-confirmation real: las 14 declaradas están y sobran 11 sin declarar
     discounts: [],
     discount_total_formatted: '$ 0',
     display_id: 41,
+    /**
+     * Retiro en tienda (DESDEELSUR-68). Van con el valor de una orden de ENVÍO A
+     * DOMICILIO, que es la que describe este payload: el emisor las manda
+     * siempre, justamente para que esta pantalla no marque como faltantes dos
+     * datos que un mail a domicilio no necesita.
+     */
+    is_store_pickup: false,
+    pickup_store: null,
     logo_url: 'https://x.test/logo.svg',
     order_date_formatted: '31/08/2026',
     order_id: 'order_01X',
@@ -230,14 +238,29 @@ test('order-confirmation real: las 14 declaradas están y sobran 11 sin declarar
   );
 
   assert.equal(analysis.counts.missing, 0, 'el emisor real cubre todas las declaradas');
-  // `discounts: []` es la única vacía: un pedido sin descuentos. Es correcto que se
-  // marque — la pantalla informa, no juzga.
-  assert.equal(analysis.counts.empty, 1);
+  // Dos vacías: `discounts: []` (pedido sin descuentos) y `pickup_store: null`
+  // (no hay sucursal porque no es un retiro). Es correcto que se marquen — la
+  // pantalla informa, no juzga.
+  assert.equal(analysis.counts.empty, 2);
   assert.equal(
     analysis.variables.find((v) => v.name === 'discounts')?.state,
     'empty',
   );
-  assert.equal(analysis.counts.ok, declared.length - 1);
+  assert.equal(
+    analysis.variables.find((v) => v.name === 'pickup_store')?.state,
+    'empty',
+  );
+  /**
+   * `is_store_pickup: false` tiene que leerse `ok`, NO vacío: es una respuesta
+   * ("esta orden no es de retiro"), no un dato que faltó. Si algún día
+   * `variableState` empezara a tratar el `false` como vacío, todo mail de envío
+   * a domicilio aparecería con un hueco que no tiene.
+   */
+  assert.equal(
+    analysis.variables.find((v) => v.name === 'is_store_pickup')?.state,
+    'ok',
+  );
+  assert.equal(analysis.counts.ok, declared.length - 2);
 
   /**
    * La lista completa, no el número. Once claves que el mail de confirmación YA

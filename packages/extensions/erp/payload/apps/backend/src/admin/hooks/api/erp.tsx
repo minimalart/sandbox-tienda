@@ -124,7 +124,7 @@ export type ErpCatalogSyncSettings = {
   /** Tope de despublicaciones por corrida, en % de lo que trajo el ERP. */
   max_unpublish_pct?: number;
   /** Bajar las imágenes del ERP y dejarlas como `images` + `thumbnail`. */
-  images?: { enabled?: boolean; backfill_pending?: boolean };
+  images?: { enabled?: boolean; backfill_pending?: boolean; min_dimension_px?: number };
   product_fields?: ErpProductField[];
   /** Normalización del título recibido del ERP (reglas R01–R26). */
   title_rules?: {
@@ -371,6 +371,21 @@ export type ErpOutboxEvent = {
   created_at: string;
 };
 
+/**
+ * Documento de venta que se le mandó (o se le mandaría) al ERP.
+ *
+ * `source` NO es decorativo: `stored` es el body tal cual viajó —evidencia—, y
+ * `reconstructed` es un rearmado con la config de hoy, que puede diferir de la
+ * que se usó. La UI tiene que distinguirlos.
+ */
+export type ErpSalePreview = {
+  source: 'stored' | 'reconstructed';
+  request: unknown;
+  warnings: string[];
+  sent_at: string | null;
+  external_ref: string | null;
+};
+
 export type ErpOutboxCounts = Partial<Record<ErpOutboxEvent['status'], number>>;
 
 export type StockLocationOption = { id: string; name: string };
@@ -380,6 +395,7 @@ export type StockLocationOption = { id: string; name: string };
 export const ERP_CONFIG_QUERY_KEY = ['erp', 'config'] as const;
 export const ERP_SYNC_LOGS_QUERY_KEY = ['erp', 'sync-logs'] as const;
 export const ERP_OUTBOX_QUERY_KEY = ['erp', 'outbox-events'] as const;
+export const ERP_UNREGISTERED_QUERY_KEY = ['erp', 'unregistered-orders'] as const;
 
 // ─── Fetch helper ─────────────────────────────────────────────────────────────
 
@@ -417,6 +433,39 @@ export function useUpdateErpConfig(callbacks?: {
       fetchJson<ErpConfigResponse>(`${BASE_URL}/config`, {
         method: 'POST',
         body: JSON.stringify(data),
+      }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ERP_CONFIG_QUERY_KEY });
+      callbacks?.onSuccess?.(data);
+    },
+    onError: (error: Error) => callbacks?.onError?.(error),
+  });
+}
+
+export type ResetImageFailuresResponse = {
+  /** Cantidad de SKUs cuyo contador se limpió. */
+  cleared: number;
+  /** SKUs con < FAILURE_STRIKES que quedaron (no bloquean el sync). */
+  remaining: number;
+};
+
+/**
+ * Vacía el mapa `settings.catalog_sync.failures` que trackea los SKUs con foto
+ * fallida. Un SKU con `FAILURE_STRIKES` fallas queda en cooldown por
+ * `FAILURE_COOLDOWN_DAYS` días — cambiar `min_dimension_px` o publicar el
+ * artículo en el ERP no lo saca solo. Este reset es la palanca para que el
+ * próximo run vuelva a intentar todo.
+ */
+export function useResetImageFailures(callbacks?: {
+  onSuccess?: (data: ResetImageFailuresResponse) => void;
+  onError?: (error: Error) => void;
+}) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      fetchJson<ResetImageFailuresResponse>(`${BASE_URL}/config/reset-image-failures`, {
+        method: 'POST',
+        body: JSON.stringify({}),
       }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ERP_CONFIG_QUERY_KEY });
@@ -613,7 +662,9 @@ export function useErpSyncLogs(
   return useQuery({
     queryKey: [...ERP_SYNC_LOGS_QUERY_KEY, params ?? {}],
     queryFn: () =>
-      fetchJson<{ sync_logs: ErpSyncLog[]; count: number }>(`${BASE_URL}/sync-logs?${qs.toString()}`),
+      fetchJson<{ sync_logs: ErpSyncLog[]; count: number }>(
+        `${BASE_URL}/sync-logs?${qs.toString()}`
+      ),
     ...opts,
   });
 }
@@ -669,6 +720,24 @@ export function useErpOutboxEvents(
   });
 }
 
+/**
+ * Vista previa del documento de venta de un evento del outbox. `eventId` en
+ * null la deja apagada (el drawer cerrado no consulta nada).
+ *
+ * `staleTime: Infinity`: para un evento ya enviado el documento no cambia
+ * nunca, y para uno reconstruido tampoco tiene sentido re-pegarle al ERP
+ * mientras el drawer está abierto.
+ */
+export function useErpSalePreview(eventId: string | null, opts?: QueryOpts) {
+  return useQuery({
+    queryKey: [...ERP_OUTBOX_QUERY_KEY, 'preview', eventId],
+    queryFn: () => fetchJson<ErpSalePreview>(`${BASE_URL}/outbox-events/${eventId}/preview`),
+    enabled: Boolean(eventId),
+    staleTime: Infinity,
+    ...opts,
+  });
+}
+
 export function useRetryOutboxEvent(callbacks?: {
   onSuccess?: () => void;
   onError?: (error: Error) => void;
@@ -685,6 +754,127 @@ export function useRetryOutboxEvent(callbacks?: {
       callbacks?.onSuccess?.();
     },
     onError: (error: Error) => callbacks?.onError?.(error),
+  });
+}
+
+/** Lo que devuelve `POST /admin/erp/outbox-events/resync`. */
+export type ErpResyncResponse = {
+  requeued: number;
+  total: number;
+  /** Filas que matchearon pero no entraron en el techo de esta corrida. */
+  remaining: number;
+  by_reason: Record<string, number>;
+};
+
+export type ErpResyncInput = {
+  /** Selección de la tabla (parcial o singular). */
+  event_ids?: string[];
+  /** Desde el widget de la orden, que no conoce el id del evento. */
+  order_ids?: string[];
+  /** Barrido masivo; sin esto la ruta usa skipped/failed/dead_letter. */
+  statuses?: string[];
+  /** Reenviar aunque ya esté `sent`/`duplicate`. Sólo con ids explícitos. */
+  force?: boolean;
+};
+
+/**
+ * Reenvío manual de ventas al ERP en los tres modos (masivo, parcial,
+ * singular). Invalida el outbox Y las órdenes: el widget de la orden muestra el
+ * estado del evento de venta y quedaría mostrando el anterior.
+ */
+export function useResyncOutboxEvents(callbacks?: {
+  onSuccess?: (data: ErpResyncResponse) => void;
+  onError?: (error: Error) => void;
+}) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ErpResyncInput) =>
+      fetchJson<ErpResyncResponse>(`${BASE_URL}/outbox-events/resync`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ERP_OUTBOX_QUERY_KEY });
+      // Encolar una orden la saca del listado de no registradas: sin esto la
+      // fila reencolada seguiría ahí y el operador la mandaría dos veces.
+      qc.invalidateQueries({ queryKey: ERP_UNREGISTERED_QUERY_KEY });
+      qc.invalidateQueries({ queryKey: ['erp', 'order'] });
+      callbacks?.onSuccess?.(data);
+    },
+    onError: (error: Error) => callbacks?.onError?.(error),
+  });
+}
+
+/** Una orden que debería estar notificada al ERP y no tiene fila en el outbox. */
+export type ErpUnregisteredOrder = {
+  order_id: string;
+  display_id: number | null;
+  created_at: string | null;
+  payment_status: string | null;
+  fulfillment_status: string | null;
+  total: number | null;
+};
+
+export type ErpUnregisteredResponse = {
+  orders: ErpUnregisteredOrder[];
+  count: number;
+  /** Cuántas órdenes se examinaron: `count` NO es un total del histórico. */
+  scanned: number;
+  discarded: Record<string, number>;
+  trigger?: string | null;
+  /** `false` = el ERP o la notificación de ventas están apagados. */
+  enabled: boolean;
+};
+
+/**
+ * Órdenes atrasadas que NUNCA se encolaron. Es la otra mitad del panel de
+ * Ventas: el outbox sólo muestra lo que alcanzó a registrarse, así que con el
+ * event bus caído estas órdenes no aparecen en ninguna pantalla.
+ */
+export function useErpUnregisteredOrders(params?: { limit?: number }, opts?: QueryOpts) {
+  const qs = new URLSearchParams();
+  if (params?.limit != null) qs.set('limit', String(params.limit));
+  return useQuery({
+    queryKey: [...ERP_UNREGISTERED_QUERY_KEY, params ?? {}],
+    queryFn: () =>
+      fetchJson<ErpUnregisteredResponse>(`${BASE_URL}/unregistered-orders?${qs.toString()}`),
+    ...opts,
+  });
+}
+
+/** Una opción válida de un listado del ERP: el código y su nombre. */
+export type ErpConfigLookupOption = {
+  value: string;
+  /** `"01 — Contado"`. Igual al value si el ERP no informó un nombre. */
+  label: string;
+  raw?: Record<string, unknown>;
+};
+
+export type ErpConfigLookupsResponse = {
+  targets: Record<string, string>;
+  options: Record<string, ErpConfigLookupOption[]>;
+  errors: Record<string, string>;
+  /** Qué devolvió cada listado; distingue vacío de ilegible. */
+  diagnostics?: Record<string, { received: number; usable: number; sample_keys: string[] }>;
+  supported: boolean;
+  provider?: string | null;
+  fetched_at?: string | null;
+};
+
+/**
+ * Los códigos válidos de la cuenta del ERP, para que los campos de la config
+ * sean un select en lugar de texto libre.
+ *
+ * `staleTime` alto: son listados de configuración del ERP (sucursales,
+ * depósitos, condiciones de venta), no cambian mientras alguien completa un
+ * formulario, y cada corrida son seis llamadas al ERP.
+ */
+export function useErpConfigLookups(opts?: QueryOpts) {
+  return useQuery({
+    queryKey: ['erp', 'config-lookups'],
+    queryFn: () => fetchJson<ErpConfigLookupsResponse>(`${BASE_URL}/config/lookups`),
+    staleTime: 5 * 60 * 1000,
+    ...opts,
   });
 }
 

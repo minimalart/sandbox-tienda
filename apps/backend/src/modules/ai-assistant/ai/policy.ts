@@ -51,12 +51,19 @@ export function isMemoryTool(name: string): boolean {
   return name === SEARCH_MEMORY_TOOL || name === REMEMBER_TOOL;
 }
 
-export function classifyAction(action: string): 'read' | 'write' {
+export type ToolPolicyHints = {
+  read_only_hint?: boolean;
+  trusted?: boolean;
+  has_action?: boolean;
+};
+
+export function classifyAction(action: string, hints?: ToolPolicyHints): 'read' | 'write' {
+  if (action === '*' && hints?.trusted === true && hints.read_only_hint === true && hints.has_action === false) return 'read';
   return READ_ACTION_RE.test(action) ? 'read' : 'write';
 }
 
 /** Default cuando no hay override en DB. */
-export function defaultMode(toolName: string, action: string, resource?: string): PolicyMode {
+export function defaultMode(toolName: string, action: string, resource?: string, hints?: ToolPolicyHints): PolicyMode {
   // Tools nativas (generar imagen, crear/editar borrador de blog, linkear productos):
   // bajo riesgo (nunca publican) → auto, para no cortar el pipeline de contenido.
   if (isNativeTool(toolName)) return 'auto';
@@ -81,7 +88,7 @@ export function defaultMode(toolName: string, action: string, resource?: string)
   ) {
     return 'prohibited';
   }
-  return classifyAction(action) === 'read' ? 'auto' : 'ask';
+  return classifyAction(action, hints) === 'read' ? 'auto' : 'ask';
 }
 
 export type PolicyOverride = {
@@ -107,12 +114,13 @@ export function resolveMode(
   action: string,
   resource: string,
   overrides: PolicyOverride[],
+  hints?: ToolPolicyHints,
 ): PolicyMode {
   const map = new Map(
     overrides.map((o) => [key(o.tool_name, o.action, o.resource || ''), o.mode]),
   );
   return (
-    map.get(key(toolName, action, resource)) ?? defaultMode(toolName, action, resource)
+    map.get(key(toolName, action, resource)) ?? defaultMode(toolName, action, resource, hints)
   );
 }
 

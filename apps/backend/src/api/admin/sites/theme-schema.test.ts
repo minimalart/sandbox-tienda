@@ -25,6 +25,7 @@ const FULL_THEME = {
   accent_color: '#333333',
   header_background: '#444444',
   footer_background: '#555555',
+  promo_button_color: '#666666',
   logo: '/logo.svg',
   logo_negative: '/logo-neg.svg',
   icon: '/icon.svg',
@@ -45,12 +46,12 @@ const baseCreate = {
 };
 
 describe('theme: una clave sobrevive crear Y editar', () => {
-  it('crear conserva las 13 claves', () => {
+  it('crear conserva las 14 claves', () => {
     const parsed = CreateDemoStoreSchema.parse({ ...baseCreate, theme: FULL_THEME });
     assert.deepEqual(parsed.theme, FULL_THEME);
   });
 
-  it('editar conserva las 13 claves', () => {
+  it('editar conserva las 14 claves', () => {
     const parsed = UpdateDemoStoreSchema.parse({ theme: FULL_THEME });
     assert.deepEqual(parsed.theme, FULL_THEME);
   });
@@ -86,7 +87,7 @@ describe('theme: una clave sobrevive crear Y editar', () => {
     assert.equal(updated.color_inventado, undefined);
   });
 
-  it('ThemeSchema es la única fuente: cubre las 13 claves', () => {
+  it('ThemeSchema es la única fuente: cubre las 14 claves', () => {
     assert.deepEqual(Object.keys(ThemeSchema.parse(FULL_THEME)).sort(), Object.keys(FULL_THEME).sort());
   });
 });

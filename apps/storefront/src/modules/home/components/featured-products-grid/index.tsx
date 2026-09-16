@@ -23,6 +23,8 @@ type FeaturedProductsGridProps = {
     | 'renovaEnergia'
   >
   cardVariant?: 'default' | 'compact'
+  /** Presentación fija opcional. Ausente = carrusel histórico. */
+  layout?: 'carousel' | 'grid-4'
   /** Only show products that have an active promotion. */
   onlyPromotions?: boolean
   /** Hard cap on the number of product cards rendered. */
@@ -52,6 +54,7 @@ export default async function FeaturedProductsGrid({
   countryCode,
   productCategory = 'featuredProducts',
   cardVariant = 'default',
+  layout = 'carousel',
   onlyPromotions = false,
   maxItems,
   viewAllCard,
@@ -184,6 +187,25 @@ export default async function FeaturedProductsGrid({
                 <ArrowRight className='size-5' />
               </span>
             </LocalizedClientLink>
+          </div>
+        </div>
+      </Reveal>
+    )
+  }
+
+  if (layout === 'grid-4') {
+    return (
+      <Reveal as='section' className='relative bg-[#f3f5f6] py-8 sm:py-8'>
+        <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
+          <div className='mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+            {header}
+          </div>
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+            {limitedProducts.map((product) => (
+              <div key={product.id} className='min-w-0'>
+                {renderCard(product)}
+              </div>
+            ))}
           </div>
         </div>
       </Reveal>

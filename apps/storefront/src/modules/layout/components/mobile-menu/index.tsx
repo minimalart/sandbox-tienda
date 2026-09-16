@@ -102,7 +102,7 @@ const MobileMenu = ({ open, onClose, customer, hasTinting = false, hasSpaceDesig
     <div className='fixed inset-0 z-[9998] lg:hidden'>
       <button
         aria-label='Cerrar menu'
-        className='absolute inset-0 bg-black/65 transition-opacity duration-300'
+        className='absolute inset-0 cursor-modal-close bg-black/65 transition-opacity duration-300'
         onClick={closePanel}
         style={{ opacity: visible ? 1 : 0 }}
         type='button'
@@ -274,16 +274,18 @@ const MobileMenu = ({ open, onClose, customer, hasTinting = false, hasSpaceDesig
         {hasActivePromotions && (
           <div className='px-5 py-5'>
             <LocalizedClientLink
-              className='relative flex min-h-[110px] flex-col justify-center overflow-hidden rounded-2xl bg-[var(--accent-color,#f97316)] px-5 text-white'
+              // Mismo color configurable que el boton "Promociones" del header
+              // (`--promo-button-bg`); sin configurar conserva el acento de siempre.
+              className='relative flex min-h-[110px] flex-col justify-center overflow-hidden rounded-2xl bg-[var(--promo-button-bg,var(--accent-color,#f97316))] px-5 text-[var(--promo-button-fg,#fff)]'
               href='/store?promos=1'
               onClick={closePanel}
             >
-              <GiftIcon className='absolute -right-4 -top-4 h-24 w-24 text-white/20' />
+              <GiftIcon className='absolute -right-4 -top-4 h-24 w-24 opacity-20' />
               <span className='relative text-lg font-bold'>Aprovecha tus beneficios</span>
-              <span className='relative mt-1 text-sm text-white/90'>
+              <span className='relative mt-1 text-sm opacity-90'>
                 Descuentos y promociones exclusivas
               </span>
-              <span className='relative mt-4 inline-flex h-8 w-fit items-center rounded-full bg-white px-4 text-sm font-bold text-[var(--accent-color,#f97316)]'>
+              <span className='relative mt-4 inline-flex h-8 w-fit items-center rounded-full bg-white px-4 text-sm font-bold text-[var(--promo-button-bg,var(--accent-color,#f97316))]'>
                 Ver más
                 <ChevronRightIcon className='ml-1 h-4 w-4' />
               </span>

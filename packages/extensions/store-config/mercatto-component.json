@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "store-config",
   "name": "Preferencias",
-  "version": "1.15.1",
+  "version": "1.16.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [],
@@ -138,7 +138,7 @@
     },
     {
       "path": "apps/backend/src/admin/hooks/api/store-config.tsx",
-      "sha256": "436e813d64c65cb888565a6768896483c0db53ca7a25a7f623f76091af3a9bfa"
+      "sha256": "c5754cba94a9e3f919555072239f553231d82c3275ef35b20a2eddfc9415e356"
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/components/ai-config-card.tsx",
@@ -146,7 +146,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/components/branch-settings-card.tsx",
-      "sha256": "166612769bbe3d1f430eee4fc2898f34b7f00e9b30915b60ca3d311b6b9587c6"
+      "sha256": "cea07879f98311409674575ae1fade0332c67e72d5cf53f95a493374c0a5b607"
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/components/commerce-card.tsx",
@@ -170,11 +170,11 @@
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/components/minimum-purchase-create-drawer.tsx",
-      "sha256": "3322128c3f3e2fc84947b423c7b94bf3d4b647ea73cc86a6b510a4d6f19138e5"
+      "sha256": "03f1a5764e2f2998ea329683a23c52fee873bd51d8d9352c885cba16ceab9011"
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/components/site-gate-card.tsx",
-      "sha256": "47fd21a1ef145c2d022a7a372a3102b7556f9c366ebeabd804a5b5155db66933"
+      "sha256": "14dadb803436ce948ab78b488916801123f041c4f29d0bc50177f55434c6083f"
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/components/storefront-settings-card.tsx",
@@ -186,11 +186,11 @@
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/page.tsx",
-      "sha256": "2686744b6fc357f3d8a658a13b1fe377ab528c73ed108c7019da9a811d8dc242"
+      "sha256": "a71afb9ff261dceb81d2de66ef717bd0d45a180af3e0b3a92cf94aac7fa31111"
     },
     {
       "path": "apps/backend/src/admin/translations/store-config/index.ts",
-      "sha256": "bde8b3ebc2b0123ae8301aaec94b1b62daf57939069d956049b7fcb98214c7ea"
+      "sha256": "4cfce22311f5f10c41f3c7972841a1aa3ef2d0d1a3b4418d40282936d67abec0"
     },
     {
       "path": "apps/backend/src/api/admin/store-config/ai-config/route.ts",
@@ -221,12 +221,16 @@
       "sha256": "18bdf51e2c9a37e34e22286a06811b8063896e100a088fc98a1e6a4d23a9cf5f"
     },
     {
+      "path": "apps/backend/src/api/admin/store-config/minimum-purchase/[id]/route.ts",
+      "sha256": "691f7c1517c7abf8e54c0e5bf60da87d9d798a0563adeee835e1643ab6f484e3"
+    },
+    {
       "path": "apps/backend/src/api/admin/store-config/minimum-purchase/route.ts",
-      "sha256": "7b429d47a1f98cf0d51ebe785ff926568181c800ad3e639a43385ffab8879ff2"
+      "sha256": "971041b2b48848e7ae264281303099b95b7b6b943dafc8f762f0b09d57b0c21e"
     },
     {
       "path": "apps/backend/src/api/admin/store-config/minimum-purchase/validators.ts",
-      "sha256": "d3c37b23834418da6b137afe75b3ab93fe153e75079b161df6e1b2f43625b16e"
+      "sha256": "b4242c2786e6960a1628ea729ae00b33145fba72940c543543675ca69861033a"
     },
     {
       "path": "apps/backend/src/api/admin/store-config/settings/route.ts",
@@ -246,7 +250,7 @@
     },
     {
       "path": "apps/backend/src/api/admin/store-config/storefront-url/route.ts",
-      "sha256": "f41ff08567ea6539dbe32918e71f70e0eb220e12cb2166d95f5fa2d3de31fc6d"
+      "sha256": "fd6b425e025c773dd54e4f8d07131ea8755a3851bd0dfe8de56acecacaef1e0f"
     },
     {
       "path": "apps/backend/src/api/store/barcode-scanner/lookup/route.ts",
@@ -318,7 +322,7 @@
     },
     {
       "path": "apps/backend/src/modules/store-config/models/minimum-purchase.ts",
-      "sha256": "ffbb90fb51ab50904f939bb8b1ba9a5547c55cd640bdffd54a685cec582418e5"
+      "sha256": "d945a44990f9e65dabdf56b1c0e5f907e5b108dfffd0c7d9cc2c3ac38b9bd4b6"
     },
     {
       "path": "apps/backend/src/modules/store-config/models/store-setting.ts",
@@ -326,7 +330,7 @@
     },
     {
       "path": "apps/backend/src/modules/store-config/service.ts",
-      "sha256": "923f905d92e219d3cb76b7dd05feb4873bb6608d2e9921c3e86e1f41763a01bb"
+      "sha256": "fa12a536cd889c92f86c095ac16a0040183f32891af71e6eae9f21941873f62b"
     },
     {
       "path": "apps/backend/src/modules/store-config/settings.test.ts",
@@ -342,7 +346,7 @@
     },
     {
       "path": "apps/backend/src/modules/store-config/site-gate.ts",
-      "sha256": "cd882e1d33960565bce0433fdc80ac6c5a7ca694b4ee43c5cc54c4f8b40f6a73"
+      "sha256": "b0cac0811e05a352a6dc8412e0446ec73198d922c3f0151dab35063d76d3ad8e"
     },
     {
       "path": "apps/backend/src/modules/store-config/site-settings.test.ts",

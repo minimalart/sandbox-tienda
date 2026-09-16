@@ -1,3 +1,4 @@
+import { isSitesHubHost, sitesHubOrigin, publicSiteUrl, normalizeSiteSuffix } from "@lib/site-config/site-hosts";
 import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
@@ -94,7 +95,7 @@ const resolveConfiguredBase = async (): Promise<string> => {
  * tienda pasa a ser `<slug>.<sufijo>`.
  */
 export const getCanonicalOrigin = cache(async (): Promise<string> => {
-  const suffix = process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX;
+  const suffix = normalizeSiteSuffix(process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX);
   const base = await resolveConfiguredBase();
   if (!suffix) return base;
 
@@ -114,11 +115,8 @@ export const getCanonicalOrigin = cache(async (): Promise<string> => {
   // NO agrega I/O. Es por eso que esta decisión vive acá y no en `proxy.ts`: ahí
   // habría que ir a la base en cada navegación.
   const tenant = await getActiveTenant();
-  if (tenant.canonicalForm === "path") return base;
-
-  const primary = process.env.NEXT_PUBLIC_PRIMARY_HOST;
-  const scheme = primary?.startsWith("localhost") ? "http" : "https";
-  return `${scheme}://${slug}${suffix}`;
+  if (tenant.canonicalForm === "path") return sitesHubOrigin(suffix, base) ?? base;
+  return publicSiteUrl({ slug, canonical_form: "host" }, { baseUrl: base, hostSuffix: suffix });
 });
 
 /**
@@ -139,7 +137,7 @@ export const getCanonicalPath = cache(async (): Promise<string> => {
   // `/tienda/<slug>`, así que ese prefijo ES su URL canónica. Devolver `''` acá era el
   // bug que hacía que cada PDP de cada tienda canonicalizara al sitio PRINCIPAL, donde
   // ese producto puede no existir (auditoría del 19/08: 57 de 57 páginas).
-  if (!process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX) return `/${SITE_PATH_SEGMENT}/${slug}`;
+  if (!normalizeSiteSuffix(process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX)) return `/${SITE_PATH_SEGMENT}/${slug}`;
 
   const tenant = await getActiveTenant();
   return tenant.canonicalForm === "path" ? `/${SITE_PATH_SEGMENT}/${slug}` : "";
@@ -172,11 +170,11 @@ export const canonicalUrl = async (path: string): Promise<string> => {
  * Con multi-host apagado siempre es `true`: no hay host no canónico posible.
  */
 export const isCanonicalHost = cache(async (): Promise<boolean> => {
-  if (!process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX) return true;
+  if (!normalizeSiteSuffix(process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX)) return true;
   const [host, canonical] = await Promise.all([getRequestHost(), getCanonicalOrigin()]);
   if (!host) return true;
   try {
-    return new URL(canonical).host === host;
+    return new URL(canonical).hostname === host;
   } catch {
     return true;
   }
@@ -191,18 +189,18 @@ export const isCanonicalHost = cache(async (): Promise<boolean> => {
  * para el `noindex`.
  */
 export const isCanonicalForm = cache(async (): Promise<boolean> => {
-  if (!process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX) return true;
+  if (!normalizeSiteSuffix(process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX)) return true;
   const { getActiveSiteSlug, getActiveTenant } = await import(
     "@lib/site-config/active-tenant"
   );
   const slug = await getActiveSiteSlug();
-  if (!slug) return true; // sitio principal: siempre canónico
+  if (!slug) return isCanonicalHost();
 
   const [tenant, host] = await Promise.all([getActiveTenant(), getRequestHost()]);
   if (!host) return true;
 
-  const suffix = process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX;
+  const suffix = normalizeSiteSuffix(process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX);
   const onSubdomain = host === `${slug}${suffix}`;
   // 'host' → canónico sólo en el subdominio. 'path' → canónico sólo FUERA de él.
-  return tenant.canonicalForm === "path" ? !onSubdomain : onSubdomain;
+  return tenant.canonicalForm === "path" ? isSitesHubHost(host, suffix) : onSubdomain;
 });
