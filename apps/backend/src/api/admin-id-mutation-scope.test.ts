@@ -124,6 +124,14 @@ const MAX_SIN_GUARD = 0;
  * `siteFromRequest` ni directo ni por un helper, la exención se cae—.
  */
 const EXENTAS: Record<string, string> = {
+  'admin/orders/[id]/ready-for-pickup':
+    '`order` es del core de Medusa: su eje es la columna `sales_channel_id` de su ' +
+    'propia fila, no un descriptor de los nuestros, así que ninguno de los dos guards ' +
+    'aplica — es la misma razón que ya explica `_order-site-scope.ts`. Los DOS verbos ' +
+    'llaman a `orderIdsInSite`, que resuelve `siteFromRequest` y compara el canal de la ' +
+    'orden contra los de la tienda activa antes de leer y antes de marcar; una orden ' +
+    'ajena devuelve 404 sin confirmar que existe. Ponerle un `assertIdInSite` sobre una ' +
+    'tabla que no es la suya sería el guard decorativo que este test busca.',
   'admin/sites/[id]/checkout':
     'El parámetro identifica la tienda misma, no un recurso hijo. authorizeCheckoutAdmin resuelve siteFromRequest, compara scope.site.id con el parámetro y aplica checkout_site_ids del usuario antes de leer o escribir; writePolicy actualiza únicamente demo_store.id con revisión CAS.',
   'admin/kapso/bindings/[key]':

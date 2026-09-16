@@ -55,12 +55,63 @@ export function buildTintMetadata(input: {
 }
 
 /**
- * Subtítulo de la línea. Se setea además de la metadata para que cualquier cosa
- * que ya renderice `subtitle` (mails, panel de admin, remitos) muestre el color
- * sin tocar nada.
+ * Etiqueta del color como la lee una persona: `Nombre (CÓDIGO)`, o sólo uno de
+ * los dos si el otro viene vacío. Es la MISMA forma que arman el widget del
+ * admin y el mapeo de mails a partir de la metadata guardada, para que el color
+ * no se diga de tres maneras distintas según dónde se mire.
+ */
+export function tintColorLabel(selection: TintingSelection): string {
+  const name = selection.color.name?.trim() ?? '';
+  const code = selection.color.code?.trim() ?? '';
+  const label = name || code;
+  return code && label !== code ? `${label} (${code})` : label;
+}
+
+/**
+ * Título de la línea entonada: `<producto> — <color> (<código>)`.
+ *
+ * POR QUÉ SE PISA EL TÍTULO. El resumen de orden del admin (Medusa 2.18) pinta
+ * EXACTAMENTE tres cosas de la línea: `title`, `variant_sku` y los valores de
+ * las opciones de la variante — verificado en
+ * `@medusajs/dashboard/src/routes/orders/order-detail/components/order-summary-section`,
+ * líneas 423-436. `subtitle`, que también seteamos acá abajo, no se renderiza en
+ * ningún lado del detalle de orden. Y mover el widget de colores entonados no
+ * arregla nada: los sufijos `.before`/`.after` de las zonas son legacy y el
+ * layout composer los descarta (`dashboard-app.tsx`, `getWidgetsForSections`),
+ * así que todo widget cae en la misma sección y el orden lo decide el usuario
+ * por drag & drop. `title` es la ÚNICA palanca que pone el color dentro de la
+ * tarjeta del pedido.
+ *
+ * Es seguro pisarlo porque `title` es un snapshot de la línea, no una lectura
+ * del producto: las órdenes ya emitidas conservan el suyo.
+ *
+ * OJO al agregar consumidores: quien ya pinte el color por su cuenta tiene que
+ * leer `product_title`, que queda limpio, y NO `title` — si no lo dice dos
+ * veces. Hoy son el payload del ERP (`outbox/build-sale-payload.ts`, del que
+ * `adapters/zeus.ts` arma la descripción del remito pegándole el color) y el
+ * mapeo de líneas de los mails (`subscribers/order-placed-email.ts`).
+ */
+export function tintLineTitle(
+  productTitle: string | null | undefined,
+  selection: TintingSelection
+): string | undefined {
+  const base = productTitle?.trim();
+  // Sin título de producto no se arma nada: devolver `undefined` deja que
+  // `prepareLineItemData` caiga al título del producto como siempre, en vez de
+  // escribir un "undefined — Color X" en la orden.
+  if (!base) return undefined;
+  const label = tintColorLabel(selection);
+  return label ? `${base} — ${label}` : base;
+}
+
+/**
+ * Subtítulo de la línea. Se sigue seteando además del título porque hay
+ * superficies que sí lo renderizan (los formularios de order-edit, claim y
+ * exchange del admin, y remitos de terceros), y ahí el color separado del
+ * nombre del producto se lee mejor.
  */
 export function tintLineSubtitle(selection: TintingSelection): string {
-  return `Color: ${selection.color.name} (${selection.color.code})`;
+  return `Color: ${tintColorLabel(selection)}`;
 }
 
 /** Lee `metadata.tint` con validación defensiva: viene de un carrito, no de nosotros. */

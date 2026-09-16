@@ -4,6 +4,10 @@ import {formatLineTotalForEmail, getIconTag, hexToRgba} from './email-helpers';
 export type OrderItemForEmail = {
     title?: string;
     variant_title?: string;
+    /** Color entonado ya armado ("Brisa Chic (82YR 83/056)"). Ausente si no va entonada. */
+    color_label?: string;
+    /** Hex de la carta, validado como `#RRGGBB`. Ausente cuando no se conoce. */
+    color_hex?: string;
     quantity?: number;
     unit_price?: number;
     unit_price_formatted?: string;
@@ -317,6 +321,7 @@ export const orderNotificationAdminTemplate: EmailTemplateFunction<OrderNotifica
                                     </td>
                                     <td style="padding: 12px 12px 12px 4px; vertical-align: middle; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                                         <p style="margin: 0 0 4px 0; font-size: 15px; color: #333333; font-weight: bold;">${fmt(item.title)}</p>
+                                        ${item.color_label ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 0 4px 0; mso-table-lspace: 0pt; mso-table-rspace: 0pt;"><tr><td width="12" height="12" style="width: 12px; height: 12px; background-color: ${escapeHtml(item.color_hex && /^#[0-9A-Fa-f]{6}$/.test(item.color_hex) ? item.color_hex : '#d1d5db')}; border: 1px solid #e5e7eb; font-size: 0; line-height: 0;">&nbsp;</td><td style="padding-left: 6px; font-size: 13px; color: #666666;">Color: ${escapeHtml(item.color_label)}</td></tr></table>` : ''}
                                         <p style="margin: 0; font-size: 13px; color: #666666;">${fmt(item.quantity)} x $ ${fmt(item.unit_price_formatted ?? item.unit_price)}</p>
                                     </td>
                                     <td style="padding: 12px; text-align: right; vertical-align: middle; font-size: 15px; color: #333333; font-weight: bold; white-space: nowrap; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">

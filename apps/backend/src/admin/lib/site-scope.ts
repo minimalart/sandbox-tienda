@@ -25,6 +25,7 @@ export type SiteScopeState = 'scoped' | 'unscoped' | 'instance';
  * ninguna: el usuario ve su tienda y crea algo que aparece en todas.
  */
 export const SCREEN_SITE_SCOPE: Record<string, SiteScopeState> = {
+  marketplaces: 'scoped',
   // Migradas: sus rutas admin filtran y sus mutaciones guardan con la tienda.
   brands: 'scoped',
   'shop-by-looks': 'scoped',

@@ -262,10 +262,10 @@ const ImageZoomModal = ({
             transition={{ duration: 0.2 }}
           />
 
-          <div className="fixed inset-0 z-[10001] flex items-center justify-center">
+          <div className="fixed inset-0 z-[10001] flex cursor-modal-close items-center justify-center">
             <DialogPanel
               as="div"
-              className="relative h-full w-full overflow-hidden"
+              className="cursor-auto relative h-full w-full overflow-hidden"
             >
               {/* Close button */}
               <button

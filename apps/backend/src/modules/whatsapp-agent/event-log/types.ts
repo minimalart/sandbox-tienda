@@ -34,6 +34,15 @@ export const WA_EVENT_TYPES = [
   'checkout_generated',
   /** Arrancó el asesor guiado. */
   'guided_started',
+  /**
+   * El bot PREGUNTÓ la dimensión siguiente; `step` = dimensión,
+   * `payload.remaining` = cuántos productos quedaban al preguntar.
+   *
+   * Existe porque preguntar se emitía como `guided_answered`, que es el turno del
+   * CLIENTE: el recorrido mostraba dos "Respondió" por cada respuesta real, y el
+   * segundo salía vacío porque ese emisor no manda ni `step` ni `payload.value`.
+   */
+  'guided_asked',
   /** El cliente respondió una dimensión; `step` = dimensión, `payload.value`. */
   'guided_answered',
   /** Se relajó un filtro por falta de resultados; `payload.dropped`. */
@@ -54,6 +63,34 @@ export const WA_EVENT_TYPES = [
   'paused_drop',
   /** Falla del turno; `payload.message`. */
   'error',
+  /**
+   * El grafo CEDIÓ el turno a propósito; `payload.reason` dice por qué: ningún
+   * `start` matcheó (`no_match`) o el recorrido llegó a un final que no tenía nada
+   * que decir (`ended`).
+   *
+   * Existe porque antes esto se registraba como `error`, y un grafo que hace de
+   * PUERTA DE ENTRADA —atiende el saludo y el menú, y suelta el resto al router y
+   * al modelo— ensuciaba el embudo con un error rojo por turno en conversaciones
+   * perfectamente sanas. Un grafo ROTO (`broken_graph`) sigue siendo `error`: ahí
+   * sí hay una arista mal dibujada que alguien tiene que arreglar.
+   */
+  'flow_passthrough',
+  /**
+   * El recorrido entró a un nodo del grafo configurable; `step` = id del nodo,
+   * `payload.version_id` = versión del grafo que lo dibujó.
+   *
+   * Es la unidad de la traza: con la secuencia de estos eventos se reconstruye por
+   * dónde pasó una conversación y se pinta sobre el mismo canvas del editor.
+   */
+  'node_entered',
+  /**
+   * No se pudo entregar un mensaje; `payload.node_id`, `payload.kind`.
+   *
+   * Antes esto no existía: `send()` y `sendMainMenu` se tragaban el error, así que
+   * un interactivo rechazado por Meta dejaba al cliente sin respuesta y al operador
+   * sin nada que mirar.
+   */
+  'send_failed',
 ] as const;
 
 export type WaEventType = (typeof WA_EVENT_TYPES)[number];

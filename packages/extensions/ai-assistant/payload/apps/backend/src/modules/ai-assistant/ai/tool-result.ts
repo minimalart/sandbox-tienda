@@ -60,13 +60,20 @@ export function isEmptyResult(value: unknown): boolean {
 export const EMPTY_RESULT_HINT =
   ' [0 resultados. No afirmes que no existe: reintentá con OTRA variante (sin filtro de fecha, otro estado/segmento, "order":"-created_at" y acotá después). No repitas esta misma llamada idéntica.]';
 
-export function compactToolResult(text: string): string {
+export function compactToolResult(text: string, toolName = ''): string {
+  // External MCP payloads are not Medusa entities: raw_content is page text,
+  // detail can explain an error, and long strings can be the requested document.
+  const external = toolName.startsWith('mcp__');
   let out = text;
   let empty = false;
   try {
-    const parsed = compactJson(JSON.parse(text));
-    empty = isEmptyResult(parsed);
+    const value = JSON.parse(text);
+    const parsed = external ? value : compactJson(value);
+    empty = !external && isEmptyResult(parsed);
     out = JSON.stringify(parsed);
+    if (external && parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.error) {
+      out = `Error de herramienta MCP: ${out}`;
+    }
   } catch {
     // No era JSON (p. ej. un mensaje de error): se deja tal cual.
   }

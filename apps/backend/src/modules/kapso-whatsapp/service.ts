@@ -9,7 +9,11 @@ import {
 } from '@medusajs/framework/utils';
 
 import { KapsoClient } from './client';
-import { getKapsoSettings } from './settings';
+import {
+  credentialsFingerprint,
+  loadKapsoSettingsViaPg,
+  type KapsoSettings,
+} from './settings';
 import { whatsappTemplates, type WhatsappTemplatePayload } from './templates';
 
 export type KapsoProviderOptions = {
@@ -51,13 +55,36 @@ function toMetaPhone(to: string | undefined | null): string | null {
  *  1. Binding PUBLICADO en store_setting (asignado desde el admin) → arma los
  *     components mapeando `params` sobre los datos del evento.
  *  2. Fallback al mapa hardcodeado en ./templates.
+ *
+ * DE DÓNDE SALEN LAS CREDENCIALES, y por qué esto cambió:
+ *
+ * Antes salían SÓLO de `this.options`, o sea de `process.env` vía medusa-config.
+ * Con la API key y el `phone_number_id` cargados desde el admin —que es el caso
+ * normal desde que existe `app-settings`— el constructor no armaba cliente, `send`
+ * caía en el modo LOG y Medusa daba el envío por exitoso: el mensaje no salía
+ * nunca y no había un solo error en ningún lado. La trampa era doble, porque
+ * `/admin/kapso/templates` SÍ lee la key de `app-settings`: el admin mostraba la
+ * integración andando mientras el envío estaba muerto.
+ *
+ * Ahora la fuente es `loadKapsoSettingsViaPg`, el camino que `settings.ts`
+ * documenta como "para el NOTIFICATION PROVIDER" —memoizado 30 s, por
+ * `PG_CONNECTION`, que es de las seis claves que el cradle hermético de
+ * `load-internal.js` re-exporta— y `this.options` queda como FALLBACK para las
+ * instalaciones que siguen configurando por env. La precedencia es la misma que
+ * en el resto de `app-settings`: base ?? env ?? default.
  */
 class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
   static identifier = 'kapso-whatsapp';
 
   private options: KapsoProviderOptions;
   private logger: Logger;
-  private client?: KapsoClient;
+  /**
+   * Cliente de la INSTANCIA, cacheado por huella de credenciales y no por tiempo:
+   * `loadKapsoSettingsViaPg` ya memoiza la lectura, así que reconstruirlo en cada
+   * envío sólo tiraría el keep-alive de axios. Se rearma solo cuando alguien
+   * cambia la key en el admin, que es exactamente lo que mide la huella.
+   */
+  private instanceClientCache?: { fingerprint: string; client: KapsoClient };
   // Conexión Postgres compartida (knex), inyectada en el contenedor de cada
   // módulo. Deja leer los bindings desde store_setting sin resolver el módulo
   // (aislado) store-config — mismo patrón que el provider de email.
@@ -76,23 +103,41 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
     this.options = options;
     this.logger = cradle.logger;
     this.pgConnection = cradle[ContainerRegistrationKeys.PG_CONNECTION];
-
-    if (options.api_key && options.phone_number_id) {
-      this.client = new KapsoClient({
-        apiKey: options.api_key,
-        baseUrl: options.base_url,
-      });
-      this.logger.info('[kapso-whatsapp] WhatsApp provider initialized with Kapso');
-    } else {
-      this.logger.warn(
-        '[kapso-whatsapp] No KAPSO_API_KEY/phone_number_id configured, WhatsApp messages will be logged only',
-      );
-    }
   }
 
   // Sin validateOptions a propósito: el provider se registra siempre. Cuando
-  // faltan credenciales cae a modo log (ver constructor + send), de modo que el
-  // canal `whatsapp` nunca rompe el arranque del backend.
+  // faltan credenciales cae a modo log (ver `send`), de modo que el canal
+  // `whatsapp` nunca rompe el arranque del backend.
+  //
+  // Y por eso el constructor tampoco decide nada ni loguea el estado de la
+  // integración: las credenciales viven en la base y se leen al enviar. Un
+  // "provider initialized"/"no configured" emitido al arrancar sólo podía
+  // describir el env, y quedaba desmentido por el primer envío.
+
+  /**
+   * Credenciales efectivas de la INSTANCIA: primero lo configurado en el admin,
+   * después el env. Devuelve `undefined` si no hay API key en ningún lado, que es
+   * la única condición real de "no se puede enviar".
+   */
+  private instanceClient(settings: KapsoSettings): KapsoClient | undefined {
+    const apiKey = settings.apiKey || this.options.api_key;
+    if (!apiKey) return undefined;
+
+    const baseUrl = settings.baseUrl || this.options.base_url;
+    const fingerprint = credentialsFingerprint({ apiKey, baseUrl: baseUrl ?? '' });
+    if (this.instanceClientCache?.fingerprint !== fingerprint) {
+      this.instanceClientCache = {
+        fingerprint,
+        client: new KapsoClient({ apiKey, baseUrl }),
+      };
+    }
+    return this.instanceClientCache.client;
+  }
+
+  /** El `phone_number_id` efectivo, con la misma precedencia: base ?? env. */
+  private phoneNumberId(settings: KapsoSettings): string | undefined {
+    return settings.phoneNumberId || this.options.phone_number_id || undefined;
+  }
 
   /**
    * El cliente con el número de WhatsApp de la tienda que origina el mensaje.
@@ -108,10 +153,11 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
    * un WhatsApp sale una sola vez y no se puede deshacer.
    */
   private async clientForSite(
+    settings: KapsoSettings,
     siteId: string | undefined,
     salesChannelId?: string | undefined,
   ): Promise<KapsoClient | undefined> {
-    if ((!siteId && !salesChannelId) || !this.pgConnection) return this.client;
+    if ((!siteId && !salesChannelId) || !this.pgConnection) return this.instanceClient(settings);
 
     try {
       const { resolveSiteViaSql } = await import('../../lib/multistore/resolve-site-sql.js');
@@ -133,7 +179,7 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
         );
       }
       if (creds.status !== 'found' || creds.source !== 'site' || !creds.value.apiKey) {
-        return this.client;
+        return this.instanceClient(settings);
       }
 
       return new KapsoClient({
@@ -147,7 +193,7 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
           error instanceof Error ? error.message : String(error)
         }. Se usa el número de entorno.`,
       );
-      return this.client;
+      return this.instanceClient(settings);
     }
   }
 
@@ -189,12 +235,12 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
   private async resolveTemplate(
     key: string,
     data: Record<string, unknown>,
+    // Una sola lectura de configuración por ENVÍO, y entra por parámetro: la
+    // comparten las credenciales, el fallback de idioma y el builder, así que no
+    // puede pasar que el nombre de la plantilla salga de una versión y el idioma
+    // —o el número que la manda— de otra.
+    settings: KapsoSettings,
   ): Promise<WhatsappTemplatePayload | null> {
-    // Una sola lectura de configuración por resolución: la comparten el fallback
-    // de idioma y el builder, así que no puede pasar que el nombre de la
-    // plantilla salga de una versión y el idioma de otra.
-    const settings = getKapsoSettings();
-
     const binding = await this.loadBinding(key);
     if (binding) {
       const parameters = (binding.params ?? []).map((field) => ({
@@ -227,7 +273,11 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
       return {};
     }
 
-    const template = await this.resolveTemplate(notification.template as string, data);
+    // La configuración efectiva del envío. Va ANTES de resolver el template
+    // porque las dos cosas —qué plantilla y con qué credenciales— salen de acá.
+    const settings = await loadKapsoSettingsViaPg(this.pgConnection);
+
+    const template = await this.resolveTemplate(notification.template as string, data, settings);
     if (!template) {
       this.logger.warn(
         `[kapso-whatsapp] No hay template (binding ni fallback) para '${notification.template}' — skipped`,
@@ -244,21 +294,32 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
 
     // El número de la tienda que origina el mensaje, si el emisor lo declaró.
     const client = await this.clientForSite(
+      settings,
       typeof data.site_id === 'string' ? data.site_id : undefined,
       typeof data.sales_channel_id === 'string' ? data.sales_channel_id : undefined,
     );
+    const phoneNumberId = this.phoneNumberId(settings);
 
-    if (!client || !this.options.phone_number_id) {
-      this.logger.info(
-        `[kapso-whatsapp][LOG] To: ${to}, template: ${template.name}, components: ${JSON.stringify(
-          template.components ?? [],
-        )}`,
+    if (!client || !phoneNumberId) {
+      // El modo LOG es una degradación legítima (un backend de desarrollo sin
+      // cuenta de Kapso), pero para una instalación configurada es un mensaje que
+      // el cliente nunca recibió. Decir CUÁL de las dos mitades falta es la
+      // diferencia entre diagnosticarlo en un minuto y perseguirlo por Meta.
+      const missing = [!client && 'API key', !phoneNumberId && 'phone_number_id']
+        .filter(Boolean)
+        .join(' y ');
+      this.logger.warn(
+        `[kapso-whatsapp][LOG] Sin ${missing}: el mensaje NO se envía. ` +
+          `Cargalos en Admin → WhatsApp → Ajustes. ` +
+          `To: ${to}, template: ${template.name}, components: ${JSON.stringify(
+            template.components ?? [],
+          )}`,
       );
       return { id: `log-${Date.now()}` };
     }
 
     try {
-      const { id } = await client.sendMessage(this.options.phone_number_id, payload);
+      const { id } = await client.sendMessage(phoneNumberId, payload);
       this.logger.info(
         `[kapso-whatsapp] Sent template '${template.name}' to ${to} (id: ${id ?? 'n/a'})`,
       );

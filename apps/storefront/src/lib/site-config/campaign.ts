@@ -1,5 +1,11 @@
 import type { CampaignHomeConfig } from "./types";
 
+export const DEFAULT_CAMPAIGN_ILLUSTRATION =
+  "/images/campaign-default-illustration.png";
+
+export const resolveCampaignHeroImage = (image?: string): string =>
+  image?.trim() || DEFAULT_CAMPAIGN_ILLUSTRATION;
+
 /**
  * Contenido por defecto del template "Campaña / landing institucional".
  *
@@ -7,7 +13,8 @@ import type { CampaignHomeConfig } from "./types";
  * gestionadas por un partner (ej: Educabot para escuelas técnicas). Cada demo
  * puede sobreescribir cualquier campo vía `assets.campaign`.
  *
- * Las imágenes/URLs son placeholders — reemplazá por assets propios.
+ * Las imágenes propias son opcionales: el componente usa la ilustración
+ * genérica del template cuando `hero.image` está ausente o vacío.
  */
 export const campaignConfig: CampaignHomeConfig = {
   announcement: {
@@ -29,24 +36,14 @@ export const campaignConfig: CampaignHomeConfig = {
     backgroundColor: "#ffffff",
   },
   hero: {
-    eyebrow: "BENEFICIO EXCLUSIVO PARA LA COMUNIDAD",
     title: "Llevá la tecnología del aula a tu casa",
     subtitle:
       "Kits de robótica, electrónica, programación y más, creados junto a Educabot para que sigas aprendiendo fuera del taller.",
     primaryCta: { text: "Ver los kits", href: "#tienda" },
-    image:
-      "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&w=1200&q=80",
-    imageAlt: "Kit educativo con componentes electrónicos",
-    trustBadges: [
-      { id: "cuotas", icon: "credit-card", label: "3 cuotas sin interés" },
-      { id: "retiro", icon: "store", label: "Retiro gratis en la escuela" },
-    ],
-    // Fondo blanco por default; el hero es el elemento más visible y en
-    // instituciones raramente conviene competir con el primario de marca.
-    // El operador puede pisarlo desde el admin / Puck cuando quiera dar énfasis.
+    // Eyebrow, imagen propia y trust badges quedan apagados por defecto. El
+    // componente aporta la ilustración genérica y cada site puede configurarlos.
+    // El fondo blanco sigue siendo el default, pero puede pisarse por campaña.
     backgroundColor: "#ffffff",
-    // ctaBackgroundColor / ctaTextColor quedan undefined: el componente usa
-    // --primary-color + white como fallback natural, así el CTA hereda la marca.
   },
   kits: {
     title: "Nuestros kits",

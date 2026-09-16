@@ -1,5 +1,6 @@
+import { DrawerTabs } from '../../components/drawer-tabs';
 import { defineRouteConfig } from '@medusajs/admin-sdk';
-import { Buildings, ChevronLeftMini, ChevronRightMini, EllipsisHorizontal } from '@medusajs/icons';
+import { Buildings, EllipsisHorizontal } from '@medusajs/icons';
 import type { ReactNode } from 'react';
 import {
   Badge,
@@ -19,7 +20,7 @@ import {
   Toaster,
   usePrompt,
 } from '@medusajs/ui';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   type Company,
   type CompanyRole,
@@ -172,75 +173,6 @@ const newAddressId = () => `addr_${Date.now().toString(36)}${Math.random().toStr
  *  de vista aparece una flecha (con degradado) a ese lado que scrollea hacia
  *  ahí, y al clickear un tab se centra. Así siempre se llega a todos (incluido
  *  el último) sin que quede oculto. */
-function CompanyTabsBar({ tab, setTab }: { tab: CompanyTab; setTab: (t: CompanyTab) => void }) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
-
-  const sync = () => {
-    const el = ref.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 4);
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  };
-
-  useEffect(() => {
-    sync();
-    const onResize = () => sync();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  const nudge = (dir: -1 | 1) => ref.current?.scrollBy({ left: dir * 180, behavior: 'smooth' });
-
-  return (
-    <div className="relative mb-4 border-ui-border-base border-b">
-      {canLeft ? (
-        <button
-          type="button"
-          aria-label="Tabs anteriores"
-          onClick={() => nudge(-1)}
-          className="absolute inset-y-0 left-0 z-10 flex items-center bg-gradient-to-r from-ui-bg-base via-ui-bg-base to-transparent pr-6 text-ui-fg-subtle transition-colors hover:text-ui-fg-base"
-        >
-          <ChevronLeftMini />
-        </button>
-      ) : null}
-      <div
-        ref={ref}
-        onScroll={sync}
-        className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {COMPANY_TABS.map((tDef) => (
-          <button
-            key={tDef.id}
-            type="button"
-            onClick={(e) => {
-              setTab(tDef.id);
-              e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            }}
-            className={`shrink-0 whitespace-nowrap px-3 py-2 text-sm ${
-              tab === tDef.id
-                ? 'border-ui-fg-base border-b-2 font-medium text-ui-fg-base'
-                : 'text-ui-fg-subtle'
-            }`}
-          >
-            {tDef.label}
-          </button>
-        ))}
-      </div>
-      {canRight ? (
-        <button
-          type="button"
-          aria-label="Tabs siguientes"
-          onClick={() => nudge(1)}
-          className="absolute inset-y-0 right-0 z-10 flex items-center bg-gradient-to-l from-ui-bg-base via-ui-bg-base to-transparent pl-6 text-ui-fg-subtle transition-colors hover:text-ui-fg-base"
-        >
-          <ChevronRightMini />
-        </button>
-      ) : null}
-    </div>
-  );
-}
 
 const CompanyDetail = ({ company, onClose }: { company: Company | null; onClose: () => void }) => {
   const id = company?.id ?? '';
@@ -341,7 +273,7 @@ const CompanyDetail = ({ company, onClose }: { company: Company | null; onClose:
           </div>
         </Drawer.Header>
         <Drawer.Body className="overflow-y-auto overflow-x-hidden">
-          <CompanyTabsBar tab={tab} setTab={setTab} />
+          <DrawerTabs tabs={COMPANY_TABS} tab={tab} setTab={setTab} />
 
           {!c ? (
             <Text className="text-ui-fg-subtle">Cargando…</Text>

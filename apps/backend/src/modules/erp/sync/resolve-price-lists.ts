@@ -18,12 +18,31 @@ import type { PriceListTarget } from './plan-price-updates';
  * diff, no este archivo.
  */
 
-type PriceListRow = { id: string; title: string };
+type PriceListRow = {
+  id: string;
+  title: string;
+  status?: string | null;
+  type?: string | null;
+  rules?: Record<string, unknown> | null;
+};
 
 export type ResolvedPriceLists = {
   targets: PriceListTarget[];
   /** Avisos no fatales (lista sin customer group, etc.) para el summary del log. */
   warnings: string[];
+  /**
+   * TODAS las price lists de Medusa al momento de resolver, no sólo las
+   * mapeadas. Es lo que necesita `detect-overriding-price-lists.ts` para ver si
+   * hay una lista ajena tapándole el precio base al ERP — el caso "Ecommerce"
+   * de desdeelsur, que costó un mes de ventas al 70%.
+   */
+  allPriceLists: Array<{
+    id: string;
+    title: string | null;
+    status: string | null;
+    type: string | null;
+    rules?: Record<string, unknown> | null;
+  }>;
 };
 
 export async function resolvePriceLists(
@@ -38,9 +57,20 @@ export async function resolvePriceLists(
   const enabled = mappings.filter((mapping) => mapping.enabled !== false);
   const targets: PriceListTarget[] = [];
   const warnings: string[] = [];
-  if (!enabled.length) return { targets, warnings };
 
+  // El listado se pide SIEMPRE, incluso sin mapeos: una price list ajena que
+  // pisa el precio base es un problema independiente de si el cliente mapeó
+  // alguna lista del ERP (en desdeelsur el mapeo existía y el problema era otra
+  // lista). Sin esto, salir temprano se llevaba puesta la detección.
   const existing = await pricing.listPriceLists({}, { take: null });
+  const allPriceLists = existing.map((list) => ({
+    id: list.id,
+    title: list.title ?? null,
+    status: list.status ?? null,
+    type: list.type ?? null,
+    rules: list.rules ?? null,
+  }));
+  if (!enabled.length) return { targets, warnings, allPriceLists };
   const byTitle = new Map<string, PriceListRow>();
   for (const list of existing) {
     // La primera gana: si hay títulos duplicados se avisa y se usa la más vieja
@@ -51,7 +81,9 @@ export async function resolvePriceLists(
   for (const mapping of enabled) {
     const title = mapping.title?.trim();
     if (!title) {
-      warnings.push(`La lista del ERP ${mapping.zeus_index} no tiene título configurado; se ignora.`);
+      warnings.push(
+        `La lista del ERP ${mapping.zeus_index} no tiene título configurado; se ignora.`
+      );
       continue;
     }
 
@@ -95,7 +127,18 @@ export async function resolvePriceLists(
     }
     logger.info(`[erp] catalog sync: price list "${title}" creada (${created.id}).`);
     targets.push({ zeus_index: mapping.zeus_index, price_list_id: created.id, title });
+    // La recién creada entra al snapshot para que el aviso de "quedó en draft"
+    // se siga emitiendo en las corridas siguientes, no sólo en la que la creó.
+    allPriceLists.push({
+      id: created.id,
+      title,
+      status: mapping.customer_group_id ? 'active' : 'draft',
+      type: 'override',
+      rules: mapping.customer_group_id
+        ? { 'customer.groups.id': [mapping.customer_group_id] }
+        : null,
+    });
   }
 
-  return { targets, warnings };
+  return { targets, warnings, allPriceLists };
 }

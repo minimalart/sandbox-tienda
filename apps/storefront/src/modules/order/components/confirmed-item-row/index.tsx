@@ -4,6 +4,7 @@ import type { HttpTypes } from "@medusajs/types";
 import { Text } from "@medusajs/ui";
 
 import Thumbnail from "@modules/products/components/thumbnail";
+import TintColorLabel from "@modules/common/components/tint-color-label";
 import TransportConditionBadge from "@modules/common/components/transport-condition-badge";
 
 type ConfirmedItemRowProps = {
@@ -61,6 +62,17 @@ const ConfirmedItemRow = ({ item, currencyCode }: ConfirmedItemRowProps) => {
             {variantLabel}
           </Text>
         )}
+
+        {/*
+          El color entonado va ADEMÁS de la variante, no en su lugar: en una
+          pintura la variante es el litraje ("4 Lt") y las dos cosas importan.
+          Sin esto la orden confirmada mostraba el recargo de entonado cobrado
+          sin decir nunca de qué color.
+        */}
+        <TintColorLabel
+          className="max-w-full text-[12px] font-[400] text-[#6B7280]"
+          metadata={item.metadata}
+        />
 
         <TransportConditionBadge className="mt-1 self-start" item={item} size="sm" />
 

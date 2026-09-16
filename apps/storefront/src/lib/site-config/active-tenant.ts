@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { enabledStoreB2B } from "./b2b-access";
 import "server-only";
 import { cache } from "react";
@@ -141,11 +142,11 @@ const describeRejection = async (res: Response): Promise<string> => {
   return `[${via}] ${body}`;
 };
 
-async function fetchSiteConfig(
+export async function fetchSiteConfig<T = { config: TenantConfig }>(
   path: string,
   tag: string,
   fresh = false,
-): Promise<{ config: TenantConfig } | null> {
+): Promise<T | null> {
   const pk = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
   /**
    * Motivo de fallo por ruta intentada, para el log del final.
@@ -160,7 +161,7 @@ async function fetchSiteConfig(
    */
   const failures: string[] = [];
   for (const segment of SITE_CONFIG_PATHS) {
-    const url = `${BACKEND_URL}/store/${segment}/${path}`;
+    const url = `${BACKEND_URL}/store/${segment}${path ? `/${path}` : ""}`;
     try {
       const res = await fetch(url, {
         headers: {
@@ -169,7 +170,7 @@ async function fetchSiteConfig(
         },
         ...(fresh ? { cache: "no-store" as const } : { next: { revalidate: 60, tags: [tag] } }),
       });
-      if (res.ok) return (await res.json()) as { config: TenantConfig };
+      if (res.ok) return (await res.json()) as T;
       // 404 en la ruta nueva = backend viejo: se prueba la legacy. Cualquier otro
       // status tampoco corta el loop: un 500 transitorio en una no implica en la otra.
       failures.push(`${url} → ${res.status} ${await describeRejection(res)}`);
@@ -338,6 +339,7 @@ export const getActiveTenant = cache(async (): Promise<TenantConfig> => {
   if (slug) {
     const demo = await getTenantBySlug(slug);
     if (demo) return demo;
+    notFound();
   }
   // Sin slug = el sitio principal, que ahora también es una fila gestionable desde
   // el admin. Si la fila no está (backend viejo, o no se pudo sembrar), se cae a
@@ -356,7 +358,8 @@ export const getActiveDemoSalesChannelId = cache(
     const slug = await getActiveDemoSlug();
     if (!slug) return undefined;
     const demo = await getTenantBySlug(slug);
-    return demo?.medusa.salesChannelId || undefined;
+    if (!demo) notFound();
+    return demo.medusa.salesChannelId || undefined;
   },
 );
 
@@ -388,10 +391,21 @@ export const getActiveDemoB2BSalesChannelId = cache(
 
 /**
  * Whether recurring purchases (compras recurrentes) are enabled for the current
- * request. On a demo page it's the demo's `recurring_enabled` toggle (surfaced
- * as `medusa.recurring.enabled`); on the main store it defaults to on unless
- * NEXT_PUBLIC_RECURRING_ENABLED=false. The backend enforces the same rule on
- * creation, so this only drives UI visibility.
+ * request: the site row's `recurring_enabled` toggle (surfaced as
+ * `medusa.recurring.enabled`), for demos AND for the main store.
+ *
+ * REGLA UNICA PARA TODAS LAS TIENDAS, principal incluida (mismo criterio que
+ * `tinting-gate.ts`). Antes la principal se saltaba la fila y miraba solo
+ * `NEXT_PUBLIC_RECURRING_ENABLED`, asi que el toggle "Compras recurrentes" de
+ * /app/sites para la tienda principal no estaba cableado a nada: apagarlo en el
+ * admin dejaba el boton "Suscribirse" en la PDP, el badge en las cards y la
+ * seccion de cuenta exactamente igual.
+ *
+ * Si la fila principal NO se pudo leer (backend viejo, fila sin sembrar) se cae
+ * al env, que es el comportamiento anterior: ahi no hay ningun lugar donde
+ * prender el toggle y apagar la feature seria quitarla a cambio de nada. El
+ * backend aplica la misma regla al crear (`isRecurringEnabledForChannel`), asi
+ * que esto solo decide visibilidad.
  */
 export const getRecurringEnabled = cache(async (): Promise<boolean> => {
   const slug = await getActiveDemoSlug();
@@ -399,5 +413,45 @@ export const getRecurringEnabled = cache(async (): Promise<boolean> => {
     const demo = await getTenantBySlug(slug);
     return Boolean(demo?.medusa.recurring?.enabled);
   }
+  const main = await getMainTenant();
+  if (main) return Boolean(main.medusa.recurring?.enabled);
   return process.env.NEXT_PUBLIC_RECURRING_ENABLED !== "false";
+});
+
+/**
+ * Si la sección "Mis puntos" (fidelización) se muestra en esta tienda.
+ *
+ * OPT-OUT, al revés de `getRecurringEnabled`: la clave ausente vale VISIBLE. La
+ * sección hoy está hardcodeada en el nav de la cuenta, así que el gate sólo puede
+ * SACAR algo que ya está: si la fila no trae la clave (backend viejo, fila sin
+ * sembrar) tiene que quedar como estaba. De ahí el `!== false` en vez de
+ * `Boolean(...)` — y de ahí que el fallback final, cuando no se pudo leer NINGUNA
+ * fila, sea `true` y no un env: un hipo del backend no puede apagarle la sección a
+ * todas las tiendas.
+ */
+export const getLoyaltyEnabled = cache(async (): Promise<boolean> => {
+  const slug = await getActiveDemoSlug();
+  if (slug) {
+    const demo = await getTenantBySlug(slug);
+    return demo?.medusa.loyalty?.enabled !== false;
+  }
+  const main = await getMainTenant();
+  if (main) return main.medusa.loyalty?.enabled !== false;
+  return true;
+});
+
+/**
+ * Si la sección "Gift Cards" se muestra en esta tienda. Mismo criterio opt-out que
+ * `getLoyaltyEnabled`: sólo un `false` explícito la apaga; ausencia y fallo de
+ * lectura la dejan visible.
+ */
+export const getGiftCardsEnabled = cache(async (): Promise<boolean> => {
+  const slug = await getActiveDemoSlug();
+  if (slug) {
+    const demo = await getTenantBySlug(slug);
+    return demo?.medusa.giftCards?.enabled !== false;
+  }
+  const main = await getMainTenant();
+  if (main) return main.medusa.giftCards?.enabled !== false;
+  return true;
 });

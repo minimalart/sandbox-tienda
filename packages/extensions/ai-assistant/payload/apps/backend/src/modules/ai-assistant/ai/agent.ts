@@ -365,7 +365,7 @@ async function runLoop(opts: {
     const last = rows[rows.length - 1];
     if (last?.role === 'assistant' && last.status === 'pending' && last.tool_calls?.length) {
       finalStatus = 'needs_approval';
-      return { status: 'needs_approval', pending: pendingFromToolCalls(last.tool_calls, overrides) };
+      return { status: 'needs_approval', pending: await pendingFromToolCalls(last.tool_calls, overrides, store, toolRt) };
     }
 
     const messages: ApiMessage[] = [
@@ -506,6 +506,7 @@ async function runLoop(opts: {
     // nunca ampliarlo: es el enforcement real del allow-list, que hasta acá era
     // sólo una sugerencia en el prompt.
     const profile = resolveCapabilityProfile(agent);
+    const policyTools = await toolRt.discover(store);
     const classified = assistant.tool_calls.map((tc) => {
       const args = safeParseArgs(tc.function.arguments);
       const action = actionFromArgs(args);
@@ -519,7 +520,7 @@ async function runLoop(opts: {
         args,
         action,
         resource,
-        mode: byProfile ?? resolveMode(tc.function.name, action, resource, overrides),
+        mode: byProfile ?? resolveMode(tc.function.name, action, resource, overrides, policyTools.find(t => t.definition.name === tc.function.name)?.policyHints),
       };
     });
     /** Vista del tool call que viaja en los eventos del stream. */
@@ -584,7 +585,7 @@ async function runLoop(opts: {
 
     if (needsApproval) {
       // Persistimos el turno del assistant como pendiente; NO ejecutamos nada.
-      const pending = pendingFromToolCalls(assistant.tool_calls, overrides);
+      const pending = await pendingFromToolCalls(assistant.tool_calls, overrides, store, toolRt);
       if (hooks.beforeTurnStop) {
         const decision = await hooks.beforeTurnStop({
           run: bus.meta,
@@ -761,10 +762,13 @@ async function runLoop(opts: {
   }
 }
 
-function pendingFromToolCalls(
+async function pendingFromToolCalls(
   toolCalls: ToolCall[],
   overrides: PolicyOverride[],
-): PendingToolCall[] {
+  store: AiStore,
+  toolRt: ToolRuntime = defaultToolRuntime,
+): Promise<PendingToolCall[]> {
+  const policyTools = await toolRt.discover(store);
   return toolCalls
     .map((tc) => {
       const args = safeParseArgs(tc.function.arguments);
@@ -775,8 +779,8 @@ function pendingFromToolCalls(
         name: tc.function.name,
         action,
         args,
-        kind: classifyAction(action),
-        mode: resolveMode(tc.function.name, action, resource, overrides),
+        kind: classifyAction(action, policyTools.find(t => t.definition.name === tc.function.name)?.policyHints),
+        mode: resolveMode(tc.function.name, action, resource, overrides, policyTools.find(t => t.definition.name === tc.function.name)?.policyHints),
       };
     })
     .filter((c) => c.mode === 'ask')
@@ -801,9 +805,9 @@ export async function getToolMatrix(
       return toolResources(t.definition.parameters).map((resource) => {
         const actions = toolActions(t.definition.parameters).map((action) => ({
           action,
-          kind: classifyAction(action),
-          mode: resolveMode(tool, action, resource ?? '', overrides),
-          default: defaultMode(tool, action, resource ?? ''),
+          kind: classifyAction(action, t.policyHints),
+          mode: resolveMode(tool, action, resource ?? '', overrides, t.policyHints),
+          default: defaultMode(tool, action, resource ?? '', t.policyHints),
         }));
         return {
           tool,
@@ -928,7 +932,7 @@ export async function loadThreadView(
   const last = rows[rows.length - 1];
   const pending =
     last?.role === 'assistant' && last.status === 'pending' && last.tool_calls?.length
-      ? pendingFromToolCalls(last.tool_calls, overrides)
+      ? await pendingFromToolCalls(last.tool_calls, overrides, store)
       : [];
 
   return { messages, pending };

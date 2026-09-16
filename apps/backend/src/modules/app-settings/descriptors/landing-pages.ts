@@ -55,6 +55,7 @@ export default defineSettings({
    */
   defaultScope: 'instance',
   envOnly: [
+    { key: 'TYPESENSE_SITE_COLLECTIONS', reason: 'Se configura en Búsqueda → Typesense; las landings reutilizan ese mapa para validar resultados de cada tienda.' },
     {
       key: 'OPENROUTER_API_KEY',
       /**

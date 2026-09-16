@@ -1,3 +1,4 @@
+import { storefrontOrigins, siteStorefrontUrl } from '../../../../lib/multistore/public-url';
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework';
 import { siteFromRequest } from '../../../../lib/multistore/request';
 import { readForeignSetting } from '../../../../modules/app-settings/foreign';
@@ -54,7 +55,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
     envFallback: ['MULTISTORE_PUBLIC_BASE_URL', 'STOREFRONT_URL'],
   });
 
-  const base = pickStorefrontBase(configured, process.env.STORE_CORS);
+  const { base, hostSuffix, sitesBase } = storefrontOrigins(pickStorefrontBase(configured, process.env.STORE_CORS));
 
   /**
    * La URL de la TIENDA activa, no la de la instancia.
@@ -69,7 +70,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
    */
   const resolution = await siteFromRequest(req);
   const site = resolution.status === 'site' ? resolution.site : null;
-  const url = site && !site.is_main ? `${base}/tienda/${site.slug}` : base;
+  const url = site ? siteStorefrontUrl(site, base) : base;
 
-  res.json({ url, base });
+  res.json({ url, base, hostSuffix, sitesBase });
 }

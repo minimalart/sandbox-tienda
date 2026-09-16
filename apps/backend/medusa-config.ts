@@ -2,6 +2,7 @@ import { defineConfig, loadEnv, Modules } from '@medusajs/framework/utils';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import './src/loaders/plugin-runtime-bridge';
+import './src/loaders/credential-runtime-bridge';
 import { googleAuthEnvWarning, resolveGoogleAuthEnv } from './src/lib/google-auth-env';
 
 loadEnv(process.env.NODE_ENV || 'development', __dirname);
@@ -120,10 +121,38 @@ const redisUrl = process.env.DISABLE_REDIS === 'true' ? undefined : process.env.
 // y BullMQ rechaza cualquier otro valor ("Your redis options maxRetriesPerRequest must be
 // null") → crashea el boot. La aceleración del boot la dan connectTimeout + retryStrategy,
 // no este parámetro, así que null no nos cuesta nada.
+/**
+ * Familia de direcciones para el lookup de DNS de ioredis: `4` (sólo IPv4),
+ * `6` (sólo IPv6) o `0` (dual-stack).
+ *
+ * ES UNA ENV Y NO UN LITERAL PORQUE YA NOS COSTÓ UNA CAÍDA. El 2026-09-09 el
+ * backend de desdeelsur arrancó con las tres conexiones principales sanas
+ * (`cache-redis`, `event-bus-redis`, `locking-redis` en el mismo segundo) y la
+ * conexión EXTRA que BullMQ duplica para su comando bloqueante se colgó en el
+ * handshake TLS hasta agotar `connectTimeout`:
+ *
+ *   Error: connect ETIMEDOUT   at TLSSocket (ioredis/built/Redis.js:183)
+ *   Error: Connection is closed.  at connectionCloseHandler (Redis.js:220)
+ *
+ * Sin ese worker no salen los mails de orden, ni el WhatsApp, ni se drena el
+ * outbox del ERP — y el proceso queda SANO, con los crons y el HTTP corriendo,
+ * así que nada se cae y nadie se entera. Fueron ~50 minutos y nos enteramos por
+ * una compra de prueba.
+ *
+ * El default queda en `0` a propósito: es el comportamiento histórico de todas
+ * las instalaciones y cambiarlo para todos por un problema de infra de una sería
+ * la clase de decisión que después nadie puede explicar. La salida es prender
+ * `REDIS_FAMILY=4` en el proyecto afectado, SIN deploy.
+ */
+const redisFamily = ((): 0 | 4 | 6 => {
+  const raw = Number(process.env.REDIS_FAMILY);
+  return raw === 4 || raw === 6 ? raw : 0;
+})();
+
 const redisOptions = redisUrl
   ? {
       connectTimeout: 10_000,
-      family: 0,
+      family: redisFamily,
       maxRetriesPerRequest: null,
       retryStrategy: (times: number) => Math.min(times * 500, 5_000),
       enableReadyCheck: true,
@@ -214,6 +243,12 @@ const config = defineConfig({
     }),
   },
   plugins: [
+    ...(() => {
+      try {
+        require.resolve('@minimalart/mercatto-plugin-marketplaces/package.json');
+        return [{ resolve: '@minimalart/mercatto-plugin-marketplaces', options: {} }];
+      } catch { return []; }
+    })(),
     ...(hasSpaceDesignerPlugin()
       ? [{ resolve: '@minimalart/mercatto-plugin-space-designer', options: {} }]
       : []),
@@ -432,7 +467,17 @@ const config = defineConfig({
     ...(redisUrl
       ? {
           event_bus: {
-            resolve: '@medusajs/medusa/event-bus-redis',
+            /**
+             * El módulo de Medusa ENVUELTO, no reemplazado: hereda de
+             * `@medusajs/medusa/event-bus-redis` y le agrega el supervisor que
+             * reconstruye el worker de BullMQ cuando su `run()` muere. Medusa lo
+             * arranca UNA vez y no lo reintenta jamás: tres caídas mudas en
+             * producción (2026-08-31, 09-03 y 09-09) con el proceso sano. Mismas
+             * opciones, mismo prefijo de cola. Ver `src/modules/event-bus-redis/index.ts`
+             * y `src/lib/event-bus-worker-supervisor.ts`. NO volver a apuntar acá
+             * al paquete pelado: se pierde el supervisor y vuelve el bug.
+             */
+            resolve: './src/modules/event-bus-redis',
             options: {
               redisUrl,
               redisOptions,
@@ -472,9 +517,10 @@ const config = defineConfig({
                * `event-bus-redis/dist/services/event-bus-redis.js:21` el arranque hace
                * `void this.bullWorker_.run().catch(err => logger.error(...))`: si
                * `run()` rechaza, Medusa LOGUEA Y NO LO VUELVE A ARRANCAR NUNCA. Contra
-               * eso la concurrencia no puede nada. Falta un monitor que mire la
-               * profundidad de la cola desde un job —los jobs sobreviven a esta falla,
-               * está comprobado— y avise por un canal que no dependa del bus.
+               * eso la concurrencia no puede nada. Ese mecanismo lo cierran otras dos
+               * piezas: el módulo `./src/modules/event-bus-redis` del `resolve` de
+               * arriba, que reconstruye el worker cuando `run()` muere, y el job
+               * `event-bus-monitor`, que mide la cola desde fuera del bus y avisa.
                */
               workerOptions: { concurrency: EVENT_BUS_CONCURRENCY },
             },
@@ -874,6 +920,13 @@ const config = defineConfig({
     // gastó LLM. `runWhatsappTurn` no usa el tracer del Asistente IA, así que sin
     // esto no hay forma de medir el embudo ni los abandonos.
     ...optionalModule('whatsappEventLog', 'whatsapp-agent/event-log'),
+
+    // Grafo de conversación del bot — el árbol de caminos que hoy está repartido
+    // entre el router determinístico y el asesor, versionado y editable desde el
+    // admin. La key es `whatsappFlow` y NO `flow`: una key genérica choca con la de
+    // algún plugin oficial y rompe `medusa build` fallando sólo en el deploy (ya
+    // pasó con `loyalty`).
+    ...optionalModule('whatsappFlow', 'whatsapp-flow'),
 
     // Compras recurrentes — suscripciones de reposición (items + frecuencia).
     // Cada renovación arma un carrito real del canal (stock/precios/promos

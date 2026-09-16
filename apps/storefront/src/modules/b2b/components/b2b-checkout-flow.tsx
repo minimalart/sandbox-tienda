@@ -1,10 +1,12 @@
 "use client";
+import { useTenant } from "@lib/site-config/context";
+import { recipientWording } from "@lib/site-config/template-helpers";
 
 import { addCompanyAddress, type CompanyAddress } from "@lib/data/company";
 import type { CreditAccountSummary } from "@lib/data/company-credit";
 import { isCuentaCorriente, paymentInfoMap } from "@lib/constants";
 import { convertToLocale } from "@lib/util/money";
-import { goToCheckoutStep } from "@lib/util/checkout-step";
+import { goToCheckoutStep, isCheckoutStepEditing } from "@lib/util/checkout-step";
 import { useDemoHref } from "@lib/site-config/context";
 import { cn } from "@/lib/utils";
 import CartTotals from "@modules/common/components/cart-totals";
@@ -121,6 +123,8 @@ export default function B2BCheckoutFlow({
   googleMapsApiKey,
   credit,
 }: Props) {
+  const tenant = useTenant();
+  const wording = (text: string) => recipientWording(text, tenant.template);
   const router = useRouter();
   const searchParams = useSearchParams();
   const demoHref = useDemoHref();
@@ -139,8 +143,12 @@ export default function B2BCheckoutFlow({
     });
 
   // ── Estado de completitud, derivado del carrito ────────────────────────────
-  const addressComplete = (checkout.state?.configured && !checkout.state.flow.address_required) || !!cart.shipping_address?.address_1;
-  const deliveryComplete = checkout.state?.configured ? !!checkout.state.flow.blocks.find(b => b.id === 'delivery')?.complete : (cart.shipping_methods?.length ?? 0) > 0;
+  // Un block applicable pero invisible (deshabilitado por policy sobre items físicos) se trata como completo:
+  // el operador dijo "no mostrar este paso", así que no debe bloquear la navegación hacia recipients/payment.
+  const addressBlock = checkout.state?.flow?.blocks?.find(b => b.id === 'address');
+  const deliveryBlock = checkout.state?.flow?.blocks?.find(b => b.id === 'delivery');
+  const addressComplete = (checkout.state?.configured && !checkout.state.flow.address_required) || (!!addressBlock?.applicable && !addressBlock?.visible) || !!cart.shipping_address?.address_1;
+  const deliveryComplete = checkout.state?.configured ? (!!deliveryBlock?.complete || (!!deliveryBlock?.applicable && !deliveryBlock?.visible)) : (cart.shipping_methods?.length ?? 0) > 0;
   const paymentSessions =
     (cart.payment_collection as { payment_sessions?: Array<{ status?: string; provider_id?: string }> } | null)
       ?.payment_sessions ?? [];
@@ -165,13 +173,21 @@ export default function B2BCheckoutFlow({
   const rawStep = (searchParams.get("step") ?? "").replace(/^edit-/, "");
   const visible = (id: string) => !checkout.state?.configured || (id === 'payment' ? Number(cart.total) !== 0 : !!checkout.state.flow.blocks.find(b => b.id === id)?.visible) || searchParams.get('step') === 'edit-' + id;
   const visibleOrder = checkout.state?.configured ? checkout.state.flow.blocks.filter(b => visible(b.id)).map(b => b.id) : [...STEP_ORDER];
-  const firstIncomplete = checkout.state?.configured ? checkout.state.flow.blocks.find(b => b.applicable && !b.complete && b.id !== 'payment') : null;
+  // Filtro `visible`: un block puede estar applicable pero oculto por policy (ej: address con physical items y steps.address=false).
+  // Sin este filtro el UI intenta abrir un step invisible y queda trabado antes de recipients/payment.
+  const firstIncomplete = checkout.state?.configured ? checkout.state.flow.blocks.find(b => b.applicable && !b.complete && b.visible && b.id !== 'payment') : null;
   const currentStep = firstIncomplete && (!rawStep || checkout.state!.flow.blocks.findIndex(b => b.id === firstIncomplete.id) < checkout.state!.flow.blocks.findIndex(b => b.id === rawStep))
     ? firstIncomplete.id
     : rawStep && visibleOrder.includes(rawStep) && stepAllowed(rawStep)
       ? rawStep
       : firstIncomplete?.id ?? (visibleOrder.includes(defaultStep) ? defaultStep : visibleOrder.at(-1) ?? 'personal');
   const goToStep = (s: string) => goToCheckoutStep(s);
+  // Salto al próximo step visible: evita loops con ids hardcodeados a steps deshabilitados por policy.
+  const goToNextStep = (current: string) => {
+    const idx = visibleOrder.indexOf(current);
+    const next = idx >= 0 ? visibleOrder[idx + 1] : undefined;
+    if (next) goToStep(next);
+  };
   useEffect(() => { if (checkout.state?.cart_changed) router.refresh(); }, [checkout.state, router]);
 
   // ── Estado local de UI ─────────────────────────────────────────────────────
@@ -330,16 +346,17 @@ export default function B2BCheckoutFlow({
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="min-w-0 flex-1 space-y-3">
-        {checkout.error && <p role="alert" className="text-sm text-red-700">{checkout.error}<button type="button" onClick={() => checkout.refresh()}>Volver a intentar</button></p>}
+        {checkout.error && <p role="alert" className="text-sm text-red-700">{wording(checkout.error)}<button type="button" onClick={() => checkout.refresh()}>Volver a intentar</button></p>}
         {/* 1 — Datos personales (solo lectura) */}
         {visible("personal") && <CheckoutStep
           stepNumber={stepIndex("personal")}
-          title="Datos personales"
+          title={checkout.state?.policy?.sections?.contact?.title?.trim() || "Datos personales"}
+          subtitle={checkout.state?.policy?.sections?.contact?.subtitle?.trim() || undefined}
           icon={<User />}
-          isOpen={currentStep === "personal"}
+          isEditing={isCheckoutStepEditing(searchParams.get("step") ?? "", currentStep, "personal")} isOpen={currentStep === "personal"}
           isCompleted
           completedSummary={`${companyName} · ${email}`}
-          onEdit={() => goToStep("personal")}
+          onEdit={() => goToCheckoutStep("personal", { editing: true })}
         >
           <div className="space-y-3 text-sm">
             <div className="flex items-center gap-2">
@@ -373,16 +390,17 @@ export default function B2BCheckoutFlow({
         {/* 2 — Datos de envío */}
         {visible("address") && <CheckoutStep
           stepNumber={stepIndex("address")}
-          title="Datos de envío"
+          title={checkout.state?.policy?.sections?.address?.title?.trim() || "Datos de envío"}
+          subtitle={checkout.state?.policy?.sections?.address?.subtitle?.trim() || undefined}
           icon={<MapPin />}
-          isOpen={currentStep === "address"}
+          isEditing={isCheckoutStepEditing(searchParams.get("step") ?? "", currentStep, "address")} isOpen={currentStep === "address"}
           isCompleted={addressComplete}
           completedSummary={
             cart.shipping_address
               ? `${cart.shipping_address.address_1}, ${cart.shipping_address.city}`
               : undefined
           }
-          onEdit={() => goToStep("address")}
+          onEdit={() => goToCheckoutStep("address", { editing: true })}
         >
           <div>
             {addresses.length > 0 ? (
@@ -469,12 +487,13 @@ export default function B2BCheckoutFlow({
         {/* 3 — Tipo de envío */}
         {visible("delivery") && <CheckoutStep
           stepNumber={stepIndex("delivery")}
-          title="Tipo de envío"
+          title={checkout.state?.policy?.sections?.delivery?.title?.trim() || "Tipo de envío"}
+          subtitle={checkout.state?.policy?.sections?.delivery?.subtitle?.trim() || undefined}
           icon={<Truck />}
-          isOpen={currentStep === "delivery"}
+          isEditing={isCheckoutStepEditing(searchParams.get("step") ?? "", currentStep, "delivery")} isOpen={currentStep === "delivery"}
           isCompleted={deliveryComplete}
           completedSummary={cart.shipping_methods?.[0]?.name ?? undefined}
-          onEdit={() => goToStep("delivery")}
+          onEdit={() => goToCheckoutStep("delivery", { editing: true })}
         >
           <div className="space-y-2">
             {busy && shippingOptions === null ? (
@@ -511,7 +530,7 @@ export default function B2BCheckoutFlow({
             {deliveryComplete ? (
               <button
                 type="button"
-                onClick={() => goToStep("benefits")}
+                onClick={() => goToNextStep("delivery")}
                 className="mt-1 inline-flex h-10 items-center justify-center rounded-lg bg-[--primary-color] px-4 text-sm font-medium text-white hover:opacity-90"
               >
                 Continuar
@@ -520,21 +539,22 @@ export default function B2BCheckoutFlow({
           </div>
         </CheckoutStep>}
 
-        {checkout.state?.configured && visible('billing') && <CheckoutStep stepNumber={stepIndex('billing')} title="Facturación" icon={<Building2 />} isOpen={currentStep === 'billing'} isCompleted={!!checkout.state.flow.blocks.find(b => b.id === 'billing')?.complete} onEdit={() => goToStep('billing')}>
+        {checkout.state?.configured && visible('billing') && <CheckoutStep stepNumber={stepIndex('billing')} title={checkout.state?.policy?.sections?.billing?.title?.trim() || "Facturación"} subtitle={checkout.state?.policy?.sections?.billing?.subtitle?.trim() || undefined} icon={<Building2 />} isEditing={isCheckoutStepEditing(searchParams.get("step") ?? "", currentStep, "billing")} isOpen={currentStep === 'billing'} isCompleted={!!checkout.state.flow.blocks.find(b => b.id === 'billing')?.complete} onEdit={() => goToCheckoutStep("billing", { editing: true })}>
           <p className="text-sm">La facturación utiliza los datos de tu empresa. Revisalos antes de continuar.</p>
           <LocalizedClientLink href="/b2b/empresa" className="text-sm underline">Revisar datos de facturación</LocalizedClientLink>
         </CheckoutStep>}
         {/* 4 — Beneficios (códigos de promoción) */}
-        {checkout.state?.configured && checkout.state.policy.recipients.enabled && <CheckoutStep stepNumber={stepIndex('recipients')} title={checkout.state.policy.recipients.title} icon={<User />} isOpen={currentStep === 'recipients'} isCompleted={recipientsComplete} onEdit={() => goToStep('recipients')}>
-          <Recipients state={checkout.state} items={items} onSaved={checkout.setState} onContinue={() => goToStep('benefits')} />
+        {checkout.state?.configured && checkout.state.policy.recipients.enabled && <CheckoutStep stepNumber={stepIndex('recipients')} title={tenant.template === 'campaign' ? 'Estudiantes' : wording(checkout.state.policy.sections?.recipients?.title?.trim() || 'Destinatarios de productos')} subtitle={tenant.template === 'campaign' ? undefined : (checkout.state.policy.sections?.recipients?.subtitle?.trim() || 'Indicá quién recibirá cada unidad de tu compra.')} icon={<User />} isEditing={isCheckoutStepEditing(searchParams.get("step") ?? "", currentStep, "recipients")} isOpen={currentStep === 'recipients'} isCompleted={recipientsComplete} onEdit={() => goToCheckoutStep("recipients", { editing: true })}>
+          <Recipients state={checkout.state} items={items} onSaved={checkout.setState} onContinue={() => goToNextStep('recipients')} />
         </CheckoutStep>}
         {visible("benefits") && <CheckoutStep
           stepNumber={stepIndex("benefits")}
-          title="Beneficios"
+          title={checkout.state?.policy?.sections?.benefits?.title?.trim() || "Beneficios"}
+          subtitle={checkout.state?.policy?.sections?.benefits?.subtitle?.trim() || undefined}
           icon={<Tag />}
-          isOpen={currentStep === "benefits"}
+          isEditing={isCheckoutStepEditing(searchParams.get("step") ?? "", currentStep, "benefits")} isOpen={currentStep === "benefits"}
           isCompleted={deliveryComplete}
-          onEdit={() => goToStep("benefits")}
+          onEdit={() => goToCheckoutStep("benefits", { editing: true })}
         >
           <div className="space-y-3">
             <B2BDiscountCode
@@ -569,14 +589,15 @@ export default function B2BCheckoutFlow({
         {/* 5 — Forma de pago */}
         {visible("payment") && <CheckoutStep
           stepNumber={stepIndex("payment")}
-          title="Forma de pago"
+          title={checkout.state?.policy?.sections?.payment?.title?.trim() || "Forma de pago"}
+          subtitle={checkout.state?.policy?.sections?.payment?.subtitle?.trim() || undefined}
           icon={<CreditCard />}
-          isOpen={currentStep === "payment"}
+          isEditing={isCheckoutStepEditing(searchParams.get("step") ?? "", currentStep, "payment")} isOpen={currentStep === "payment"}
           isCompleted={paymentComplete}
           completedSummary={
             selectedProvider ? paymentInfoMap[selectedProvider]?.title ?? selectedProvider : undefined
           }
-          onEdit={() => goToStep("payment")}
+          onEdit={() => goToCheckoutStep("payment", { editing: true })}
         >
           <div className="space-y-2">
             {busy && providers === null ? (
@@ -692,8 +713,19 @@ export default function B2BCheckoutFlow({
 
           {checkout.state?.configured && <div className="my-3 space-y-2 border-t pt-3 text-sm" aria-label="Revisión de la compra">
             <p>{email}</p>
-            {checkout.state.flow.blocks.filter(b => b.applicable && ['personal', 'address', 'delivery', 'recipients', 'payment'].includes(b.id)).map(b => <button key={b.id} type="button" className="mr-3 underline" onClick={() => goToStep('edit-' + b.id)}>Editar {{personal: 'contacto', address: 'dirección', delivery: 'entrega', recipients: 'destinatarios', payment: 'pago'}[b.id]}</button>)}
-            {checkout.state.policy.recipients.enabled && <p>{checkout.state.units.length} unidades · {checkout.state.people.length} destinatarios</p>}
+            {checkout.state.flow.blocks.filter(b => b.applicable && b.visible && ['personal', 'address', 'delivery', 'recipients', 'payment'].includes(b.id)).map(b => <button key={b.id} type="button" className="mr-3 underline" onClick={() => goToStep('edit-' + b.id)}>Editar {{personal: 'contacto', address: 'dirección', delivery: 'entrega', recipients: wording('destinatarios'), payment: 'pago'}[b.id]}</button>)}
+            {checkout.state.policy.recipients.enabled && (() => {
+              const total = checkout.state!.units.length;
+              const assigned = checkout.state!.units.filter(u => u.person_id).length;
+              const pending = Math.max(0, total - assigned);
+              const done = total > 0 && pending === 0;
+              return (
+                <div className={`rounded-md border p-3 text-xs ${done ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+                  <div className="font-semibold">{wording("Destinatarios")}</div>
+                  <div>{done ? `Pedido distribuido entre ${checkout.state!.people.length} ${checkout.state!.people.length === 1 ? wording('alumno') : wording('alumnos')}` : total === 0 ? wording('Cargá al menos un alumno para asignar productos') : `${pending} ${pending === 1 ? 'unidad pendiente' : 'unidades pendientes'} de asignar`}</div>
+                </div>
+              );
+            })()}
           </div>}
           <CartTotals
             totals={{
@@ -752,10 +784,10 @@ export default function B2BCheckoutFlow({
           className="fixed inset-0 bg-gray-500/75 transition-opacity data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in"
           transition
         />
-        <div className="fixed inset-0 z-[10000] w-screen overflow-y-auto">
+        <div className="fixed inset-0 z-[10000] w-screen cursor-modal-close overflow-y-auto">
           <div className="flex min-h-full items-end justify-center p-0 text-center sm:items-center sm:p-4">
             <DialogPanel
-              className="relative w-full max-w-none transform rounded-t-2xl bg-white px-4 pt-5 pb-6 text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in sm:my-8 sm:w-full sm:max-w-2xl sm:rounded-lg sm:p-6 data-closed:sm:translate-y-0 data-closed:sm:scale-95"
+              className="cursor-auto relative w-full max-w-none transform rounded-t-2xl bg-white px-4 pt-5 pb-6 text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in sm:my-8 sm:w-full sm:max-w-2xl sm:rounded-lg sm:p-6 data-closed:sm:translate-y-0 data-closed:sm:scale-95"
               transition
             >
               <DialogTitle as="h3" className="mb-4 text-center font-semibold text-gray-900 text-lg">

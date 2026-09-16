@@ -28,8 +28,10 @@ type KitsListProps = {
  * descuento, borde primario al agregar, etc. Reusar la canónica mantiene el
  * treatment consistente y hereda mejoras futuras sin duplicar código.
  *
- * Layout: `flex flex-wrap justify-center` — con 1-3 productos las cards
- * quedan centradas en el contenedor (grid con cols fijas dejaba huecos).
+ * Layout responsive: dos columnas en mobile (patrón del catálogo grocery, que
+ * arranca en `grid-cols-2` en la card canónica), se mantiene en dos hasta `lg`
+ * y salta a cuatro en desktop. Con una sola columna en mobile el feed se sentía
+ * ralo y muy scrollable en pantalla chica.
  */
 export function CampaignKitsList({
   initialProducts,
@@ -61,9 +63,9 @@ export function CampaignKitsList({
 
   return (
     <>
-      <ul className="flex flex-wrap justify-center gap-6">
+      <ul className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
         {products.map((p) => (
-          <li key={p.id} className="w-full max-w-[291px]">
+          <li key={p.id} className="min-w-0">
             <TypesenseProductCard
               product={p}
               countryCode={countryCode}

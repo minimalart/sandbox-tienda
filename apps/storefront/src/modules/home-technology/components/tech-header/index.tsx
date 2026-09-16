@@ -42,7 +42,11 @@ export default function TechHeader({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const liveCount = useCartStore(selectTotalItems);
-  const cartCount = liveCount || initialCartCount;
+  // El contador del server sólo vale hasta que el store hidrata: después manda
+  // el store aunque sea 0. Con `liveCount || initialCartCount` un carrito vaciado
+  // en el cliente seguía mostrando el badge viejo del payload cacheado.
+  const cartIsHydrated = useCartStore((state) => state.isHydrated);
+  const cartCount = cartIsHydrated ? liveCount : initialCartCount;
 
   const header = tenant.assets.technology?.header;
   const categories = [...(header?.categories ?? [])];

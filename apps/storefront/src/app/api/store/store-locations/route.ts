@@ -1,3 +1,5 @@
+import { getActiveTenant } from "@lib/site-config/active-tenant";
+import { resolveBranchTypes } from "@lib/util/branch-types";
 import { NextResponse } from "next/server";
 
 /**
@@ -32,6 +34,11 @@ const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
 // Sólo estos: reenviar la query entera dejaría que el cliente inyecte params
 // que el backend no espera.
 const FORWARDED_PARAMS = ["sales_channel_id", "strict"] as const;
+
+const branchTypesForTenant = async () => {
+  const tenant = await getActiveTenant();
+  return resolveBranchTypes(tenant.assets.sucursales);
+};
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -68,7 +75,42 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json(await response.json());
+    const payload = (await response.json()) as {
+      store_locations?: { store_type?: string | null }[];
+    };
+
+    /**
+     * `pickup` se resuelve ACÁ y no en el consumidor.
+     *
+     * Quién puede ser punto de retiro dejó de ser una propiedad del código
+     * (`store_type !== "distribution_center"`) y pasó a ser un flag por tipo
+     * que configura cada tienda. Pero el consumidor —
+     * `use-store-pickup-locations` — es un hook de cliente que no tiene forma
+     * de ver el tenant. Esta route sí: corre en el servidor de Next, así que
+     * resuelve los tipos de la tienda activa y anota cada sucursal.
+     *
+     * Si el tenant no se puede resolver, `resolveBranchTypes(undefined)`
+     * devuelve los tres tipos históricos: el checkout sigue excluyendo los
+     * centros de distribución, que es el comportamiento de siempre.
+     */
+    let types: Awaited<ReturnType<typeof branchTypesForTenant>> = [];
+    try {
+      types = await branchTypesForTenant();
+    } catch (error) {
+      console.error("[API] Failed to resolve branch types:", error);
+      types = resolveBranchTypes(undefined);
+    }
+    const pickupById = new Map(types.map((type) => [type.id, type.pickup]));
+
+    return NextResponse.json({
+      ...payload,
+      store_locations: (payload.store_locations ?? []).map((location) => ({
+        ...location,
+        // Sin tipo, la sucursal es un punto de retiro: es lo que corresponde en
+        // una tienda que directamente no clasifica sus sucursales.
+        pickup: location.store_type ? (pickupById.get(location.store_type) ?? true) : true,
+      })),
+    });
   } catch (error) {
     console.error("[API] Failed to fetch store locations:", error);
     return NextResponse.json(

@@ -69,6 +69,18 @@ test('elegir una tienda persiste y RECARGA', () => {
   assert.equal(reloads, 1, 'cambiar de tienda tiene que recargar la página');
 });
 
+test('cambiar la tienda reemplaza el pin de OAuth antes de recargar', () => {
+  g.location = { search: '?site=demo_norte', href: 'https://example.test/app/marketplaces?site=demo_norte', reload: () => { reloads += 1; } };
+  let nextUrl = '';
+  g.history = { state: null, replaceState: (_state: any, _title: string, url: URL) => { nextUrl = String(url); } };
+  assert.equal(getActiveSiteId(), 'demo_norte');
+  setActiveSite('demo_sur');
+  assert.equal(getActiveSiteId(), 'demo_sur');
+  assert.equal(new URL(nextUrl).searchParams.get('site'), 'demo_sur');
+  assert.equal(reloads, 1);
+  delete g.history;
+});
+
 test('elegir "ninguna" limpia el storage y también recarga', () => {
   g.localStorage.setItem(ACTIVE_SITE_STORAGE_KEY, 'demo_norte');
   setActiveSite(null);

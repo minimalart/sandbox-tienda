@@ -1,3 +1,4 @@
+import { BRANCH_TYPE_ID_RE } from '../../../lib/branch-types';
 import { z } from 'zod';
 
 const emptyStringToUndefined = (v: unknown) =>
@@ -10,7 +11,17 @@ const optionalEmail = z.preprocess(
   z.string().email('Invalid email').optional().nullable(),
 );
 
-export const storeTypeSchema = z.enum(['distribution_center', 'wholesale', 'point_of_sale']);
+/**
+ * El tipo de la sucursal: el id de uno de los tipos que definió la TIENDA en
+ * `content_config.sucursales.types`, no un valor de un enum fijo.
+ *
+ * Deliberadamente NO se valida contra la lista de ningún sitio: una sucursal
+ * puede estar publicada en varios canales, y con qué lista habría que
+ * compararla es una pregunta sin respuesta única. Acá sólo se valida la FORMA.
+ * La cadena vacía es válida y significa "sin tipo": es lo que guarda una
+ * sucursal de una tienda que decidió no clasificarlas.
+ */
+export const storeTypeSchema = z.union([z.string().trim().regex(BRANCH_TYPE_ID_RE), z.literal('')]);
 
 /**
  * business_hours shape:

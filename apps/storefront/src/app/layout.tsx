@@ -71,7 +71,17 @@ const baseMetadata: Metadata = {
   // resuelve el tenant): acá quedaría congelado al valor de build y todos los
   // hosts emitirían URLs absolutas del sitio principal.
   metadataBase: new URL(getBaseURL()),
-  manifest: '/manifest.json',
+  /**
+   * NO va `manifest` acá. Lo emite `app/manifest.ts`, que resuelve el tenant y
+   * publica `/manifest.webmanifest` con el nombre y el ícono de la tienda activa.
+   *
+   * Acá decía `manifest: '/manifest.json'`, y ese archivo estático era el manifest de
+   * la mini-app del REPARTIDOR: toda página del storefront —de cualquier tienda—
+   * ofrecía "Instalar Mercatto Repartidores" con el ícono de Mercatto. Declararlo de
+   * nuevo acá tampoco tendría efecto: la convención de archivo pisa el valor del
+   * mismo segmento (`mergeStaticMetadata` en Next), así que quedaría muerto y
+   * confundiendo al que lo lea.
+   */
   title: {
     default: SITE_TITLE,
     template: `%s | ${SITE_TITLE}`,

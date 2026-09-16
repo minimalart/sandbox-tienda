@@ -13,6 +13,8 @@ import {
   handleImageError,
 } from "@lib/util/placeholder-image";
 import DisneyBadge from "@modules/common/components/disney-badge";
+import ProductQuickViewModal from "@modules/common/components/quick-view-modal";
+import type { TypesenseProductDocument } from "@lib/typesense";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type CarouselProduct = {
@@ -54,6 +56,18 @@ export default function CheckoutCarousel({
     salesChannelId,
   });
   const [addingId, setAddingId] = useState<string | null>(null);
+  // Quick view del producto tocado. Se abre en vez de navegar a la PDP: el
+  // cliente ya esta en el checkout y la idea es que vea el detalle y agregue sin
+  // irse. El producto se conserva al cerrar para que la animacion de salida no
+  // se quede sin datos.
+  const [quickViewProduct, setQuickViewProduct] =
+    useState<TypesenseProductDocument | null>(null);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const openQuickView = useCallback((product: TypesenseProductDocument) => {
+    setQuickViewProduct(product);
+    setQuickViewOpen(true);
+  }, []);
+  const closeQuickView = useCallback(() => setQuickViewOpen(false), []);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -207,6 +221,13 @@ export default function CheckoutCarousel({
                 className="flex w-[60%] shrink-0 snap-start items-center gap-2 rounded-xl border border-gray-200 bg-white px-2.5 py-2 shadow-sm sm:w-[22%] sm:min-w-[140px]"
                 key={product.id}
               >
+                {/* Thumbnail + info abren el quick view (nunca la PDP). */}
+                <button
+                  aria-label={`Ver detalle de ${product.title}`}
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded-lg text-left transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[--primary-color]"
+                  onClick={() => openQuickView(product)}
+                  type="button"
+                >
                 {/* Thumbnail */}
                 <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-50">
                   <img
@@ -256,6 +277,7 @@ export default function CheckoutCarousel({
                     </div>
                   )}
                 </div>
+                </button>
 
                 {/* Add button — shows count pill after first add */}
                 <button
@@ -272,6 +294,16 @@ export default function CheckoutCarousel({
           })}
         </div>
       </div>
+
+      {quickViewProduct && (
+        <ProductQuickViewModal
+          countryCode={countryCode}
+          lockNavigation
+          onClose={closeQuickView}
+          open={quickViewOpen}
+          product={quickViewProduct}
+        />
+      )}
     </div>
   );
 }

@@ -178,7 +178,9 @@ export const JOB_SCOPE: Record<string, JobScopeState> = {
   // conexion, sonda y job de indexado no tienen eje de tienda ni aunque las
   // colecciones se separen".
   'jobs/typesense-stock-reconcile': { state: 'not-applicable', reason: 'barrido de reconciliacion contra el cluster UNICO de Typesense: existe porque los cambios de stock por nivel de ubicacion no emiten evento en Medusa v2, y pasa por `startTypesenseSync` para heredar su guard de concurrencia — que es global por diseño' },
+  'jobs/whatsapp-event-prune': { state: 'not-applicable', reason: 'retencion de `whatsapp_event` por fecha de corte. La tabla SI tiene `site_id`, pero la retencion es una politica de la instalacion y no de una tienda: el corte aplica parejo y no hay ajuste por tienda que respetar' },
   'jobs/typesense-sync-log-prune': { state: 'not-applicable', reason: 'retencion de `typesense_sync_log` por fecha de corte; la tabla registra corridas del cluster unico y no tiene columna de tienda' },
+  'jobs/whatsapp-flow-timeouts': { state: 'scoped' },
 
   // ══ SUBSCRIBERS ═══════════════════════════════════════════════════════════
 
@@ -351,6 +353,10 @@ export const JOB_SCOPE: Record<string, JobScopeState> = {
   // un mail al comprador y uno al operador por orden — un fan-out por tienda aca
   // seria el error inverso.
   'subscribers/order-placed-email': { state: 'scoped' },
+  // Manda el aviso de "listo para retirar" con el `sales_channel_id` de la orden
+  // en la `data` de la notificación, que es lo que el provider usa para resolver
+  // la tienda y su branding. Mismo eje y mismo helper que `order-placed-email`.
+  'subscribers/store-pickup-ready-email': { state: 'scoped' },
   'subscribers/order-placed-whatsapp': { state: 'scoped' },
   'subscribers/return-requested-notify': { state: 'scoped' },
 

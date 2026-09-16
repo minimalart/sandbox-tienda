@@ -28,6 +28,7 @@ const MANAGED_KEYS = [
   'DEMO_IMPORT_THROTTLE_MS',
   'DEMO_IMPORT_BACKOFF_BASE_MS',
   'MULTISTORE_PUBLIC_BASE_URL',
+  'MULTISTORE_SITE_HOST_SUFFIX',
 ];
 
 /**
@@ -41,6 +42,18 @@ const NUMBER_KEYS = ['DEMO_IMPORT_THROTTLE_MS', 'DEMO_IMPORT_BACKOFF_BASE_MS'];
 const ENV_ONLY_KEYS = ['MERCADOPAGO_ACCOUNTS', 'MERCADOPAGO_PUBLIC_KEY'];
 
 const byKey = new Map(descriptors.settings.map((d) => [d.key, d]));
+
+test('el dominio de tiendas es opcional, de instancia y rechaza URLs completas', () => {
+  const d = byKey.get('MULTISTORE_SITE_HOST_SUFFIX')!;
+  assert.equal(d.type, 'string');
+  assert.equal(d.scope, 'instance');
+  assert.equal(d.tier, 'runtime');
+  assert.equal(d.default, undefined);
+  assert.equal(d.refine?.(''), null);
+  assert.equal(d.refine?.('.escuelas.example'), null);
+  assert.ok(d.refine?.('https://escuelas.example'));
+  assert.ok(d.refine?.('escuelas.example/ruta'));
+});
 
 test('Tiendas incluye los ajustes y variables del importador', () => {
   assert.deepEqual([...byKey.keys()].sort(), [...MANAGED_KEYS].sort());

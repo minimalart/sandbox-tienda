@@ -126,6 +126,7 @@ export async function processOutboxBatch(container: MedusaContainer): Promise<{ 
         await service.markOutboxSent(event.id, {
           external_ref: result.external_ref ?? null,
           response: result.response,
+          request: result.request,
           duplicate: result.status === 'duplicate',
         });
         logger.info(

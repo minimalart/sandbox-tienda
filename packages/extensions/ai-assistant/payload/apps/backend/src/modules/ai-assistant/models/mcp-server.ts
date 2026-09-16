@@ -42,6 +42,7 @@ export const McpServer = model.define('ai_mcp_server', {
   oauth_pending: model.json().nullable(),
   // Estado operativo.
   enabled: model.boolean().default(true),
+  trust_read_only_hints: model.boolean().default(false),
   // Catálogo de tools descubierto: [{ name, namespaced_name, description?, parameters?, read_only_hint? }].
   tools_cache: model.json().nullable(),
   tools_count: model.number().default(0),

@@ -306,7 +306,9 @@ export async function routeInbound(input: RouterInput): Promise<RouterResult> {
     );
     return HANDLED;
   }
-  if (LOCATIONS_RE.test(folded)) return handleLocations(ctx);
+  // Se le pasa el texto ENTERO, no sólo la palabra que matcheó: es de ahí de donde
+  // sale la ciudad o la provincia por la que está preguntando.
+  if (LOCATIONS_RE.test(folded)) return handleLocations(ctx, text);
   if (ORDERS_RE.test(folded)) return handleOrders(ctx);
   if (CART_RE.test(folded)) {
     await callTool(NATIVE_TOOL.waReviewOrder, {}, toolCtx(ctx));
@@ -399,9 +401,20 @@ async function handleAction(ctx: Ctx, action: string): Promise<RouterResult> {
     case 'close':
       await callTool(NATIVE_TOOL.waReviewOrder, {}, toolCtx(ctx));
       return HANDLED;
-    case 'confirm_pay':
-      await callTool(NATIVE_TOOL.waCheckoutLink, {}, toolCtx(ctx));
-      return HANDLED;
+    /**
+     * `wa_checkout_link` CREA el link pero NO se lo manda al cliente: devuelve el
+     * texto para que lo envíe quien la llamó. El modelo lo hacía; el router no, así
+     * que el cliente tocaba "Confirmar pago", el link se generaba, se guardaba el
+     * token, se emitía `checkout_generated`… y del otro lado no llegaba NADA. Y
+     * como devolvía `HANDLED`, tampoco caía al modelo, que podría haberlo salvado.
+     *
+     * La venta moría en el último paso, con el carrito ya armado.
+     */
+    case 'confirm_pay': {
+      const message = await callTool(NATIVE_TOOL.waCheckoutLink, {}, toolCtx(ctx));
+      if (!message) return NOT_HANDLED;
+      return result(await send(phone, message));
+    }
 
     /**
      * "Cambiar" del pre-pago. NO puede volver a `wa_review_order`: eso vuelve a
@@ -455,7 +468,16 @@ async function handleAction(ctx: Ctx, action: string): Promise<RouterResult> {
         {},
         ctx.input.siteId ?? null,
       );
-      return started ? HANDLED : NOT_HANDLED;
+      if (started) return HANDLED;
+
+      // La tienda no tiene asesor (o falló arrancarlo). Antes esto caía al modelo:
+      // el cliente tocaba un botón del menú y el turno terminaba en una llamada al
+      // LLM, o en nada. Preguntarle qué busca sirve en cualquier rubro y deja la
+      // sesión lista para buscar con lo que escriba.
+      await ctx.svc.patchSession(phone, { intent: 'buy', step: 'awaiting_search_query' });
+      return result(
+        await send(phone, 'Contame qué estás buscando y te muestro lo que tenemos. 🔎'),
+      );
     }
 
     /**
@@ -488,11 +510,20 @@ async function handleSearchQuery(ctx: Ctx, text: string): Promise<RouterResult> 
   return HANDLED;
 }
 
-/** §21 — sucursales y horarios desde datos estructurados, sin consultar Maps. */
-async function handleLocations(ctx: Ctx): Promise<RouterResult> {
-  const locations = await getWaStoreLocations(ctx.input.container);
-  ctx.track('store_locations', { count: locations.length });
-  return result(await send(ctx.input.phone, formatStoreLocationsMessage(locations)));
+/**
+ * §21 — sucursales y horarios desde datos estructurados, sin consultar Maps.
+ *
+ * El texto del cliente se usa para ACOTAR: "¿tienen sucursales en pba?" tiene que
+ * devolver las de provincia, no las cinco primeras del abecedario. Cuando llega por
+ * un tap (`act:locations`) no hay texto y se muestran las primeras con el total,
+ * para que el cliente sepa que puede pedir la suya.
+ */
+async function handleLocations(ctx: Ctx, near: string | null = null): Promise<RouterResult> {
+  const { locations, total, narrowed } = await getWaStoreLocations(ctx.input.container, 5, near);
+  ctx.track('store_locations', { count: locations.length, total, narrowed });
+  return result(
+    await send(ctx.input.phone, formatStoreLocationsMessage(locations, { total, narrowed })),
+  );
 }
 
 /**

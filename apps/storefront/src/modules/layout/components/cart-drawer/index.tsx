@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from "@headlessui/react";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -46,6 +46,7 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 import MinimumPurchaseNotice from "@modules/common/components/minimum-purchase-notice";
 import MundialPromoNotice from "@modules/common/components/mundial-promo-notice";
 import NewBadge from "@modules/common/components/new-badge";
+import ProductQuickViewModal from "@modules/common/components/quick-view-modal";
 import Thumbnail from "@modules/products/components/thumbnail";
 import {
   DISNEY_PROMO_CODE,
@@ -465,6 +466,7 @@ function CartItemRow({
           </div>
         )}
         <LocalizedClientLink
+          className="block h-full w-full"
           href={`/products/${item.product_handle}`}
           onClick={onNavigate}
         >
@@ -939,6 +941,18 @@ function CartSuggestedProducts({ countryCode }: { countryCode: string }) {
     sortBy: "created_at",
   });
   const [addingId, setAddingId] = useState<string | null>(null);
+  // Quick view del producto tocado, igual que en el carrusel del checkout: el
+  // cliente ve el detalle y agrega sin salir del carrito. El quick view va en
+  // z-[10000], arriba del drawer (z-[9000]); se conserva el producto al cerrar
+  // para la animacion de salida.
+  const [quickViewProduct, setQuickViewProduct] =
+    useState<TypesenseProductDocument | null>(null);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const openQuickView = useCallback((product: TypesenseProductDocument) => {
+    setQuickViewProduct(product);
+    setQuickViewOpen(true);
+  }, []);
+  const closeQuickView = useCallback(() => setQuickViewOpen(false), []);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1068,6 +1082,13 @@ function CartSuggestedProducts({ countryCode }: { countryCode: string }) {
                   layout
                   transition={{ duration: 0.3 }}
                 >
+                  {/* Thumbnail + info abren el quick view (nunca la PDP). */}
+                  <button
+                    aria-label={`Ver detalle de ${product.title}`}
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-lg text-left transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[--primary-color]"
+                    onClick={() => openQuickView(product)}
+                    type="button"
+                  >
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-50">
                     <img
                       alt={product.title}
@@ -1100,6 +1121,7 @@ function CartSuggestedProducts({ countryCode }: { countryCode: string }) {
                       <DisneyBadge productId={product.id} />
                     </div>
                   </div>
+                  </button>
                   <button
                     aria-label="Agregar"
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[--primary-color] bg-[--primary-color] text-white transition hover:opacity-90 disabled:opacity-40"
@@ -1119,6 +1141,16 @@ function CartSuggestedProducts({ countryCode }: { countryCode: string }) {
           </AnimatePresence>
         </div>
       </div>
+
+      {quickViewProduct && (
+        <ProductQuickViewModal
+          countryCode={countryCode}
+          lockNavigation
+          onClose={closeQuickView}
+          open={quickViewOpen}
+          product={quickViewProduct}
+        />
+      )}
     </div>
   );
 }
@@ -1870,35 +1902,25 @@ const CartDrawer = ({ open, onClose, themeClassName }: CartDrawerProps) => {
   };
 
   return (
-    <AnimatePresence>
-      {open && (
         <Dialog
           className={`relative z-[9000]${themeClassName ? ` ${themeClassName}` : ""}`}
           onClose={onClose}
           open={open}
         >
-          <motion.div
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 bg-black/30"
-            exit={{ opacity: 0 }}
-            initial={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: "linear" }}
+          <DialogBackdrop
+            transition
+            className="fixed inset-0 bg-black/30 transition-opacity duration-300 data-[closed]:opacity-0 motion-reduce:duration-0"
           />
 
-          <div className="fixed inset-0 overflow-hidden">
+          <div className="fixed inset-0 cursor-modal-close overflow-hidden">
             <div className="absolute inset-0 overflow-hidden">
               <div className="pointer-events-none absolute inset-y-0 right-0 flex max-w-full sm:pl-16">
                 <DialogPanel
                   as="div"
-                  className="pointer-events-auto w-screen sm:max-w-md"
+                  transition
+                  className="cursor-auto pointer-events-auto w-screen transform transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] will-change-transform data-[closed]:translate-x-full motion-reduce:duration-0 sm:max-w-md"
                 >
-                  <motion.div
-                    animate={{ x: 0 }}
-                    className="h-full"
-                    exit={{ x: "100%" }}
-                    initial={{ x: "100%" }}
-                    transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                  >
+                  <div className="h-full">
                     <div className="relative flex h-full flex-col overflow-hidden bg-white shadow-xl">
                       <div className="border-gray-100 border-b">
                         <div className="flex h-[68px] items-center justify-between px-4 sm:px-6">
@@ -2193,14 +2215,12 @@ const CartDrawer = ({ open, onClose, themeClassName }: CartDrawerProps) => {
                         )}
                       </AnimatePresence>
                     </div>
-                  </motion.div>
+                  </div>
                 </DialogPanel>
               </div>
             </div>
           </div>
         </Dialog>
-      )}
-    </AnimatePresence>
   );
 };
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { useAddToCartAnimation } from "@lib/context/add-to-cart-animation";
 import { useTenant } from "@lib/site-config/context";
 import { useCartStore } from "@lib/stores/cart.store";
 import type { TypesenseProductDocument } from "@lib/typesense";
@@ -11,6 +10,11 @@ import {
 } from "@lib/util/placeholder-image";
 import { clx } from "@medusajs/ui";
 import type { HttpTypes } from "@medusajs/types";
+import CartDropFlight, {
+  startCartDrop,
+  useCartDropPhase,
+  CART_DROP_MS,
+} from "@modules/common/components/cart-drop-flight";
 import ProductPrice from "@modules/products/components/product-price";
 import { useProductVariantSelection } from "@modules/products/components/product-actions/use-variant-selection";
 import { useEffect, useRef, useState } from "react";
@@ -49,7 +53,7 @@ export default function QuickAddVariantSheet({
   const salesChannelId = tenant.medusa?.salesChannelId;
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
-  const { triggerAnimation } = useAddToCartAnimation();
+
 
   const [hydrated, setHydrated] = useState<HttpTypes.StoreProduct | null>(null);
   const [adding, setAdding] = useState(false);
@@ -90,13 +94,14 @@ export default function QuickAddVariantSheet({
   const isLoading = open && !hydrated;
   const thumbnail = product.thumbnail || product.images?.[0]?.url || undefined;
 
+  // Fase de la coreografía del botón (store por variante, ver CartDropFlight).
+  const dropPhase = useCartDropPhase(selectedVariant?.id);
+
   const handleAdd = async () => {
     const variant = selectedVariant;
     if (!variant || adding) return;
+    if (!startCartDrop(variant.id)) return;
     setAdding(true);
-    // Animación en el click (el carrito ya es optimista): esperar el await
-    // sumaba el round-trip de red antes de que la imagen empezara a volar.
-    if (addBtnRef.current) triggerAnimation(addBtnRef.current, thumbnail);
     const success = await addItem(
       variant.id,
       1,
@@ -116,6 +121,10 @@ export default function QuickAddVariantSheet({
     );
     setAdding(false);
     if (success) {
+      // Esperamos a que termine la coreografía del botón antes de cerrar: si
+      // cerramos al resolver el alta, el sheet se desmonta a los ~200 ms y la
+      // animación no se ve nunca.
+      await new Promise((resolve) => setTimeout(resolve, CART_DROP_MS));
       if (openCartOnAdd) openCart();
       onClose();
     }
@@ -201,19 +210,24 @@ export default function QuickAddVariantSheet({
           <button
             ref={addBtnRef}
             type="button"
-            onClick={handleAdd}
+            onClick={() => {
+
+              void handleAdd();
+            }}
             disabled={isLoading || adding || !selectedVariant}
             className={clx(
-              "flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-[--primary-color] bg-[--primary-color] px-4 font-semibold text-sm text-white transition-opacity",
+              "relative flex min-h-[48px] w-full items-center justify-center gap-2 overflow-hidden rounded-full border border-[--primary-color] bg-[--primary-color] px-4 font-semibold text-sm text-white transition-opacity",
               "hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--primary-color] focus-visible:ring-offset-2",
               "disabled:cursor-not-allowed disabled:opacity-50"
             )}
           >
-            {adding ? (
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent" />
-            ) : (
-              "Agregar al carrito"
-            )}
+            <CartDropFlight playing={dropPhase === "dropping"}>
+              {adding ? (
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent" />
+              ) : (
+                "Agregar al carrito"
+              )}
+            </CartDropFlight>
           </button>
         </div>
       </SheetContent>

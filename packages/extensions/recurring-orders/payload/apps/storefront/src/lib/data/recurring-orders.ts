@@ -1,6 +1,7 @@
 "use server";
 
 import { sdk } from "@lib/config";
+import { getRecurringEnabled } from "@lib/site-config/active-tenant";
 import { getActiveSalesChannelId, getAuthHeaders } from "./cookies";
 
 export type RecurringFrequencyInterval = "day" | "week" | "month";
@@ -142,6 +143,14 @@ export async function getSubscriptionPlans(input: {
   variantIds?: string[];
 }): Promise<{ plans: SubscriptionPlan[]; automatic_payments_enabled: boolean }> {
   try {
+    // Con la feature apagada en la fila del sitio no hay planes que mostrar: aca
+    // se corta para TODOS los consumidores (PDP, badge de las cards del catalogo,
+    // carrito) y no solo para los que ya chequeaban el toggle por su cuenta. Sin
+    // esto, la grilla seguia pintando el badge de suscripcion en los productos con
+    // plan aunque la tienda tuviera las compras recurrentes apagadas.
+    if (!(await getRecurringEnabled().catch(() => false))) {
+      return { plans: [], automatic_payments_enabled: false };
+    }
     const salesChannelId = await getActiveSalesChannelId();
     return await sdk.client.fetch("/store/subscription-plans", {
       method: "GET",

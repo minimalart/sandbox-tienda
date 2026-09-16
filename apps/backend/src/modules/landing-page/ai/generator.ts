@@ -45,6 +45,15 @@ function extractJson(raw: string): unknown | null {
  */
 export type AiTextConfig = { model?: string; maxRetries?: number };
 
+export function hasLandingContent(data: PuckData): boolean {
+  return data.content.some((block) => {
+    if (block.type === 'Spacer') return false;
+    const p = block.props as Record<string, unknown>;
+    return ['title', 'heading', 'subtitle', 'text', 'src', 'image'].some((key) => typeof p[key] === 'string' && p[key].trim())
+      || (Array.isArray(p.items) && p.items.some((item) => Object.values(item).some((v) => typeof v === 'string' && v.trim())));
+  });
+}
+
 /**
  * Llama al modelo, extrae JSON, lo valida contra PuckDataSchema y lo sanitiza.
  * Reintenta hasta `maxRetries` pidiendo corrección. Lanza LandingAiError si
@@ -79,12 +88,15 @@ async function runPuckGeneration(
 
     const parsed = PuckDataSchema.safeParse(json);
     if (parsed.success) {
-      return sanitizePuckData(parsed.data);
+      const clean = sanitizePuckData(json);
+      if (hasLandingContent(clean)) return clean;
+      lastError = 'la propuesta está vacía; incluí contenido real, no sólo espaciadores';
+      continue;
     }
 
     // Fallback tolerante: sanitizar igual; si quedó contenido válido, sirve.
     const sanitized = sanitizePuckData(json);
-    if (sanitized.content.length > 0) {
+    if (hasLandingContent(sanitized)) {
       return sanitized;
     }
     lastError = parsed.error.issues
@@ -106,7 +118,24 @@ export function generateLandingPuckData(
   if (!input.brief?.trim()) {
     throw new LandingAiError('El brief es obligatorio para generar una landing.', 400);
   }
-  return runPuckGeneration(buildGenerateMessages(input), aiConfig);
+  return runPuckGeneration(buildGenerateMessages(input), aiConfig).then((data) => {
+    // A fabricated nonempty URL must not make the automatic image stage skip a slot.
+    const suppliedUrls = new Set(
+      `${input.brief}\n${input.productContext ?? ''}`.match(/(?:https?:\/\/|\/)[^\s"'<>()[\]]+/g) ?? []
+    );
+    const current = input.currentPuckData;
+    for (const block of [...(current?.content ?? []), ...Object.values(current?.zones ?? {}).flat()]) {
+      const props = block.props as Record<string, unknown>;
+      for (const field of ['image', 'src']) if (typeof props[field] === 'string') suppliedUrls.add(props[field]);
+    }
+    for (const block of [...data.content, ...Object.values(data.zones ?? {}).flat()]) {
+      const props = block.props as Record<string, unknown>;
+      for (const field of ['image', 'src']) {
+        if (typeof props[field] === 'string' && !suppliedUrls.has(props[field])) props[field] = '';
+      }
+    }
+    return data;
+  });
 }
 
 export function improveLandingCopy(

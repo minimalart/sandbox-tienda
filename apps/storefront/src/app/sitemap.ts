@@ -1,3 +1,4 @@
+import { getSitesHubRequestOrigin, listPublicSites, publicListingUrl } from "@lib/site-config/list-sites";
 import { listBlogCategories, listBlogPosts } from "@lib/data/blog";
 import { listCollections } from "@lib/data/collections";
 import { listProductsForSeo } from "@lib/data/products";
@@ -67,6 +68,10 @@ const STATIC_ROUTES: StaticRoute[] = [
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const hub = await getSitesHubRequestOrigin();
+  if (hub) return [{ url: `${hub}/`, priority: 1 }, ...(await listPublicSites())
+    .filter(site => site.canonical_form === 'path')
+    .map(site => ({ url: publicListingUrl(site), priority: 0.8 }))];
   // Origen canónico + prefijo de tienda: las URLs del sitemap tienen que ser LAS MISMAS
   // que el `<link rel="canonical">` de cada página, o el sitemap declara URLs que se
   // canonicalizan a otra parte. Hoy `getCanonicalPath()` devuelve '' acá (esta ruta está

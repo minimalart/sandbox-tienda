@@ -12,8 +12,14 @@ import {
 import type { HttpTypes } from "@medusajs/types";
 import { clx } from "@medusajs/ui";
 import type React from "react";
-import { Fragment, useMemo } from "react";
+import { Fragment, useCallback, useMemo } from "react";
 import { Transition } from "@headlessui/react";
+import CartTrashFlight from "@modules/common/components/cart-trash-flight";
+import CartDropFlight, {
+  startCartDrop,
+  startCartTrash,
+  useCartDropPhase,
+} from "@modules/common/components/cart-drop-flight";
 
 type MobileActionsProps = {
   product: HttpTypes.StoreProduct & {
@@ -23,7 +29,7 @@ type MobileActionsProps = {
   };
   variant?: HttpTypes.StoreProductVariant;
   inStock?: boolean;
-  handleAddToCart: () => void;
+  handleAddToCart: (opts?: { skipAnimation?: boolean }) => void;
   handleBuyNow?: () => void;
   isAdding?: boolean;
   show: boolean;
@@ -160,15 +166,62 @@ const MobileActions: React.FC<MobileActionsProps> = ({
     !overridePrice &&
     (hasTypesenseDiscount || selectedPrice?.price_type === "sale");
 
-  const showQuantityControls = quantityInCart > 0 && inStock;
+  // Fase de la coreografía, leída del store por variante:
+  // "dropping" = corre la animación y hay que RETENER el botón aunque el
+  // carrito ya tenga la línea (si no, el alta optimista mete el stepper en el
+  // mismo frame del click y no se llega a ver nada).
+  // "entering" = el stepper ya tomó el lugar y hace su entrada.
+  const phase = useCartDropPhase(variant?.id);
+
+  const playAndAdd = useCallback(() => {
+    if (!variant?.id) {
+      return;
+    }
+    // `startCartDrop` devuelve false si ya está corriendo: eso cubre el doble
+    // click, que es lo que antes cubría el `disabled` (ver `addButtonDisabled`).
+    if (!startCartDrop(variant.id)) {
+      return;
+    }
+    // `skipAnimation` apaga el vuelo de la miniatura al ícono del carrito: ese
+    // vuelo pisa esta coreografía (y en el quick view termina cerrando el
+    // modal). Acá el feedback es el botón y el stepper que lo releva.
+    handleAddToCart({ skipAnimation: true });
+  }, [handleAddToCart, variant?.id]);
+
+  // Tirar al tacho la última unidad. Sólo acá: con cantidad > 1 el control es
+  // un "−" y la línea no desaparece, así que no hay nada que tirar.
+  const trashAndRemove = useCallback(() => {
+    if (!variant?.id || !startCartTrash(variant.id)) {
+      return;
+    }
+    onRemove();
+  }, [onRemove, variant?.id]);
+
+  // Durante la animación el botón manda, aunque la línea ya esté en el carrito;
+  // y al revés al sacar: el stepper se retiene aunque la línea ya no esté.
+  const showQuantityControls =
+    (quantityInCart > 0 || phase === "trashing") &&
+    inStock &&
+    phase !== "dropping";
 
   // Un solo criterio para los tres layouts (PDP, inline, sticky mobile).
   const addDisabled = !(inStock && variant) || isAdding || blocked;
+  // Mientras corre la animación NO marcamos el botón como deshabilitado: el
+  // alta en vuelo prende `isAdding` y el `disabled:opacity-50` lo dejaría
+  // apagado justo durante la coreografía. El doble click lo corta la guarda de
+  // `playAndAdd`.
+  const addButtonDisabled = addDisabled && phase !== "dropping";
   const addLabel = !inStock
     ? "Sin Stock"
     : blocked
       ? blockedLabel
       : "Agregar al carrito";
+  // En la barra fija de la PDP mobile el botón compite con la miniatura, el
+  // título y el precio en ~360px: "Agregar al carrito" obligaba a truncar el
+  // título. En mobile va "Agregar" (el ícono de carrito ya dice a dónde); en
+  // desktop se mantiene el texto completo. "Sin Stock" y el label de bloqueo
+  // no se acortan porque no son la acción sino un estado.
+  const isDefaultAddLabel = addLabel === "Agregar al carrito";
 
   if (productPage) {
     return (
@@ -253,17 +306,24 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                   <div
                     className={clx(
                       "flex items-center rounded-xl border border-gray-200 bg-white shadow-sm transition-opacity",
-                      { "opacity-70": isUpdatingQuantity },
+                      { "opacity-70": isUpdatingQuantity && phase !== "trashing" },
+                      (phase === "entering" || phase === "returning") &&
+                        "animate-atc-stepper-in motion-reduce:animate-none",
+                      phase === "trashing" && "relative overflow-hidden",
                     )}
                   >
-                    {quantityInCart === 1 ? (
+                    {phase === "trashing" && <CartTrashFlight />}
+                    {quantityInCart === 1 || phase === "trashing" ? (
                       <button
                         aria-label="Eliminar producto"
-                        className="flex h-12 w-12 items-center justify-center text-red-500 transition-colors hover:bg-red-50 lg:h-14 lg:w-14"
-                        onClick={onRemove}
+                        className={clx(
+                          "flex h-12 w-12 items-center justify-center rounded-l-xl bg-red-600 text-white transition-colors hover:bg-red-700 lg:h-14 lg:w-14",
+                          phase === "trashing" && "pointer-events-none opacity-0",
+                        )}
+                        onClick={trashAndRemove}
                         type="button"
                       >
-                        <TrashIcon className="h-4 w-4" />
+                        <TrashIcon className="h-5 w-5 text-white" />
                       </button>
                     ) : (
                       <button
@@ -275,12 +335,12 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                         −
                       </button>
                     )}
-                    <div className="w-10 text-center font-semibold text-base tabular-nums lg:w-12 lg:text-lg">
+                    <div className={clx("w-10 text-center font-semibold text-base tabular-nums lg:w-12 lg:text-lg", phase === "trashing" && "animate-atc-trash-fade motion-reduce:animate-none",)}>
                       {quantityInCart}
                     </div>
                     <button
                       aria-label="Incrementar cantidad"
-                      className="flex h-12 w-12 items-center justify-center font-semibold text-gray-700 text-xl transition-colors hover:bg-gray-100 lg:h-14 lg:w-14"
+                      className={clx("flex h-12 w-12 items-center justify-center font-semibold text-gray-700 text-xl transition-colors hover:bg-gray-100 lg:h-14 lg:w-14", phase === "trashing" && "animate-atc-trash-fade motion-reduce:animate-none",)}
                       onClick={onIncrement}
                       disabled={!canIncrement}
                       title={
@@ -293,18 +353,34 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                   </div>
                 ) : (
                   <button
-                    className="flex h-12 min-w-[180px] items-center justify-center gap-2 rounded-xl bg-[--primary-color] px-7 font-semibold text-base text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 lg:h-14 lg:min-w-[220px] lg:px-9"
+                    className={clx(
+                      "relative flex h-12 min-w-[132px] items-center justify-center gap-2 overflow-hidden rounded-xl bg-[--primary-color] px-5 font-semibold text-base text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 lg:h-14 lg:min-w-[220px] lg:px-9",
+                      phase === "returning" &&
+                        "animate-atc-stepper-in motion-reduce:animate-none",
+                    )}
                     data-testid="product-page-cart-button"
-                    disabled={addDisabled}
-                    onClick={handleAddToCart}
+                    disabled={addButtonDisabled}
+                    onClick={playAndAdd}
                     type="button"
                   >
-                    {isAdding ? (
-                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                    ) : (
-                      <ShoppingCartIcon aria-hidden="true" className="h-5 w-5" />
-                    )}
-                    {addLabel}
+                    <CartDropFlight playing={phase === "dropping"}>
+                      {isAdding ? (
+                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                      ) : (
+                        <ShoppingCartIcon
+                          aria-hidden="true"
+                          className="h-5 w-5"
+                        />
+                      )}
+                      {isDefaultAddLabel ? (
+                        <>
+                          <span className="lg:hidden">Agregar</span>
+                          <span className="hidden lg:inline">{addLabel}</span>
+                        </>
+                      ) : (
+                        addLabel
+                      )}
+                    </CartDropFlight>
                   </button>
                 )}
               </div>
@@ -344,18 +420,25 @@ const MobileActions: React.FC<MobileActionsProps> = ({
               // justo cuando el debounce debería coalescerlos. Feedback = opacidad.
               <div
                 className={clx(
-                  "flex w-full items-center justify-center rounded-xl border border-gray-200 transition-opacity sm:w-auto",
-                  { "opacity-70": isUpdatingQuantity },
+                  "flex w-full items-center justify-between overflow-hidden rounded-xl border border-gray-200 transition-opacity sm:w-auto sm:justify-center",
+                  { "opacity-70": isUpdatingQuantity && phase !== "trashing" },
+                  (phase === "entering" || phase === "returning") &&
+                        "animate-atc-stepper-in motion-reduce:animate-none",
+                      phase === "trashing" && "relative overflow-hidden",
                 )}
               >
-                {quantityInCart === 1 ? (
+                    {phase === "trashing" && <CartTrashFlight />}
+                {quantityInCart === 1 || phase === "trashing" ? (
                   <button
                     aria-label="Eliminar producto"
-                    className="flex h-12 w-12 items-center justify-center text-red-500 transition-colors hover:bg-red-50"
-                    onClick={onRemove}
+                    className={clx(
+                          "flex h-12 w-12 items-center justify-center rounded-l-xl bg-red-600 text-white transition-colors hover:bg-red-700",
+                          phase === "trashing" && "pointer-events-none opacity-0",
+                        )}
+                    onClick={trashAndRemove}
                     type="button"
                   >
-                    <TrashIcon className="h-4 w-4" />
+                    <TrashIcon className="h-5 w-5 text-white" />
                   </button>
                 ) : (
                   <button
@@ -367,12 +450,12 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                     −
                   </button>
                 )}
-                <div className="w-12 text-center font-semibold text-base tabular-nums">
+                <div className={clx("w-12 text-center font-semibold text-base tabular-nums", phase === "trashing" && "animate-atc-trash-fade motion-reduce:animate-none",)}>
                   {quantityInCart}
                 </div>
                 <button
                   aria-label="Incrementar cantidad"
-                  className="flex h-12 w-12 items-center justify-center font-semibold text-gray-700 text-lg transition-colors hover:bg-gray-100"
+                  className={clx("flex h-12 w-12 items-center justify-center font-semibold text-gray-700 text-lg transition-colors hover:bg-gray-100", phase === "trashing" && "animate-atc-trash-fade motion-reduce:animate-none",)}
                   onClick={onIncrement}
                   disabled={!canIncrement}
                   title={canIncrement ? undefined : "No hay más stock disponible"}
@@ -383,18 +466,24 @@ const MobileActions: React.FC<MobileActionsProps> = ({
               </div>
             ) : (
               <button
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[--primary-color] px-6 font-semibold text-base text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-[230px]"
+                className={clx(
+                      "relative flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-[--primary-color] px-6 font-semibold text-base text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-[230px]",
+                      phase === "returning" &&
+                        "animate-atc-stepper-in motion-reduce:animate-none",
+                    )}
                 data-testid="sticky-cart-button"
-                disabled={addDisabled}
-                onClick={handleAddToCart}
+                disabled={addButtonDisabled}
+                onClick={playAndAdd}
                 type="button"
               >
-                {isAdding ? (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                ) : (
-                  <ShoppingCartIcon aria-hidden="true" className="h-4 w-4" />
-                )}
-                {addLabel}
+                <CartDropFlight playing={phase === "dropping"}>
+                  {isAdding ? (
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                  ) : (
+                    <ShoppingCartIcon aria-hidden="true" className="h-4 w-4" />
+                  )}
+                  {addLabel}
+                </CartDropFlight>
               </button>
             )}
           </div>
@@ -476,17 +565,24 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                   <div
                     className={clx(
                       "flex items-center rounded-lg border border-gray-200 transition-opacity",
-                      { "opacity-70": isUpdatingQuantity },
+                      { "opacity-70": isUpdatingQuantity && phase !== "trashing" },
+                      (phase === "entering" || phase === "returning") &&
+                        "animate-atc-stepper-in motion-reduce:animate-none",
+                      phase === "trashing" && "relative overflow-hidden",
                     )}
                   >
-                    {quantityInCart === 1 ? (
+                    {phase === "trashing" && <CartTrashFlight />}
+                    {quantityInCart === 1 || phase === "trashing" ? (
                       <button
                         aria-label="Eliminar producto"
-                        className="flex h-10 w-10 items-center justify-center text-red-500 transition-colors hover:bg-red-50 lg:h-11 lg:w-11"
-                        onClick={onRemove}
+                        className={clx(
+                          "flex h-10 w-10 items-center justify-center rounded-l-lg bg-red-600 text-white transition-colors hover:bg-red-700 lg:h-11 lg:w-11",
+                          phase === "trashing" && "pointer-events-none opacity-0",
+                        )}
+                        onClick={trashAndRemove}
                         type="button"
                       >
-                        <TrashIcon className="h-4 w-4" />
+                        <TrashIcon className="h-5 w-5 text-white" />
                       </button>
                     ) : (
                       <button
@@ -498,12 +594,12 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                         −
                       </button>
                     )}
-                    <div className="w-8 text-center font-semibold text-sm tabular-nums lg:w-10 lg:text-base">
+                    <div className={clx("w-8 text-center font-semibold text-sm tabular-nums lg:w-10 lg:text-base", phase === "trashing" && "animate-atc-trash-fade motion-reduce:animate-none",)}>
                       {quantityInCart}
                     </div>
                     <button
                       aria-label="Incrementar cantidad"
-                      className="flex h-10 w-10 items-center justify-center font-semibold text-gray-700 text-lg transition-colors hover:bg-gray-100 lg:h-11 lg:w-11"
+                      className={clx("flex h-10 w-10 items-center justify-center font-semibold text-gray-700 text-lg transition-colors hover:bg-gray-100 lg:h-11 lg:w-11", phase === "trashing" && "animate-atc-trash-fade motion-reduce:animate-none",)}
                       onClick={onIncrement}
                       disabled={!canIncrement}
                       title={
@@ -516,18 +612,27 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                   </div>
                 ) : (
                   <button
-                    className="flex h-10 items-center gap-2 rounded-lg bg-[--primary-color] px-5 font-medium text-sm text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 lg:h-11 lg:px-6 lg:text-base"
+                    className={clx(
+                      "relative flex h-10 items-center gap-2 overflow-hidden rounded-lg bg-[--primary-color] px-5 font-medium text-sm text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 lg:h-11 lg:px-6 lg:text-base",
+                      phase === "returning" &&
+                        "animate-atc-stepper-in motion-reduce:animate-none",
+                    )}
                     data-testid="sticky-cart-button"
-                    disabled={addDisabled}
-                    onClick={handleAddToCart}
+                    disabled={addButtonDisabled}
+                    onClick={playAndAdd}
                     type="button"
                   >
-                    {isAdding ? (
-                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                    ) : (
-                      <ShoppingCartIcon aria-hidden="true" className="h-4 w-4" />
-                    )}
-                    {addLabel}
+                    <CartDropFlight playing={phase === "dropping"}>
+                      {isAdding ? (
+                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                      ) : (
+                        <ShoppingCartIcon
+                          aria-hidden="true"
+                          className="h-4 w-4"
+                        />
+                      )}
+                      {addLabel}
+                    </CartDropFlight>
                   </button>
                 )}
               </div>

@@ -4,8 +4,11 @@ import { requiresRecipient, type CheckoutPolicy } from './policy';
 
 export const PersonSchema = z.object({
   id: z.string().uuid(),
-  document: z.string().transform(v => v.replace(/[.\s-]/g, '')).pipe(z.string().regex(/^\d{7,8}$/, 'Ingresá un DNI de 7 u 8 dígitos.')),
+  // Opcional: '' (o solo separadores) vale como "sin documento" y se normaliza a
+  // undefined, asi ni el chequeo de duplicados ni el enmascarado ven un string vacio.
+  document: z.string().transform(v => v.replace(/[.\s-]/g, '')).refine(v => v === '' || /^\d{7,8}$/.test(v), 'Ingresá un DNI de 7 u 8 dígitos.').transform(v => v || undefined).optional(),
   first_name: z.string().trim().min(1).max(100), last_name: z.string().trim().min(1).max(100),
+  grade: z.string().trim().max(50).optional(),
 }).strict();
 export type Person = z.infer<typeof PersonSchema>;
 export type Unit = { id: string; line_id: string; line_key: string; variant_id: string | null; person_id: string | null };
@@ -19,6 +22,7 @@ export function validatePeople(people: Person[]) {
   for (const p of people) {
     if (ids.has(p.id)) throw new CheckoutError('RECIPIENT_DUPLICATE', 'Hay una persona repetida.');
     ids.add(p.id);
+    if (!p.document) continue;
     const name = `${p.first_name} ${p.last_name}`.normalize('NFKC').toLocaleLowerCase('es');
     if (documents.has(p.document)) throw new CheckoutError('RECIPIENT_DUPLICATE', documents.get(p.document) === name ? 'Reutilizá la persona ya cargada para ese documento.' : 'El mismo documento tiene nombres distintos. Corregí o reutilizá la persona.');
     documents.set(p.document, name);
@@ -57,18 +61,22 @@ export function assertCoverage(units: Unit[], people: Person[], lines: Line[], p
       throw new CheckoutError('RECIPIENTS_INCOMPLETE', 'Completá los destinatarios de todas las unidades.', 'recipients', assigned.filter(u => !u.person_id || !ids.has(u.person_id)).map(u => u.id));
   }
 }
-export function cartFingerprint(cart: any) {
+export function cartFingerprintComponents(cart: any) {
   const address = (a: any) => a ? ['first_name', 'last_name', 'address_1', 'address_2', 'city', 'province', 'postal_code', 'country_code', 'phone', 'company'].map(k => a[k] ?? null) : null;
-  return createHash('sha256').update(JSON.stringify({
+  return {
     customer: cart.customer_id ?? cart.customer?.id ?? null, channel: cart.sales_channel_id, region: cart.region_id ?? cart.region?.id ?? null, email: cart.email,
-    currency: cart.currency_code, total: Number(cart.total),
+    // `total` intentionally excluded: q.graph vs completeCartWorkflow-refreshed cart diverge (undefined vs computed) and cause false CHECKOUT_REVISION_CONFLICT at finalize. Price safety is enforced by assertPaymentMatchesCart (compares cart.total vs payment session/collection amounts) and by items[unit_price] + shipping_methods[amount] already in the fingerprint.
+    currency: cart.currency_code,
     shipping: address(cart.shipping_address), billing: address(cart.billing_address),
     methods: cart.shipping_methods?.map((m: any) => [m.shipping_option_id, Number(m.amount), m.data?.branch_id ?? null]).sort((a: any, b: any) => String(a[0]).localeCompare(String(b[0]))),
     items: [...(cart.items ?? [])].sort((a, b) => a.id.localeCompare(b.id)).map((i: any) => [i.id, i.variant_id, Number(i.quantity), Number(i.unit_price), i.metadata?.checkout_line_key]),
     billing_snapshot: cart.metadata?.billing_snapshot,
-  })).digest('hex');
+  };
 }
-export function maskedPeople(people: Person[]) { return people.map(p => ({ ...p, document: `••••${p.document.slice(-3)}` })); }
+export function cartFingerprint(cart: any) {
+  return createHash('sha256').update(JSON.stringify(cartFingerprintComponents(cart))).digest('hex');
+}
+export function maskedPeople(people: Person[]) { return people.map(p => ({ ...p, document: p.document ? `••••${p.document.slice(-3)}` : undefined })); }
 /** Mapping is by an opaque line key copied by Medusa, never by array position or SKU. */
 export function mapOrderUnits(units: Unit[], orderItems: any[]) {
   return units.map(unit => {

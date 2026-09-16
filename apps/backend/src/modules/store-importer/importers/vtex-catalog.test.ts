@@ -46,6 +46,239 @@ const raw = (id = 'p1') => ({
   ],
 });
 
+test('display uses actual attributes or a neutral option, never the external ID', () => {
+  const source: any = raw('168006');
+  source.items = [{ ...source.items[0], itemId: '168006', name: source.productName }];
+  assert.equal(normalizeVtex(source, config)!.variants![0]!.value, 'Único');
+  source.items[0].variations = ['Contenido'];
+  source.items[0].Contenido = ['500 g'];
+  assert.equal(normalizeVtex(source, config)!.variants![0]!.value, '500 g');
+  source.items[0].Pack = ['Caja de 12'];
+  assert.equal(
+    normalizeVtex(source, { ...config, fieldMapping: { label: 'Pack' } })!.variants![0]!.value,
+    'Caja de 12'
+  );
+  source.items.push({ ...source.items[0], itemId: 'another' });
+  const variants = normalizeVtex(source, config)!.variants!;
+  assert.equal(variants.length, 2);
+  assert.deepEqual(
+    variants.map((v) => v.value),
+    ['500 g', '500 g']
+  );
+});
+
+test('5986 source IDs are covered by recursive facets, deduplicated and offer-validated', async () => {
+  let report: any;
+  const calls: URL[] = [];
+  const catalog = Array.from({ length: 5986 }, (_, i) => raw(String(i)));
+  catalog[10]!.items = [];
+  const transport = async (value: string) => {
+    const url = new URL(value);
+    calls.push(url);
+    const path = url.pathname;
+    let rows = path.includes('category-1/a')
+      ? catalog.slice(0, 3600)
+      : path.includes('category-1/b')
+        ? catalog.slice(3500)
+        : catalog;
+    if (path.includes('brand/left')) rows = rows.slice(0, 1800);
+    if (path.includes('brand/right')) rows = rows.slice(1800);
+    if (path.includes('/facets/'))
+      return {
+        status: 200,
+        body: {
+          facets: [
+            {
+              type: 'TEXT',
+              values: path.includes('category-1/a')
+                ? [
+                    { key: 'brand', value: 'left' },
+                    { key: 'brand', value: 'right' },
+                  ]
+                : [
+                    { key: 'category-1', value: 'a' },
+                    { key: 'category-1', value: 'b' },
+                  ],
+            },
+          ],
+        },
+      };
+    const page = Number(url.searchParams.get('page'));
+    assert.ok(page <= 50, 'never repeat the impossible page 51');
+    const count = Number(url.searchParams.get('count'));
+    return {
+      status: 200,
+      body: {
+        products: rows.slice((page - 1) * 50, (page - 1) * 50 + count),
+        recordsFiltered: rows.length,
+      },
+    };
+  };
+  const products = await fetchVtexCatalog(
+    {
+      sourceUrl: config.sourceUrl,
+      sourceConfig: { ...config, sourceChannel: '2' },
+      report: (r) => {
+        report = r;
+      },
+    },
+    transport
+  );
+  assert.equal(products.length, 5985);
+  assert.equal(report.observed, 5986);
+  assert.equal(report.excluded, 1);
+  assert.equal(report.complete, true);
+  assert.equal(report.estimatedTotal, 5986);
+  assert.equal(report.pendingCount, 0);
+  assert.deepEqual(report.pendingCoverage, []);
+  assert.equal(new Set(products.map((p) => p.productId)).size, 5985);
+  assert.ok(calls.some((u) => u.pathname.includes('/brand/left')));
+  assert.ok(calls.every((u) => u.searchParams.get('sc') === '2'));
+});
+
+test('unpartitionable or sampled facets do not claim complete coverage', async () => {
+  let report: any;
+  await fetchVtexCatalog(
+    {
+      sourceUrl: config.sourceUrl,
+      sourceConfig: { ...config, searchStrategy: 'intelligent-search' },
+      report: (r) => {
+        report = r;
+      },
+    },
+    async (value) => {
+      const url = new URL(value);
+      if (url.pathname.includes('/facets/'))
+        return { status: 200, body: { facets: [], sampling: true } };
+      const page = Number(url.searchParams.get('page'));
+      return {
+        status: 200,
+        body: {
+          products: Array.from({ length: 50 }, (_, i) => raw(String((page - 1) * 50 + i))),
+          recordsFiltered: 3000,
+        },
+      };
+    }
+  );
+  assert.equal(report.complete, false);
+  assert.equal(report.pendingCount, 500);
+  assert.equal(report.pendingCoverage[0].page, 50);
+  assert.equal(report.pendingCoverage[0].reason, 'provider_limit');
+});
+
+test('later HTTP error records exact page and query with remaining coverage', async () => {
+  let report: any;
+  await fetchVtexCatalog(
+    {
+      sourceUrl: config.sourceUrl,
+      sourceConfig: { ...config, searchStrategy: 'intelligent-search' },
+      report: (r) => {
+        report = r;
+      },
+    },
+    async (value) => {
+      const page = Number(new URL(value).searchParams.get('page'));
+      return page === 1
+        ? {
+            status: 200,
+            body: {
+              products: Array.from({ length: 50 }, (_, i) => raw(String(i))),
+              recordsFiltered: 100,
+            },
+          }
+        : { status: 400, body: { message: 'bad page' } };
+    }
+  );
+  assert.deepEqual(report.issues, [
+    { query: 'catalog', page: 2, stage: 'search', reason: 'source_error', status: 400 },
+  ]);
+  assert.equal(report.pendingCount, 50);
+  assert.equal(report.complete, false);
+});
+
+test('preview limit does not discover facets or crawl the entire catalog', async () => {
+  let calls = 0;
+  await fetchVtexCatalog(
+    {
+      sourceUrl: config.sourceUrl,
+      sourceConfig: { ...config, searchStrategy: 'intelligent-search' },
+      targetCount: 5,
+    },
+    async () => {
+      calls++;
+      return {
+        status: 200,
+        body: {
+          products: Array.from({ length: 50 }, (_, i) => raw(String(i))),
+          recordsFiltered: 5986,
+        },
+      };
+    }
+  );
+  assert.equal(calls, 1);
+});
+
+test('legacy partitions overflowing categories and reports unknown coverage conservatively', async () => {
+  let report: any;
+  const catalog = Array.from({ length: 3000 }, (_, i) => raw(String(i)));
+  const products = await fetchVtexCatalog(
+    {
+      sourceUrl: config.sourceUrl,
+      sourceConfig: { ...config, searchStrategy: 'legacy' },
+      report: (r) => {
+        report = r;
+      },
+    },
+    async (value) => {
+      const url = new URL(value);
+      if (url.pathname.includes('/category/tree/'))
+        return { status: 200, body: [{ id: 1, children: [{ id: 11 }, { id: 12 }] }] };
+      const rows =
+        url.searchParams.get('fq') === 'C:/11/'
+          ? catalog.slice(0, 1600)
+          : url.searchParams.get('fq') === 'C:/12/'
+            ? catalog.slice(1500)
+            : catalog;
+      const from = Number(url.searchParams.get('_from'));
+      const to = Number(url.searchParams.get('_to'));
+      assert.ok(to < 2500);
+      return { status: 200, body: rows.slice(from, to + 1) };
+    }
+  );
+  assert.equal(products.length, 3000);
+  assert.equal(report.observed, 3000);
+  assert.equal(
+    report.complete,
+    false,
+    'Without the root total, leaf success is not proof of full coverage.'
+  );
+  assert.equal(report.estimatedTotal, undefined);
+});
+
+test('an inaccessible subdivision stops recovery without silently using another context', async () => {
+  await assert.rejects(
+    fetchVtexCatalog(
+      {
+        sourceUrl: config.sourceUrl,
+        sourceConfig: { ...config, searchStrategy: 'intelligent-search' },
+      },
+      async (value) => {
+        const url = new URL(value);
+        if (url.pathname.includes('/facets/')) return { status: 403, body: null };
+        const page = Number(url.searchParams.get('page'));
+        return {
+          status: 200,
+          body: {
+            products: Array.from({ length: 50 }, (_, i) => raw(String((page - 1) * 50 + i))),
+            recordsFiltered: 3000,
+          },
+        };
+      }
+    ),
+    SourceHttpError
+  );
+});
+
 test('default seller, independent measurement, list rounding, out-of-stock SKU and explicit grouping', () => {
   const p = normalizeVtex(raw(), {
     ...config,

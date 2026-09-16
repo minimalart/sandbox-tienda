@@ -183,6 +183,24 @@ describe('buildTenantConfig · orden de la barra inferior mobile', () => {
     const config = buildTenantConfig(mainRow());
     assert.equal('mobileNav' in (config.assets as Record<string, unknown>), false);
   });
+
+  it('el ícono/texto por entrada pasa a `assets.mobileNavDisplay`', () => {
+    const config = buildTenantConfig(
+      regularRow({ content_config: { mobileNavDisplay: { blog: 'text' } } as any })
+    );
+    assert.deepEqual((config.assets as any).mobileNavDisplay, { blog: 'text' });
+  });
+
+  /** Igual que `mobileNav`: la clave presente gana entera, así que vacía no va. */
+  it('un objeto VACÍO de ícono/texto no se emite', () => {
+    const config = buildTenantConfig(
+      regularRow({ content_config: { mobileNavDisplay: {} } as any })
+    );
+    assert.equal(
+      'mobileNavDisplay' in (config.assets as Record<string, unknown>),
+      false
+    );
+  });
 });
 
 describe('buildTenantConfig · footer.description', () => {
@@ -368,39 +386,40 @@ describe('buildTenantConfig · template campaign — overrides SITE-LEVEL de con
       content_config: override as DemoStoreLike['content_config'],
     });
 
-  it('sin content_config.campaign, el payload trae assets.campaign vacío', () => {
+  it('sin content_config, el payload trae la ilustración genérica de campaign', () => {
     const cfg = buildTenantConfig(campaignRow());
-    // buildAssets del template pone `campaign: {}` como marcador de vertical.
-    // El storefront hace el overlay contra sus defaults hardcodeados.
+    // El storefront conserva el resto de sus defaults y recibe una imagen
+    // local de calidad aunque la campaña todavía no haya cargado una propia.
     const assets = cfg.assets as Record<string, unknown>;
     assert.equal('campaign' in assets, true);
-    assert.deepEqual(assets.campaign, {});
+    assert.deepEqual(assets.campaign, {
+      hero: { image: '/images/campaign-default-illustration.png' },
+    });
   });
 
-  it('emite las sub-claves site-level (announcement/chrome/footer) sólo cuando el content las trae', () => {
+  it('emite announcement/chrome sólo cuando el content los trae', () => {
     const cfg = buildTenantConfig(
       campaignRow({
         campaign: {
           announcement: { text: 'Tienda oficial de la escuela' },
-          footer: { address: 'Av. Siempre Viva 1234' },
         },
       } as any)
     );
     const assets = cfg.assets as Record<string, any>;
     assert.equal(assets.campaign.announcement.text, 'Tienda oficial de la escuela');
-    assert.equal(assets.campaign.footer.address, 'Av. Siempre Viva 1234');
     // chrome NO se emite porque el content no lo tenía.
     assert.equal('chrome' in assets.campaign, false);
+    // footer tampoco: no hay contact ni content.footer ni campaign.footer.
+    assert.equal('footer' in assets.campaign, false);
   });
 
-  it('strippea strings vacíos: no pisa defaults con ""', () => {
+  it('strippea strings vacíos del announcement: no pisa defaults con ""', () => {
     // Si el operador vacía un input del admin, el form manda "".
     // El clean del backend tiene que descartarlo para que el default gane.
     const cfg = buildTenantConfig(
       campaignRow({
         campaign: {
           announcement: { text: '', href: 'https://example.com' },
-          footer: { address: '', email: 'hola@edu.ar' },
         },
       } as any)
     );
@@ -408,9 +427,71 @@ describe('buildTenantConfig · template campaign — overrides SITE-LEVEL de con
     // href sí, text no.
     assert.equal(assets.campaign.announcement.href, 'https://example.com');
     assert.equal('text' in assets.campaign.announcement, false);
-    // email sí, address no.
+  });
+
+  it('assets.campaign.footer se ARMA desde content.contact + content.footer', () => {
+    // Las 4 propiedades comunes del footer (email/phone/address/description/
+    // copyright) salen ahora de las fuentes compartidas del site, no de un
+    // 3er lugar en content_config.campaign.footer.
+    const cfg = buildTenantConfig(
+      campaignRow({
+        contact: {
+          email: 'hola@edu.ar',
+          phone: '+54 11 5555-5555',
+          address: 'Av. Siempre Viva 1234',
+        },
+        footer: {
+          description: 'Tienda de kits educativos',
+          copyright: '© 2026 Escuela',
+        },
+      } as any)
+    );
+    const assets = cfg.assets as Record<string, any>;
     assert.equal(assets.campaign.footer.email, 'hola@edu.ar');
-    assert.equal('address' in assets.campaign.footer, false);
+    assert.equal(assets.campaign.footer.phone, '+54 11 5555-5555');
+    assert.equal(assets.campaign.footer.address, 'Av. Siempre Viva 1234');
+    assert.equal(assets.campaign.footer.description, 'Tienda de kits educativos');
+    assert.equal(assets.campaign.footer.copyright, '© 2026 Escuela');
+  });
+
+  it('el footer del vertical mergea poweredBy/backgroundColor sobre las fuentes compartidas', () => {
+    // `poweredBy` y `backgroundColor` son propios del template Campaña y siguen
+    // viviendo en content.campaign.footer. Conviven con las 4 propiedades
+    // que ahora salen de las fuentes compartidas.
+    const cfg = buildTenantConfig(
+      campaignRow({
+        contact: { email: 'hola@edu.ar' },
+        campaign: {
+          footer: {
+            poweredBy: { label: 'Powered by X', href: 'https://x.com' },
+            backgroundColor: '#0f1114',
+          },
+        },
+      } as any)
+    );
+    const assets = cfg.assets as Record<string, any>;
+    assert.equal(assets.campaign.footer.email, 'hola@edu.ar');
+    assert.deepEqual(assets.campaign.footer.poweredBy, {
+      label: 'Powered by X',
+      href: 'https://x.com',
+    });
+    assert.equal(assets.campaign.footer.backgroundColor, '#0f1114');
+  });
+
+  it('strings en blanco en las fuentes compartidas se tratan como ausentes', () => {
+    // Como en el resto del payload: `""` en un input del admin no pisa el
+    // default con vacío — la sub-clave desaparece.
+    const cfg = buildTenantConfig(
+      campaignRow({
+        contact: { email: '   ', address: 'Av. Siempre Viva 1234' },
+        footer: { description: '', copyright: '© 2026' },
+      } as any)
+    );
+    const assets = cfg.assets as Record<string, any>;
+    assert.equal(assets.campaign.footer.address, 'Av. Siempre Viva 1234');
+    assert.equal(assets.campaign.footer.copyright, '© 2026');
+    assert.equal('email' in assets.campaign.footer, false);
+    assert.equal('description' in assets.campaign.footer, false);
   });
 
   it('un template distinto NUNCA emite assets.campaign, aunque el content lo tenga', () => {
@@ -420,7 +501,8 @@ describe('buildTenantConfig · template campaign — overrides SITE-LEVEL de con
       regularRow({
         template_code: 'supermercado',
         content_config: {
-          campaign: { footer: { address: 'no debería aparecer' } },
+          contact: { email: 'no@debe.aparecer' },
+          campaign: { footer: { backgroundColor: '#000' } },
         } as any,
       })
     );

@@ -25,6 +25,15 @@ export const ErpOutboxEvent = model
     sent_at: model.dateTime().nullable(),
     external_ref: model.text().nullable(),
     last_error: model.text().nullable(),
+    /**
+     * El documento TAL CUAL se envió al ERP (en Zeus, el body de
+     * `POST /pedidos`). `payload` guarda la INTENCIÓN — qué se vendió — pero los
+     * parámetros fiscales (sucursal, depósito, punto de venta, condición de
+     * venta, tipo de comprobante) salen de la config recién al enviar, así que
+     * sin esta columna no hay forma de saber con qué se emitió un comprobante
+     * viejo si la config cambió después.
+     */
+    request_payload: model.json().nullable(),
     response_payload: model.json().nullable(),
   })
   .indexes([

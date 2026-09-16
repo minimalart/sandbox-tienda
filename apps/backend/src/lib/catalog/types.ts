@@ -83,5 +83,24 @@ export type ImportReport = {
   excluded: number;
   excludedSkus?: number;
   estimatedTotal?: number;
+  /** Distinct source IDs evaluated, including excluded products. */
+  observed?: number;
+  pendingCount?: number;
+  queries?: {
+    query: string;
+    page: number;
+    observed: number;
+    estimatedTotal?: number;
+    complete: boolean;
+    reason?: string;
+  }[];
+  issues?: {
+    query: string;
+    page: number;
+    stage: 'search' | 'facets';
+    reason: string;
+    status?: number;
+  }[];
+  pendingCoverage?: { query: string; page: number; reason: string; remaining?: number }[];
   warnings: string[];
 };

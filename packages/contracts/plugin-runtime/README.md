@@ -6,7 +6,7 @@ Runtime coordination contract entre el host de Mercatto y los plugins publicados
 
 Cuando un plugin vive en `node_modules`, no puede importar directamente de `apps/backend/src/...`. Vendorizar los módulos del host tampoco sirve para settings — los singletons de snapshot son por proceso y por path físico: dos copias son dos snapshots distintos.
 
-Este package expone **setters (los usa el host en boot) y getters (los usan los plugins en runtime)** que comparten variables privadas porque pnpm hoistea el package a UNA sola ubicación en `node_modules` — Node cachea módulos por path, host y N plugins ven la misma instancia.
+Este package expone **setters (host al arrancar) y getters (plugins en cada operación)** sobre un registro de `globalThis` identificado por `Symbol.for`. Desde 0.6.1, varias copias físicas compatibles comparten los lectores sin depender del hoisting. Cada proceso o worker debe registrar su propio lector; no se comparten credenciales entre procesos. Las versiones anteriores deben actualizarse junto con los consumidores.
 
 ## Qué expone
 
@@ -77,3 +77,15 @@ const templates = reader?.()?.templates;
 - Sos el segundo consumidor de un módulo del host (el primero puede vivir con setter/getter propios).
 - La shape del módulo es estable y bien tipada.
 - Documentar la key en `EXTERNAL_KEYS` y explicar la semántica.
+
+## DrawerTabs (0.6.0)
+
+El subpath público `@minimalart/mercatto-plugin-runtime/admin` exporta
+`DrawerTabs` y `DrawerTabPanel`, extraídos del componente canónico de Tiendas/B2B.
+El host conserva sus imports mediante una reexportación; los plugins no necesitan
+importar archivos internos de `apps/backend`.
+
+Pasar `previousLabel` y `nextLabel` desde las traducciones del consumidor.
+El componente usa React y los iconos de Medusa; ambos peers son opcionales para
+consumidores que usan únicamente el contrato de servidor. `DrawerTabPanel`
+mantiene la opción `forceMount` para formularios que conservan estado local.

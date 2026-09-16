@@ -307,7 +307,7 @@ export class RunTraceSink implements RunEventSink {
           agentKey: ev.agentKey,
           name: ev.call.name,
           ok: ev.by === 'handoff',
-          detail: { action: ev.call.action },
+          detail: { action: ev.call.action, mode: ev.call.mode, by: ev.by, reason: ev.text, outcome: ev.by === 'policy' ? 'permissions_blocked' : 'rejected' },
         });
         return;
       case 'agent_handoff':
@@ -445,6 +445,14 @@ export class WorkflowActivitySink implements RunEventSink {
         agent_key: ev.agentKey,
         kind: isSearch ? 'search' : 'tool',
         label: searchActivityLabel(ev.call.name, ev.call.args),
+      });
+      return;
+    }
+    if (ev.type === 'tool_rejected' || ev.type === 'model_completed') {
+      this.onEvent({
+        type: 'workflow_activity', run_id: this.ctx.runId, step_key: this.ctx.stepKey,
+        agent_key: ev.agentKey, kind: 'tool',
+        label: ev.type === 'tool_rejected' ? ev.text : 'El modelo terminó de responder; el resultado del paso todavía debe validarse.',
       });
       return;
     }

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "seo-geo",
   "name": "SEO & GEO",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -343,7 +343,7 @@
     },
     {
       "path": "apps/backend/src/modules/seo-geo/lib/storefront-url.ts",
-      "sha256": "a5a386727dd4830d859ca08843901708d61872391edd80031dd1661a116e7d0c"
+      "sha256": "13bc16474a749ee9014a6f45f15d85a9830414eafbe22878c4b9050920933195"
     },
     {
       "path": "apps/backend/src/modules/seo-geo/migrations/Migration20260722120000SeoGeo.ts",

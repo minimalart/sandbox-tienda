@@ -7,6 +7,7 @@ import {
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import type { NormalizedProduct, NormalizedVariant } from '../../lib/catalog/types';
 import type { ConnectionConfig } from './config';
+import { allocatePresentations, variantPresentation } from './variant-presentation';
 
 export function catalogIdentity(
   destination: string,
@@ -171,6 +172,10 @@ export async function persistCatalogProduct(
         },
       ];
   const variants: any[] = [];
+  const displays: any[] = [];
+  const presentationOption = existing?.options?.find((o: any) => o.title === 'Presentación');
+  const priorPresentation = (v: any) =>
+    v?.options?.find((o: any) => o.option_id === presentationOption?.id)?.value;
   for (const variant of normalized) {
     const externalId = variant.externalVariantId ?? variant.sku ?? variant.ean;
     if (!externalId) throw new Error(`SKU sin identidad externa: ${product.productId}.`);
@@ -182,12 +187,26 @@ export async function persistCatalogProduct(
       JSON.stringify([product.productId, externalId])
     );
     const prior = existing?.variants?.find((v: any) => v.metadata?.catalog_identity === variantKey);
+    const display = variantPresentation(
+      variant.value,
+      externalId,
+      prior,
+      priorPresentation(prior),
+      protectedFields
+    );
+    displays.push({
+      ...display,
+      id: prior?.id,
+      previous: priorPresentation(prior),
+      previousImported: prior?.metadata?.catalog_imported_variant?.presentation,
+    });
     const metadata = {
       ...commercialMetadata(variant, config, prior?.metadata),
       catalog_identity: variantKey,
       external_variant_id: externalId,
       source_sku: variant.sku,
       source_ean: variant.ean,
+      catalog_variant_overrides: display.overrides,
     };
     const protectedPrice =
       protectedFields.has('price') || prior?.metadata?.catalog_protected_fields?.includes('price');
@@ -235,12 +254,26 @@ export async function persistCatalogProduct(
           ];
     variants.push({
       ...(prior ? { id: prior.id } : { sku: `catalog-${variantKey}`, manage_inventory: false }),
-      title: variant.value,
-      options: { Presentación: externalId },
+      title: display.title,
+      options: { Presentación: display.presentation },
       metadata,
       ...(prices ? { prices } : {}),
     });
   }
+  const absent = (existing?.variants ?? []).filter(
+    (v: any) => !variants.some((update) => update.id === v.id)
+  );
+  const presentations = allocatePresentations(
+    displays,
+    absent.map(priorPresentation).filter((v: any) => v !== undefined)
+  );
+  variants.forEach((variant, index) => {
+    variant.options.Presentación = presentations[index];
+    variant.metadata.catalog_imported_variant = {
+      title: variant.title,
+      presentation: presentations[index],
+    };
+  });
   // Existing variants absent in a partial response are intentionally left untouched.
   const common: any = {
     ...(!protectedFields.has('title') ? { title: product.title } : {}),
@@ -275,7 +308,7 @@ export async function persistCatalogProduct(
         product_id: existing.id,
       });
     // Options are additive. Never replace an existing option set with a partial page.
-    const option = existing.options?.find((o: any) => o.title === 'Presentación');
+    const option = presentationOption;
     if (!option) throw new Error('La opción de presentación fue eliminada; requiere revisión.');
     const priorValues = new Set((option.values ?? []).map((v: any) => v.value));
     const missing = [...new Set(variants.map((v) => v.options.Presentación))].filter(
@@ -305,6 +338,21 @@ export async function persistCatalogProduct(
     await updateProductsWorkflow(container).run({
       input: { products: [{ id: existing.id, ...common, variants: allVariants }] },
     });
+    // Remove only obsolete importer-owned ID values, after all variant links
+    // have moved successfully. Never remove a value still used by an absent SKU.
+    const activeValues = new Set(allVariants.map((v: any) => v.options.Presentación));
+    const technicalValues = new Set(
+      (existing.variants ?? []).map((v: any) => v.metadata?.external_variant_id).filter(Boolean)
+    );
+    const obsolete = (option.values ?? []).filter(
+      (v: any) => technicalValues.has(v.value) && !activeValues.has(v.value)
+    );
+    if (obsolete.length)
+      await container.resolve(Modules.PRODUCT).updateProductOptionValuesOnProduct({
+        product_id: existing.id,
+        product_option_id: option.id,
+        remove: obsolete.map((v: any) => v.id),
+      });
     await linkCatalogBrand(container, existing.id, product.brand, context);
     return { id: existing.id, action: 'updated' };
   }

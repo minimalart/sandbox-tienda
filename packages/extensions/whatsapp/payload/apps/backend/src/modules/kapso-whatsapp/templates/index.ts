@@ -25,10 +25,16 @@ export type WhatsappTemplatePayload = {
   components?: Array<Record<string, unknown>>;
 };
 
+/**
+ * Devuelve `null` cuando el ajuste que nombra la plantilla está vacío: para los
+ * eventos OPCIONALES el valor vacío es el interruptor de apagado, y mandar un
+ * `name` en blanco sería un mensaje que Meta rechaza. `resolveTemplate` ya trata
+ * el `null` como "no hay plantilla" y loguea el skip.
+ */
 type TemplateBuilder = (
   data: Record<string, unknown>,
   settings: KapsoSettings,
-) => WhatsappTemplatePayload;
+) => WhatsappTemplatePayload | null;
 
 /** Arma un único componente `body` con parámetros de texto en orden. */
 function bodyParams(...values: Array<unknown>): Array<Record<string, unknown>> {
@@ -75,6 +81,28 @@ export const whatsappTemplates: Record<string, TemplateBuilder> = {
       data.driver_phone ?? '',
     ),
   }),
+
+  // Listo para retirar en tienda — UTILITY. Body: nombre, nº, sucursal, dirección.
+  // Lo dispara `markOrderReadyForPickup`, que es también quien manda el mail: las
+  // dos puertas (el botón del widget de la orden y la transición de la ejecución
+  // de entrega a `at_pickup_point`) pasan por ahí y comparten el gate de
+  // idempotencia, así que el cliente recibe UN aviso por canal.
+  //
+  // Sin nombre configurado devuelve null y no se manda nada: la plantilla exige
+  // aprobación de Meta y una tienda que no hace retiro en local no la tiene.
+  'order-ready-for-pickup': (data, s) =>
+    s.templates.orderReadyForPickup
+      ? {
+          name: s.templates.orderReadyForPickup,
+          language: { code: s.templateLang },
+          components: bodyParams(
+            data.customer_name ?? '',
+            data.display_id ?? '',
+            data.store_name ?? '',
+            data.store_address ?? '',
+          ),
+        }
+      : null,
 
   // Pedido cancelado — UTILITY. Body: nombre, nº de orden.
   'order-cancelled': (data, s) => ({

@@ -30,15 +30,21 @@ export type Company = {
 };
 
 export type CompanyBilling = {
+  /** Espejo de company.legal_name: se escribe al guardar, no se pide dos veces. */
   legal_name?: string;
+  /** Espejo de company.tax_id (misma razón que legal_name). */
   tax_id?: string;
   tax_condition?: string;
   billing_email?: string;
   billing_phone?: string;
   address_line_1?: string;
+  address_line_2?: string;
   city?: string;
   province?: string;
   postal_code?: string;
+  /** Punto del mapa del domicilio fiscal (mismo formato que CompanyAddress). */
+  lat?: string;
+  lng?: string;
 };
 
 export type CompanyAddress = {

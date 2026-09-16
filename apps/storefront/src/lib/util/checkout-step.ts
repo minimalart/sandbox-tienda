@@ -16,13 +16,24 @@
  */
 export function goToCheckoutStep(
   step: string,
-  options?: { replace?: boolean },
+  options?: { replace?: boolean; editing?: boolean },
 ): void {
   if (typeof window === "undefined") return;
-  const url = `${window.location.pathname}?step=${step}`;
+  const target = options?.editing ? "edit-" + step.replace(/^edit-/, "") : step;
+  const url = `${window.location.pathname}?step=${target}`;
   if (options?.replace) {
     window.history.replaceState(null, "", url);
   } else {
     window.history.pushState(null, "", url);
   }
+}
+
+/** Only the active step can be editing; explicit URL intent survives remounts. */
+export function isCheckoutStepEditing(
+  requested: string,
+  active: string,
+  step: string,
+  submitted: ReadonlySet<string> = new Set(),
+): boolean {
+  return active === step && (requested === "edit-" + step || submitted.has(step));
 }

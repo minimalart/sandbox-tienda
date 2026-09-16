@@ -13,6 +13,10 @@ Varias tiendas sobre una misma instancia de Medusa, cada una con su canal de ven
 
 El alta incluye el paso Origen. Para una tienda existente, incluida la principal, abrí Editar → Catálogo. Ambos usan los mismos campos de origen. Configurá la fuente, revisá una muestra y confirmá la importación. El avance y el resultado quedan en esa misma pestaña. La tienda editada determina el destino; el selector global no lo cambia. Esta capacidad está incluida en Tiendas y no requiere otra extensión.
 
+## Crear tiendas con subdominio propio
+
+Configurá una vez el dominio de la principal y el dominio wildcard de las tiendas. Después, desde Tiendas → Crear, elegí el nombre y un subdominio disponible. Antes de guardar vas a ver la dirección completa. La tienda se publica cuando termina su preparación e importación. No hace falta configurar DNS ni desplegar por cada alta. El nombre visible se puede editar; el subdominio queda fijo. Un subdominio inexistente responde 404. La raíz del dominio de tiendas muestra el índice de las tiendas publicadas.
+
 ## Qué es una tienda acá adentro
 
 Una tienda no es una instalación aparte: es una fila que agrupa recursos de esta misma instancia de Medusa. Al crearla se le provisiona su propio canal de venta, su región, su depósito, su set de envíos y, si se pide, un canal mayorista con su lista de precios y su grupo de clientes.
@@ -49,7 +53,7 @@ Con UNA sola tienda, en cambio, no se filtra nada aunque esté elegida: no hay n
 
 El slug es la URL pública de la tienda. Con la forma por ruta se publica en /tienda/slug; con la forma por subdominio, en slug punto el sufijo configurado. Las dos funcionan siempre: la URL canónica sólo elige cuál indexa Google, y la otra queda noindex.
 
-Renombrarlo después de publicar rompe los links ya compartidos, y bajo subdominios es peor que eso: el host viejo pasa a ser desconocido y sirve 200 con el contenido del sitio PRINCIPAL. Un cliente que entra por el link viejo ve otra tienda, no un error. Por eso el backend lo rechaza.
+Renombrarlo después de publicar rompe los links ya compartidos: el host viejo pasa a ser desconocido y responde 404. Por eso el backend lo rechaza.
 
 La lista de slugs reservados es a propósito más amplia de lo necesario. Prohibir de más hoy cuesta un puñado de palabras que nadie quiere; prohibir de menos cuesta una migración de URLs ya indexadas, porque ampliar la lista después vuelve ilegal un slug vivo.
 

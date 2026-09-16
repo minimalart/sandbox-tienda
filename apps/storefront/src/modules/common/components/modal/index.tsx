@@ -36,7 +36,7 @@ const Modal = ({
         <div className="fixed inset-0 h-screen bg-opacity-75 backdrop-blur-md" />
       </Transition.Child>
 
-      <div className="fixed inset-0 overflow-y-hidden">
+      <div className="fixed inset-0 cursor-modal-close overflow-y-hidden">
         <div
           className={clx(
             "flex h-full min-h-full justify-center p-4 text-center",
@@ -57,7 +57,7 @@ const Modal = ({
           >
             <Dialog.Panel
               className={clx(
-                "flex h-fit max-h-[75vh] w-full transform flex-col justify-start p-5 text-left align-middle transition-all",
+                "flex h-fit max-h-[75vh] w-full transform cursor-auto flex-col justify-start p-5 text-left align-middle transition-all",
                 {
                   "max-w-md": size === "small",
                   "max-w-xl": size === "medium",

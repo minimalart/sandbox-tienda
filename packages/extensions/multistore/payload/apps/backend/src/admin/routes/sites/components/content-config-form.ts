@@ -10,6 +10,11 @@
  * convención que ya tienen `routes/sites/lib.ts` + `lib.test.ts`.
  */
 import type { DemoContentConfig } from '../../../hooks/api';
+import {
+  LEGACY_BRANCH_TYPES,
+  resolveBranchTypes,
+  type BranchType,
+} from '../../../../lib/branch-types';
 
 /** Split a textarea (one item per line) into a trimmed, non-empty string list. */
 const parseLines = (value: string): string[] =>
@@ -46,7 +51,30 @@ export type ContentConfigForm = {
    * activas, tintometría con carta, el switch de la sección).
    */
   mobileNav: MobileNavSlotId[];
-  /** Subtítulo de /sucursales. Vacío = no se muestra (se persiste como ''). */
+  /**
+   * Cómo se dibuja cada candidato si le toca el lugar flexible: `icon` (el
+   * ícono con su label, lo que hacía la barra cuando estaba hardcodeada) o
+   * `text` (sólo el texto). Siempre las 5 claves, para que el `Select` de cada
+   * fila tenga valor y no arranque en blanco; el converter emite sólo las que
+   * NO son `icon`.
+   */
+  mobileNavDisplay: Record<MobileNavSlotId, MobileNavDisplay>;
+  /**
+   * Zonas del filtro de ubicación. A diferencia del resto de los campos de
+   * este formulario NO es un string: dejó de ser un textarea de GeoJSON crudo
+   * y pasó a ser una lista editable (presets del catálogo argentino + zonas
+   * dibujadas en el mapa), así que el estado es el objeto tal cual se persiste.
+   */
+  sucursalesRegions: NonNullable<DemoContentConfig['sucursales']>['regions'];
+  /**
+   * Tipos de sucursal de la tienda, en orden.
+   *
+   * `[]` y `undefined` NO son lo mismo y el converter lo respeta: vacío = la
+   * tienda decidió no clasificar sus sucursales; ausente = todavía no se
+   * configuró y valen los tres de siempre. Por eso el formulario se siembra
+   * con `resolveBranchTypes`, que hace esa distinción en un solo lugar.
+   */
+  sucursalesTypes: BranchType[];
   sucursalesSubtitle: string;
   sucursalesShowLocationFilters: boolean;
   sucursalesShowCategoryFilters: boolean;
@@ -89,10 +117,6 @@ export type ContentConfigForm = {
   campaignChromePoweredByLabel: string;
   campaignChromePoweredByHref: string;
   campaignChromeBackgroundColor: string;
-  campaignFooterDescription: string;
-  campaignFooterAddress: string;
-  campaignFooterEmail: string;
-  campaignFooterCopyright: string;
   campaignFooterPoweredByLabel: string;
   campaignFooterPoweredByHref: string;
   campaignFooterBackgroundColor: string;
@@ -103,6 +127,12 @@ export type ContentConfigForm = {
  * ítem, entre el carrito y el menú). Espejo del union del storefront.
  */
 export type MobileNavSlotId = 'promos' | 'colores' | 'sucursales' | 'blog' | 'contacto';
+
+/**
+ * Cómo se dibuja una entrada en la barra inferior mobile. Espejo de
+ * `MobileNavDisplay` del storefront (`lib/site-config/types.ts`).
+ */
+export type MobileNavDisplay = 'icon' | 'text';
 
 /**
  * Orden por defecto. `promos` primero para no cambiarle la barra a ninguna
@@ -138,6 +168,24 @@ const normalizeMobileNav = (saved?: readonly string[] | null): MobileNavSlotId[]
   return out;
 };
 
+/** Default por entrada: ícono, que es lo que hacía la barra hardcodeada. */
+const DEFAULT_MOBILE_NAV_DISPLAY: MobileNavDisplay = 'icon';
+
+/**
+ * Completa las 5 claves desde lo guardado. Cualquier valor que no sea `text`
+ * cae al default: la fila viene de un JSON y un valor inventado dejaría el
+ * `Select` sin opción seleccionada.
+ */
+const normalizeMobileNavDisplay = (
+  saved?: Partial<Record<string, string>> | null,
+): Record<MobileNavSlotId, MobileNavDisplay> => {
+  const out = {} as Record<MobileNavSlotId, MobileNavDisplay>;
+  for (const id of DEFAULT_MOBILE_NAV) {
+    out[id] = saved?.[id] === 'text' ? 'text' : DEFAULT_MOBILE_NAV_DISPLAY;
+  }
+  return out;
+};
+
 const SUGGESTION_ROWS = 3;
 
 /**
@@ -166,7 +214,10 @@ export function emptyContentForm(): ContentConfigForm {
     blogSectionName: '',
     categoriesMenuLayout: 'hamburger',
     mobileNav: [...DEFAULT_MOBILE_NAV],
+    mobileNavDisplay: normalizeMobileNavDisplay(),
     sucursalesSubtitle: DEFAULT_SUCURSALES_SUBTITLE,
+    sucursalesRegions: [],
+    sucursalesTypes: [...LEGACY_BRANCH_TYPES],
     sucursalesShowLocationFilters: true,
     sucursalesShowCategoryFilters: true,
     sucursalesLayout: 'full',
@@ -192,10 +243,6 @@ export function emptyContentForm(): ContentConfigForm {
     campaignChromePoweredByLabel: '',
     campaignChromePoweredByHref: '',
     campaignChromeBackgroundColor: '',
-    campaignFooterDescription: '',
-    campaignFooterAddress: '',
-    campaignFooterEmail: '',
-    campaignFooterCopyright: '',
     campaignFooterPoweredByLabel: '',
     campaignFooterPoweredByHref: '',
     campaignFooterBackgroundColor: '',
@@ -219,9 +266,15 @@ export function contentConfigToForm(cfg?: DemoContentConfig | null): ContentConf
     blogSectionName: cfg.blogSectionName ?? '',
     categoriesMenuLayout: cfg.categoriesMenuLayout ?? 'hamburger',
     mobileNav: normalizeMobileNav(cfg.mobileNav),
+    mobileNavDisplay: normalizeMobileNavDisplay(cfg.mobileNavDisplay),
     // Ausente = todavía no se configuró: sembramos el copy por defecto para no
     // "apagar" el subtítulo al guardar. '' guardado = el usuario lo ocultó.
     sucursalesSubtitle: cfg.sucursales?.subtitle ?? DEFAULT_SUCURSALES_SUBTITLE,
+    sucursalesRegions: cfg.sucursales?.regions ?? [],
+    // Un sitio que nunca tocó esta pantalla se siembra con los tres tipos de
+    // siempre y los persiste explícitos en el primer guardado — que es el
+    // backfill que hace falta, hecho por la vía normal.
+    sucursalesTypes: resolveBranchTypes(cfg.sucursales),
     sucursalesShowLocationFilters: cfg.sucursales?.showLocationFilters ?? true,
     sucursalesShowCategoryFilters: cfg.sucursales?.showCategoryFilters ?? true,
     sucursalesLayout: cfg.sucursales?.layout ?? 'full',
@@ -252,10 +305,6 @@ export function contentConfigToForm(cfg?: DemoContentConfig | null): ContentConf
     campaignChromePoweredByLabel: cfg.campaign?.chrome?.poweredByLabel ?? '',
     campaignChromePoweredByHref: cfg.campaign?.chrome?.poweredByHref ?? '',
     campaignChromeBackgroundColor: cfg.campaign?.chrome?.backgroundColor ?? '',
-    campaignFooterDescription: cfg.campaign?.footer?.description ?? '',
-    campaignFooterAddress: cfg.campaign?.footer?.address ?? '',
-    campaignFooterEmail: cfg.campaign?.footer?.email ?? '',
-    campaignFooterCopyright: cfg.campaign?.footer?.copyright ?? '',
     campaignFooterPoweredByLabel: cfg.campaign?.footer?.poweredBy?.label ?? '',
     campaignFooterPoweredByHref: cfg.campaign?.footer?.poweredBy?.href ?? '',
     campaignFooterBackgroundColor: cfg.campaign?.footer?.backgroundColor ?? '',
@@ -293,6 +342,12 @@ export function formToContentConfig(
   // Sucursales: se persiste siempre (a diferencia del resto), porque el
   // subtítulo vacío ES una elección — significa "no mostrarlo".
   cfg.sucursales = {
+    regions: form.sucursalesRegions,
+    // Siempre explícito, incluso vacío: la lista vacía ES una elección ("esta
+    // tienda no clasifica sus sucursales") y tiene que poder distinguirse de
+    // "todavía no se configuró". `categories`, la clave vieja, no se arrastra:
+    // `types` la reemplaza y `resolveBranchTypes` ya la leyó al hidratar.
+    types: form.sucursalesTypes,
     subtitle: form.sucursalesSubtitle.trim(),
     showLocationFilters: form.sucursalesShowLocationFilters,
     showCategoryFilters: form.sucursalesShowCategoryFilters,
@@ -366,6 +421,17 @@ export function formToContentConfig(
     cfg.mobileNav = mobileNav;
   }
   /**
+   * Ícono vs texto por entrada: se emiten SÓLO las que no son `icon`, y la
+   * clave se omite si no hay ninguna. El storefront completa lo que falte con
+   * `icon` (`resolveMobileNavDisplay`), así que un objeto parcial es seguro —
+   * y guardar las 5 siempre dejaría la config llena de defaults.
+   */
+  const display: Partial<Record<MobileNavSlotId, MobileNavDisplay>> = {};
+  for (const id of DEFAULT_MOBILE_NAV) {
+    if (form.mobileNavDisplay?.[id] === 'text') display[id] = 'text';
+  }
+  if (Object.keys(display).length) cfg.mobileNavDisplay = display;
+  /**
    * Campaign — sólo se emite si el template lo usa. Cada sub-clave (announcement,
    * chrome, hero, kits, footer) se emite SOLO si tiene contenido; y dentro, cada
    * campo strings.trim() || undefined. El backend además hace `cleanCampaignOverride`
@@ -411,17 +477,9 @@ function buildCampaignPayload(
   const footer: NonNullable<
     NonNullable<DemoContentConfig['campaign']>['footer']
   > = {};
-  const fd = nonEmpty(form.campaignFooterDescription);
-  const fa = nonEmpty(form.campaignFooterAddress);
-  const fe = nonEmpty(form.campaignFooterEmail);
-  const fcp = nonEmpty(form.campaignFooterCopyright);
   const fpl = nonEmpty(form.campaignFooterPoweredByLabel);
   const fph = nonEmpty(form.campaignFooterPoweredByHref);
   const fbg = nonEmpty(form.campaignFooterBackgroundColor);
-  if (fd) footer.description = fd;
-  if (fa) footer.address = fa;
-  if (fe) footer.email = fe;
-  if (fcp) footer.copyright = fcp;
   // poweredBy necesita AMBOS label y href.
   if (fpl && fph) footer.poweredBy = { label: fpl, href: fph };
   if (fbg) footer.backgroundColor = fbg;

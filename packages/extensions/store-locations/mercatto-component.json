@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "store-locations",
   "name": "Sucursales",
-  "version": "1.11.3",
+  "version": "1.12.1",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -25,6 +25,10 @@
       "target": "apps/backend/src/api/admin/sales-channels-b2c"
     },
     {
+      "source": "payload/apps/backend/src/api/admin/branch-types",
+      "target": "apps/backend/src/api/admin/branch-types"
+    },
+    {
       "source": "payload/apps/backend/src/api/store/store-locations",
       "target": "apps/backend/src/api/store/store-locations"
     },
@@ -45,6 +49,10 @@
       "target": "apps/backend/src/scripts/seed-store-locations.ts"
     },
     {
+      "source": "payload/apps/backend/src/scripts/build-geo-zones-ar.mjs",
+      "target": "apps/backend/src/scripts/build-geo-zones-ar.mjs"
+    },
+    {
       "source": "payload/apps/storefront/src/modules/store-locations",
       "target": "apps/storefront/src/modules/store-locations"
     },
@@ -59,6 +67,10 @@
     {
       "source": "payload/apps/storefront/src/lib/data/branch-types.ts",
       "target": "apps/storefront/src/lib/data/branch-types.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/data/geo-zones-ar.ts",
+      "target": "apps/storefront/src/lib/data/geo-zones-ar.ts"
     },
     {
       "source": "payload/apps/storefront/src/app/api/store/addresses",
@@ -95,7 +107,7 @@
     },
     {
       "path": "apps/backend/src/admin/hooks/api/store-locations.tsx",
-      "sha256": "94f35352192955a010ab985990a73c1e4b9f02a89dc84edfa439498a6abffc79"
+      "sha256": "8c3fd9645512d776256c7f8e16448631c0fe49e194d0c1d6c02c84f23c81a708"
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/components/branch-config-section.tsx",
@@ -107,23 +119,11 @@
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/components/coverage-section.tsx",
-      "sha256": "200e22f307307d61cdda28cd20ca3a95ee83c8a95fdbef2e01a0e9f98728f9d1"
+      "sha256": "a7c8052b91609e087db64fbf676939e581537dd0ce0b14ddeb7f6e173c191745"
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/components/delivery-section.tsx",
       "sha256": "c81ec280b45eacb7d73f415fdae9047336a17793be357f05743045ff64b66b9f"
-    },
-    {
-      "path": "apps/backend/src/admin/routes/store-locations/components/geojson-areas.test.ts",
-      "sha256": "c108755bea9e7828a11ddb52a0d541d863fa948f7f878f05d08a56b475290f8a"
-    },
-    {
-      "path": "apps/backend/src/admin/routes/store-locations/components/geojson-areas.ts",
-      "sha256": "5f1103db0aad90b9a20d36448afa3f1798d96834600e141f3a8dedcf5d9f1c7d"
-    },
-    {
-      "path": "apps/backend/src/admin/routes/store-locations/components/google-maps-loader.ts",
-      "sha256": "4152cc1d96022a4c5676c031e00eabaf6b9471425608da7296b507db92a641c0"
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/components/image-uploader.tsx",
@@ -131,23 +131,15 @@
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/components/index.ts",
-      "sha256": "76cbd52fdcedf58e711139a34e72da444285ce194a8d0cdb024c6d3e698323e4"
+      "sha256": "89df0ddd646b6928c4468f243f528660ca8f0bf124595bcb98dd403b2d0c864f"
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/components/location-picker.tsx",
-      "sha256": "4b29705e3d83eb3190d8cf7f6086da0c4a9d1dbb72e61f4340ee32bf272fd80b"
+      "sha256": "952899d1059196f83ba2394bbe158fecd3808e97daf860c0d3fe7182e4865a09"
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/components/polygon-picker.tsx",
-      "sha256": "27a2c7622c7338c94e5c792b0142b00c98dc93309702deb3eadd6dc800f9c9ac"
-    },
-    {
-      "path": "apps/backend/src/admin/routes/store-locations/components/simplify-ring.test.ts",
-      "sha256": "04bbc709de34e52d27f3303b7baddb7548704c4c800391c7cad2e2127edb3bf2"
-    },
-    {
-      "path": "apps/backend/src/admin/routes/store-locations/components/simplify-ring.ts",
-      "sha256": "bf45973ba37ac0d4fb66c1441cdd8c7ca7c0f8e4a2c68914b684a290c6bc86cf"
+      "sha256": "6f62850ad4d3ca1e1a3eb9060ff44946cfb920adcd03ee16ea06251ba632b234"
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/components/store-location-actions-menu.tsx",
@@ -155,7 +147,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/components/store-location-form.tsx",
-      "sha256": "18e8db0dbe68b8163ebaa71832b04a8777c84ead46576b1c5e64638751fbfaf0"
+      "sha256": "44817ac7062ea865e0b519cbfae27cac560fd6a1c89cd52cc45c5218935dadde"
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/credenciales/page.tsx",
@@ -163,11 +155,15 @@
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/page.tsx",
-      "sha256": "6719ca4c6a019ef47523094cde783e2908a03ffeecc8847b5fdeaaf79851bc27"
+      "sha256": "5d0c45a4746a4f018bb2600cd1ddd4e24b73d2b4b6bd297221fd348070c5528b"
     },
     {
       "path": "apps/backend/src/admin/translations/store-locations/index.ts",
-      "sha256": "ded5d5f404e0f01bcae7858b8e92f546779004a9ae6e4b9c94b5466decd8e317"
+      "sha256": "6ea834512ac638524431fd81d02ff98d3b0d08e0239113ed3fd590c9b5cece3d"
+    },
+    {
+      "path": "apps/backend/src/api/admin/branch-types/route.ts",
+      "sha256": "7a985c38b713f069dca595d936f796756ab8588340a5403efe98fa094ff370b5"
     },
     {
       "path": "apps/backend/src/api/admin/sales-channels-b2c/route.ts",
@@ -199,7 +195,7 @@
     },
     {
       "path": "apps/backend/src/api/admin/store-locations/validators.ts",
-      "sha256": "7030138168ea63f664cf273d08a4852b24aefed60277185fad5bd14b2cbe1c61"
+      "sha256": "485551c4728ea3a32db3ea14801eda821468061a38bd81f54216e9a754abef3d"
     },
     {
       "path": "apps/backend/src/api/store/store-locations/helpers.ts",
@@ -294,8 +290,12 @@
       "sha256": "c81b67e69da535a6e4115ddda1172ff5b95416244e88dd8f8a927aed818f0ad9"
     },
     {
+      "path": "apps/backend/src/scripts/build-geo-zones-ar.mjs",
+      "sha256": "0f3b45513708cddf699c75f9b6ade045301dfc8417b43614694707fdb58f5c44"
+    },
+    {
       "path": "apps/backend/src/scripts/seed-store-locations.ts",
-      "sha256": "88783e77c79b0c5e45336b4a47d33179a5b4fb26be3d35c0f95b149e4e6bbabb"
+      "sha256": "e55df2791227e833890dd7641c55411e5098b85edf84ec56b9d6255bae3fe090"
     },
     {
       "path": "apps/backend/src/scripts/test-polygon-engine.ts",
@@ -318,28 +318,32 @@
       "sha256": "82888b9d069194fec28696b80dac4ba99b922ca097dc05b07c593dbb2ff0e6fd"
     },
     {
+      "path": "apps/storefront/src/lib/data/geo-zones-ar.ts",
+      "sha256": "16661c1c698c6833a12f359158d3a2df0cae25163811efa0306e99650a22af81"
+    },
+    {
       "path": "apps/storefront/src/lib/data/store-locations.ts",
-      "sha256": "f722e496c2064439f5ff2a626f0b18854342ee655f491c2f34d22c1639c3a434"
+      "sha256": "7e1c177c5bcc1436f86307d15023d2981e628316bcd2ca60822592a51219ba17"
     },
     {
       "path": "apps/storefront/src/modules/store-locations/components/store-card.tsx",
-      "sha256": "ef67e9ebe1ec3ccb66d32bdead8b906f5824d546da5ca86ea1f49d96a175b720"
+      "sha256": "a5bf8d1ee3e1e32bbf45832e545ff86051372261d02f5fe5ad90a7f236b1f6a1"
     },
     {
       "path": "apps/storefront/src/modules/store-locations/components/store-locator-client.tsx",
-      "sha256": "2b5549aebaed0df699303cf575afaf49726907fbd19381c63b0108626d593064"
+      "sha256": "b4fc78048f4c389f19db94d7efddefd50995ed1b2cd89fa812a55adf35aa9dce"
     },
     {
       "path": "apps/storefront/src/modules/store-locations/components/store-locator-filters.tsx",
-      "sha256": "a7f779570e07a9a67b78f46447c520856628847b7945c402a7b3b998faf962ec"
+      "sha256": "96ee316e8677e43e27434846874c97aa5d8de8332e40c90816b0c327e9660e9b"
     },
     {
       "path": "apps/storefront/src/modules/store-locations/components/store-map.tsx",
-      "sha256": "d3b4610f3f9428be96af57db30a2809c8646ca55942650a7ea7614ebcef10ff4"
+      "sha256": "d8f9399ad30b80f2878bd156930ed7d05f64f624df3b761e4ea38ee5712c5b35"
     },
     {
       "path": "apps/storefront/src/modules/store-locations/templates/index.tsx",
-      "sha256": "f381dd2ad782a8afd434d0fe5dda95b9d6811cd388336967049a3de4c30484e0"
+      "sha256": "fca6806cafc52e12e95e46c5cd488e663a18e7bd0dbf9354eed5cc683cddd909"
     },
     {
       "path": "apps/storefront/src/modules/store-locations/utils/business-hours.ts",

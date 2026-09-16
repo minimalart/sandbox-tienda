@@ -265,6 +265,19 @@ export class ProductMapper {
               currency_code: variant.calculated_price.currency_code as string | null,
             }
           : undefined,
+        // Channel-scoped overrides — se popula solo si el enrich vía
+        // `attachChannelPrices` encontró entries para esta variante. Ausente
+        // por default (backward-compat con docs viejos).
+        ...(Array.isArray(variant.channel_prices) && variant.channel_prices.length > 0
+          ? {
+              channel_prices: (variant.channel_prices as AnyRecord[]).map((cp) => ({
+                sales_channel_id: cp.sales_channel_id as string,
+                calculated_amount: cp.calculated_amount as number,
+                original_amount: cp.original_amount as number,
+                currency_code: cp.currency_code as string,
+              })),
+            }
+          : {}),
       })),
       stock_available: stockAvailable,
       options:

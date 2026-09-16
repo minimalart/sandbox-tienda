@@ -27,6 +27,12 @@ export type EmailTemplateSettings = {
   companyInviteTemplateId: string;
   /** ID de plantilla dinámica de SendGrid: invitación corporativa. */
   corporateInviteTemplateId: string;
+  /**
+   * Qué tiene que presentar el cliente para retirar su pedido en el local.
+   * Vacío = el mail de "listo para retirar" no dibuja ese bloque, que es lo que
+   * pide el ticket ("si corresponde").
+   */
+  pickupInstructions: string;
 };
 
 const DEFAULTS: EmailTemplateSettings = {
@@ -34,6 +40,7 @@ const DEFAULTS: EmailTemplateSettings = {
   iconsBaseUrl: '',
   companyInviteTemplateId: 'company-invite',
   corporateInviteTemplateId: 'corporate-invite',
+  pickupInstructions: '',
 };
 
 const byKey = new Map(emailTemplatesDescriptors.settings.map((d) => [d.key, d]));
@@ -60,5 +67,6 @@ export function getEmailTemplateSettings(): EmailTemplateSettings {
       'CORPORATE_INVITE_SENDGRID_TEMPLATE_ID',
       DEFAULTS.corporateInviteTemplateId,
     ),
+    pickupInstructions: read('ORDER_PICKUP_INSTRUCTIONS', DEFAULTS.pickupInstructions),
   };
 }

@@ -7,6 +7,7 @@ import {
   PLACEHOLDER_IMAGE,
   handleImageError,
 } from "@lib/util/placeholder-image";
+import { pricePerLiter } from "@lib/util/price-per-liter";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import { CheckCircle2, Trash2, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -28,6 +29,10 @@ type CompareProductDetail = {
       calculated_amount?: number | null;
       currency_code?: string | null;
     } | null;
+    options?: Array<{
+      value?: string | null;
+      option?: { title?: string | null } | null;
+    }> | null;
   }> | null;
   metadata?: Record<string, unknown> | null;
   stock_available?: number | null;
@@ -90,6 +95,50 @@ function getProductPrice(product: CompareProductDetail) {
 function getCategory(product: CompareProductDetail) {
   const category = product.categories?.[product.categories.length - 1];
   return category?.name || "N/A";
+}
+
+/**
+ * Etiqueta de presentación de la primera variante ("1 lt", "8,7 lt").
+ *
+ * Sale del `title` de la variante y no de `metadata.zeus_presentacion` a
+ * propósito: esa clave es una CACHÉ de la regla de presentación del ERP y le
+ * gana al título ya reescrito, así que como etiqueta para mostrar queda vieja.
+ */
+function getPresentation(product: CompareProductDetail) {
+  return product.variants?.[0]?.title?.trim() || null;
+}
+
+/** Valor de una opción de la variante por título ("Color", "Formato"). */
+function getOptionValue(product: CompareProductDetail, optionTitle: string) {
+  const match = product.variants?.[0]?.options?.find(
+    (option) =>
+      option.option?.title?.toLowerCase() === optionTitle.toLowerCase(),
+  );
+  return match?.value?.trim() || "N/A";
+}
+
+/**
+ * Precio por litro: el dato con el que realmente se decide entre dos pinturas
+ * del mismo producto en envases distintos (BUG-09). Devuelve "N/A" cuando la
+ * presentación no se puede leer con una única lectura — ver
+ * `lib/util/price-per-liter.ts`, que prefiere no mostrar nada antes que mostrar
+ * un número equivocado.
+ */
+function getPricePerLiter(product: CompareProductDetail) {
+  const variant = product.variants?.[0];
+  const perLiter = pricePerLiter(
+    variant?.calculated_price?.calculated_amount,
+    getPresentation(product),
+  );
+  if (perLiter === null) return "N/A";
+
+  return `${convertToLocale({
+    amount: perLiter,
+    currency_code: variant?.calculated_price?.currency_code || "ARS",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+    locale: "es-AR",
+  })} / L`;
 }
 
 function getMetadataValue(
@@ -165,7 +214,34 @@ const CompareTemplate = ({ countryCode }: CompareTemplateProps) => {
     };
   }, [countryCode, isLoaded, productIds, salesChannelId]);
 
+  // Orden deliberado: primero lo que se COMPARA (precio por unidad, formato,
+  // color, disponibilidad), después lo que sólo IDENTIFICA (categoría, SKU).
+  //
+  // QA reportó que el comparador mostraba Disponibilidad, SKU, Categoría y
+  // Presentación y que, más allá del precio, nada de eso ayudaba a decidir
+  // (DESDEELSUR-61 / BUG-09). El SKU pasó al final: sirve para pedir el producto
+  // en el mostrador, no para elegirlo.
+  //
+  // Los atributos técnicos que también se pidieron — rendimiento, acabado,
+  // secado, durabilidad — NO están en la base: lo único que manda Zeus es
+  // color, familia, presentación, categoría y código de fábrica, y
+  // `description` viene en null. Agregar esas filas daría columnas vacías; hay
+  // que traer los campos del ERP primero.
   const rows = [
+    {
+      label: "Precio por litro",
+      getValue: getPricePerLiter,
+    },
+    {
+      label: "Formato",
+      getValue: (product: CompareProductDetail) =>
+        getPresentation(product) || "N/A",
+    },
+    {
+      label: "Color",
+      getValue: (product: CompareProductDetail) =>
+        getOptionValue(product, "Color"),
+    },
     {
       label: "Disponibilidad",
       getValue: (product: CompareProductDetail) =>
@@ -182,23 +258,9 @@ const CompareTemplate = ({ countryCode }: CompareTemplateProps) => {
         ),
     },
     {
-      label: "SKU",
-      getValue: (product: CompareProductDetail) =>
-        product.variants?.[0]?.sku || "N/A",
-    },
-    {
       label: "Marca",
       getValue: (product: CompareProductDetail) =>
         product.brand?.name || "N/A",
-    },
-    {
-      label: "Categoría",
-      getValue: getCategory,
-    },
-    {
-      label: "Colección",
-      getValue: (product: CompareProductDetail) =>
-        product.collection?.title || "N/A",
     },
     {
       label: "Fragancia",
@@ -216,14 +278,23 @@ const CompareTemplate = ({ countryCode }: CompareTemplateProps) => {
         formatMaybeList(product.usage_suggestion),
     },
     {
-      label: "Presentación",
-      getValue: (product: CompareProductDetail) =>
-        product.variants?.[0]?.title || "N/A",
-    },
-    {
       label: "Descripción",
       getValue: (product: CompareProductDetail) =>
         product.description || "N/A",
+    },
+    {
+      label: "Categoría",
+      getValue: getCategory,
+    },
+    {
+      label: "Colección",
+      getValue: (product: CompareProductDetail) =>
+        product.collection?.title || "N/A",
+    },
+    {
+      label: "SKU",
+      getValue: (product: CompareProductDetail) =>
+        product.variants?.[0]?.sku || "N/A",
     },
   ];
 

@@ -83,6 +83,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+      - name: Backend runtime lock regression
+        run: node --test scripts/verify-backend-lock.test.cjs
+
       # `turbo run typecheck` declara `dependsOn: ["^build"]`, así que buildea las
       # dependencias del workspace primero. Eso es lo que hace que el storefront
       # typechequee limpio: sus únicos 2 errores eran `TS2307: Cannot find module
@@ -104,6 +107,10 @@ jobs:
         run: |
           node -e "const { Client } = require('pg'); const c = new Client({ connectionString: process.env.CATALOG_TEST_DATABASE_URL.replace('/catalog_fixture', '/checkout_test') }); (async () => { await c.connect(); await c.query('CREATE DATABASE catalog_fixture'); await c.end(); })().catch(e => { console.error(e); process.exit(1); });"
           node scripts/test-catalog-import.mjs
+
+      - name: AI workflow fresh-install contracts
+        working-directory: apps/backend
+        run: node --experimental-test-module-mocks --experimental-transform-types --import ./test-register.mjs --test integration-tests/ai-workflow.test.ts
 
       - name: Test
         run: pnpm test

@@ -6,6 +6,8 @@ import type {
   StoreLocatorLocation,
   StoreLocatorRegion,
   StoreLocatorType,
+  StoreLocatorZone,
+  StoreLocatorCategory,
 } from "@lib/types/store-locator";
 import { useJsApiLoader } from "@react-google-maps/api";
 import { AnimatePresence, motion } from "framer-motion";
@@ -28,6 +30,8 @@ type StoreLocatorClientProps = {
    * filtros.
    */
   layout?: "full" | "compact";
+  regions?: StoreLocatorZone[];
+  categories?: StoreLocatorCategory[];
   showLocationFilters?: boolean;
   showCategoryFilters?: boolean;
 };
@@ -40,9 +44,20 @@ export default function StoreLocatorClient({
   googleMapsApiKey,
   subtitle,
   layout = "full",
+  regions = [],
+  categories,
   showLocationFilters = true,
   showCategoryFilters = true,
 }: StoreLocatorClientProps) {
+  /**
+   * Los tipos configurados por la tienda. El template ya los resuelve (incluido
+   * el fallback a los tres de siempre para una tienda que nunca los tocó), así
+   * que acá no hay ningún diccionario de labels: sin `categories`, no hay
+   * filtro por categoría.
+   */
+  const categoryOptions = useMemo(() => categories ?? [], [categories]);
+  showLocationFilters = showLocationFilters && regions.length > 0;
+  showCategoryFilters = showCategoryFilters && categoryOptions.length > 0;
   const isCompact = layout === "compact";
   // En compacto no hay buscador ni filtros, sin importar los toggles.
   const hasFilters =
@@ -78,28 +93,20 @@ export default function StoreLocatorClient({
     toggleType,
     toggleRegion,
     filteredStores,
-    isArgentinaChecked,
-    isArgentinaIndeterminate,
     showOpenOnly,
     toggleOpenOnly,
-  } = useStoreLocatorFilters(stores, searchLocation);
+  } = useStoreLocatorFilters(
+    stores,
+    searchLocation,
+    showLocationFilters ? regions : [],
+    categoryOptions
+  );
 
   const [pendingTypes, setPendingTypes] = useState<StoreLocatorType[]>([]);
   const [pendingRegions, setPendingRegions] = useState<StoreLocatorRegion[]>(
     []
   );
   const [pendingShowOpenOnly, setPendingShowOpenOnly] = useState(false);
-
-  const pendingArgentinaCount = useMemo(
-    () =>
-      pendingRegions.filter((region) =>
-        ["caba", "buenos-aires", "norte", "centro", "sur"].includes(region)
-      ).length,
-    [pendingRegions]
-  );
-  const pendingIsArgentinaChecked = pendingArgentinaCount > 0;
-  const pendingIsArgentinaIndeterminate =
-    pendingArgentinaCount > 0 && pendingArgentinaCount < 5;
 
   const handleOpenFilters = () => {
     setPendingTypes([...selectedTypes]);
@@ -118,26 +125,6 @@ export default function StoreLocatorClient({
 
   const pendingToggleRegion = (region: StoreLocatorRegion) => {
     setPendingRegions((prev) => {
-      const argentinaChildren: StoreLocatorRegion[] = [
-        "caba",
-        "buenos-aires",
-        "norte",
-        "centro",
-        "sur",
-      ];
-      if (region === "argentina") {
-        const allSelected = argentinaChildren.every((child) =>
-          prev.includes(child)
-        );
-        if (allSelected) {
-          return prev.filter((current) => !argentinaChildren.includes(current));
-        }
-        const withoutArgentina = prev.filter(
-          (current) => !argentinaChildren.includes(current)
-        );
-        return [...withoutArgentina, ...argentinaChildren];
-      }
-
       return prev.includes(region)
         ? prev.filter((current) => current !== region)
         : [...prev, region];
@@ -162,7 +149,6 @@ export default function StoreLocatorClient({
       const service = new google.maps.places.AutocompleteService();
       service.getPlacePredictions(
         {
-          componentRestrictions: { country: ["ar", "uy"] },
           input: query,
         },
         (predictions) => {
@@ -476,6 +462,7 @@ export default function StoreLocatorClient({
                 key={store.id}
                 onToggle={() => handleToggleExpand(store.id)}
                 store={store}
+                types={categoryOptions}
               />
             ))}
           </div>
@@ -488,6 +475,7 @@ export default function StoreLocatorClient({
               searchLocation={searchLocation}
               selectedStoreId={selectedStoreId}
               stores={filteredStores}
+              types={categoryOptions}
             />
           </div>
         </div>
@@ -556,8 +544,8 @@ export default function StoreLocatorClient({
           <div className="relative mb-6">{searchInput}</div>
           {hasFilters && (
             <StoreLocatorFilters
-              isArgentinaChecked={isArgentinaChecked}
-              isArgentinaIndeterminate={isArgentinaIndeterminate}
+                  regions={regions}
+                  categories={categoryOptions}
               onToggleOpenOnly={toggleOpenOnly}
               onToggleRegion={toggleRegion}
               onToggleType={toggleType}
@@ -578,6 +566,7 @@ export default function StoreLocatorClient({
             searchLocation={searchLocation}
             selectedStoreId={selectedStoreId}
             stores={filteredStores}
+            types={categoryOptions}
           />
         </div>
       </div>
@@ -596,6 +585,7 @@ export default function StoreLocatorClient({
             searchLocation={searchLocation}
             selectedStoreId={selectedStoreId}
             stores={filteredStores}
+            types={categoryOptions}
           />
         </div>
       </div>
@@ -612,6 +602,7 @@ export default function StoreLocatorClient({
               key={store.id}
               onToggle={() => handleToggleExpand(store.id)}
               store={store}
+              types={categoryOptions}
             />
           ))
         ) : (
@@ -635,6 +626,7 @@ export default function StoreLocatorClient({
                     key={store.id}
                     onToggle={() => handleToggleExpand(store.id)}
                     store={store}
+                    types={categoryOptions}
                   />
                 ))}
             </div>
@@ -647,6 +639,7 @@ export default function StoreLocatorClient({
                     key={store.id}
                     onToggle={() => handleToggleExpand(store.id)}
                     store={store}
+                    types={categoryOptions}
                   />
                 ))}
             </div>
@@ -708,9 +701,9 @@ export default function StoreLocatorClient({
 
               <div className="flex-1 overflow-y-auto px-5 py-5">
                 <StoreLocatorFilters
+                  regions={regions}
+                  categories={categoryOptions}
                   idPrefix="mobile-"
-                  isArgentinaChecked={pendingIsArgentinaChecked}
-                  isArgentinaIndeterminate={pendingIsArgentinaIndeterminate}
                   onToggleOpenOnly={() =>
                     setPendingShowOpenOnly((prev) => !prev)
                   }

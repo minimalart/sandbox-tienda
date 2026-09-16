@@ -131,6 +131,11 @@ export const useTenantSections = () => {
      * en `bottom-nav/slots.ts`, junto al registro de candidatos.
      */
     mobileNav: tenant.assets.mobileNav,
+    /**
+     * Ícono o texto por candidato de la barra. También crudo: el default por
+     * entrada lo resuelve `bottom-nav/slots.ts`.
+     */
+    mobileNavDisplay: tenant.assets.mobileNavDisplay,
     isBlogVisible: visibility?.blog !== false,
     isCategoriesMenuVisible: visibility?.categories !== false,
     isContactVisible: visibility?.contact !== false,

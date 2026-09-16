@@ -118,6 +118,44 @@ const channelsToFilterBy = (resolution: SiteResolution): string[] | null => {
   return resolution.site.channel_ids;
 };
 
+/**
+ * "La fila sirve a ALGUNO de los canales de la tienda" — para las dos formas jsonb.
+ *
+ * Acá vivía el bug de las sucursales de Vital. El predicado era un `@>` único con el
+ * array entero de canales, y `@>` es CONTENCIÓN: `["sc_b2c"] @> ["sc_b2c","sc_b2b"]`
+ * es FALSO. O sea que una tienda con B2C y B2B sólo veía las filas atadas a los DOS
+ * canales a la vez, y la que estaba en uno solo desaparecía del listado sin ningún
+ * error. Medido: 20 sucursales sin filtro, 0 filtrando por Vital, 20 en la web pública
+ * —que consulta el B2C—. Cuantos más canales tiene una tienda, MENOS ve, que es lo
+ * contrario de lo que significa tener otro canal.
+ *
+ * Las otras tres formas físicas de este mismo archivo siempre quisieron decir
+ * "alguno": `channel_column` y `join_table` emiten `= ANY(?)`, y la guarda en memoria
+ * `assertRowInSite` usa `.some(...)` — igual que el storefront en
+ * `api/store/store-locations/helpers.ts`, con `.includes(...)`. Eran tres a uno; esto
+ * alinea al que faltaba, y de paso cierra la discrepancia entre listado y detalle:
+ * una sucursal que el guard dejaba editar no aparecía en la lista de la que era.
+ *
+ * Se expande a un OR de `@>` de un elemento en vez de pasar a `?|` o a
+ * `jsonb_array_elements_text`: `?` colisiona con el placeholder de binds, y la
+ * función de conjunto REVIENTA si la columna no es un array (el `@>` sobre un jsonb
+ * que no es array simplemente da falso). Además el OR de `@>` sigue usando el índice
+ * GIN, si lo hay.
+ *
+ * Sin canales NO matchea nada. Es la otra mitad del arreglo: `@> '[]'::jsonb` es
+ * verdadero para CUALQUIER array —todo array contiene al vacío—, así que una tienda
+ * sin canales veía la tabla entera, incluso con `empty: 'unassigned'`, que es
+ * exactamente lo que ese modo existe para impedir. Las ramas de `empty` siguen
+ * decidiendo aparte si además se ven las filas sin canal.
+ */
+function anyChannelMatches(expr: string, channels: string[]): { sql: string; bindings: unknown[] } {
+  if (channels.length === 0) return { sql: 'FALSE', bindings: [] };
+  return {
+    sql: `(${channels.map(() => `${expr} @> ?::jsonb`).join(' OR ')})`,
+    bindings: channels.map((id) => JSON.stringify([id])),
+  };
+}
+
 /** El SQL que decide qué ids pertenecen a la tienda, por forma física. */
 function idSubselect(
   d: SiteScopeDescriptor,
@@ -133,11 +171,12 @@ function idSubselect(
       const empty = includesEmpty
         ? `"${d.column}" IS NULL OR jsonb_array_length("${d.column}") = 0 OR `
         : '';
+      const match = anyChannelMatches(`"${d.column}"`, channels);
       return {
         sql: `SELECT "id" FROM "${d.table}"
-                WHERE (${empty}"${d.column}" @> ?::jsonb)
+                WHERE (${empty}${match.sql})
                   AND "deleted_at" IS NULL`,
-        bindings: [JSON.stringify(channels)],
+        bindings: match.bindings,
       };
     }
     case 'channel_array_json': {
@@ -146,11 +185,12 @@ function idSubselect(
       const empty = includesEmpty
         ? `${expr} IS NULL OR jsonb_typeof(${expr}) <> 'array' OR jsonb_array_length(${expr}) = 0 OR `
         : '';
+      const match = anyChannelMatches(expr, channels);
       return {
         sql: `SELECT "id" FROM "${d.table}"
-                WHERE (${empty}${expr} @> ?::jsonb)
+                WHERE (${empty}${match.sql})
                   AND "deleted_at" IS NULL`,
-        bindings: [JSON.stringify(channels)],
+        bindings: match.bindings,
       };
     }
     case 'channel_column': {

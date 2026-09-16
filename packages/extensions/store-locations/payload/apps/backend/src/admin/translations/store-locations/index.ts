@@ -21,10 +21,11 @@ export const en = {
   CREATE_BUTTON: 'Create',
   SEARCH_PLACEHOLDER: 'Search stores',
 
-  // Store types
-  TYPE_POINT_OF_SALE: 'Point of sale',
-  TYPE_WHOLESALE: 'Wholesale',
-  TYPE_DISTRIBUTION_CENTER: 'Distribution center',
+  // Branch types are configured per store, not hardcoded here.
+  FIELD_TYPE_NONE: 'No type',
+  FIELD_TYPE_NONE_HELP:
+    'None of the selected stores define branch types. Add them in Stores > Content.',
+  FIELD_TYPE_ORPHAN: '{{id}} (type no longer available)',
 
   // Form sections
   SECTION_BASIC: 'Basic',
@@ -295,10 +296,11 @@ export const es = {
   CREATE_BUTTON: 'Crear',
   SEARCH_PLACEHOLDER: 'Buscar sucursales',
 
-  // Store types
-  TYPE_POINT_OF_SALE: 'Punto de venta',
-  TYPE_WHOLESALE: 'Mayorista',
-  TYPE_DISTRIBUTION_CENTER: 'Centro de distribución',
+  // Los tipos de sucursal los define cada tienda; ya no se listan acá.
+  FIELD_TYPE_NONE: 'Sin tipo',
+  FIELD_TYPE_NONE_HELP:
+    'Ninguna de las tiendas elegidas define tipos de sucursal. Se agregan en Tiendas > Contenido.',
+  FIELD_TYPE_ORPHAN: '{{id}} (tipo ya no disponible)',
 
   // Form sections
   SECTION_BASIC: 'Básico',

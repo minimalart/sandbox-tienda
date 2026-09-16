@@ -19,9 +19,37 @@ export const getTenantThemeStyles = cache(
       // que no declararlos = cada template conserva su fondo propio.
       ...(colors.headerBackground && { "--header-bg": colors.headerBackground }),
       ...(colors.footerBackground && { "--footer-bg": colors.footerBackground }),
+      // Boton "Promociones": el nav lo consume como
+      // `var(--promo-button-bg, var(--primary-color))`, asi que sin configurar
+      // sigue siendo el primario. El foreground se deriva del contraste para que
+      // un color claro (amarillo, celeste) no deje el texto blanco ilegible.
+      ...(colors.promoButton && {
+        "--promo-button-bg": colors.promoButton,
+        "--promo-button-fg": contrastForeground(colors.promoButton),
+      }),
     } as React.CSSProperties;
   }
 );
+
+/**
+ * Blanco u oscuro segun la luminancia relativa (WCAG) del fondo. Si el valor no
+ * es un hex de 6 digitos (rgb(), nombre CSS) se asume fondo oscuro y texto
+ * blanco, que es lo que hacia el boton antes de ser configurable.
+ */
+function contrastForeground(hex: string): string {
+  const m = hex.trim().replace(/^#/, "").match(/^([0-9a-fA-F]{6})$/);
+  if (!m) return "#ffffff";
+  const n = parseInt(m[1], 16);
+  const channel = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance =
+    0.2126 * channel((n >> 16) & 255) +
+    0.7152 * channel((n >> 8) & 255) +
+    0.0722 * channel(n & 255);
+  return luminance > 0.45 ? "#111827" : "#ffffff";
+}
 
 /** Parsea un hex (#rrggbb) a componentes HSL (0-360, 0-100, 0-100). */
 function hexToHsl(hex: string): { h: number; s: number; l: number } | null {

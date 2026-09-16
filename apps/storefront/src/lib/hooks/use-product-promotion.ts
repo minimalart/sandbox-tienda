@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useChannelSafe } from "@lib/context/channel-context";
 import { getIndividualVariant } from "@lib/util/get-individual-variant";
 import { convertToLocale } from "@lib/util/money";
 import { isPromotionActiveForStorefront } from "@lib/util/promotion-active";
@@ -10,6 +11,31 @@ import {
 } from "@lib/util/promotion-primary";
 import type { TypesenseProductDocument } from "@lib/typesense";
 import type { HttpTypes } from "@medusajs/types";
+
+/** Shape mínimo de una entry en `variant.channel_prices`. Se replica local
+ *  para no acoplar el hook a la definición completa del doc de Typesense. */
+type ChannelPriceLike = {
+  sales_channel_id: string;
+  calculated_amount: number;
+  original_amount: number;
+  currency_code: string;
+};
+
+/** Busca en `variant.channel_prices` la entry que corresponde al canal activo.
+ *  Devuelve `null` si el array no está o si ninguna entry matchea. Este es el
+ *  puente entre el widget de PR #1101 y el hook: el sync ya indexó los
+ *  overrides por canal, el ChannelContext tiene el canal activo, este helper
+ *  los cruza. */
+function pickChannelPrice(
+  variant: unknown,
+  activeChannelId: string | null | undefined,
+): ChannelPriceLike | null {
+  if (!activeChannelId) return null;
+  const cp = (variant as { channel_prices?: ChannelPriceLike[] } | null | undefined)
+    ?.channel_prices;
+  if (!Array.isArray(cp) || cp.length === 0) return null;
+  return cp.find((entry) => entry?.sales_channel_id === activeChannelId) ?? null;
+}
 
 type ProductWithPromotions =
   | TypesenseProductDocument
@@ -71,6 +97,11 @@ export function useProductPromotion({
   region,
 }: UseProductPromotionParams): PromotionData {
   const regionCurrency = region?.currency_code || currencyCode;
+  // Canal activo desde el ChannelContext (client-side). Fuera del provider
+  // (checkout/auth) el safe hook devuelve null y caemos al `calculated_price`
+  // base — comportamiento idéntico al anterior a EDUCABOT-9.
+  const channelState = useChannelSafe();
+  const activeChannelId = channelState?.config.salesChannelId ?? null;
 
   return useMemo(() => {
     // Sin producto (ej: video sin producto vinculado) devolvemos defaults seguros
@@ -99,11 +130,22 @@ export function useProductPromotion({
         product.variants as HttpTypes.StoreProductVariant[] | undefined,
       ) ||
       product.variants?.[0];
+
+    // Prioridad: override channel-scoped (EDUCABOT-9) > calculated_price base.
+    // El `pickChannelPrice` devuelve null si no hay `channel_prices` en el doc
+    // (site sin reglas de canal) o si el canal activo no está entre los
+    // linkeados — en ambos casos caemos al `calculated_price` de siempre.
+    const channelPrice = pickChannelPrice(productVariant, activeChannelId);
     const calculatedAmount =
+      channelPrice?.calculated_amount ??
       productVariant?.calculated_price?.calculated_amount;
-    const originalAmount = productVariant?.calculated_price?.original_amount;
+    const originalAmount =
+      channelPrice?.original_amount ??
+      productVariant?.calculated_price?.original_amount;
     const variantCurrency =
-      productVariant?.calculated_price?.currency_code || regionCurrency;
+      channelPrice?.currency_code ||
+      productVariant?.calculated_price?.currency_code ||
+      regionCurrency;
 
     const activePromotions = (product.promotions ?? []).filter((promotion) =>
       isPromotionActiveForStorefront(promotion),
@@ -297,5 +339,5 @@ export function useProductPromotion({
       promotionBadges,
       maxQuantity,
     };
-  }, [product, selectedVariant, regionCurrency]);
+  }, [product, selectedVariant, regionCurrency, activeChannelId]);
 }

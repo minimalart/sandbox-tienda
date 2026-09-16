@@ -1,12 +1,14 @@
 import { model } from '@medusajs/framework/utils';
 
 /**
- * MinimumPurchase — append-only audit log of the store's minimum purchase amount.
+ * MinimumPurchase — history of the store's minimum purchase amount.
  *
- * Each change to the minimum purchase is a NEW record (no updates, no deletes),
- * so the full history is auditable. The "current" minimum at any point in time
- * is the record with the most recent `starts_at <= now` whose `ends_at` is null
- * or in the future (ties broken by `created_at` DESC).
+ * Each change to the minimum purchase is a NEW record with its own validity
+ * window, so the history says how much applied and when. Records can still be
+ * edited in place (a typo, a wrong date) or deleted from the admin; `updated_at`
+ * is the trace of an edit. The "current" minimum at any point in time is the
+ * record with the most recent `starts_at <= now` whose `ends_at` is null or in
+ * the future (ties broken by `created_at` DESC).
  *
  * - `amount`: integer amount in the currency's major unit (NOT cents)
  * - `currency_code`: lowercase ISO currency code, defaults to 'ars'
@@ -25,9 +27,8 @@ export const MinimumPurchase = model
     /**
      * La tienda a la que aplica este mínimo. `NULL` = GLOBAL de la instancia.
      *
-     * Es un log append-only, así que la columna no reescribe historia: los registros
-     * viejos siguen siendo el mínimo global y una tienda que define el suyo empieza su
-     * propia serie desde ese momento.
+     * La columna no reescribe historia: los registros viejos siguen siendo el mínimo
+     * global y una tienda que define el suyo empieza su propia serie desde ese momento.
      */
     site_id: model.text().nullable(),
   })

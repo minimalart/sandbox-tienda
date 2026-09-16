@@ -178,7 +178,7 @@ export default function ResponsiveCombobox({
         <div className="fixed inset-0 z-[99999] md:hidden">
           <button
             aria-label="Cerrar opciones"
-            className="absolute inset-0 bg-black/30"
+            className="absolute inset-0 cursor-modal-close bg-black/30"
             onClick={() => setOpen(false)}
             type="button"
           />

@@ -3,10 +3,11 @@ import { getRecurringOrderConfig } from './config';
 
 /**
  * Resuelve si la feature de compras recurrentes está habilitada para un sales
- * channel. Si el canal pertenece a un demo, manda su toggle
- * `demo_store.recurring_enabled`; si no (tienda principal), manda el env
- * `RECURRING_ORDERS_ENABLED`. Falla abierto solo hacia la config global si el
- * módulo de demos no está disponible.
+ * channel. El env `RECURRING_ORDERS_ENABLED` es la llave maestra de la instancia;
+ * con ella prendida manda el toggle `recurring_enabled` de la fila del sitio
+ * dueno del canal, demos Y tienda principal por igual. Falla abierto hacia la
+ * config global solo si el modulo de sitios no esta disponible o el canal no
+ * pertenece a ninguna fila.
  */
 export async function isRecurringEnabledForChannel(
   container: MedusaContainer,
@@ -27,15 +28,14 @@ export async function isRecurringEnabledForChannel(
     );
     const demo = demos?.[0];
     // La fila de la tienda PRINCIPAL tiene el canal por defecto del store, así que
-    // esta búsqueda por `sales_channel_id` la encuentra. Y el default de la columna
-    // `recurring_enabled` es FALSE: sin este `!demo.is_main`, la sola existencia de
-    // la fila principal apagaría las compras recurrentes del sitio principal, sin un
-    // error en ningún lado. Para la principal manda el env, como antes de la fila.
-    //
-    // Se chequea `is_main` inline y no vía `isMainStore()`: este archivo es un
-    // `managed_file` de la extensión `recurring-orders`, que se le entrega a
-    // proyectos SIN el módulo demo-store. Ver `modules/module-keys.test.ts`.
-    if (demo && !demo.is_main) return Boolean(demo.recurring_enabled);
+    // esta busqueda por `sales_channel_id` la encuentra, y su toggle vale igual que
+    // el de cualquier otra tienda. Antes se la salteaba (`!demo.is_main`) por miedo
+    // al default FALSE de la columna, pero `ensureMainStore` siembra la fila
+    // principal con `recurring_enabled: true` desde que la fila existe, asi que un
+    // FALSE ahi solo puede venir de alguien apagandolo en /app/sites. Y ese apagado
+    // tiene que valer: el storefront ya no muestra "Suscribirse" y el backend no
+    // puede seguir aceptando altas por detras.
+    if (demo) return Boolean(demo.recurring_enabled);
   } catch {
     // Sin módulo de demos (o error de lectura): cae a la config global.
   }

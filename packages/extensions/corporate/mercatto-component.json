@@ -93,7 +93,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/corporates/components/corporate-detail.tsx",
-      "sha256": "6450931e50ef70972e4b751f0e753238e7a482ffa8022c2b316e36ffd03572f8"
+      "sha256": "551992a853aa646f1a9b8063cb0691a8be32de5877bfc0dc40b106a0999392fe"
     },
     {
       "path": "apps/backend/src/admin/routes/corporates/components/fiscal-docs-tab.tsx",

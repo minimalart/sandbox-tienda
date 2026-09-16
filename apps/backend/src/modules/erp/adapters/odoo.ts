@@ -193,8 +193,36 @@ function codeOrNull(value: string | false | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+/**
+ * Custom fields opcionales del módulo `Alumnos` en `sale.order`. Se envían solo
+ * si el equipo Odoo ya los creó — sondeamos con `fields_get` antes de armar el
+ * payload y filtramos silenciosamente los que faltan.
+ *
+ * Regla dura: el envío al ERP NUNCA se bloquea porque estos campos no existan.
+ * Odoo rechaza el `create` con `Invalid field 'x_...' on model 'sale.order'`
+ * ante nombres desconocidos, así que sin la sonda perdemos ventas cuando el
+ * cliente todavía no configuró su Odoo. Con la sonda: sin campo, sin dato en
+ * esa columna, orden creada igual.
+ */
+const OPTIONAL_SALE_ORDER_FIELDS = [
+  'x_school_external_ref',
+  'x_school_name',
+  'x_source_site_id',
+  'x_student_assignments',
+] as const;
+
+/** 5min de cache: si el cliente crea los campos, la próxima ronda los recoge. */
+const OPTIONAL_FIELDS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 export class OdooErpAdapter implements ErpAdapter {
   readonly provider = 'odoo';
+
+  /**
+   * Cache por instancia Odoo (`baseUrl::db`) de qué custom fields opcionales
+   * están definidos. Multi-tenant: si dos clientes distintos tienen su propia
+   * Odoo, cada uno vive en su bucket — no comparten resultados.
+   */
+  private optionalFieldsCache = new Map<string, { at: number; fields: Set<string> }>();
 
   // Inyectable para tests; en runtime cada call construye su cliente con las
   // credenciales del context (los adapters son stateless por llamada).
@@ -231,6 +259,60 @@ export class OdooErpAdapter implements ErpAdapter {
   private odooSettings(ctx: AdapterContext): ErpOdooSettings | null {
     const settings = ctx.settings as { odoo?: ErpOdooSettings } | null | undefined;
     return settings?.odoo ?? null;
+  }
+
+  /**
+   * Sonda `sale.order.fields_get` para descubrir cuáles de los custom fields
+   * opcionales existen en esta Odoo. Cachea por 5min por `baseUrl::db`.
+   *
+   * `fields_get(allfields=[...])` en Odoo devuelve un dict SOLO con los fields
+   * que existen — los ausentes simplemente no aparecen. No lanza excepción por
+   * nombres desconocidos (a diferencia de `create`), así que la sonda es segura.
+   *
+   * Si la sonda misma falla (red, permisos, timeout), asumimos "ninguno existe"
+   * — nunca vamos a intentar mandarlos y perder la orden. Se cachea también el
+   * negativo para no re-intentar en cada envío.
+   */
+  private async resolveAvailableOptionalFields(
+    client: OdooRpcClient,
+    ctx: AdapterContext
+  ): Promise<Set<string>> {
+    const settings = this.odooSettings(ctx);
+    const cacheKey = `${settings?.base_url ?? ''}::${settings?.db ?? ''}`;
+    const cached = this.optionalFieldsCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < OPTIONAL_FIELDS_CACHE_TTL_MS) {
+      return cached.fields;
+    }
+    let present: Set<string>;
+    try {
+      const result = await client.executeKw<Record<string, unknown>>(
+        'sale.order',
+        'fields_get',
+        [OPTIONAL_SALE_ORDER_FIELDS as unknown as string[]],
+        { attributes: ['type'] }
+      );
+      present = new Set(Object.keys(result ?? {}));
+      const missing = OPTIONAL_SALE_ORDER_FIELDS.filter((f) => !present.has(f));
+      // Log de una línea por refresh de cache: da visibilidad sin llenar el log
+      // (queda logeado ~cada 5min en el peor caso, no por cada orden).
+      if (missing.length > 0) {
+        // eslint-disable-next-line no-console
+        console.info(
+          `[erp:odoo] sale.order fields sonda (${cacheKey}) — presentes=${
+            [...present].join(',') || '(ninguno)'
+          } faltantes=${missing.join(',')} — se omiten los faltantes en el create.`
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[erp:odoo] fields_get sonda falló (${cacheKey}) — se envía sale.order SIN los custom fields opcionales: ${message}`
+      );
+      present = new Set();
+    }
+    this.optionalFieldsCache.set(cacheKey, { at: Date.now(), fields: present });
+    return present;
   }
 
   /**
@@ -675,6 +757,32 @@ export class OdooErpAdapter implements ErpAdapter {
     };
     if (noteLines.length > 0) {
       orderPayload.note = noteLines.join('\n');
+    }
+
+    // Custom fields opcionales (escuela + asignación de alumnos). Se agregan
+    // SOLO si Odoo ya los tiene definidos — `resolveAvailableOptionalFields`
+    // hace la sonda. Sin campos, la orden se crea igual sin esa data: el
+    // envío al ERP NUNCA se bloquea porque el cliente no configuró su Odoo.
+    if (payload.school || payload.student_assignments) {
+      const available = await this.resolveAvailableOptionalFields(client, ctx);
+      if (payload.school) {
+        if (available.has('x_school_external_ref')) {
+          orderPayload.x_school_external_ref = payload.school.external_ref;
+        }
+        if (available.has('x_school_name')) {
+          orderPayload.x_school_name = payload.school.name;
+        }
+        if (available.has('x_source_site_id')) {
+          orderPayload.x_source_site_id = payload.school.source_site_id;
+        }
+      }
+      if (payload.student_assignments && available.has('x_student_assignments')) {
+        // Serializado como string: en Odoo 15/16 el custom field default es
+        // `Text` y acepta directo. En Odoo 17+ con `Jsonb`, `JSON.parse` en el
+        // ORM al persistir es trivial. Mandar como string cubre ambos casos
+        // sin tener que sondear el `type` del campo.
+        orderPayload.x_student_assignments = JSON.stringify(payload.student_assignments);
+      }
     }
 
     const created = await client.executeKw<number>('sale.order', 'create', [orderPayload]);

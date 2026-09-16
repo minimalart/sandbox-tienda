@@ -310,7 +310,7 @@ const CheckoutSummary = ({
           <motion.button
             animate={{ opacity: 1 }}
             aria-label="Cerrar detalle"
-            className="fixed inset-0 z-40 bg-black/20"
+            className="fixed inset-0 z-40 cursor-modal-close bg-black/20"
             exit={{ opacity: 0 }}
             initial={{ opacity: 0 }}
             onClick={() => setSheetOpen(false)}

@@ -1,6 +1,10 @@
 import { getMyCredit } from "@lib/data/company-credit";
 import { retrieveCustomer } from "@lib/data/customer";
-import { getRecurringEnabled } from "@lib/site-config/active-tenant";
+import {
+  getGiftCardsEnabled,
+  getLoyaltyEnabled,
+  getRecurringEnabled,
+} from "@lib/site-config/active-tenant";
 import { Toaster } from "@medusajs/ui";
 import AccountLayout from "@modules/account/templates/account-layout";
 import type { Metadata } from "next";
@@ -38,10 +42,18 @@ export default async function AccountPageLayout({
   // "Compras recurrentes" aparece cuando el tenant tiene la feature habilitada.
   const hasRecurring = await getRecurringEnabled().catch(() => false);
 
+  // "Mis puntos" y "Gift Cards" son OPT-OUT: estaban siempre visibles, así que el
+  // catch cae en `true`. Apagarlas ante un error de lectura sería sacarle secciones
+  // a tiendas que nunca pidieron esconderlas.
+  const hasLoyalty = await getLoyaltyEnabled().catch(() => true);
+  const hasGiftCards = await getGiftCardsEnabled().catch(() => true);
+
   return (
     <AccountLayout
       customer={customer}
       hasCredit={hasCredit}
+      hasGiftCards={hasGiftCards}
+      hasLoyalty={hasLoyalty}
       hasRecurring={hasRecurring}
     >
       {customer ? dashboard : login}

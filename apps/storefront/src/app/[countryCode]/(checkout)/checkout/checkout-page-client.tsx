@@ -1,5 +1,8 @@
 'use client'
 
+import { useTenant } from '@lib/site-config/context'
+import { recipientWording } from '@lib/site-config/template-helpers'
+
 import { lineItemToGA4Item, trackBeginCheckout } from '@lib/analytics/gtag'
 import { isMercadoPago, isMercadoPagoApi } from '@lib/constants'
 import { useCartStore } from '@lib/stores/cart.store'
@@ -171,6 +174,8 @@ export default function CheckoutPageClient({
   initialCustomer,
   demoSalesChannelId,
 }: CheckoutPageClientProps) {
+  const tenant = useTenant();
+  const wording = (text: string) => recipientWording(text, tenant.template);
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
   const [loading, setLoading] = useState(true)
   const [entered, setEntered] = useState(false)
@@ -385,15 +390,19 @@ export default function CheckoutPageClient({
     >
       <main className="mx-auto max-w-7xl px-4 pt-8 pb-40 sm:px-6 lg:pb-24 lg:px-8">
         <div className="mx-auto max-w-2xl lg:max-w-none">
-          {/* Product carousel */}
-          <CheckoutCarousel
-            countryCode={
-              cart.shipping_address?.country_code ||
-              cart.region?.countries?.[0]?.iso_2 ||
-              'ar'
-            }
-            salesChannelId={demoSalesChannelId ?? cart.sales_channel_id ?? undefined}
-          />
+          {/* Product carousel. Cada tienda puede apagarlo desde su pestana
+              Checkout (policy.suggestions). Sin politica configurada, o con una
+              sesion pinneada antes de que existiera el flag, se muestra. */}
+          {checkout.state?.policy?.suggestions?.enabled !== false && (
+            <CheckoutCarousel
+              countryCode={
+                cart.shipping_address?.country_code ||
+                cart.region?.countries?.[0]?.iso_2 ||
+                'ar'
+              }
+              salesChannelId={demoSalesChannelId ?? cart.sales_channel_id ?? undefined}
+            />
+          )}
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px] lg:gap-x-12 xl:gap-x-16">
             {/* Left: checkout steps */}
@@ -437,7 +446,7 @@ export default function CheckoutPageClient({
 
             {/* Right: order summary (sticky) */}
             <div className="lg:sticky lg:top-24 lg:self-start">
-              {(checkout.error || checkoutError) && <div role="alert" className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">{checkout.error || checkoutError}<button type="button" className="ml-2 underline" onClick={() => checkout.refresh()}>Volver a intentar</button></div>}
+              {(checkout.error || checkoutError) && <div role="alert" className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">{wording(checkout.error || checkoutError)}<button type="button" className="ml-2 underline" onClick={() => checkout.refresh()}>Volver a intentar</button></div>}
               <CheckoutSummary
                 checkoutEligibility={checkoutEligibility}
                 allStepsComplete={allStepsComplete}

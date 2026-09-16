@@ -1561,6 +1561,54 @@ const giftCardSeed = (key: string, name: string, subject: string): SeedEntry => 
   locale: 'es-AR',
 });
 
+const ORDER_READY_FOR_PICKUP_HTML = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tu pedido est&aacute; listo para retirar</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f5f5;width:100%;font-family:Arial,sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f5f5f5;">
+    <tr>
+      <td style="padding:20px 0;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="600" style="margin:auto;background-color:#ffffff;max-width:600px;">
+          <tr><td style="padding:40px 20px 20px 20px;text-align:center;"><img src="{{logo_url}}" alt="{{cde_display_name}}" width="200" style="display:block;margin:0 auto;border:0;height:auto;"></td></tr>
+          <tr><td style="padding:10px 20px 6px 20px;text-align:center;"><h1 style="margin:0;font-size:28px;color:{{primary_color}};font-weight:700;">Ya pod&eacute;s retirar tu pedido</h1></td></tr>
+          <tr><td style="padding:0 20px 24px 20px;text-align:center;"><p style="margin:0;font-size:15px;color:#667085;">Tu pedido <strong style="color:#1D2530;">#{{display_id}}</strong> ya est&aacute; preparado y te espera en el local.</p></td></tr>
+          <tr>
+            <td style="padding:0 40px 24px 40px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border:1px solid #e5e7eb;border-radius:12px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="margin:0 0 8px 0;font-size:12px;color:#667085;text-transform:uppercase;letter-spacing:0.04em;">Retiralo en</p>
+                    {{#if pickup_store.name}}<p style="margin:0 0 6px 0;font-size:17px;color:#1D2530;font-weight:700;">{{pickup_store.name}}</p>{{/if}}
+                    {{#if pickup_store.address}}<p style="margin:0 0 6px 0;font-size:14px;color:#667085;">{{pickup_store.address}}</p>{{/if}}
+                    {{#if pickup_store.phone}}<p style="margin:0 0 6px 0;font-size:13px;color:#667085;">Tel.: {{pickup_store.phone}}</p>{{/if}}
+                    {{#if pickup_hours}}<p style="margin:14px 0 6px 0;font-size:13px;color:#1D2530;font-weight:600;">Horarios de atenci&oacute;n</p>{{#each pickup_hours}}<p style="margin:0 0 4px 0;font-size:13px;color:#667085;">{{this}}</p>{{/each}}{{/if}}
+                    {{#if pickup_store.map_url}}<p style="margin:14px 0 0 0;"><a href="{{pickup_store.map_url}}" style="color:{{primary_color}};font-size:13px;font-weight:600;text-decoration:none;">Ver c&oacute;mo llegar</a></p>{{/if}}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          {{#if pickup_instructions}}
+          <tr>
+            <td style="padding:0 40px 28px 40px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f9fafb;border-left:3px solid {{primary_color}};">
+                <tr><td style="padding:14px 18px;"><p style="margin:0 0 4px 0;font-size:13px;color:#1D2530;font-weight:600;">Para retirarlo</p><p style="margin:0;font-size:13px;color:#667085;">{{pickup_instructions}}</p></td></tr>
+              </table>
+            </td>
+          </tr>
+          {{/if}}
+          <tr><td style="padding:20px;background-color:{{primary_color}};text-align:center;"><p style="margin:0;color:#ffffff;font-size:12px;">&copy; {{year}} {{cde_display_name}}. Todos los derechos reservados.</p></td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
 const SEED: SeedEntry[] = [
   giftCardSeed('gift-card-delivery', 'Entrega de gift card', 'Recibiste un regalo'),
   giftCardSeed('gift-card-resend', 'Reenvío de gift card', 'Tu gift card, nuevamente'),
@@ -1982,6 +2030,45 @@ const SEED: SeedEntry[] = [
     },
     status: 'draft',
     locale: 'es-AR',
+  },
+  {
+    key: 'order-ready-for-pickup',
+    // 'draft' como todas: una fila publicada PISA a la plantilla de código, y
+    // acá la de código es justamente la que queremos que salga por defecto.
+    status: 'draft',
+    locale: 'es-AR',
+    name: 'Pedido listo para retirar',
+    description:
+      'Email al cliente cuando su pedido de retiro en tienda ya está preparado. NO sale con la orden: lo dispara el botón "Marcar listo para retirar" del detalle de la orden, o la transición de la entrega a at_pickup_point.',
+    subject: '[{{sales_channel_name}}] Tu pedido #{{display_id}} ya está listo para retirar',
+    html: ORDER_READY_FOR_PICKUP_HTML,
+    variables: [
+      { name: 'display_id', description: 'Número de pedido a mostrar' },
+      { name: 'customer_name', description: 'Nombre del cliente' },
+      { name: 'pickup_store', description: 'Sucursal elegida {name, address, phone, hours[], map_url}' },
+      { name: 'pickup_hours', description: 'Horarios de atención ya agrupados (array de strings). Vacío si la sucursal no los tiene cargados' },
+      { name: 'pickup_instructions', description: 'Qué presentar para retirar. Se configura en Emails → Retiro en tienda; ausente no dibuja el bloque' },
+      { name: 'logo_url', description: 'URL absoluta del logo del CDE' },
+      { name: 'cde_display_name', description: 'Nombre del CDE / tienda' },
+      { name: 'sales_channel_name', description: 'Nombre del canal de venta' },
+      { name: 'primary_color', description: 'Color primario del tenant (hex)' },
+      { name: 'year', description: 'Año actual para el footer' },
+    ],
+    sample_data: {
+      display_id: '1042',
+      customer_name: 'Juan',
+      pickup_store: {
+        name: 'Sucursal Centro',
+        address: 'Av. Siempreviva 742, San Carlos de Bariloche, Río Negro',
+        phone: '+54 9 2944 00-0000',
+        map_url: 'https://www.google.com/maps/search/?api=1&query=-41.13,-71.30',
+      },
+      pickup_hours: ['Lunes a Viernes: 09:00 a 18:00', 'Sábado: 09:00 a 13:00'],
+      pickup_instructions: 'Presentá tu DNI y el número de pedido.',
+      // Sin branding (logo_url, cde_display_name, primary_color, year): los
+      // inyecta el provider con fillEmpty desde la tienda. Mandarlos acá haría
+      // que la vista previa de CUALQUIER tienda muestre la marca de Mercatto.
+    },
   },
   {
     key: 'order-cancelled',

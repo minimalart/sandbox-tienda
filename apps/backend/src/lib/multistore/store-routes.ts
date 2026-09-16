@@ -58,6 +58,9 @@ import type { RouteScopeState } from './scoped-routes';
 
 /** Clave: la ruta relativa a `src/api`, sin `route.ts`. Ej: `store/banners/[id]`. */
 export const STORE_ROUTE_SCOPE: Record<string, RouteScopeState> = {
+  'store/demo-stores': { state: 'not-applicable', reason: 'alias compatible del indice publico de tiendas' },
+  'store/sites': { state: 'not-applicable', reason: 'indice publico de tiendas publicadas; proyeccion limitada a nombre, slug, logo, plantilla y forma canonica' },
+  'store/orders/by-cart': { state: 'not-applicable', reason: 'consulta por capability cart_id para retorno de pago invitado; devuelve únicamente order_id y no lista órdenes ni datos personales' },
   'store/b2b/carts/[id]/presentations': { state: 'not-applicable', reason: 'carrito del cliente autenticado; valida customer_id, canal autorizado por publishable key y pertenencia del SKU a ese canal' },
   'store/carts/[id]/checkout': { state: 'not-applicable', reason: 'cart capability plus authenticated customer and publishable channel checked by assertCartAccess; the site is resolved from the authorized cart' },
 
@@ -125,6 +128,7 @@ export const STORE_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   // ── billing-profiles ────────────────────────────────────────────
   // El eje es el CLIENTE autenticado (o el carrito, que ya trae su canal del core).
   'store/billing-profiles': { state: 'not-applicable', reason: 'perfiles fiscales del cliente autenticado; el eje es el customer_id' },
+  'store/customers/me/claimable-orders': { state: 'scoped' },
   'store/billing-profiles/[id]': { state: 'not-applicable', reason: 'perfil fiscal propio del cliente autenticado; el eje es el customer_id' },
   'store/billing-profiles/[id]/default': { state: 'not-applicable', reason: 'marca por defecto un perfil propio del cliente autenticado; el eje es el customer_id' },
   'store/carts/[id]/billing-profile': { state: 'not-applicable', reason: 'escribe en el metadata de un cart del core, que ya trae su sales_channel de la publishable key' },

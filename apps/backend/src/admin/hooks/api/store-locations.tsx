@@ -10,8 +10,15 @@ import {
 import { sdk } from '../../lib/client';
 import { queryKeysFactory } from '../../lib/query-key-factory';
 import { toQueryString } from '../../lib/query-string';
+import type { BranchType } from '../../../lib/branch-types';
 
-export type StoreLocationType = 'distribution_center' | 'wholesale' | 'point_of_sale';
+/**
+ * El id de un tipo de sucursal. Ya no es un enum: cada TIENDA define su lista
+ * en `content_config.sucursales.types` y esto guarda uno de esos ids. La cadena
+ * vacía es "sin tipo" — lo que corresponde a una tienda que no clasifica sus
+ * sucursales. Los tipos disponibles se piden con `useBranchTypes`.
+ */
+export type StoreLocationType = string;
 
 export interface BusinessHoursSlot {
   open: string;
@@ -130,6 +137,36 @@ export interface AdminUpdateBranchConfig {
 }
 
 export const storeLocationQueryKey = queryKeysFactory('store-location');
+
+export interface AdminBranchTypesResponse {
+  branch_types: BranchType[];
+}
+
+/**
+ * Los tipos de sucursal que ofrecen las tiendas de estos canales.
+ *
+ * La lista sale del backend y no de `useDemoStores` a propósito: el fallback
+ * para una instalación sin la extensión `multistore` vive en el endpoint, así
+ * el admin de Sucursales no tiene que saber si Tiendas existe.
+ */
+export const useBranchTypes = (
+  salesChannelIds: string[] = [],
+  options?: UseQueryOptions<AdminBranchTypesResponse, FetchError, AdminBranchTypesResponse, QueryKey>
+) => {
+  // Ordenados: el Select no debe refetchear porque el operador tildó los mismos
+  // canales en otro orden.
+  const key = [...salesChannelIds].sort().join(',');
+
+  return useQuery({
+    queryKey: ['branch-types', key],
+    queryFn: async () =>
+      sdk.client.fetch<AdminBranchTypesResponse>(
+        `/admin/branch-types${key ? `?sales_channel_ids=${encodeURIComponent(key)}` : ''}`,
+        { method: 'GET' }
+      ),
+    ...options,
+  });
+};
 
 export const useStoreLocations = (
   query?: Record<string, any>,

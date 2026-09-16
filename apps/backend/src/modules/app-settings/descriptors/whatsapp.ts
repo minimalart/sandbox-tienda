@@ -107,11 +107,17 @@ export default defineSettings({
       help: 'Autentica contra Kapso (header X-API-Key). Nunca se muestra: sólo se puede reemplazar o borrar.',
       required: true,
     },
+    // Los dos de abajo son el contrato del webhook ENTRANTE, no una cuenta: el
+    // handler los lee ANTES de saber de qué tienda es el evento —y el challenge GET
+    // no tiene tienda ninguna—, así que son `instance` aunque el namespace sea
+    // `site`. `applyPlan` los manda solos a la fila global. Ver la nota de
+    // `INBOUND_CONTRACT_KEYS` en `credential-presentation.ts`.
     {
       key: 'KAPSO_WEBHOOK_SECRET',
       env: ['KAPSO_WEBHOOK_SECRET'],
       type: 'secret',
       tier: 'runtime',
+      scope: 'instance',
       group: 'Credenciales',
       label: 'Secreto de firma del webhook',
       help: 'Con esto se valida el HMAC-SHA256 de cada evento entrante. Vacío = no se verifica la firma: dejalo puesto en producción.',
@@ -121,6 +127,7 @@ export default defineSettings({
       env: ['KAPSO_WEBHOOK_VERIFY_TOKEN'],
       type: 'secret',
       tier: 'runtime',
+      scope: 'instance',
       group: 'Credenciales',
       label: 'Token de verificación del webhook',
       help: 'El challenge estilo Meta (GET con hub.verify_token). Sin esto, Kapso no puede dar de alta la suscripción.',
@@ -199,6 +206,21 @@ export default defineSettings({
       pattern: '^[a-z0-9_]+$',
       maxLength: 512,
       default: 'password_reset',
+    },
+
+    {
+      key: 'KAPSO_TEMPLATE_ORDER_READY_FOR_PICKUP',
+      env: ['KAPSO_TEMPLATE_ORDER_READY_FOR_PICKUP'],
+      type: 'string',
+      tier: 'runtime',
+      group: 'Plantillas',
+      label: 'Listo para retirar en tienda',
+      help:
+        'Lo dispara el botón "Marcar listo para retirar" de la orden (y la transición de la entrega ' +
+        'a "en el punto de retiro"). Vacío = el aviso sale sólo por email. Body: nombre, nº, sucursal, dirección.',
+      placeholder: 'order_ready_for_pickup',
+      pattern: '^[a-z0-9_]+$',
+      maxLength: 512,
     },
 
     // ─── Carritos y pedidos ──────────────────────────────────────────────────

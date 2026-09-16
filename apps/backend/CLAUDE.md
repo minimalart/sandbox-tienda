@@ -43,3 +43,32 @@ traducir. Por eso aparece en cada dominio nuevo de cliente y no en el de siempre
 **Fix: "Nunca traducir este sitio" en el dominio del admin.** Confirmarlo en
 incógnito antes de abrir un ticket.
 
+## Event bus sobre Redis: el worker está supervisado
+
+- `event_bus` en `medusa-config.ts` apunta a `./src/modules/event-bus-redis`, que
+  HEREDA de `@medusajs/medusa/event-bus-redis` y le agrega
+  `src/lib/event-bus-worker-supervisor.ts`. Motivo: Medusa arranca el Worker de
+  BullMQ UNA vez (`event-bus-redis.js:21`, `void run().catch(log)`) y si `run()`
+  rechaza no lo vuelve a arrancar nunca. Con el proceso sano (HTTP, crons) el bus
+  queda mudo: sin mails de orden, sin WhatsApp, sin outbox del ERP. Pasó tres
+  veces en producción (2026-08-31, 09-03, 09-09).
+- La causa medida es la conexión que BullMQ DUPLICA para su comando bloqueante:
+  si su primer `connect()` falla (TLS que agota `connectTimeout`, Valkey al tope
+  durante un deploy), `RedisConnection.initializing` queda RECHAZADA para siempre y
+  ese Worker no arranca más aunque el socket se recupere. Por eso el supervisor
+  no reintenta `run()` sobre el mismo objeto: cierra el muerto (`close(true)`, que
+  libera su conexión) y construye un Worker nuevo con backoff 1 s → 60 s.
+- Reglas: NO volver a apuntar `event_bus` al paquete pelado; NO exportar
+  `discoveryPath` desde ese módulo (el cargador usaría el servicio de Medusa y
+  no el envuelto); el prefijo de cola `RedisEventBusService` se pasa explícito y
+  no puede cambiar (es el namespace de las claves ya existentes en Redis).
+- El job `event-bus-monitor` sigue midiendo la cola y avisando por mail; cuando
+  detecta el worker apagado le pide al supervisor que reconstruya ya en vez de
+  llamar a `run()` por su cuenta. Perillas: `EVENT_BUS_WORKER_SUPERVISOR=false`
+  (apaga el supervisor), `EVENT_BUS_WORKER_RESTART_MIN_MS` / `_MAX_MS` (backoff).
+- Tests: `src/lib/event-bus-worker-supervisor.test.ts` (lógica con dobles) y
+  `src/modules/event-bus-redis/index.test.ts` (reproduce el envenenamiento contra
+  el `bullmq` instalado y prueba la reconstrucción). Si Medusa renombra
+  `bullWorker_`/`worker_`/`workerOptions_`/`eventBusRedisConnection_`, el segundo
+  es el que avisa.
+

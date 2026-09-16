@@ -39,9 +39,12 @@ const cart = () => ({
   metadata: {},
 });
 const policy = resolveCheckoutPolicy({ recipients: { enabled: true } });
-describe('64 presentation combinations cannot bypass purchase requirements', () => {
-  for (let mask = 0; mask < 64; mask++)
-    it(`visibility mask ${mask.toString(2).padStart(6, '0')}`, () => {
+describe('presentation combinations cannot bypass purchase requirements', () => {
+  const bitOf = (key: (typeof STEP_KEYS)[number]) => STEP_KEYS.indexOf(key);
+  const on = (mask: number, key: (typeof STEP_KEYS)[number]) => !!(mask & (1 << bitOf(key)));
+  const total = 1 << STEP_KEYS.length;
+  for (let mask = 0; mask < total; mask++)
+    it(`visibility mask ${mask.toString(2).padStart(STEP_KEYS.length, '0')}`, () => {
       const p = resolveCheckoutPolicy({
           steps: Object.fromEntries(STEP_KEYS.map((key, i) => [key, !!(mask & (1 << i))])),
           recipients: { enabled: true },
@@ -53,13 +56,14 @@ describe('64 presentation combinations cannot bypass purchase requirements', () 
       assert.equal(digital.shipping_required, false);
       for (const id of ['address', 'delivery'])
         assert.equal(digital.blocks.find((b) => b.id === id)?.visible, false);
-      for (const [change, complete, id] of [
-        [{ email: '' }, true, 'personal'],
-        [{}, false, 'recipients'],
+      for (const [change, complete, id, key] of [
+        [{ email: '' }, true, 'personal', 'contact'],
+        [{}, false, 'recipients', null],
       ] as const) {
         const flow = effectiveFlow({ ...base, ...change }, p, complete);
         assert.equal(flow.ready, false);
-        assert.equal(flow.blocks.find((b) => b.id === id)?.visible, true);
+        const expectedVisible = key === null ? true : on(mask, key);
+        assert.equal(flow.blocks.find((b) => b.id === id)?.visible, expectedVisible);
       }
       const physical = {
         ...base,
@@ -69,8 +73,8 @@ describe('64 presentation combinations cannot bypass purchase requirements', () 
       assert.equal(missing.ready, false);
       assert.equal(missing.address_required, true);
       assert.equal(missing.shipping_required, true);
-      for (const id of ['address', 'delivery'])
-        assert.equal(missing.blocks.find((b) => b.id === id)?.visible, true);
+      for (const [id, key] of [['address', 'address'], ['delivery', 'delivery']] as const)
+        assert.equal(missing.blocks.find((b) => b.id === id)?.visible, on(mask, key));
       const delivered = {
         ...physical,
         shipping_address: { address_1: 'Calle', city: 'Ciudad', country_code: 'ar' },
@@ -97,10 +101,10 @@ describe('64 presentation combinations cannot bypass purchase requirements', () 
       const choice = effectiveFlow({ ...physical, checkout_pickup_only: true }, p, true);
       assert.equal(choice.ready, false);
       assert.equal(choice.address_required, false);
-      assert.equal(choice.blocks.find((b) => b.id === 'delivery')?.visible, true);
+      assert.equal(choice.blocks.find((b) => b.id === 'delivery')?.visible, on(mask, 'delivery'));
       const invoice = effectiveFlow({ ...base, metadata: { invoice_type: 'invoice_a' } }, p, true);
       assert.equal(invoice.ready, false);
-      assert.equal(invoice.blocks.find((b) => b.id === 'billing')?.visible, true);
+      assert.equal(invoice.blocks.find((b) => b.id === 'billing')?.visible, on(mask, 'billing'));
       assert.equal(
         effectiveFlow({ ...base, total: 0 }, p, true).blocks.find((b) => b.id === 'payment')
           ?.visible,
@@ -131,10 +135,20 @@ describe('untrusted policy and person input', () => {
     unknownStep: { steps: { validation: false } },
     nullRecipients: { recipients: null },
     badScope: { recipients: { scope: 'customer' } },
-    emptyTitle: { recipients: { title: ' ' } },
-    longTitle: { recipients: { title: 'a'.repeat(101) } },
-    html: { recipients: { help: '<b>test</b>' } },
-    longHelp: { recipients: { help: 'a'.repeat(501) } },
+    // El copy de la sección se movió de `recipients.{title,help}` a
+    // `sections.recipients.{title,subtitle}` (ver el comentario en `policy.ts`).
+    // Estos cuatro casos seguían apuntando al lugar viejo, y ahí `recipients`
+    // NO es `.strict()` a propósito —Zod strippea la clave legacy para no
+    // romper `readPolicy` con la data que ya está en la base—, así que
+    // `safeParse` daba `success: true` y el test fallaba sin que se hubiera
+    // perdido ninguna validación: `text()` sigue aplicando el largo Y la regla
+    // anti-HTML, ahora sobre `sections`.
+    emptyTitle: { sections: { recipients: { title: ' ' } } },
+    longTitle: { sections: { recipients: { title: 'a'.repeat(101) } } },
+    html: { sections: { recipients: { subtitle: '<b>test</b>' } } },
+    longHelp: { sections: { recipients: { subtitle: 'a'.repeat(501) } } },
+    unknownSectionCopy: { sections: { recipients: { help: 'x' } } },
+    unknownSection: { sections: { validation: { title: 'x' } } },
     foreignDocument: { recipients: { document_type: 'passport' } },
     foreignCountry: { recipients: { country: 'US' } },
     zeroRetention: { recipients: { retention_days: 0 } },
@@ -145,9 +159,33 @@ describe('untrusted policy and person input', () => {
   };
   for (const [name, value] of Object.entries(invalid))
     it(`rejects ${name}`, () => assert.equal(CheckoutPolicySchema.safeParse(value).success, false));
-  for (const document of ['', '123456', '123456789', 'abcd1234', '12/345678', '１２３４５６７８'])
+
+  /**
+   * La contracara del bloque de arriba, y va explícita para que no se "arregle"
+   * poniéndole `.strict()` a `recipients`: el copy viejo en la base tiene que
+   * seguir parseando. Zod strippea la clave y `readPolicy` no se rompe.
+   */
+  for (const legacy of [{ recipients: { title: ' ' } }, { recipients: { help: '<b>x</b>' } }])
+    it(`acepta y strippea el copy legacy ${JSON.stringify(legacy)}`, () => {
+      const parsed = CheckoutPolicySchema.safeParse(legacy);
+      assert.equal(parsed.success, true, 'la data que ya está en la base no puede dejar de parsear');
+      assert.equal(
+        'title' in (parsed.data?.recipients ?? {}) || 'help' in (parsed.data?.recipients ?? {}),
+        false,
+        'la clave legacy se strippea: el copy vive en sections'
+      );
+    });
+  for (const document of ['123456', '123456789', 'abcd1234', '12/345678', '１２３４５６７８'])
     it(`rejects DNI ${JSON.stringify(document)}`, () =>
       assert.equal(PersonSchema.safeParse({ ...person(), document }).success, false));
+  // El DNI es opcional desde 930a097bd: el formulario manda '' cuando queda vacio
+  // y eso tiene que valer como "sin documento", no como un DNI invalido.
+  for (const document of ['', '  ', '.-'])
+    it(`acepta DNI vacio ${JSON.stringify(document)} como sin documento`, () => {
+      const parsed = PersonSchema.safeParse({ ...person(), document });
+      assert.equal(parsed.success, true);
+      assert.equal(parsed.data?.document, undefined);
+    });
   for (const document of ['1234567', '30.111.222', '30 111 222', '30-111-222'])
     it(`normalizes DNI ${document}`, () =>
       assert.match(PersonSchema.parse({ ...person(), document }).document, /^\d{7,8}$/));
@@ -253,15 +291,19 @@ describe('snapshot freshness', () => {
     'region_id',
     'currency_code',
     'email',
-    'total',
   ])
     it(`invalidates ${field}`, () => {
       const a = cart();
-      assert.notEqual(
-        cartFingerprint(a),
-        cartFingerprint({ ...a, [field]: field === 'total' ? 21 : 'other' })
-      );
+      assert.notEqual(cartFingerprint(a), cartFingerprint({ ...a, [field]: 'other' }));
     });
+  // `total` se excluye a proposito (ver cartFingerprintComponents): q.graph y el
+  // cart refrescado por completeCartWorkflow divergen en ese campo (undefined vs
+  // calculado) y daban CHECKOUT_REVISION_CONFLICT falsos al finalizar. El precio
+  // lo cubren items[unit_price], shipping_methods[amount] y assertPaymentMatchesCart.
+  it('total alone does not invalidate', () => {
+    const a = cart();
+    assert.equal(cartFingerprint(a), cartFingerprint({ ...a, total: 21 }));
+  });
   for (const field of ['quantity', 'variant_id', 'unit_price'])
     it(`invalidates item ${field}`, () => {
       const a = cart(),

@@ -1,4 +1,5 @@
 import { isSubscriptionFeatureEnabled } from '../../../modules/recurring-order/settings';
+import { isRecurringEnabledForChannel } from '../../../modules/recurring-order/toggle';
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 import { RECURRING_ORDER_MODULE } from '../../../modules/recurring-order';
@@ -49,6 +50,14 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
     return;
   }
   const salesChannelIds = requestedChannelId ? [requestedChannelId] : allowedChannels;
+  // Mismo toggle por sitio que `/store/recurring-eligibility`: con las compras
+  // recurrentes apagadas en la fila de la tienda no se publican planes, asi el
+  // badge de las cards y el bloque de la PDP no dependen de que cada consumidor
+  // recuerde chequearlo.
+  if (!(await isRecurringEnabledForChannel(req.scope, salesChannelIds[0] ?? null))) {
+    res.status(200).json({ plans: [], automatic_payments_enabled: false });
+    return;
+  }
 
   const facts = new Map<string, ProductFacts>();
   if (productIds.length) {

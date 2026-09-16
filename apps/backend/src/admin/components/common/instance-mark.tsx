@@ -98,12 +98,18 @@ export const InstanceMark = ({ variant }: Props) => {
     );
   }
 
+  /**
+   * Misma regla que en el login: con logo NO va el nombre. El logo ya identifica la
+   * instalación y el texto al lado duplicaba la marca. El nombre sale sólo cuando la
+   * marca es la inicial de fallback, que sola no dice cuál es. El tooltip conserva el
+   * nombre completo en los dos casos.
+   */
   return (
     <Tooltip content={name ?? ''}>
       <div className="flex items-center gap-x-2 overflow-hidden">
         {mark}
         {/* En pantallas angostas la barra ya está apretada: queda sólo la marca. */}
-        {name ? (
+        {!logo && name ? (
           <Text
             size="xsmall"
             weight="plus"

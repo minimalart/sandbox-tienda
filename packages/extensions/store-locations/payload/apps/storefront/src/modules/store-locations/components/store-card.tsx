@@ -1,6 +1,10 @@
 "use client";
 
-import type { StoreLocatorLocation } from "@lib/types/store-locator";
+import type {
+  StoreLocatorCategory,
+  StoreLocatorLocation,
+} from "@lib/types/store-locator";
+import { branchTypeLabel, branchTypeStyle } from "@lib/util/branch-types";
 import { handleImageError } from "@lib/util/placeholder-image";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import {
@@ -16,30 +20,8 @@ type StoreCardProps = {
   store: StoreLocatorLocation;
   isExpanded: boolean;
   onToggle: () => void;
-};
-
-const TYPE_CONFIG: Record<
-  StoreLocatorLocation["type"],
-  { label: string; text: string; border: string; bg: string }
-> = {
-  point_of_sale: {
-    label: "Punto de venta",
-    text: "text-[--primary-color]",
-    border: "border-[--primary-color]",
-    bg: "bg-[--primary-soft-bg]",
-  },
-  wholesale: {
-    label: "Mayorista",
-    text: "text-blue-700",
-    border: "border-blue-500",
-    bg: "bg-blue-50",
-  },
-  distribution_center: {
-    label: "Centro de distribucion",
-    text: "text-slate-700",
-    border: "border-slate-500",
-    bg: "bg-slate-100",
-  },
+  /** Los tipos que configuró la tienda: de acá salen la etiqueta y el color. */
+  types: StoreLocatorCategory[];
 };
 
 const externalHref = (value: string) =>
@@ -49,8 +31,14 @@ export default function StoreCard({
   store,
   isExpanded,
   onToggle,
+  types,
 }: StoreCardProps) {
-  const config = TYPE_CONFIG[store.type];
+  // El estilo nunca es undefined: antes esto era un lookup pelado sobre un
+  // objeto de tres claves y una sucursal con un tipo desconocido rompía la
+  // card al leer `.label`. Sin tipo (o con uno que la tienda borró) no se
+  // muestra la etiqueta, pero el resto de la tarjeta funciona igual.
+  const config = branchTypeStyle(types, store.type);
+  const typeLabel = branchTypeLabel(types, store.type);
   // El admin permite hasta 3 imágenes y deja huecos vacíos cuando se borra una,
   // así que filtramos los slots vacíos antes de decidir si hay galería.
   const images = (store.images ?? [])
@@ -98,11 +86,13 @@ export default function StoreCard({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span
-            className={`hidden whitespace-nowrap rounded-full px-3 py-1 font-medium text-xs sm:inline-flex ${config.bg} ${config.text}`}
-          >
-            {config.label}
-          </span>
+          {typeLabel && (
+            <span
+              className={`hidden whitespace-nowrap rounded-full px-3 py-1 font-medium text-xs sm:inline-flex ${config.bg} ${config.text}`}
+            >
+              {typeLabel}
+            </span>
+          )}
           <ChevronDownIcon
             className={`h-5 w-5 text-gray-400 transition-transform ${
               isExpanded ? "rotate-180" : ""
@@ -116,11 +106,13 @@ export default function StoreCard({
           {/* Sin sangría: el panel usa todo el ancho de la tarjeta, si no la
               dirección y las fotos quedan partidas al medio en la columna. */}
           <div className="space-y-3">
-            <span
-              className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 font-medium text-xs sm:hidden ${config.bg} ${config.text}`}
-            >
-              {config.label}
-            </span>
+            {typeLabel && (
+              <span
+                className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 font-medium text-xs sm:hidden ${config.bg} ${config.text}`}
+              >
+                {typeLabel}
+              </span>
+            )}
 
             {images.length > 0 && (
               <div

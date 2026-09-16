@@ -22,7 +22,7 @@ export default async function CampaignKits({
   countryCode: string;
 }) {
   const filter = config.filter ?? {};
-  const pageSize = filter.limit ?? 8;
+  const pageSize = filter.limit ?? 4;
   let initialProducts: Awaited<
     ReturnType<typeof searchTypesenseProducts>
   >["products"] = [];
@@ -52,9 +52,9 @@ export default async function CampaignKits({
   return (
     <section
       id="tienda"
-      className="campaign-home bg-white text-[color:var(--campaign-card-fg,#0f1114)]"
+      className="campaign-home bg-[#f3f5f6] text-[color:var(--campaign-card-fg,#0f1114)]"
     >
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <header className="mb-10 text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             {config.title}

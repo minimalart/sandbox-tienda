@@ -10,6 +10,8 @@ import {
 import { sdk } from '../../lib/client';
 import { queryKeysFactory } from '../../lib/query-key-factory';
 import { toQueryString } from '../../lib/query-string';
+import type { BranchType } from '../../../lib/branch-types';
+import type { StoreLocatorZoneConfig } from '../../../lib/store-locator-config';
 
 export type DemoStoreStatus = 'draft' | 'provisioning' | 'importing' | 'ready' | 'failed';
 /**
@@ -27,6 +29,8 @@ export interface DemoStoreTheme {
   /** Fondo del header/footer. Ausente = default del template. */
   header_background?: string;
   footer_background?: string;
+  /** Fondo del boton "Promociones" del header. Ausente = color primario. */
+  promo_button_color?: string;
   logo?: string;
   logo_negative?: string;
   icon?: string;
@@ -66,6 +70,13 @@ export interface DemoContentConfig {
    * default del storefront (`promos` primero).
    */
   mobileNav?: ('promos' | 'colores' | 'sucursales' | 'blog' | 'contacto')[];
+  /**
+   * Cómo se dibuja cada entrada si gana el lugar flexible: 'icon' (ícono + su
+   * label) o 'text' (sólo el texto). Parcial: lo que falte es 'icon'.
+   */
+  mobileNavDisplay?: Partial<
+    Record<'promos' | 'colores' | 'sucursales' | 'blog' | 'contacto', 'icon' | 'text'>
+  >;
   /**
    * Descripción de la tienda → `metadata.description` (meta description + social
    * card). NO la edita la ficha: está tipada acá para que `formToContentConfig`
@@ -118,6 +129,16 @@ export interface DemoContentConfig {
    */
   sucursales?: {
     subtitle?: string;
+    /**
+     * Zonas del filtro de ubicación: `preset` (jurisdicción del catálogo
+     * argentino, por referencia) o `geometry` (dibujada a mano). `active:
+     * false` apaga una zona propia sin perder su polígono.
+     */
+    regions?: StoreLocatorZoneConfig[];
+    /** Tipos de sucursal de la tienda, en orden. Vacío = no clasifica. */
+    types?: BranchType[];
+    /** Clave vieja del filtro por categoría: se lee, ya no se escribe. */
+    categories?: { type: string; label: string }[];
     showLocationFilters?: boolean;
     showCategoryFilters?: boolean;
     layout?: 'full' | 'compact';
@@ -209,6 +230,13 @@ export interface DemoStore {
   recurring_enabled?: boolean | null;
   /** Tintometría: expone la página "Buscá tu color" (color → bases) del demo. */
   tinting_enabled?: boolean | null;
+  /**
+   * Mi cuenta: secciones "Mis puntos" y "Gift Cards". Default TRUE en la base, así
+   * que se leen con `!== false` — `!!` las apagaría cuando la fila todavía no trae
+   * el campo.
+   */
+  loyalty_enabled?: boolean | null;
+  gift_cards_enabled?: boolean | null;
   latest_import_job?: ImportJob | null;
   product_count?: number;
   created_at: string;
@@ -256,6 +284,9 @@ export interface AdminCreateDemoStore {
   recurring_enabled?: boolean;
   /** Enable the color-first tinting page for the demo. */
   tinting_enabled?: boolean;
+  /** Secciones de "Mi cuenta". Ausente = el backend las crea prendidas. */
+  loyalty_enabled?: boolean;
+  gift_cards_enabled?: boolean;
   /**
    * Reusar un stock location existente en vez de crear uno nuevo. Ausente =
    * comportamiento default (crea `Depósito Demo <nombre>`). Presente = validar
@@ -277,6 +308,9 @@ export interface AdminUpdateDemoStore {
   recurring_enabled?: boolean;
   /** Toggle the color-first tinting page (pure feature flag, no provisioning). */
   tinting_enabled?: boolean;
+  /** Toggles de "Mi cuenta" (Mis puntos / Gift Cards). Feature flags puras. */
+  loyalty_enabled?: boolean;
+  gift_cards_enabled?: boolean;
   /**
    * Reasignar el stock location de la demo (incluso la principal). Presente string
    * = ID del stock location a linkear. `null` explícito = desasignar (detach).

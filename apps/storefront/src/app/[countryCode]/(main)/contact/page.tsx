@@ -120,7 +120,9 @@ export default async function ContactPage() {
   const contact = tenant.assets.contactPage
   const faq = tenant.assets.contactPage?.contactFaq ?? []
   const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY ?? ''
-  const fallbackEmail = tenant.metadata?.contact?.email ?? 'hola@mercatto.com'
+  // Business contact data must come from the active tenant. A shared Mercatto
+  // fallback leaks the wrong identity into every store that has not set email.
+  const fallbackEmail = tenant.metadata?.contact?.email
   const fallbackPhone = tenant.metadata?.contact?.phone
   const hasContactMethods = Boolean(
     contact?.phone || contact?.whatsApp || contact?.email || fallbackEmail || fallbackPhone
@@ -274,7 +276,7 @@ export default async function ContactPage() {
                   </div>
                 )}
 
-                {contact.location && googleMapsApiKey && (
+                {contact.location && (
                   <div className='mt-4 h-40 w-full overflow-hidden rounded-xl'>
                     <ContactMap
                       apiKey={googleMapsApiKey}

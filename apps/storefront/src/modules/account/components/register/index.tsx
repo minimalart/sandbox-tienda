@@ -246,14 +246,14 @@ const Register = ({ setCurrentView }: Props) => {
             Al crear una cuenta aceptás la{" "}
             <LocalizedClientLink
               className="font-medium underline text-[var(--text-muted)]"
-              href="/content/privacy-policy"
+              href="/legal/legals"
             >
               Política de Privacidad
             </LocalizedClientLink>{" "}
             y los{" "}
             <LocalizedClientLink
               className="font-medium underline text-[var(--text-muted)]"
-              href="/content/terms-of-use"
+              href="/legal/conditions"
             >
               Términos y Condiciones
             </LocalizedClientLink>

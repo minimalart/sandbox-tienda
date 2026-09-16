@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "recurring-orders",
   "name": "Compras recurrentes",
-  "version": "2.0.0",
+  "version": "2.0.3",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -395,7 +395,7 @@
     },
     {
       "path": "apps/backend/src/api/store/subscription-plans/route.ts",
-      "sha256": "5946e0f218c629c40bceb3315d51beb54d47e2edc3721c119559f65057bf0fb1"
+      "sha256": "22ef869d123172f77c8dffbb3c2f4001c1de35ffccca08020d5fa191c4fbed0b"
     },
     {
       "path": "apps/backend/src/api/webhooks/mercadopago-subscriptions/route.ts",
@@ -655,7 +655,7 @@
     },
     {
       "path": "apps/backend/src/modules/recurring-order/toggle.ts",
-      "sha256": "2be883a3ccf629ad66f41e0eb4294fa11b032fc460362b08c2349f3b96f5379f"
+      "sha256": "335dc1de5af9f75f70d565a709370b94fb5991774f5b3b4025b72c7851d66122"
     },
     {
       "path": "apps/backend/src/modules/recurring-order/types.ts",
@@ -699,11 +699,11 @@
     },
     {
       "path": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/subscriptions/[id]/page.tsx",
-      "sha256": "d709752922029b366cbab28c6b5a92d763f73270943c231f94c3232ede71ebe2"
+      "sha256": "eecd0f4273cb02f15cf0dba7814f64b9639b2885af8c4ceeb63af7e7427517e3"
     },
     {
       "path": "apps/storefront/src/app/[countryCode]/(main)/account/@dashboard/subscriptions/page.tsx",
-      "sha256": "fba0591ff69d98abe6c2da1a14bf6ccdb9e728da26472e51243fa2d7d19bff49"
+      "sha256": "e86805755de55dddce4b4f7f96351b7679e12b914a7815214fe7b22d16bc1a79"
     },
     {
       "path": "apps/storefront/src/app/[countryCode]/(main)/cart/page.tsx",
@@ -715,11 +715,11 @@
     },
     {
       "path": "apps/storefront/src/lib/data/recurring-orders.ts",
-      "sha256": "976d70f3b3d41ea911af95c594867c00d05189867b7250b815eb72c322324bc4"
+      "sha256": "1e803f99a03d75bc6bebd253e2012cf91e732ee695db74c2a4783cc53c0f092d"
     },
     {
       "path": "apps/storefront/src/modules/account/components/subscriptions/cancel-modal.tsx",
-      "sha256": "cd69f3245f3ac021372c617c380cfb6b8e32eb0241f10ff47596f7d2216fcb18"
+      "sha256": "4dd0d6b882cc446da77935b2f77555400514919ebc2f961b7b419d4c9416a67a"
     },
     {
       "path": "apps/storefront/src/modules/account/components/subscriptions/helpers.ts",
@@ -731,7 +731,7 @@
     },
     {
       "path": "apps/storefront/src/modules/account/components/subscriptions/subscription-detail.tsx",
-      "sha256": "326061f0ac76e0f4c44bfae705cfaa48e46c223a9c66ced0776b2e8b825c1348"
+      "sha256": "e91ef17219834911526fc8911e523a484afee8028667b2c5c0209eb1066a4c88"
     },
     {
       "path": "apps/storefront/src/modules/account/components/subscriptions/subscriptions-list.tsx",
@@ -739,7 +739,7 @@
     },
     {
       "path": "apps/storefront/src/modules/cart/components/make-recurring/index.tsx",
-      "sha256": "66788c6d1eac61cc38d0412722eaf75d15b42305a24e276e33729ebd02fa01a2"
+      "sha256": "6db37d6c0739c4bd8a6751d2e9c5c5ace8bd3255a531118787b9ef0a01219a8c"
     },
     {
       "path": "apps/storefront/src/modules/cart/templates/index.tsx",
@@ -755,7 +755,7 @@
     },
     {
       "path": "apps/storefront/src/modules/store/templates/typesense-product-card.tsx",
-      "sha256": "a549f332e87094b755e50cf0ff1502cffefdfcecf991a8f551ad1f50032c32a2"
+      "sha256": "f0a22169f20a80d39a975a2c1c0f7f8f0a24d203f3374243c3cdc701a8152703"
     },
     {
       "path": "apps/storefront/src/modules/store/templates/typesense-product-grid.tsx",

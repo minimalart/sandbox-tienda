@@ -21,6 +21,7 @@ import { adminSeoGeoMiddlewares } from './admin/seo-geo/middlewares';
 import { adminRecommendationsMiddlewares } from './admin/recommendations/middlewares';
 import { storeRecommendationsMiddlewares } from './store/recommendations/middlewares';
 import { adminSitesMiddlewares } from './admin/sites/middlewares';
+import { adminPriceListsMiddlewares } from './admin/price-lists/middlewares';
 
 export const extensionMiddlewares: MiddlewareRoute[] = [
   ...adminSiteCredentialsMiddlewares,
@@ -45,4 +46,5 @@ export const extensionMiddlewares: MiddlewareRoute[] = [
   ...adminRecommendationsMiddlewares,
   ...storeRecommendationsMiddlewares,
   ...adminSitesMiddlewares,
+  ...adminPriceListsMiddlewares,
 ];

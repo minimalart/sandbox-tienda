@@ -73,6 +73,23 @@ export const EMAIL_EVENTS: EmailEvent[] = [
     ],
   },
   {
+    /**
+     * Retiro en tienda: el pedido ya está preparado en el local.
+     *
+     * `wired: true` — lo dispara una acción HUMANA, no un evento de orden: el
+     * botón "Marcar listo para retirar" del detalle de la orden, o mover la
+     * ejecución de entrega a `at_pickup_point`. Las dos puertas pasan por
+     * `markOrderReadyForPickup`, que gatea con `order.metadata.ready_for_pickup_at`
+     * para que el cliente reciba el aviso una sola vez.
+     */
+    event: 'order-ready-for-pickup',
+    label: 'Pedido listo para retirar',
+    wired: true,
+    templates: [
+      USER('order-ready-for-pickup', 'Pedido listo para retirar (usuario)'),
+    ],
+  },
+  {
     event: 'customer-register',
     label: 'Registro de cliente',
     wired: true,

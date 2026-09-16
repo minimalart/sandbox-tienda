@@ -9,6 +9,7 @@ import {
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import { useAddToCartAnimation } from "@lib/context/add-to-cart-animation";
 import type { NavigationLink } from "@lib/data/navigation-links";
+import { useBackNavigation } from "@lib/hooks/use-back-navigation";
 import { useGhostCompletion } from "@lib/hooks/use-ghost-completion";
 import { SEARCH_HINTS, useRotatingHint } from "@lib/hooks/use-rotating-hint";
 import {
@@ -50,6 +51,7 @@ const MobileSearchBar = () => {
 
   const isOnStore = pathname?.includes("/store");
   const isProductsPage = pathname?.includes("/products");
+  const goBack = useBackNavigation();
 
   const {
     ghostSuffix,
@@ -205,13 +207,17 @@ const MobileSearchBar = () => {
     <>
     <div className="flex items-center gap-2 border-gray-100 border-t bg-white px-3 py-2 lg:hidden">
       {isProductsPage ? (
+        // Botón "Volver" de la PDP. Va con fondo del color primario para que se
+        // lea como acción y no como un chevron decorativo: en mobile es la
+        // única forma de salir del producto sin usar el gesto del navegador.
         <button
           aria-label="Volver"
-          className="flex shrink-0 items-center justify-center text-[--primary-color]"
-          onClick={() => router.back()}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[--primary-color] text-white shadow-sm transition-opacity hover:opacity-90"
+          data-testid="pdp-back-button"
+          onClick={goBack}
           type="button"
         >
-          <ChevronLeftIcon className="size-6" />
+          <ChevronLeftIcon aria-hidden="true" className="size-6" />
         </button>
       ) : null}
       <div className="relative flex flex-1 items-center">

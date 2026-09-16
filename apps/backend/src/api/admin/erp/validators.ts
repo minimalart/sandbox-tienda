@@ -46,7 +46,16 @@ const CatalogSyncSettingsSchema = z.object({
   created_product_status: z.enum(['draft', 'published']).optional(),
   /** Bajar las imágenes del ERP y subirlas al File module. */
   images: z
-    .object({ enabled: z.boolean().optional(), backfill_pending: z.boolean().optional() })
+    .object({
+      enabled: z.boolean().optional(),
+      backfill_pending: z.boolean().optional(),
+      /**
+       * Lado menor mínimo aceptado, en píxeles. `0` deshabilita el filtro
+       * (se importa cualquier imagen que devuelva el adapter). Sin este
+       * campo el motor cae al default `DEFAULT_MIN_IMAGE_DIMENSION_PX` (500).
+       */
+      min_dimension_px: z.number().int().min(0).max(4000).optional(),
+    })
     .optional(),
   product_fields: z
     .array(
@@ -347,3 +356,41 @@ export const DeleteErpTintingFormulasSchema = z.object({
   dry_run: z.boolean().optional(),
 });
 export type DeleteErpTintingFormulasType = z.infer<typeof DeleteErpTintingFormulasSchema>;
+
+/**
+ * Reenvío manual de ventas al ERP. Los tres selectores son exclusivos y se
+ * resuelven en ese orden en la ruta: `order_ids` (widget de la orden) →
+ * `event_ids` (selección de la tabla) → `statuses` (barrido masivo).
+ *
+ * Todo es opcional a propósito: un body vacío es "barré el default"
+ * (`skipped`/`failed`/`dead_letter`), que es la acción que destraba las ventas
+ * que entraron con la notificación apagada.
+ *
+ * `force` es la única puerta a reenviar un `sent`/`duplicate`, y no se acepta
+ * junto al barrido masivo: la ruta nunca lo aplica a `sent` por estado, sólo a
+ * ids explícitos (ver `resync-decision.ts` — hay ERPs sin idempotencia que
+ * refacturan).
+ */
+export const PostErpOutboxResyncSchema = z
+  .object({
+    order_ids: z.array(z.string().min(1)).min(1).max(500).optional(),
+    event_ids: z.array(z.string().min(1)).min(1).max(500).optional(),
+    statuses: z
+      .array(
+        z.enum(['pending', 'processing', 'sent', 'failed', 'dead_letter', 'skipped', 'duplicate'])
+      )
+      .min(1)
+      .optional(),
+    force: z.boolean().optional(),
+    limit: z.number().int().min(1).max(500).optional(),
+  })
+  .refine((body) => !(body.order_ids && body.event_ids), {
+    message: 'Mandá order_ids o event_ids, no los dos.',
+    path: ['event_ids'],
+  })
+  .refine((body) => !(body.force && !body.order_ids && !body.event_ids), {
+    message:
+      'force sólo se acepta con order_ids o event_ids: reenviar ventas ya enviadas no puede ser una acción masiva por estado.',
+    path: ['force'],
+  });
+export type PostErpOutboxResyncInput = z.infer<typeof PostErpOutboxResyncSchema>;

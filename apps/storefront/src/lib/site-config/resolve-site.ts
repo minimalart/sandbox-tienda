@@ -1,3 +1,4 @@
+import { isSitesHubHost, normalizeSiteSuffix } from "./site-hosts"
 // `import type` a propósito: se borra en runtime, así que este módulo NO arrastra
 // `next/server` y se puede testear con `node --test`.
 import type { NextRequest } from "next/server"
@@ -20,6 +21,7 @@ import { isValidSlugShape, RESERVED_SUBDOMAINS } from "./reserved-segments"
  */
 
 /** Prefijo público canónico. `demo` sobrevive sólo como origen de un 308. */
+export const SITES_INDEX_SEGMENT = "tiendas"
 export const SITE_PATH_SEGMENT = "tienda"
 export const LEGACY_SITE_PATH_SEGMENT = "demo"
 
@@ -101,9 +103,10 @@ export function normalizeHost(host: string | null | undefined): string | null {
  * `RESERVED_SUBDOMAINS`, ese label ES el slug.
  */
 export function resolveHostSlug(host: string | null | undefined): string | null {
-  const suffix = process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX
+  const suffix = normalizeSiteSuffix(process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX)
   const normalized = normalizeHost(host)
   if (!suffix || !normalized) return null
+  if (normalized === normalizeHost(process.env.NEXT_PUBLIC_PRIMARY_HOST)) return null
   if (!normalized.endsWith(suffix)) return null
 
   const label = normalized.slice(0, -suffix.length)
@@ -172,7 +175,7 @@ export function resolveSiteFromParts(parts: SiteResolutionParts): SiteResolution
   // 3. La cookie: mantiene el sitio mientras se navega una sub-ruta sin prefijo.
   //    La HOME RAÍZ y un `?exit_*` siempre terminan la sesión.
   const cookieSlug = parts.cookieSlug || null
-  if (cookieSlug && !isRootHome && !isRootB2B && !exitRequested && isValidSlugShape(cookieSlug)) {
+  if (cookieSlug && pathname !== `/${SITES_INDEX_SEGMENT}` && !isRootHome && !isRootB2B && !exitRequested && isValidSlugShape(cookieSlug)) {
     return {
       slug: cookieSlug,
       source: "cookie",
@@ -190,7 +193,7 @@ export function resolveSiteFromParts(parts: SiteResolutionParts): SiteResolution
     slug: null,
     source: "none",
     pathPrefix: "",
-    rewritePath: pathname,
+    rewritePath: isRootHome && isSitesHubHost(parts.host, process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX) ? `/${SITES_INDEX_SEGMENT}` : pathname,
     isLegacyPath,
     isExit: isRootHome || isRootB2B || exitRequested,
   }
@@ -206,7 +209,7 @@ export function resolveSiteFromParts(parts: SiteResolutionParts): SiteResolution
  * duplicados indexados.
  */
 export function canonicalHostFor(slug: string): string | null {
-  const suffix = process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX
+  const suffix = normalizeSiteSuffix(process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX)
   if (!suffix) return null
   return `${slug}${suffix}`
 }

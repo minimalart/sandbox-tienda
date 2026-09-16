@@ -1,6 +1,6 @@
 {
   "name": "@repo/extension-b2b",
-  "version": "1.23.0",
+  "version": "1.23.4",
   "private": true,
   "description": "B2B component source package",
   "dependencies": {

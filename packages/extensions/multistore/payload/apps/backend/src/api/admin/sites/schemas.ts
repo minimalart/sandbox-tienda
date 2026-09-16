@@ -1,3 +1,8 @@
+import {
+  storeLocatorRegionsSchema,
+  storeLocatorCategoriesSchema,
+  storeLocatorTypesSchema,
+} from '../../../lib/store-locator-config';
 import { z } from 'zod';
 import {
   isReservedSlug,
@@ -31,6 +36,8 @@ export const ThemeSchema = z
     // Fondo del header/footer. Sin esto el storefront usa el default del template.
     header_background: z.string().optional(),
     footer_background: z.string().optional(),
+    // Fondo del boton "Promociones" del header. Sin esto usa el color primario.
+    promo_button_color: z.string().optional(),
     // Branding: logo/icono/favicon en variantes positivo y negativo. Todos
     // opcionales. `mobile_logo` se mantiene por compatibilidad (= icono positivo).
     logo: z.string().optional(),
@@ -81,6 +88,26 @@ export const ContentConfigSchema = z
      */
     mobileNav: z
       .array(z.enum(['promos', 'colores', 'sucursales', 'blog', 'contacto']))
+      .optional(),
+    /**
+     * Ícono o texto por entrada de la barra. Parcial a propósito: sólo viajan
+     * las que el operador cambió a 'text' y el storefront completa el resto con
+     * 'icon'.
+     *
+     * `object().partial()` y no `z.record`: en zod 4 un record con clave
+     * enumerada EXIGE las 5 claves, y acá el payload es justamente parcial.
+     * Enumerarlas igual mantiene el guard de la clave — una entrada que el
+     * storefront no conoce sería config muerta.
+     */
+    mobileNavDisplay: z
+      .object({
+        promos: z.enum(['icon', 'text']),
+        colores: z.enum(['icon', 'text']),
+        sucursales: z.enum(['icon', 'text']),
+        blog: z.enum(['icon', 'text']),
+        contacto: z.enum(['icon', 'text']),
+      })
+      .partial()
       .optional(),
     contact: z
       .object({
@@ -155,6 +182,13 @@ export const ContentConfigSchema = z
       .object({
         // Se persiste incluso vacío: '' = subtítulo oculto (≠ ausente = default).
         subtitle: z.string().optional(),
+        regions: storeLocatorRegionsSchema.optional(),
+        // Tipos de sucursal de la tienda. Lista vacía = la tienda no clasifica
+        // sus sucursales; ausente = todavía no se configuró y caen los tres de
+        // siempre. `categories` es la clave vieja: se sigue leyendo para no
+        // rechazar un content_config que nunca se guardó con la pantalla nueva.
+        types: storeLocatorTypesSchema.optional(),
+        categories: storeLocatorCategoriesSchema.optional(),
         showLocationFilters: z.boolean().optional(),
         showCategoryFilters: z.boolean().optional(),
         layout: z.enum(['full', 'compact']).optional(),
@@ -212,10 +246,6 @@ export const ContentConfigSchema = z
           .optional(),
         footer: z
           .object({
-            description: z.string().optional(),
-            address: z.string().optional(),
-            email: z.string().optional(),
-            copyright: z.string().optional(),
             poweredBy: z
               .object({ label: z.string(), href: z.string() })
               .optional(),
@@ -289,6 +319,11 @@ export const CreateDemoStoreSchema = z.object({
   recurring_enabled: z.boolean().optional().default(false),
   // When true, the demo exposes the color-first tinting page ("Buscá tu color").
   tinting_enabled: z.boolean().optional().default(false),
+  // Secciones de "Mi cuenta". Default TRUE, al revés que los de arriba: hoy están
+  // hardcodeadas como siempre visibles en el storefront, así que una tienda nueva
+  // tiene que nacer igual que las que ya existen.
+  loyalty_enabled: z.boolean().optional().default(true),
+  gift_cards_enabled: z.boolean().optional().default(true),
   /**
    * Reusar un stock location existente en vez de crear uno nuevo. Presente =
    * validar que exista y linkearlo al SC de la demo. Ausente/null = comportamiento
@@ -350,6 +385,11 @@ export const UpdateDemoStoreSchema = z.object({
   // Toggle la página de tintometría (color → bases). También es feature flag pura:
   // la data maestra es de la instancia y ya existe.
   tinting_enabled: z.boolean().optional(),
+  // Toggles de "Mi cuenta" (Mis puntos / Gift Cards). Feature flags puras: los
+  // módulos son de la instancia y conservan sus switches en app-settings.
+  // Sin `.default()`: en el update, ausente = no se toca.
+  loyalty_enabled: z.boolean().optional(),
+  gift_cards_enabled: z.boolean().optional(),
   /**
    * Cambiar el stock location asignado a la demo (main o hija). Dispara el
    * workflow `updateDemoStoreStockLocationWorkflow`: desliga el SC del stock

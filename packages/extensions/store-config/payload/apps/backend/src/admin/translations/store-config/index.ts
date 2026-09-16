@@ -47,7 +47,7 @@ export const en = {
   MIN_PURCHASE_CURRENT_UNTIL: 'Until {{date}}',
   MIN_PURCHASE_CURRENT_OPEN_ENDED: 'Open-ended',
   MIN_PURCHASE_AUDIT_HINT:
-    'Changes are append-only: every change creates a new record so the history stays auditable.',
+    'Each change is a new record with its own validity window, so the history says how much applied and when. Use the row menu to fix or remove a record.',
 
   // Table
   COLUMN_AMOUNT: 'Amount',
@@ -58,12 +58,27 @@ export const en = {
   COLUMN_CREATED_AT: 'Created',
   EMPTY_STATE: 'No minimum purchase records yet. Create the first one to get started.',
   CREATE_BUTTON: 'Create',
+  BADGE_GLOBAL: 'Global',
+  ACTION_EDIT: 'Edit',
+  ACTION_DELETE: 'Delete',
 
-  // Create drawer
+  // Create / edit drawer
   CREATE_TITLE: 'New minimum purchase',
   CREATE_SUBMIT: 'Create',
   CREATE_SUCCESS: 'Minimum purchase created successfully',
   CREATE_ERROR: 'Failed to create minimum purchase: {{msg}}',
+  EDIT_TITLE: 'Edit minimum purchase',
+  EDIT_SUBMIT: 'Save',
+  UPDATE_SUCCESS: 'Minimum purchase updated successfully',
+  UPDATE_ERROR: 'Failed to update minimum purchase: {{msg}}',
+
+  // Delete
+  DELETE_TITLE: 'Delete minimum purchase',
+  DELETE_DESCRIPTION:
+    'Delete the {{amount}} record? If it is the current minimum, the store will fall back to whichever record applies by date, or to no minimum. This cannot be undone.',
+  DELETE_CONFIRM: 'Delete',
+  DELETE_SUCCESS: 'Minimum purchase deleted',
+  DELETE_ERROR: 'Failed to delete minimum purchase: {{msg}}',
   FIELD_AMOUNT_LABEL: 'Amount *',
   FIELD_AMOUNT_PLACEHOLDER: 'E.g.: 15000',
   FIELD_CURRENCY_LABEL: 'Currency',
@@ -186,7 +201,7 @@ export const es = {
   MIN_PURCHASE_CURRENT_UNTIL: 'Hasta {{date}}',
   MIN_PURCHASE_CURRENT_OPEN_ENDED: 'Sin fecha de fin',
   MIN_PURCHASE_AUDIT_HINT:
-    'Los cambios son solo de alta: cada cambio crea un registro nuevo para mantener el historial auditable.',
+    'Cada cambio es un registro nuevo con su propia vigencia, así el historial dice cuánto rigió y cuándo. Desde el menú de la fila podés corregir o eliminar un registro.',
 
   // Table
   COLUMN_AMOUNT: 'Monto',
@@ -197,12 +212,27 @@ export const es = {
   COLUMN_CREATED_AT: 'Creado',
   EMPTY_STATE: 'Todavía no hay registros de mínimo de compra. Creá el primero para empezar.',
   CREATE_BUTTON: 'Crear',
+  BADGE_GLOBAL: 'Global',
+  ACTION_EDIT: 'Editar',
+  ACTION_DELETE: 'Eliminar',
 
-  // Create drawer
+  // Create / edit drawer
   CREATE_TITLE: 'Nuevo mínimo de compra',
   CREATE_SUBMIT: 'Crear',
   CREATE_SUCCESS: 'Mínimo de compra creado correctamente',
   CREATE_ERROR: 'Error al crear el mínimo de compra: {{msg}}',
+  EDIT_TITLE: 'Editar mínimo de compra',
+  EDIT_SUBMIT: 'Guardar',
+  UPDATE_SUCCESS: 'Mínimo de compra actualizado correctamente',
+  UPDATE_ERROR: 'Error al actualizar el mínimo de compra: {{msg}}',
+
+  // Delete
+  DELETE_TITLE: 'Eliminar mínimo de compra',
+  DELETE_DESCRIPTION:
+    '¿Eliminar el registro de {{amount}}? Si es el mínimo vigente, la tienda pasa al que corresponda por fecha, o a ninguno. Esta acción no se puede deshacer.',
+  DELETE_CONFIRM: 'Eliminar',
+  DELETE_SUCCESS: 'Mínimo de compra eliminado',
+  DELETE_ERROR: 'Error al eliminar el mínimo de compra: {{msg}}',
   FIELD_AMOUNT_LABEL: 'Monto *',
   FIELD_AMOUNT_PLACEHOLDER: 'Ej: 15000',
   FIELD_CURRENCY_LABEL: 'Moneda',

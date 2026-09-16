@@ -1,3 +1,4 @@
+import { siteStorefrontUrl } from '../../../lib/multistore/public-url';
 /**
  * Resuelve la URL pública del storefront desde el backend en runtime, con la
  * misma lógica que `GET /admin/store-config/storefront-url`: STOREFRONT_URL
@@ -31,7 +32,7 @@ export function resolveStorefrontUrl(): string {
  * `modules/store-config/site-gate.ts`; se repite el literal en vez de importarlo
  * porque los tres viven en módulos distintos y ninguno depende de los otros dos.
  */
-export function resolveSiteStorefrontUrl(site: { slug: string; is_main: boolean }): string {
+export function resolveSiteStorefrontUrl(site: { slug: string; is_main: boolean; canonical_form?: 'host' | 'path' | null }): string {
   const base = resolveStorefrontUrl();
-  return site.is_main ? base : `${base}/tienda/${site.slug}`;
+  return siteStorefrontUrl(site, base);
 }

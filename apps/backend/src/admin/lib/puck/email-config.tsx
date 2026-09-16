@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Config } from '@measured/puck';
 import { s3ImageField } from './fields/s3-image-field';
 
@@ -442,6 +443,70 @@ export const emailPuckConfig: Config = {
           </div>
         );
       },
+    },
+
+    /**
+     * Sucursal de retiro. El lienzo muestra una sucursal de EJEMPLO porque los
+     * datos reales (`pickup_store`) recien se resuelven al enviar o previsualizar.
+     *
+     * El cartel de abajo no es decoracion: este bloque no imprime NADA cuando la
+     * orden no es de retiro en tienda, asi que sin ese aviso el operador lo ve
+     * en el lienzo, manda una prueba con una orden de envio a domicilio, no ve
+     * nada y concluye que el bloque esta roto.
+     */
+    PickupStore: {
+      label: 'Sucursal de retiro',
+      fields: {
+        title: { type: 'text', label: 'Encabezado' },
+        showHours: {
+          type: 'radio',
+          label: 'Mostrar horarios',
+          options: [
+            { label: 'Si', value: 'yes' },
+            { label: 'No', value: 'no' },
+          ],
+        },
+        showMap: {
+          type: 'radio',
+          label: 'Mostrar link al mapa',
+          options: [
+            { label: 'Si', value: 'yes' },
+            { label: 'No', value: 'no' },
+          ],
+        },
+      },
+      defaultProps: { title: 'Retiralo en', showHours: 'yes', showMap: 'yes' },
+      render: ({ title, showHours, showMap }: any) => (
+        <div style={{ margin: '0 0 16px' }}>
+          <div style={{ background: '#f8f9fa', borderRadius: 8, padding: 15 }}>
+            <div style={{ fontSize: 16, fontWeight: 'bold', color: '#6b7280' }}>
+              {title || 'Retiralo en'}
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 'bold', color: '#333333', marginTop: 8 }}>
+              Sucursal de ejemplo
+            </div>
+            <div style={{ fontSize: 14, color: '#666666', marginTop: 4 }}>
+              Av. Ejemplo 1234, Bariloche
+            </div>
+            <div style={{ fontSize: 14, color: '#666666', marginTop: 4 }}>Tel: 294 400-0000</div>
+            {showHours !== 'no' && (
+              <div style={{ fontSize: 14, color: '#666666', marginTop: 8 }}>
+                <strong style={{ color: '#333333' }}>Horarios</strong>
+                <br />
+                Lunes a viernes: 09:00 a 18:00
+              </div>
+            )}
+            {showMap !== 'no' && (
+              <div style={{ fontSize: 14, color: '#6b7280', marginTop: 8, textDecoration: 'underline' }}>
+                Ver en el mapa
+              </div>
+            )}
+          </div>
+          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6, textAlign: 'center' }}>
+            Solo se muestra en ordenes de retiro en tienda. En las demas no imprime nada.
+          </div>
+        </div>
+      ),
     },
 
     RawHtml: {

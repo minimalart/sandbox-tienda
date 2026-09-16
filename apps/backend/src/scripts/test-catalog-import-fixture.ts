@@ -38,14 +38,32 @@ export default async function testCatalogImportFixture({ container }: { containe
     await trx.raw(`CREATE UNIQUE INDEX fixture_global_namespace ON site_setting(namespace)
       WHERE site_id IS NULL AND deleted_at IS NULL`);
     const old = { DEMO_IMPORT_STALE_MS: { value: 600000, is_secret: false } };
-    await trx('site_setting').insert({ id: 'legacy', namespace: 'extension:store-importer', value: old });
+    await trx('site_setting').insert({
+      id: 'legacy',
+      namespace: 'extension:store-importer',
+      value: old,
+    });
     await trx.raw(catalogSettingsMigrationSql);
-    assert.deepEqual((await trx('site_setting').where({ namespace: 'extension:multistore' }).first()).value, old);
-    const current = { DEMO_IMPORT_STALE_MS: { value: 900000, is_secret: false }, OTHER: { value: 'keep', is_secret: false } };
-    await trx('site_setting').where({ namespace: 'extension:multistore' }).update({ value: current });
+    assert.deepEqual(
+      (await trx('site_setting').where({ namespace: 'extension:multistore' }).first()).value,
+      old
+    );
+    const current = {
+      DEMO_IMPORT_STALE_MS: { value: 900000, is_secret: false },
+      OTHER: { value: 'keep', is_secret: false },
+    };
+    await trx('site_setting')
+      .where({ namespace: 'extension:multistore' })
+      .update({ value: current });
     await trx.raw(catalogSettingsMigrationSql);
-    assert.deepEqual((await trx('site_setting').where({ namespace: 'extension:multistore' }).first()).value, current);
-    assert.deepEqual((await trx('site_setting').where({ namespace: 'extension:store-importer' }).first()).value, old);
+    assert.deepEqual(
+      (await trx('site_setting').where({ namespace: 'extension:multistore' }).first()).value,
+      current
+    );
+    assert.deepEqual(
+      (await trx('site_setting').where({ namespace: 'extension:store-importer' }).first()).value,
+      old
+    );
   });
   const run = Date.now().toString();
   const service = container.resolve('catalog_import');
@@ -157,6 +175,9 @@ export default async function testCatalogImportFixture({ container }: { containe
           'variants.*',
           'variants.metadata',
           'variants.prices.*',
+          'variants.options.*',
+          'options.*',
+          'options.values.*',
           'variants.calculated_price.*',
           'categories.id',
           'sales_channels.id',
@@ -167,6 +188,8 @@ export default async function testCatalogImportFixture({ container }: { containe
     ).data[0];
   const before = await read();
   assert.equal(before.variants.length, 2);
+  assert.deepEqual(before.variants.map((v: any) => v.title).sort(), ['Caja', 'Unidad']);
+  assert.deepEqual(before.variants.map((v: any) => v.options[0].value).sort(), ['Caja', 'Unidad']);
   assert.equal(
     before.variants.find((v: any) => v.metadata.external_variant_id === 'unit').calculated_price
       .calculated_amount,
@@ -330,6 +353,95 @@ export default async function testCatalogImportFixture({ container }: { containe
   await persistCatalogProduct(container, context, third);
   assert.equal((await read()).variants.length, 3);
   assert.ok((await read()).variants.some((v: any) => v.id === unit.id));
+  // Repair the exact legacy encoding in place, then preserve an unprotected
+  // operator correction on the following imports (no product/SKU recreation).
+  const current = await read();
+  const presentationOption = current.options.find((o: any) => o.title === 'Presentación');
+  await products.updateProductOptionValuesOnProduct({
+    product_id: first.id,
+    product_option_id: presentationOption.id,
+    add: [{ value: 'unit' }, { value: 'Corrección manual' }],
+  });
+  await updateProductVariantsWorkflow(container).run({
+    input: {
+      product_variants: [
+        {
+          id: unit.id,
+          title: 'Unidad · unit',
+          options: { Presentación: 'unit' },
+          metadata: {
+            ...current.variants.find((v: any) => v.id === unit.id).metadata,
+            catalog_imported_variant: null,
+            catalog_variant_overrides: null,
+          },
+        },
+      ],
+    },
+  });
+  await persistCatalogProduct(container, context, normalized);
+  const repaired = await read();
+  assert.equal(repaired.variants.find((v: any) => v.id === unit.id).title, 'Unidad');
+  assert.equal(repaired.variants.find((v: any) => v.id === unit.id).options[0].value, 'Unidad');
+  assert.ok(
+    !repaired.options
+      .find((o: any) => o.title === 'Presentación')
+      .values.some((v: any) => v.value === 'unit')
+  );
+  await updateProductVariantsWorkflow(container).run({
+    input: {
+      product_variants: [
+        {
+          id: unit.id,
+          title: 'Nombre manual',
+          options: { Presentación: 'Corrección manual' },
+        },
+      ],
+    },
+  });
+  await persistCatalogProduct(container, context, normalized);
+  await persistCatalogProduct(container, context, normalized);
+  const manual = (await read()).variants.find((v: any) => v.id === unit.id);
+  assert.equal(manual.title, 'Nombre manual');
+  assert.equal(manual.options[0].value, 'Corrección manual');
+  assert.equal((await read()).variants.length, 3);
+  // Same display label does not collapse distinct identities, including a
+  // source with no dimensions. Neutral ordinals remain stable after reordering.
+  const duplicate = {
+    ...normalized,
+    productId: 'duplicates',
+    variants: [
+      { ...normalized.variants![0]!, externalVariantId: 'duplicate-a', value: 'Único' },
+      { ...normalized.variants![0]!, externalVariantId: 'duplicate-b', value: 'Único' },
+    ],
+  };
+  const duplicateSaved = await persistCatalogProduct(container, context, duplicate);
+  const readDuplicates = async () =>
+    (
+      await query.graph({
+        entity: 'product',
+        fields: ['id', 'variants.*', 'variants.options.*'],
+        filters: { id: duplicateSaved.id },
+      })
+    ).data[0].variants;
+  const duplicateBefore = await readDuplicates();
+  assert.deepEqual(duplicateBefore.map((v: any) => v.options[0].value).sort(), [
+    'Único',
+    'Único (2)',
+  ]);
+  await persistCatalogProduct(container, context, {
+    ...duplicate,
+    variants: [...duplicate.variants].reverse(),
+  });
+  const duplicateAfter = await readDuplicates();
+  assert.deepEqual(
+    duplicateAfter.map((v: any) => v.id).sort(),
+    duplicateBefore.map((v: any) => v.id).sort()
+  );
+  for (const variant of duplicateBefore)
+    assert.equal(
+      duplicateAfter.find((v: any) => v.id === variant.id).options[0].value,
+      variant.options[0].value
+    );
   // Independent connection: same external id never merges across connections.
   const other = await service.createCatalogConnections({
     name: 'Other',
@@ -468,6 +580,27 @@ export default async function testCatalogImportFixture({ container }: { containe
   );
   await runCatalogJob(container, response.job.id);
   assert.equal((await service.retrieveCatalogImport(response.job.id)).status, 'cancelled');
+  const incomplete = await service.createCatalogImports({
+    connection_id: connection.id,
+    destination_id: context.destinationId,
+    sales_channel_id: channel.id,
+    config,
+    status: 'partial',
+    products: { items: [normalized] },
+    report: { complete: false, reason: 'provider_limit' },
+  });
+  await jobsRoute.POST(
+    { ...request, params: { id: incomplete.id }, body: { action: 'retry' } },
+    { json: () => {} }
+  );
+  const retried = await service.retrieveCatalogImport(incomplete.id);
+  assert.equal(
+    retried.products,
+    null,
+    'Incomplete source recovery must not replay the old partial snapshot.'
+  );
+  assert.equal(retried.report, null);
+  await service.updateCatalogImports({ id: incomplete.id, status: 'cancelled' });
   console.log(
     'PASS: real Medusa upsert, stable product/variant IDs, list/current price, manual protection, partial SKU preservation, connection isolation, DB queue uniqueness, concurrent workers, cancellation and canonical quantities.'
   );

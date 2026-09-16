@@ -1,7 +1,10 @@
+import { DrawerTabs, DrawerTabPanel } from '../../../components/drawer-tabs';
+import { useStorefrontOrigins } from '../../../hooks/use-storefront-base';
+import { buildPublicUrlFrom } from '../lib';
 import { useB2BPriceListOptions } from '../../../hooks/api/demo-stores';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Drawer, Input, Label, Select, Switch, Tabs, Text, toast } from '@medusajs/ui';
+import { Button, Drawer, Input, Label, Select, Switch, Text, toast } from '@medusajs/ui';
 import {
   useAdminRegions,
   useDemoTemplates,
@@ -34,6 +37,7 @@ type Props = { demo: DemoStore; open: boolean; onOpenChange: (open: boolean) => 
 export const DemoStoreEdit = ({ demo, open, onOpenChange }: Props) => {
   const { t } = useTranslation('demo-stores');
   const [activeTab, setActiveTab] = useState('general');
+  const { base, hostSuffix, sitesBase } = useStorefrontOrigins();
   const { data: templatesData } = useDemoTemplates();
   const templates = templatesData?.demo_templates ?? [];
 
@@ -55,6 +59,12 @@ export const DemoStoreEdit = ({ demo, open, onOpenChange }: Props) => {
   const b2bPriceLists = useB2BPriceListOptions();
   const [recurringEnabled, setRecurringEnabled] = useState(!!demo.recurring_enabled);
   const [tintingEnabled, setTintingEnabled] = useState(!!demo.tinting_enabled);
+  // `!== false` y no `!!`: estas dos nacen en true en la base, así que una fila que
+  // todavía no trae el campo (backend viejo, respuesta parcial) tiene que leerse
+  // como PRENDIDA. Con `!!` el drawer las mostraría apagadas y el primer guardado
+  // las apagaría de verdad.
+  const [loyaltyEnabled, setLoyaltyEnabled] = useState(demo.loyalty_enabled !== false);
+  const [giftCardsEnabled, setGiftCardsEnabled] = useState(demo.gift_cards_enabled !== false);
   // Stock location asignado. `null` = sin location (comportamiento inicial de la
   // principal). El valor "" en el select representa el detach (para no colisionar
   // con la falta de valor). Se manda `null` explícito al backend si el operador
@@ -87,6 +97,8 @@ export const DemoStoreEdit = ({ demo, open, onOpenChange }: Props) => {
       setB2bPriceListId(demo.b2b_price_list_id || AUTO_B2B);
       setRecurringEnabled(!!demo.recurring_enabled);
       setTintingEnabled(!!demo.tinting_enabled);
+      setLoyaltyEnabled(demo.loyalty_enabled !== false);
+      setGiftCardsEnabled(demo.gift_cards_enabled !== false);
       setStockLocationId(demo.stock_location_id ?? '');
       setSalesChannelId(demo.sales_channel_id ?? '');
       setRegionId(demo.region_id ?? '');
@@ -132,6 +144,14 @@ export const DemoStoreEdit = ({ demo, open, onOpenChange }: Props) => {
         : {}),
       // Tintometría: también flag puro, la data maestra ya vive en el ERP.
       ...(tintingEnabled !== !!demo.tinting_enabled ? { tinting_enabled: tintingEnabled } : {}),
+      // Mi cuenta: también flags puros. El lado derecho del diff usa `!== false`
+      // por el mismo motivo que el estado inicial.
+      ...(loyaltyEnabled !== (demo.loyalty_enabled !== false)
+        ? { loyalty_enabled: loyaltyEnabled }
+        : {}),
+      ...(giftCardsEnabled !== (demo.gift_cards_enabled !== false)
+        ? { gift_cards_enabled: giftCardsEnabled }
+        : {}),
       // Stock location: sólo se emite si el operador cambió el select. Traducción:
       //   ""                       → sin tocar (undefined en el body, no llega al backend)
       //   SL_DETACH                → null explícito (detach)
@@ -177,18 +197,18 @@ export const DemoStoreEdit = ({ demo, open, onOpenChange }: Props) => {
           <Drawer.Title>{t('EDIT_TITLE')}</Drawer.Title>
         </Drawer.Header>
         <Drawer.Body className="overflow-y-auto">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <Tabs.List className="sticky top-0 z-10 flex flex-wrap gap-1 bg-ui-bg-base pb-3">
-              <Tabs.Trigger value="general">General</Tabs.Trigger>
-              <Tabs.Trigger value="catalog">Catálogo</Tabs.Trigger>
-              <Tabs.Trigger value="branding">{t('STEP_BRANDING')}</Tabs.Trigger>
-              <Tabs.Trigger value="content">{t('STEP_CONTENT')}</Tabs.Trigger>
-              <Tabs.Trigger value="operations">{t('EDIT_TAB_OPERATIONS')}</Tabs.Trigger>
-              <Tabs.Trigger value="b2b">B2B</Tabs.Trigger>
-              <Tabs.Trigger value="checkout">Checkout</Tabs.Trigger>
-              <Tabs.Trigger value="features">{t('EDIT_TAB_FEATURES')}</Tabs.Trigger>
-            </Tabs.List>
-            <Tabs.Content value="general" className="flex flex-col gap-y-4">
+          <div>
+            <DrawerTabs tab={activeTab} setTab={setActiveTab} tabs={[
+              { id: 'general', label: 'General' },
+              { id: 'catalog', label: 'Catálogo' },
+              { id: 'branding', label: t('STEP_BRANDING') },
+              { id: 'content', label: t('STEP_CONTENT') },
+              { id: 'operations', label: t('EDIT_TAB_OPERATIONS') },
+              { id: 'b2b', label: 'B2B' },
+              { id: 'checkout', label: 'Checkout' },
+              { id: 'features', label: t('EDIT_TAB_FEATURES') },
+            ]} />
+            <DrawerTabPanel tab={activeTab} value="general" className="flex flex-col gap-y-4">
           <div className="flex flex-col gap-y-2">
             <Label>{t('FIELD_NAME')}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
@@ -246,16 +266,17 @@ export const DemoStoreEdit = ({ demo, open, onOpenChange }: Props) => {
                 </Select.Content>
               </Select>
               <Text size="small" className="text-ui-fg-subtle">
-                {t('FIELD_CANONICAL_FORM_HELP')}
+                {t('FIELD_CANONICAL_FORM_HELP')}<br />
+                  <span className="break-all font-medium">{buildPublicUrlFrom({ slug: demo.slug || 'tienda', canonical_form: canonicalForm }, { baseUrl: base, hostSuffix, sitesBaseUrl: sitesBase })}</span>
               </Text>
             </div>
           )}
 
-            </Tabs.Content>
-            <Tabs.Content value="catalog">
+            </DrawerTabPanel>
+            <DrawerTabPanel tab={activeTab} value="catalog">
               {open && activeTab === 'catalog' && <StoreCatalog key={demo.id} demo={demo} />}
-            </Tabs.Content>
-            <Tabs.Content value="branding" className="flex flex-col gap-y-4">
+            </DrawerTabPanel>
+            <DrawerTabPanel tab={activeTab} value="branding" className="flex flex-col gap-y-4">
           <Text size="small" weight="plus" className="mt-2">
             {t('STEP_BRANDING')}
           </Text>
@@ -297,6 +318,18 @@ export const DemoStoreEdit = ({ demo, open, onOpenChange }: Props) => {
           <Text size="xsmall" className="text-ui-fg-subtle">
             {t('FIELD_CHROME_BACKGROUND_HELP')}
           </Text>
+          {/* Boton "Promociones" del header. Vacio = el color primario. */}
+          <div className="grid grid-cols-2 gap-3">
+            <ColorField
+              label={t('FIELD_PROMO_BUTTON_COLOR')}
+              value={theme.promo_button_color ?? ''}
+              fallback={theme.primary_color || '#2e7d32'}
+              onChange={(v) => setThemeField('promo_button_color', v)}
+            />
+          </div>
+          <Text size="xsmall" className="text-ui-fg-subtle">
+            {t('FIELD_PROMO_BUTTON_COLOR_HELP')}
+          </Text>
 
           <div className="flex flex-col gap-y-2">
             <Label>{t('FIELD_TYPOGRAPHY')}</Label>
@@ -332,15 +365,15 @@ export const DemoStoreEdit = ({ demo, open, onOpenChange }: Props) => {
             />
           ))}
 
-            </Tabs.Content>
-            <Tabs.Content value="content" className="flex flex-col gap-y-4">
+            </DrawerTabPanel>
+            <DrawerTabPanel tab={activeTab} value="content" className="flex flex-col gap-y-4">
           <Text size="small" weight="plus" className="mt-2">
             {t('STEP_CONTENT')}
           </Text>
           <ContentConfigFields value={content} onChange={setContent} templateCode={templateCode} />
 
-            </Tabs.Content>
-            <Tabs.Content value="operations" className="flex flex-col gap-y-4">
+            </DrawerTabPanel>
+            <DrawerTabPanel tab={activeTab} value="operations" className="flex flex-col gap-y-4">
           <Text size="small" weight="plus" className="mt-2">
             Recursos operacionales
           </Text>
@@ -440,8 +473,8 @@ export const DemoStoreEdit = ({ demo, open, onOpenChange }: Props) => {
             </Select>
           </div>
 
-            </Tabs.Content>
-            <Tabs.Content value="b2b" className="flex flex-col gap-y-4">
+            </DrawerTabPanel>
+            <DrawerTabPanel tab={activeTab} value="b2b" className="flex flex-col gap-y-4">
           <Text size="small" weight="plus" className="mt-2">
             {t('B2B_SECTION_TITLE')}
           </Text>
@@ -497,11 +530,11 @@ export const DemoStoreEdit = ({ demo, open, onOpenChange }: Props) => {
               </div>
             </div>
           )}
-            </Tabs.Content>
-            <Tabs.Content value="checkout" forceMount style={{ display: activeTab === 'checkout' ? undefined : 'none' }} className="flex flex-col gap-y-4 data-[state=inactive]:hidden">
+            </DrawerTabPanel>
+            <DrawerTabPanel tab={activeTab} value="checkout" forceMount style={{ display: activeTab === 'checkout' ? undefined : 'none' }} className="flex flex-col gap-y-4 data-[state=inactive]:hidden">
               <CheckoutConfig siteId={demo.id} open={open} />
-            </Tabs.Content>
-            <Tabs.Content value="features" className="flex flex-col gap-y-4">
+            </DrawerTabPanel>
+            <DrawerTabPanel tab={activeTab} value="features" className="flex flex-col gap-y-4">
           <Text size="small" weight="plus" className="mt-2">
             {t('RECURRING_SECTION_TITLE')}
           </Text>
@@ -535,8 +568,38 @@ export const DemoStoreEdit = ({ demo, open, onOpenChange }: Props) => {
               onCheckedChange={setTintingEnabled}
             />
           </div>
-            </Tabs.Content>
-          </Tabs>
+
+          <Text size="small" weight="plus" className="mt-2">
+            {t('ACCOUNT_SECTION_TITLE')}
+          </Text>
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-ui-border-base p-3">
+            <div className="flex min-w-0 flex-col">
+              <Label>{t('LOYALTY_TOGGLE')}</Label>
+              <Text size="small" className="text-ui-fg-subtle">
+                {t('LOYALTY_TOGGLE_HELP')}
+              </Text>
+            </div>
+            <Switch
+              className="shrink-0"
+              checked={loyaltyEnabled}
+              onCheckedChange={setLoyaltyEnabled}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-ui-border-base p-3">
+            <div className="flex min-w-0 flex-col">
+              <Label>{t('GIFT_CARDS_TOGGLE')}</Label>
+              <Text size="small" className="text-ui-fg-subtle">
+                {t('GIFT_CARDS_TOGGLE_HELP')}
+              </Text>
+            </div>
+            <Switch
+              className="shrink-0"
+              checked={giftCardsEnabled}
+              onCheckedChange={setGiftCardsEnabled}
+            />
+          </div>
+            </DrawerTabPanel>
+          </div>
         </Drawer.Body>
         <Drawer.Footer>
           <Button variant="secondary" size="small" onClick={() => onOpenChange(false)}>

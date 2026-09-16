@@ -1,3 +1,5 @@
+import { siteStorefrontUrl, storefrontOrigins } from '../../lib/multistore/public-url';
+import { safeReturnBase } from './return-base';
 import {
   readMercadoPagoSetting,
   isMercadoPagoCheckoutEnabled,
@@ -198,13 +200,15 @@ class MercadoPagoProviderService extends AbstractPaymentProvider<MercadoPagoOpti
    * sólo se veía en las tiendas.
    */
   private getBackUrls(
-    returnBase?: string | null
+    returnBase?: string | null,
+    allowed: string[] = []
   ): { success: string; failure: string; pending: string } | undefined {
-    const base = this.options_.storefrontUrl?.replace(/\/$/, '');
+    const base = allowed[0] ?? this.options_.storefrontUrl?.replace(/\/$/, '');
     if (!base) {
       return undefined;
     }
-    const target = this.resolveReturnBase(base, returnBase);
+    const fallback = allowed[0] ?? base;
+    const target = safeReturnBase(fallback, returnBase, allowed.length ? allowed : [base]);
     return {
       success: `${target}/checkout/success`,
       failure: `${target}/checkout/failure`,
@@ -217,18 +221,6 @@ class MercadoPagoProviderService extends AbstractPaymentProvider<MercadoPagoOpti
    * configurado. Es un valor que viaja por el cliente y termina en un redirect
    * de MercadoPago: sin este guard sería un open redirect.
    */
-  private resolveReturnBase(base: string, candidate?: string | null): string {
-    if (!candidate) return base;
-    const trimmed = candidate.replace(/\/$/, '');
-    if (trimmed !== base && !trimmed.startsWith(`${base}/`)) {
-      this.logger_.warn(
-        `MercadoPago: return_base "${candidate}" no cuelga de storefrontUrl "${base}"; se usa la base configurada.`
-      );
-      return base;
-    }
-    return trimmed;
-  }
-
   /**
    * Builds the IPN notification_url pointing at our custom webhook route. When
    * the payment belongs to a branch, the branch code (and sales channel) are
@@ -344,7 +336,28 @@ class MercadoPagoProviderService extends AbstractPaymentProvider<MercadoPagoOpti
     // Base de retorno con el prefijo del sitio activo (ver getBackUrls).
     const returnBase = (input.data?.return_base as string | undefined) ?? null;
 
-    const backUrls = this.getBackUrls(returnBase);
+    const allowedReturnBases: string[] = [];
+    // Resolve the registered store from the cart/channel, never trust an arbitrary host.
+    let returnChannel = salesChannelId;
+    if (cartId && this.pgConnection_) {
+      const cartRows = await this.pgConnection_.raw('SELECT "sales_channel_id" FROM "cart" WHERE "id" = ? AND "deleted_at" IS NULL LIMIT 1', [cartId]);
+      returnChannel = cartRows?.rows?.[0]?.sales_channel_id ?? null;
+      if (!returnChannel) throw new MedusaError(MedusaError.Types.INVALID_DATA, 'No se pudo resolver el carrito del pago.');
+    }
+    const returnSite = await resolveSiteViaSql(this.pgConnection_, { salesChannelId: returnChannel, allowMainFallback: true });
+    if (returnSite.status === 'site' || returnSite.status === 'singleSite') {
+      const origins = storefrontOrigins(this.options_.storefrontUrl);
+      const site = returnSite.site;
+      allowedReturnBases.push(siteStorefrontUrl(site, origins.base));
+      // The supported path form stays valid: preserve host-only session cookies.
+      if (!site.is_main) {
+        allowedReturnBases.push(`${origins.base}/tienda/${site.slug}`, `${origins.sitesBase}/tienda/${site.slug}`);
+        if (origins.hostSuffix) allowedReturnBases.push(siteStorefrontUrl({ ...site, canonical_form: 'host' }, origins.base));
+      }
+    } else if (returnSite.status === 'unknownSite') {
+      throw new MedusaError(MedusaError.Types.INVALID_DATA, 'La tienda del pago no existe.');
+    }
+    const backUrls = this.getBackUrls(returnBase, allowedReturnBases);
     const notificationUrl = this.getNotificationUrl({ branchCode, salesChannelId });
 
     this.logger_.info(

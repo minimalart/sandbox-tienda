@@ -1,6 +1,6 @@
 {
   "name": "@repo/extension-store-locations",
-  "version": "1.11.3",
+  "version": "1.12.1",
   "private": true,
   "description": "Sucursales component source package",
   "dependencies": {

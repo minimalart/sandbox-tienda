@@ -35,12 +35,16 @@ function headers(): Record<string, string> {
 export async function getLandingPageBySlug(
   slug: string,
   locale?: string,
+  preview = false,
 ): Promise<LandingPagePublic | null> {
   try {
-    const qs = locale ? `?locale=${encodeURIComponent(locale)}` : '';
+    const params = new URLSearchParams();
+    if (locale) params.set('locale', locale);
+    if (preview) params.set('preview', '1');
+    const qs = params.size ? `?${params}` : '';
     const res = await fetch(
       `${BACKEND_URL}/store/landing-pages/${encodeURIComponent(slug)}${qs}`,
-      { headers: headers(), next: { revalidate: 60 } },
+      { headers: headers(), ...(preview ? { cache: 'no-store' as const } : { next: { revalidate: 60 } }) },
     );
     if (!res.ok) {
       return null;

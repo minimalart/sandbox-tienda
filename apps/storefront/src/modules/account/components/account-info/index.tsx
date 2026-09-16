@@ -84,10 +84,10 @@ const AccountInfo = ({
           transition
         />
 
-        <div className="fixed inset-0 z-[10000] w-screen overflow-y-auto">
+        <div className="fixed inset-0 z-[10000] w-screen cursor-modal-close overflow-y-auto">
           <div className="flex min-h-full items-end justify-center p-0 text-center sm:items-center sm:p-4">
             <DialogPanel
-              className="relative transform overflow-hidden rounded-t-2xl bg-white px-4 pt-5 pb-6 text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in w-full max-w-none sm:my-8 sm:w-full sm:max-w-lg sm:rounded-lg sm:p-6 data-closed:sm:translate-y-0 data-closed:sm:scale-95"
+              className="cursor-auto relative transform overflow-hidden rounded-t-2xl bg-white px-4 pt-5 pb-6 text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-leave:duration-200 data-enter:ease-out data-leave:ease-in w-full max-w-none sm:my-8 sm:w-full sm:max-w-lg sm:rounded-lg sm:p-6 data-closed:sm:translate-y-0 data-closed:sm:scale-95"
               transition
             >
               <div>

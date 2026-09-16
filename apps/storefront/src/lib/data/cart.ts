@@ -34,6 +34,10 @@ import {
   shouldTransferCartToCustomer,
 } from "@lib/util/cart-customer-transfer";
 import {
+  CART_COMPLETED_AT_FIELD,
+  isCompletedCart,
+} from "@lib/util/completed-cart";
+import {
   buildManualPromoCodesMetadata,
   hydrateCartPromotionsFromMetadata,
 } from "@lib/util/cart-promotion-metadata";
@@ -67,7 +71,11 @@ export async function retrieveCart(cartId?: string) {
         // Lo consume shouldTransferCartToCustomer (self-heal de getOrSetCart y
         // CartMismatchBanner, que recibe este mismo cart por props desde el
         // layout). Sin el campo, el criterio no puede decidir y no transfiere.
-        fields: `+metadata, *items, *region, *items.product, +items.product.metadata, *items.variant, +items.variant.metadata, *items.thumbnail, *items.metadata, +items.total, +items.subtotal, +items.original_total, +items.unit_price, +items.quantity, *promotions, +shipping_methods.name, *payment_collection, *payment_collection.payment_sessions, +${CART_CUSTOMER_ACCOUNT_FIELD}`,
+        // `+completed_at` es lo que permite descartar un carrito que ya es una
+        // orden. Sin el campo, este camino (layout, /cart, botón del header)
+        // devolvía el carrito comprado como si estuviera activo — ver
+        // `util/completed-cart.ts` (BUG-08).
+        fields: `+metadata, *items, *region, *items.product, +items.product.metadata, *items.variant, +items.variant.metadata, *items.thumbnail, *items.metadata, +items.total, +items.subtotal, +items.original_total, +items.unit_price, +items.quantity, *promotions, +shipping_methods.name, *payment_collection, *payment_collection.payment_sessions, +${CART_CUSTOMER_ACCOUNT_FIELD}, +${CART_COMPLETED_AT_FIELD}`,
       },
       headers,
       next,
@@ -75,6 +83,25 @@ export async function retrieveCart(cartId?: string) {
     })
     .then(async (response) => {
       if (!response.cart) return null;
+
+      if (isCompletedCart(response.cart)) {
+        // Devolver `null` es lo que arregla el síntoma: con un cart nulo el
+        // `StoreProvider` deja de hidratar el carrito comprado y pasa a pedirlo
+        // por `/api/store/cart`, que corre en un route handler y ahí sí puede
+        // limpiar la cookie.
+        //
+        // El borrado acá es best effort a propósito: esta función también se
+        // llama durante el render de layouts, y Next sólo permite escribir
+        // cookies en Server Actions o route handlers. Que falle no cambia el
+        // resultado.
+        try {
+          await removeCartId();
+        } catch {
+          /* render de RSC: la cookie la limpia el route handler */
+        }
+        return null;
+      }
+
       const cart = await enrichCartWithInventory(response.cart);
       return sanitizeCartGiftCardCodes(hydrateCartPromotionsFromMetadata(cart));
     })

@@ -48,51 +48,58 @@ export async function autocompleteFromBrowser(
  *
  * Usa `navigator.sendBeacon` cuando está disponible; fallback a fetch
  * con `keepalive: true`. Errores silenciados — analytics es best-effort.
+ *
+ * ── POR QUÉ VA AL PROXY Y NO AL BACKEND ──────────────────────────────────
+ *
+ * SAME-ORIGIN, a la route handler que reenvía desde el server. Antes pegaba
+ * directo a `NEXT_PUBLIC_MEDUSA_BACKEND_URL` y cada búsqueda en producción
+ * tiraba dos errores en consola —CORS bloqueado + `net::ERR_FAILED`— contra el
+ * host del backend (DESDEELSUR-61, BUG-12). El analytics nunca registró nada.
+ *
+ * El diagnóstico obvio era "la env apunta al backend equivocado", y cambiarla
+ * NO alcanza: aunque apunte al host correcto, el beacon es cross-origin igual y
+ * depende de que el `STORE_CORS` del backend liste el dominio del storefront —
+ * que es config de otro sistema, se desincroniza en cada dominio nuevo y falla
+ * en silencio. Peor: `sendBeacon` NO admite headers custom, así que el camino
+ * principal jamás pudo mandar `x-publishable-api-key`.
+ *
+ * Contra el proxy los dos problemas desaparecen de raíz: mismo origen (no hay
+ * preflight ni CORS que configurar) y la llamada al backend la hace el server,
+ * que sí puede poner las headers que haga falta. Vale para cualquier dominio sin
+ * tocar ninguna env.
  */
+const ANALYTICS_ENDPOINT = "/api/store/typesense/analytics";
+
 export function trackSearchClient(query: string, hasResults: boolean): void {
   if (!query || query === "*") return;
 
-  const backendUrl =
-    process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
-  const publishableApiKey =
-    process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
-
-  const url = `${backendUrl}/store/typesense/analytics`;
   const body = JSON.stringify({ query, hasResults });
 
   try {
     if (typeof navigator !== "undefined" && navigator.sendBeacon) {
-      // sendBeacon no soporta headers custom — usar Blob con tipo JSON
+      // sendBeacon no soporta headers custom — usar Blob con tipo JSON.
+      // Ya no hace falta ninguna: el proxy es same-origin.
       const blob = new Blob([body], { type: "application/json" });
-      // Nota: sendBeacon no permite x-publishable-api-key; el backend debe
-      // aceptar requests sin esa header desde el browser como best-effort.
-      const sent = navigator.sendBeacon(url, blob);
+      const sent = navigator.sendBeacon(ANALYTICS_ENDPOINT, blob);
       if (!sent) {
         // El UA rechazó el beacon (cola llena) — fallback silencioso
-        _trackWithFetch(url, body, publishableApiKey);
+        _trackWithFetch(ANALYTICS_ENDPOINT, body);
       }
       return;
     }
-    _trackWithFetch(url, body, publishableApiKey);
+    _trackWithFetch(ANALYTICS_ENDPOINT, body);
   } catch {
     // Analytics best-effort — nunca romper el flujo de búsqueda
   }
 }
 
-function _trackWithFetch(
-  url: string,
-  body: string,
-  publishableApiKey: string,
-): void {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (publishableApiKey) {
-    headers["x-publishable-api-key"] = publishableApiKey;
-  }
-  fetch(url, { method: "POST", headers, body, keepalive: true }).catch(
-    () => {
-      // Silenciado intencionalmente
-    },
-  );
+function _trackWithFetch(url: string, body: string): void {
+  fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    keepalive: true,
+  }).catch(() => {
+    // Silenciado intencionalmente
+  });
 }

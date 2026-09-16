@@ -119,6 +119,28 @@ export type EventBusWorkerLike = {
    * en la falla que vigila. Todo consumo de esto va con deadline.
    */
   client?: Promise<EventBusRedisClientLike>;
+  /**
+   * LA CONEXIÓN QUE SE MUERE, y no es la de arriba.
+   *
+   * BullMQ abre DOS: la normal y una que DUPLICA para el comando bloqueante con
+   * el que consume (`worker.js:120` → `opts.connection.duplicate(...)`). La
+   * segunda es la que se cayó en desdeelsur el 2026-09-09, y el monitor lo dejó
+   * probado por accidente: reportó `Conexión: en \`ready\`, no hace falta
+   * tocarla` —mirando `client`— y en la misma línea `run()` falló con
+   * `Connection is closed.`. Revivir la conexión equivocada no cuesta un error:
+   * cuesta un diagnóstico que dice "está todo bien" mientras nada funciona.
+   *
+   * `reconnect()` es de BullMQ (`redis-connection.js:394`) y hace lo correcto:
+   * mira el `status` y sólo llama a `connect()` si quedó en `wait` o `end`. Pero
+   * arranca con `await this.client`, así que TAMBIÉN necesita techo de tiempo.
+   */
+  blockingConnection?: EventBusRedisConnectionLike;
+};
+
+/** Lo mínimo que necesitamos de una `RedisConnection` de BullMQ. */
+export type EventBusRedisConnectionLike = {
+  client?: Promise<EventBusRedisClientLike>;
+  reconnect?: () => Promise<unknown>;
 };
 
 /**

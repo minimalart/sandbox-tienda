@@ -310,9 +310,9 @@ function mergeEmailBranding(raw: unknown): EmailBranding {
 /**
  * StoreConfigModuleService — additional store-wide settings.
  *
- * NOTE: the `minimum_purchase` setting is APPEND-ONLY by design (auditable):
- * the API layer only ever calls `create*` and `list*` — never update/delete.
- * `store_setting` is the opposite: a simple current-value key/value store.
+ * NOTE: `minimum_purchase` is a HISTORY (one row per validity window; the API
+ * layer creates, edits and deletes rows, and the effective minimum is resolved by
+ * date). `store_setting` is a simple current-value key/value store.
  */
 class StoreConfigModuleService extends MedusaService({
   MinimumPurchase,

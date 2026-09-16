@@ -21,7 +21,7 @@ type PgLike = {
 };
 
 const COLUMNS =
-  '"id", "slug", "name", "is_main", "sales_channel_id", "b2b_sales_channel_id", "region_id", "stock_location_id"';
+  '"id", "slug", "name", "is_main", "canonical_form", "sales_channel_id", "b2b_sales_channel_id", "region_id", "stock_location_id"';
 
 /** Las columnas que este archivo nombra. El test de drift las cruza contra el modelo. */
 export const SQL_MIRRORED_COLUMNS = [
@@ -29,6 +29,7 @@ export const SQL_MIRRORED_COLUMNS = [
   'slug',
   'name',
   'is_main',
+  'canonical_form',
   'sales_channel_id',
   'b2b_sales_channel_id',
   'region_id',

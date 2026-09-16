@@ -1,4 +1,5 @@
 import { Badge, Button, Drawer, Heading, Input, Label, Select, Switch, Text, Textarea, usePrompt } from '@medusajs/ui';
+import { useWorkflowTranslation } from '../i18n';
 import { useState } from 'react';
 import {
   useWorkflows,
@@ -52,6 +53,8 @@ function workflowToInput(w: WorkflowDefinition): WorkflowInput {
 }
 
 type StepForm = {
+  result_contract: string;
+  saved?: WorkflowStep;
   key: string;
   agent_key: string;
   task: string;
@@ -74,6 +77,8 @@ function toForm(w?: WorkflowDefinition): FormState {
     enabled: w ? w.enabled : true,
     confirmFinal: w?.final_action?.type === 'confirm',
     steps: (w?.steps ?? []).map((s) => ({
+      saved: s,
+      result_contract: s.result_contract ? JSON.stringify(s.result_contract, null, 2) : '',
       key: s.key ?? '',
       agent_key: s.agent_key ?? '',
       task: s.task ?? '',
@@ -84,6 +89,7 @@ function toForm(w?: WorkflowDefinition): FormState {
 }
 
 const emptyStep = (): StepForm => ({
+  result_contract: '',
   key: '',
   agent_key: '',
   task: '',
@@ -103,6 +109,7 @@ const WorkflowForm = ({
   const save = useSaveWorkflow();
   const [form, setForm] = useState<FormState>(() => toForm(workflow));
   const [error, setError] = useState<string | null>(null);
+  const t = useWorkflowTranslation();
 
   const setStep = (i: number, patch: Partial<StepForm>) =>
     setForm((f) => ({ ...f, steps: f.steps.map((s, j) => (j === i ? { ...s, ...patch } : s)) }));
@@ -117,7 +124,15 @@ const WorkflowForm = ({
 
   const onSave = async () => {
     setError(null);
+    let contracts: Array<WorkflowStep['result_contract']>;
+    try {
+      contracts = form.steps.map(s => s.result_contract.trim() ? JSON.parse(s.result_contract) : undefined);
+    } catch {
+      return setError(t('contractInvalid'));
+    }
     const steps: WorkflowStep[] = form.steps.map((s, i) => ({
+      ...s.saved,
+      result_contract: contracts[i],
       key: (s.key.trim() || `paso-${i + 1}`).replace(/\s+/g, '-'),
       agent_key: s.agent_key,
       task: s.task.trim(),
@@ -222,6 +237,11 @@ const WorkflowForm = ({
               onChange={(e) => setStep(i, { task: e.target.value })}
               placeholder="Tarea para el subagente. Podés usar {{input.topic}} y {{state.<paso>.<campo>}}. Pedile cerrar con <result>{…}</result>."
             />
+            <Label htmlFor={`result-contract-${i}`}>{t('contract')}</Label>
+            <Textarea id={`result-contract-${i}`} rows={3} value={s.result_contract}
+              onChange={(e) => setStep(i, { result_contract: e.target.value })}
+              placeholder='{"answer":{"type":"string"}}' />
+            <Text size="small" className="text-ui-fg-subtle">{t('contractHelp')}</Text>
             <div className="flex flex-wrap items-center gap-3">
               <Input
                 className="w-[160px]"

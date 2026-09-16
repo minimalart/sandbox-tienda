@@ -5,6 +5,7 @@ import { en as andreaniEn, es as andreaniEs } from '../translations/andreani';
 import { en as correoArgentinoEn, es as correoArgentinoEs } from '../translations/correo-argentino';
 import { en as whatsappEn, es as whatsappEs } from '../translations/whatsapp';
 import { en as widgetsEn, es as widgetsEs } from '../translations/widgets';
+import { en as drawerTabsEn, es as drawerTabsEs } from '../translations/drawer-tabs';
 
 export default {
   en: {
@@ -15,6 +16,7 @@ export default {
     correoArgentino: correoArgentinoEn,
     whatsapp: whatsappEn,
     widgets: widgetsEn,
+    drawerTabs: drawerTabsEn,
   },
   es: {
     typesense: typesenseEs,
@@ -24,5 +26,6 @@ export default {
     correoArgentino: correoArgentinoEs,
     whatsapp: whatsappEs,
     widgets: widgetsEs,
+    drawerTabs: drawerTabsEs,
   },
 };

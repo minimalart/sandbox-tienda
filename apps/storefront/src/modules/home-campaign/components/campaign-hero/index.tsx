@@ -1,29 +1,20 @@
 import type { CampaignHeroConfig } from "@lib/site-config/types";
+import { resolveCampaignHeroImage } from "@lib/site-config/campaign";
 import { pickContrastText } from "@lib/util/contrast";
 import Image from "next/image";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import CampaignTrustBadges from "../campaign-trust-badges";
 
 /**
- * Hero de la landing institucional. Layout dos columnas: copy a la izquierda,
- * imagen protagonista a la derecha (colapsa en mobile).
- *
- * `hero.backgroundColor` (opcional) pisa el fondo; `hero.ctaBackgroundColor` /
- * `ctaTextColor` pisan el CTA. Todos son escapes para instituciones que
- * necesitan otro tratamiento sin cambiar el primario global; sin config el
- * template usa blanco (preset) + primario del tenant para el CTA.
+ * Hero compacto de la landing institucional. En desktop muestra la imagen a la
+ * izquierda y el contenido a la derecha; en mobile apila imagen + contenido.
+ * Si la campaña no carga una imagen propia, usa la ilustración genérica.
  */
 export default function CampaignHero({ hero }: { hero: CampaignHeroConfig }) {
-  const bg = hero.backgroundColor?.trim() || undefined;
-  // Texto del hero: si hay bg custom (y es claro), texto oscuro; caso contrario
-  // preserva el treatment blanco previo. Sin bg custom cae al CSS var y NO
-  // conocemos su claridad → mantenemos white como default seguro.
-  const fg = bg ? (pickContrastText(bg) ?? "#0f1114") : "#ffffff";
+  const bg = hero.backgroundColor?.trim() || "#ffffff";
+  const fg = pickContrastText(bg) ?? "#0f1114";
   const isDarkText = fg !== "#ffffff";
-  const heroStyle: React.CSSProperties = bg
-    ? { backgroundColor: bg, color: fg }
-    : {};
-
+  const imageSrc = resolveCampaignHeroImage(hero.image);
   const ctaBg = hero.ctaBackgroundColor?.trim() || undefined;
   const ctaFg = hero.ctaTextColor?.trim() || undefined;
   // CTA sin overrides: fondo primario, texto blanco. Se pasa por style para no
@@ -51,23 +42,32 @@ export default function CampaignHero({ hero }: { hero: CampaignHeroConfig }) {
       : undefined;
 
   return (
-    <section
-      id="inicio"
-      className={
-        bg
-          ? "text-current"
-          : "bg-[color:var(--campaign-bg,#0f1114)] text-white"
-      }
-      style={heroStyle}
-    >
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-2 lg:items-center lg:gap-16">
-        <div className="flex flex-col gap-6">
+    <section id="inicio" style={{ backgroundColor: bg, color: fg }}>
+      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-2 lg:items-center lg:gap-10">
+        <div
+          className={
+            isDarkText
+              ? "relative h-[220px] w-full overflow-hidden rounded-2xl bg-neutral-100 sm:h-[280px] lg:h-[300px]"
+              : "relative h-[220px] w-full overflow-hidden rounded-2xl bg-white/5 sm:h-[280px] lg:h-[300px]"
+          }
+        >
+          <Image
+            src={imageSrc}
+            alt={hero.imageAlt?.trim() || ""}
+            fill
+            priority
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            className="object-cover"
+          />
+        </div>
+
+        <div className="flex flex-col gap-4">
           {hero.eyebrow ? (
             <span className="campaign-badge w-fit" style={eyebrowStyle}>
               {hero.eyebrow}
             </span>
           ) : null}
-          <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
+          <h1 className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
             {hero.title}
           </h1>
           {hero.subtitle ? (
@@ -92,28 +92,12 @@ export default function CampaignHero({ hero }: { hero: CampaignHeroConfig }) {
               </LocalizedClientLink>
             </div>
           ) : null}
-          <div className="pt-2">
-            <CampaignTrustBadges items={hero.trustBadges} />
-          </div>
+          {hero.trustBadges?.length ? (
+            <div className="pt-1">
+              <CampaignTrustBadges items={hero.trustBadges} />
+            </div>
+          ) : null}
         </div>
-        {hero.image ? (
-          <div
-            className={
-              isDarkText
-                ? "relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-neutral-100"
-                : "relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-white/5"
-            }
-          >
-            <Image
-              src={hero.image}
-              alt={hero.imageAlt ?? ""}
-              fill
-              priority
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-        ) : null}
       </div>
     </section>
   );

@@ -64,6 +64,14 @@ export type ErpConfigLookupOption = {
   raw: Record<string, unknown>;
 };
 
+/** Qué devolvió cada listado, para poder distinguir vacío de ilegible. */
+export type ErpConfigLookupDiagnostic = {
+  received: number;
+  usable: number;
+  /** Claves de la primera fila cuando llegaron filas y ninguna sirvió. */
+  sample_keys: string[];
+};
+
 export type ErpConfigLookups = {
   options: Partial<Record<ErpConfigLookupKind, ErpConfigLookupOption[]>>;
   /**
@@ -72,6 +80,13 @@ export type ErpConfigLookups = {
    * exactamente lo que hay hoy.
    */
   errors: Partial<Record<ErpConfigLookupKind, string>>;
+  /**
+   * Qué devolvió cada listado. Sin esto, "no hay opciones" y "vinieron 40 filas
+   * y no le encontré el código a ninguna" son la MISMA pantalla vacía — que es
+   * exactamente cómo cinco de los seis listados estuvieron rotos sin que nadie
+   * lo notara.
+   */
+  diagnostics?: Partial<Record<ErpConfigLookupKind, ErpConfigLookupDiagnostic>>;
 };
 
 /**
@@ -84,6 +99,46 @@ export type ErpConfigLookups = {
  * pedido que Zeus rechaza sin explicar por qué.
  */
 const VALUE_KEYS = ['codigo', 'code', 'numero', 'nro', 'valor', 'id'] as const;
+
+/**
+ * Claves que EMPIEZAN con `codigo` pero NO son el código de la fila.
+ *
+ * `codigo_postal` es el caso real: aparece en los listados que incluyen datos de
+ * domicilio, y tomarlo como código guardaría un CP en `settings.zeus`.
+ */
+const VALUE_PREFIX_DENY = ['codigopostal', 'codigodebarras', 'codigofabrica'] as const;
+
+/**
+ * Fallback: la primera clave que empieza con `codigo` y no está vetada.
+ *
+ * No es un adorno defensivo, es el arreglo de una falla MEDIDA. La primera
+ * corrida contra la cuenta real de desdeelsur (2026-09-11) devolvió cinco de los
+ * seis listados VACÍOS y `errors: {}` — indistinguible de "esta cuenta no usa
+ * esos listados". El único que funcionó fue `/tarjetas`, y funcionó porque
+ * devuelve `{codigo, nombre}`.
+ *
+ * Los otros cinco nombran su código con el de la entidad adentro:
+ * `codigo_de_sucursal`, `codigo_de_deposito`, `codigo_condicion_de_venta`,
+ * `codigo_iva`, `codigo_de_vendedor` (los nombres están en
+ * `docs/recipes/erp-zeus.md`, escritos por alguien que corrió esos curl). Al
+ * aplanarse quedan `codigodesucursal`, `codigocondiciondeventa`… y ninguno está
+ * en `VALUE_KEYS`, así que la fila se descartaba por "sin código".
+ *
+ * Enumerar los cinco nombres exactos arreglaría hoy y volvería a romperse con el
+ * sexto listado. El prefijo cubre la familia entera, y la lista de veto es corta
+ * y explícita porque lo que hay que evitar es un falso POSITIVO: guardar un
+ * código equivocado produce un pedido que Zeus rechaza sin explicar por qué.
+ */
+const pickByCodigoPrefix = (index: Map<string, unknown>): string | null => {
+  for (const [key, value] of index) {
+    if (!key.startsWith('codigo')) continue;
+    if (VALUE_PREFIX_DENY.some((denied) => key === denied)) continue;
+    if (value === null || value === undefined || typeof value === 'object') continue;
+    const text = String(value).trim();
+    if (text.length > 0) return text;
+  }
+  return null;
+};
 
 /** Claves candidatas para la ETIQUETA, en orden de preferencia. */
 const LABEL_KEYS = [
@@ -144,6 +199,41 @@ const pick = (index: Map<string, unknown>, keys: readonly string[]): string | nu
  * Zeus, que ya saltea `activo === false`. Deduplica por `value` conservando la
  * primera aparición.
  */
+/**
+ * Lo mismo que `normalizeLookupRows`, pero además cuenta lo que NO se pudo usar.
+ *
+ * Existe porque el modo de falla real no fue "el endpoint no responde": fue
+ * "el endpoint responde con filas y el normalizador no les encuentra el código".
+ * Los dos terminaban en la misma lista vacía con `errors: {}`, y esa
+ * ambigüedad costó que cinco de seis listados estuvieran rotos sin que nadie lo
+ * viera — la pantalla de configuración se completó a mano preguntándole códigos
+ * al cliente mientras el ERP ya sabía listarlos.
+ *
+ * `sample_keys` es la parte accionable: son las claves que SÍ venían en la
+ * primera fila. Con eso, agregar el nombre que falta a `VALUE_KEYS` o a
+ * `LABEL_KEYS` no necesita credenciales ni otra corrida — el diagnóstico viaja
+ * en la respuesta.
+ */
+export function inspectLookupRows(rows: unknown): {
+  options: ErpConfigLookupOption[];
+  /** Filas crudas que devolvió el ERP. `0` = no respondió una lista. */
+  received: number;
+  /** Claves de la primera fila, sólo cuando NINGUNA fila resultó usable. */
+  sample_keys: string[];
+} {
+  const options = normalizeLookupRows(rows);
+  const received = Array.isArray(rows) ? rows.length : 0;
+
+  // Las claves sólo se exponen cuando hay algo que explicar: con opciones
+  // usables son ruido, y son datos de la cuenta del cliente.
+  const sample_keys =
+    received > 0 && options.length === 0
+      ? Object.keys((rows as unknown[])[0] as Record<string, unknown>)
+      : [];
+
+  return { options, received, sample_keys };
+}
+
 export function normalizeLookupRows(rows: unknown): ErpConfigLookupOption[] {
   if (!Array.isArray(rows)) return [];
   const out: ErpConfigLookupOption[] = [];
@@ -156,7 +246,7 @@ export function normalizeLookupRows(rows: unknown): ErpConfigLookupOption[] {
 
     if (index.get('activo') === false) continue;
 
-    const value = pick(index, VALUE_KEYS);
+    const value = pick(index, VALUE_KEYS) ?? pickByCodigoPrefix(index);
     if (!value || seen.has(value)) continue;
     seen.add(value);
 

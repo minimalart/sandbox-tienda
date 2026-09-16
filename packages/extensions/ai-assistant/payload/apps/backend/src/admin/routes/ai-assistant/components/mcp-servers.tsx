@@ -11,6 +11,7 @@ import {
   type McpServer,
   type McpServerInput,
 } from '../hooks';
+import { useWorkflowTranslation } from '../i18n';
 import { AgentAvatar } from './agent-avatar';
 import { SuggestedConnectors } from './suggested-connectors';
 import { ToolPolicyMatrix } from './tools-config';
@@ -45,6 +46,7 @@ type FormState = {
   oauth_client_secret: string;
   oauth_scope: string;
   enabled: boolean;
+  trust_read_only_hints: boolean;
 };
 
 function toForm(s?: McpServer, prefill?: Partial<FormState>): FormState {
@@ -61,6 +63,7 @@ function toForm(s?: McpServer, prefill?: Partial<FormState>): FormState {
     oauth_client_secret: '',
     oauth_scope: s?.oauth_scope ?? '',
     enabled: s ? s.enabled : true,
+    trust_read_only_hints: s?.trust_read_only_hints ?? false,
     // Defaults de un conector sugerido (solo al crear): el usuario completa la URL.
     ...(s ? {} : prefill ?? {}),
   };
@@ -78,6 +81,7 @@ function serverToInput(s: McpServer): McpServerInput {
     oauth_client_id: s.oauth_client_id,
     oauth_scope: s.oauth_scope,
     enabled: s.enabled,
+    trust_read_only_hints: s.trust_read_only_hints ?? false,
   };
 }
 
@@ -90,6 +94,7 @@ const ServerForm = ({
   prefill?: Partial<FormState>;
   onClose: () => void;
 }) => {
+  const t = useWorkflowTranslation();
   const save = useSaveMcpServer();
   const [form, setForm] = useState<FormState>(() => toForm(server, prefill));
   const [error, setError] = useState<string | null>(null);
@@ -127,6 +132,7 @@ const ServerForm = ({
       oauth_client_secret: form.oauth_client_secret ? form.oauth_client_secret : undefined,
       oauth_scope: form.oauth_scope.trim() || null,
       enabled: form.enabled,
+      trust_read_only_hints: form.trust_read_only_hints,
     };
     try {
       await save.mutateAsync({ id: server?.id, input });
@@ -143,6 +149,13 @@ const ServerForm = ({
     <div className="flex flex-col gap-4">
       {error ? <Text className="txt-small text-red-600">{error}</Text> : null}
 
+      <div className="flex items-center gap-3">
+        <Switch id="trust-read-only-hints" checked={form.trust_read_only_hints} onCheckedChange={(v) => set('trust_read_only_hints', v)} />
+        <div>
+          <Label htmlFor="trust-read-only-hints">{t('trust')}</Label>
+          <Text size="small" className="text-ui-fg-subtle">{t('trustHelp')}</Text>
+        </div>
+      </div>
       {/* Ícono + nombre + key */}
       <div className="flex items-start gap-4">
         <div className="flex w-20 shrink-0 flex-col items-center gap-2">

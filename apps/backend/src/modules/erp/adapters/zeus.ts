@@ -2,7 +2,7 @@ import type { ErpSalePayload, ErpZeusSettings } from '../types';
 import { checkBarcode } from '../barcode';
 import { classifyTintingError } from '../tinting/classify-error';
 import { normalizeFormulaCode } from '../tinting/formula-code';
-import { ERP_CONFIG_LOOKUP_KINDS, normalizeLookupRows } from './config-lookups';
+import { ERP_CONFIG_LOOKUP_KINDS, inspectLookupRows } from './config-lookups';
 import {
   ErpAuthError,
   ErpConnectionError,
@@ -16,6 +16,7 @@ import {
   type ErpInvoicePdf,
   type ErpInvoiceStatus,
   type ErpProductImage,
+  type ErpSalePreview,
   type ErpSaleResult,
   type ErpStockResult,
   type ErpTintingPriceQuery,
@@ -267,6 +268,14 @@ type ZeusFacturadoResponse = {
 /** Marca interna del request helper para el 409 idempotente de /pedidos. */
 const DUPLICATE = Symbol('zeus-duplicate');
 
+/**
+ * Marcador del `codigo_cliente` en una vista previa que no pudo resolverlo sin
+ * crear el cliente en Zeus. Es deliberadamente ilegible como código real: si
+ * este string llegara a un envío de verdad, Zeus lo rechaza — que es lo que
+ * queremos, en vez de que pase por un código válido.
+ */
+const PREVIEW_UNRESOLVED_CLIENT = '(sin resolver)';
+
 function round4(value: number): number {
   return Math.round(value * 10_000) / 10_000;
 }
@@ -301,7 +310,8 @@ function toNumberOrNull(value: unknown): number | null {
 function isTruthyFlag(value: unknown): boolean {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'number') return value === 1;
-  if (typeof value === 'string') return value.trim() === '1' || value.trim().toLowerCase() === 'true';
+  if (typeof value === 'string')
+    return value.trim() === '1' || value.trim().toLowerCase() === 'true';
   return false;
 }
 
@@ -378,10 +388,16 @@ export function sniffImage(bytes: Buffer): { mimeType: string; extension: string
   if (bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
     return { mimeType: 'image/png', extension: 'png' };
   }
-  if (bytes.subarray(0, 4).toString('ascii') === 'RIFF' && bytes.subarray(8, 12).toString('ascii') === 'WEBP') {
+  if (
+    bytes.subarray(0, 4).toString('ascii') === 'RIFF' &&
+    bytes.subarray(8, 12).toString('ascii') === 'WEBP'
+  ) {
     return { mimeType: 'image/webp', extension: 'webp' };
   }
-  if (bytes.subarray(0, 6).toString('ascii') === 'GIF87a' || bytes.subarray(0, 6).toString('ascii') === 'GIF89a') {
+  if (
+    bytes.subarray(0, 6).toString('ascii') === 'GIF87a' ||
+    bytes.subarray(0, 6).toString('ascii') === 'GIF89a'
+  ) {
     return { mimeType: 'image/gif', extension: 'gif' };
   }
   if (bytes[0] === 0x42 && bytes[1] === 0x4d) {
@@ -498,15 +514,20 @@ export class ZeusErpAdapter implements ErpAdapter {
 
     let dto: ArticuloTintometricoRow | null;
     try {
-      dto = (await this.request<ArticuloTintometricoRow>(ctx, 'GET', '/articulos/formulaTintometrico', {
-        query: {
-          codBase: baseCode,
-          codFormula: formulaCode,
-          lista: query.list_index,
-          cantidad: query.quantity,
-        },
-        timeoutMs: TINTING_TIMEOUT_MS,
-      })) as ArticuloTintometricoRow | null;
+      dto = (await this.request<ArticuloTintometricoRow>(
+        ctx,
+        'GET',
+        '/articulos/formulaTintometrico',
+        {
+          query: {
+            codBase: baseCode,
+            codFormula: formulaCode,
+            lista: query.list_index,
+            cantidad: query.quantity,
+          },
+          timeoutMs: TINTING_TIMEOUT_MS,
+        }
+      )) as ArticuloTintometricoRow | null;
     } catch (error) {
       throw classifyTintingError(error, { base_code: baseCode, formula_code: query.formula_code });
     }
@@ -598,7 +619,9 @@ export class ZeusErpAdapter implements ErpAdapter {
         );
       }
       if (response.status >= 500) {
-        throw new ErpConnectionError(`Zeus: error del servidor al bajar ${label} (HTTP ${response.status}).`);
+        throw new ErpConnectionError(
+          `Zeus: error del servidor al bajar ${label} (HTTP ${response.status}).`
+        );
       }
       throw new ErpNonRetryableError(
         `Zeus: la API rechazó el pedido de ${label} (HTTP ${response.status}).`
@@ -628,7 +651,9 @@ export class ZeusErpAdapter implements ErpAdapter {
   private jwt(ctx: AdapterContext): string {
     const jwt = ctx.credentials?.jwt_token?.trim();
     if (!jwt) {
-      throw new ErpAuthError("Zeus: falta la credencial 'jwt_token' (el JWT que entrega Zeus para la API Ecommerce).");
+      throw new ErpAuthError(
+        "Zeus: falta la credencial 'jwt_token' (el JWT que entrega Zeus para la API Ecommerce)."
+      );
     }
     return jwt;
   }
@@ -681,7 +706,7 @@ export class ZeusErpAdapter implements ErpAdapter {
       try {
         return JSON.parse(raw) as T;
       } catch {
-        return (raw as unknown) as T;
+        return raw as unknown as T;
       }
     }
 
@@ -689,12 +714,16 @@ export class ZeusErpAdapter implements ErpAdapter {
     if (response.status === 409 && opts.duplicateOn409) return DUPLICATE;
     const detail = raw ? ` — ${raw.slice(0, 300)}` : '';
     if (response.status === 401 || response.status === 403) {
-      throw new ErpAuthError(`Zeus: acceso rechazado, revisar el JWT (HTTP ${response.status})${detail}`);
+      throw new ErpAuthError(
+        `Zeus: acceso rechazado, revisar el JWT (HTTP ${response.status})${detail}`
+      );
     }
     if (response.status >= 500) {
       throw new ErpConnectionError(`Zeus: error del servidor (HTTP ${response.status})${detail}`);
     }
-    throw new ErpNonRetryableError(`Zeus: la API rechazó la operación (HTTP ${response.status})${detail}`);
+    throw new ErpNonRetryableError(
+      `Zeus: la API rechazó la operación (HTTP ${response.status})${detail}`
+    );
   }
 
   /**
@@ -707,15 +736,17 @@ export class ZeusErpAdapter implements ErpAdapter {
    */
   async validateCredentials(ctx: AdapterContext): Promise<ErpValidationResult> {
     try {
-      const data = (await this.request<EmpresasResponse | EmpresaRow[]>(ctx, 'GET', '/empresas')) as
-        | EmpresasResponse
-        | EmpresaRow[]
-        | null;
+      const data = (await this.request<EmpresasResponse | EmpresaRow[]>(
+        ctx,
+        'GET',
+        '/empresas'
+      )) as EmpresasResponse | EmpresaRow[] | null;
       const empresas = Array.isArray(data) ? data : (data?.empresas ?? []);
       if (!empresas.length) {
         return {
           ok: false,
-          message: 'Zeus: el JWT es válido pero no da acceso a ninguna empresa; revisar el usuario en Zeus.',
+          message:
+            'Zeus: el JWT es válido pero no da acceso a ninguna empresa; revisar el usuario en Zeus.',
         };
       }
       const nombres = empresas
@@ -736,7 +767,10 @@ export class ZeusErpAdapter implements ErpAdapter {
 
     const available =
       requested.length <= PER_CODE_THRESHOLD
-        ? await this.stockByCode(ctx, requested.map((r) => r.clean))
+        ? await this.stockByCode(
+            ctx,
+            requested.map((r) => r.clean)
+          )
         : await this.stockBySweep(ctx);
 
     const results = new Map<string, ErpStockResult>();
@@ -771,7 +805,10 @@ export class ZeusErpAdapter implements ErpAdapter {
       return deposito ? availableOf(deposito.stock, deposito.comprometido) : 0;
     }
     if (subtract && row.comprometido === undefined && porDeposito.length) {
-      return porDeposito.reduce((sum, entry) => sum + availableOf(entry.stock, entry.comprometido), 0);
+      return porDeposito.reduce(
+        (sum, entry) => sum + availableOf(entry.stock, entry.comprometido),
+        0
+      );
     }
     return availableOf(row.stock, row.comprometido);
   }
@@ -800,7 +837,10 @@ export class ZeusErpAdapter implements ErpAdapter {
   }
 
   /** Pocos SKUs: getbyID por códigos (comma-separated). */
-  private async stockByCode(ctx: AdapterContext, skus: string[]): Promise<Map<string, ZeusStockRow>> {
+  private async stockByCode(
+    ctx: AdapterContext,
+    skus: string[]
+  ): Promise<Map<string, ZeusStockRow>> {
     const codes = skus.filter(Boolean);
     const available = new Map<string, ZeusStockRow>();
     if (!codes.length) return available;
@@ -856,9 +896,9 @@ export class ZeusErpAdapter implements ErpAdapter {
         if (!code) continue;
         if (onlyPublished && !isPublishable(row)) continue;
         available.set(code, {
-        quantity: this.availableQuantity(ctx, row),
-        by_deposito: this.availableByDeposito(ctx, row),
-      });
+          quantity: this.availableQuantity(ctx, row),
+          by_deposito: this.availableByDeposito(ctx, row),
+        });
       }
     }
     return available;
@@ -1020,9 +1060,12 @@ export class ZeusErpAdapter implements ErpAdapter {
     return null;
   }
 
-  async notifySale(payload: ErpSalePayload, ctx: AdapterContext): Promise<ErpSaleResult> {
-    const settings = this.zeusSettings(ctx);
-
+  /**
+   * Los ítems sin SKU se rechazan ANTES de tocar la red: `resolveClientCode`
+   * puede llegar a DAR DE ALTA el cliente en Zeus, y no tiene sentido crear un
+   * cliente para un pedido que igual va a ser rechazado.
+   */
+  private assertItemsHaveSku(payload: ErpSalePayload): void {
     const missingSku = payload.items.filter((item) => !item.sku?.trim());
     if (missingSku.length) {
       throw new ErpNonRetryableError(
@@ -1031,6 +1074,22 @@ export class ZeusErpAdapter implements ErpAdapter {
           .join(', ')}).`
       );
     }
+  }
+
+  /**
+   * Arma el body de `POST /pedidos` a partir de la venta y la config.
+   *
+   * Es PURA a propósito — `(payload, settings, codigoCliente) -> documento`, sin
+   * red ni reloj. Eso es lo que permite reconstruir el comprobante de una orden
+   * vieja para auditoría (`previewSale`) y testear el mapeo de campos sin
+   * levantar un ERP.
+   */
+  private buildComprobante(
+    payload: ErpSalePayload,
+    settings: ErpZeusSettings,
+    codigoCliente: string
+  ): Record<string, unknown> {
+    this.assertItemsHaveSku(payload);
 
     const fallbackTaxRate = settings.tax_rate ?? DEFAULT_TAX_RATE;
     const pricesIncludeTax = settings.prices_include_tax ?? true;
@@ -1042,17 +1101,18 @@ export class ZeusErpAdapter implements ErpAdapter {
      */
     const rateOf = (item: { tax_rate?: number | null }): number => {
       const pct = item.tax_rate;
-      return typeof pct === 'number' && Number.isFinite(pct) && pct >= 0 ? pct / 100 : fallbackTaxRate;
+      return typeof pct === 'number' && Number.isFinite(pct) && pct >= 0
+        ? pct / 100
+        : fallbackTaxRate;
     };
-    const netOf = (gross: number, rate: number) => round4(pricesIncludeTax ? gross / (1 + rate) : gross);
+    const netOf = (gross: number, rate: number) =>
+      round4(pricesIncludeTax ? gross / (1 + rate) : gross);
     /** Para envío y totales, donde no hay artículo del que sacar la alícuota. */
     const net = (gross: number) => netOf(gross, fallbackTaxRate);
     const reference = `Venta web #${payload.display_id ?? payload.order_id}`;
     const docDigits = payload.customer.document.number
       ? payload.customer.document.number.replace(/\D/g, '')
       : '';
-
-    const codigoCliente = await this.resolveClientCode(payload, ctx);
 
     const items = payload.items.map((item, index) => {
       const rate = rateOf(item);
@@ -1112,7 +1172,9 @@ export class ZeusErpAdapter implements ErpAdapter {
     // cerraba contra los ítems que se envían.
     const itemsNet = items.reduce((sum, item) => sum + item.total, 0);
     const shippingNotItemized =
-      payload.totals.shipping > 0 && !settings.shipping_item_code ? net(payload.totals.shipping) : 0;
+      payload.totals.shipping > 0 && !settings.shipping_item_code
+        ? net(payload.totals.shipping)
+        : 0;
     const netoGravado = round4(itemsNet + shippingNotItemized);
 
     // Depósito FACTURADOR: el que confirmó un humano al crear el fulfillment
@@ -1146,7 +1208,8 @@ export class ZeusErpAdapter implements ErpAdapter {
       total: payload.totals.total,
       descuento: 0,
       recargo: 0,
-      ...(docDigits && (payload.customer.document.type === 'CUIT' || payload.customer.document.type === 'CUIL')
+      ...(docDigits &&
+      (payload.customer.document.type === 'CUIT' || payload.customer.document.type === 'CUIL')
         ? { cuit: Number(docDigits) }
         : {}),
       ...(docDigits ? { numero_de_documento: docDigits } : {}),
@@ -1172,6 +1235,72 @@ export class ZeusErpAdapter implements ErpAdapter {
       ];
     }
 
+    return comprobante;
+  }
+
+  /**
+   * Reconstruye el comprobante sin enviarlo. Ver `ErpSalePreview`.
+   *
+   * DOS reglas que no se negocian acá:
+   *
+   * 1. **Cero efectos.** `resolveClientCode` da de ALTA el cliente en Zeus
+   *    (`POST /clientes`) cuando no lo encuentra. Desde una vista previa de
+   *    auditoría eso es inaceptable: acá sólo se BUSCA, y si no aparece, el
+   *    documento sale con un marcador visible en vez de crear nada.
+   * 2. **No mentir sobre la fidelidad.** Todo lo que no sea exactamente lo que
+   *    se envió —config que pudo cambiar, cliente re-resuelto ahora— sale
+   *    declarado en `warnings`, no escondido.
+   */
+  async previewSale(
+    payload: ErpSalePayload,
+    ctx: AdapterContext,
+    opts: { clientCode?: string | null } = {}
+  ): Promise<ErpSalePreview> {
+    const settings = this.zeusSettings(ctx);
+    const warnings: string[] = [];
+    this.assertItemsHaveSku(payload);
+
+    let codigoCliente = opts.clientCode?.trim() ?? '';
+    if (!codigoCliente) {
+      const doc = payload.customer.document;
+      const docDigits = doc.number ? doc.number.replace(/\D/g, '') : '';
+      const isCuit = doc.type === 'CUIT' || doc.type === 'CUIL';
+      const found =
+        doc.type && docDigits
+          ? await this.searchClient(
+              ctx,
+              isCuit ? { cuit: docDigits } : { numero_de_documento: docDigits }
+            ).catch(() => null)
+          : null;
+
+      if (found) {
+        codigoCliente = found;
+        warnings.push(
+          'El código de cliente se buscó en Zeus recién ahora; si el cliente cambió desde la venta, puede no ser el que se usó.'
+        );
+      } else if (settings.default_client_code) {
+        codigoCliente = settings.default_client_code;
+        warnings.push(
+          `No se encontró el cliente en Zeus: se muestra el código por defecto (${settings.default_client_code}).`
+        );
+      } else {
+        codigoCliente = PREVIEW_UNRESOLVED_CLIENT;
+        warnings.push(
+          `No se pudo resolver el código de cliente sin darlo de alta en Zeus, así que va como "${PREVIEW_UNRESOLVED_CLIENT}". Al enviarse de verdad, el adapter lo resuelve o lo crea.`
+        );
+      }
+    }
+
+    return { request: [this.buildComprobante(payload, settings, codigoCliente)], warnings };
+  }
+
+  async notifySale(payload: ErpSalePayload, ctx: AdapterContext): Promise<ErpSaleResult> {
+    const settings = this.zeusSettings(ctx);
+    this.assertItemsHaveSku(payload);
+
+    const codigoCliente = await this.resolveClientCode(payload, ctx);
+    const comprobante = this.buildComprobante(payload, settings, codigoCliente);
+
     const result = await this.request<ComprobanteResponse[]>(ctx, 'POST', '/pedidos', {
       query: settings.ecommerce_id ? { ecommerce: settings.ecommerce_id } : undefined,
       body: [comprobante],
@@ -1181,7 +1310,9 @@ export class ZeusErpAdapter implements ErpAdapter {
     if (result === DUPLICATE) {
       // 409 = "conflicto por datos ya existentes": el pedido con este
       // id_ecommerce ya está en Zeus (reintento de un envío que sí entró).
-      return { status: 'duplicate' };
+      // El documento se devuelve igual: es exactamente lo que se le mandó, y en
+      // un duplicado es la única forma de ver con qué parámetros salió.
+      return { status: 'duplicate', request: [comprobante] };
     }
 
     const first = Array.isArray(result) ? result[0] : null;
@@ -1195,6 +1326,7 @@ export class ZeusErpAdapter implements ErpAdapter {
     return {
       status: 'sent',
       external_ref: String(idtransac),
+      request: [comprobante],
       // Se devuelve aparte de `response` porque el poll del comprobante lo
       // necesita como dato tipado: `pedidoFacturado` e `imprimirComprobante`
       // piden `idtransac` + `sucursal`, y la sucursal de la config puede cambiar
@@ -1268,7 +1400,9 @@ export class ZeusErpAdapter implements ErpAdapter {
       }
     }
 
-    const invoiced = candidates.find((row) => isTruthyFlag(row.isFacturado) && numeroOf(row) !== null);
+    const invoiced = candidates.find(
+      (row) => isTruthyFlag(row.isFacturado) && numeroOf(row) !== null
+    );
     if (!invoiced) return { invoiced: false, sucursal, raw: result };
 
     return {
@@ -1341,6 +1475,7 @@ export class ZeusErpAdapter implements ErpAdapter {
   async fetchConfigLookups(ctx: AdapterContext): Promise<ErpConfigLookups> {
     const options: ErpConfigLookups['options'] = {};
     const errors: ErpConfigLookups['errors'] = {};
+    const diagnostics: NonNullable<ErpConfigLookups['diagnostics']> = {};
 
     for (const kind of ERP_CONFIG_LOOKUP_KINDS) {
       try {
@@ -1350,7 +1485,23 @@ export class ZeusErpAdapter implements ErpAdapter {
         });
         // `request` devuelve el símbolo DUPLICATE sólo en POST con
         // `duplicateOn409`; acá cualquier cosa que no sea array es "sin datos".
-        options[kind] = normalizeLookupRows(rows);
+        const inspected = inspectLookupRows(rows);
+        options[kind] = inspected.options;
+        diagnostics[kind] = {
+          received: inspected.received,
+          usable: inspected.options.length,
+          sample_keys: inspected.sample_keys,
+        };
+        // Filas que llegaron y no se pudieron usar NO son un listado vacío: es
+        // un nombre de campo que falta en el normalizador, y las claves reales
+        // van al log para que arreglarlo no necesite credenciales.
+        if (inspected.received > 0 && inspected.options.length === 0) {
+          ctx.logger.warn(
+            `[zeus] /${kind} devolvió ${inspected.received} fila(s) y no se le pudo extraer el código a ninguna. ` +
+              `Claves de la primera fila: ${inspected.sample_keys.join(', ')}. ` +
+              'Sumá la que corresponda a VALUE_KEYS/LABEL_KEYS en adapters/config-lookups.ts.'
+          );
+        }
       } catch (error) {
         errors[kind] = error instanceof Error ? error.message : String(error);
         ctx.logger.warn(
@@ -1359,6 +1510,6 @@ export class ZeusErpAdapter implements ErpAdapter {
       }
     }
 
-    return { options, errors };
+    return { options, errors, diagnostics };
   }
 }

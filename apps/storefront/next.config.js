@@ -49,7 +49,9 @@ const nextConfig = {
   // upgrade. Caching dynamic segments for 30s (and prefetched/static shells
   // for 3min) makes back/forward and revisits feel instant while still
   // refreshing reasonably often. Cart/wishlist UI is client-reactive (Zustand),
-  // so a briefly cached server shell does not show stale cart state.
+  // so a briefly cached server shell does not show stale cart state — SIEMPRE
+  // que el `StoreProvider` no re-hidrate el store con el `cart` del shell
+  // cacheado al cambiar de grupo de rutas (ver `lib/stores/cart-hydration.ts`).
   experimental: {
     staleTimes: {
       dynamic: 30,

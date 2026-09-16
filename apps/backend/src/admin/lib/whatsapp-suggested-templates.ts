@@ -55,6 +55,15 @@ export const WHATSAPP_SUGGESTED_TEMPLATES: SuggestedTemplate[] = [
     eventLabelKey: 'EVENT_ORDER_DELIVERY',
   },
   {
+    name: 'order_ready_for_pickup',
+    category: 'UTILITY',
+    language: 'es',
+    body: '¡Hola {{1}}! 👋 Tu pedido *#{{2}}* de Mercatto ya está listo para retirar en *{{3}}*. Podés acercarte a {{4}} para retirarlo. ¡Te esperamos! 🛍️',
+    example: ['Micaela Gómez', '10428', 'Elordi', 'Eduardo Elordi 1143'],
+    eventKey: 'order-ready-for-pickup',
+    eventLabelKey: 'EVENT_ORDER_READY_FOR_PICKUP',
+  },
+  {
     name: 'order_cancelled',
     category: 'UTILITY',
     language: 'es',
@@ -62,6 +71,25 @@ export const WHATSAPP_SUGGESTED_TEMPLATES: SuggestedTemplate[] = [
     example: ['Micaela Gómez', '10428'],
     eventKey: 'order-cancelled',
     eventLabelKey: 'EVENT_ORDER_CANCELLED',
+  },
+  {
+    // MARKETING, no UTILITY: Meta clasifica así todo lo que empuja a comprar, y
+    // mandarla como UTILITY es motivo de rechazo (o de baja de calidad del número).
+    //
+    // OJO — 2 variables, y el builder de código manda 3 (nombre, total, link, ver
+    // kapso-whatsapp/templates/index.ts). Los dos números tienen que coincidir o
+    // Meta rechaza el envío entero. Con el binding PUBLICADO desde el admin manda
+    // `binding.params` y esto no aplica; con el binding en borrador —que es el
+    // default del toggle "Publicar"— corre el fallback de 3 y el mensaje se cae.
+    // El test `whatsapp-suggested-templates.test.ts` lo tiene declarado como la
+    // única excepción de paridad, con este motivo.
+    name: 'cart_abandoned_1',
+    category: 'MARKETING',
+    language: 'es',
+    body: '¡Hola {{1}}! 👋 Vimos que dejaste algunos productos en tu carrito de Mercatto.\nSi querés, podés retomar tu compra desde acá: {{2}}\n¡Tus productos te están esperando! 🛒',
+    example: ['Micaela Gómez', 'https://mercatto.com/cart?recover=a1b2c3d4'],
+    eventKey: 'cart-abandoned-1',
+    eventLabelKey: 'EVENT_CART_ABANDONED_1',
   },
   {
     name: 'password_reset',

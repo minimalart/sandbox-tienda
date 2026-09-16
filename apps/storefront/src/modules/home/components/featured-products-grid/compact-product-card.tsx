@@ -10,8 +10,14 @@ import {
   VariantSizeLabel,
 } from "@modules/common/components/variant-labels";
 import DisneyBadge from "@modules/common/components/disney-badge";
+import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import ProductQuickViewModal from "@modules/common/components/quick-view-modal";
 import WishlistButton from "@modules/common/components/wishlist-button";
+import {
+  configuratorCtaLabel,
+  isGiftCardProduct,
+  requiresConfigurator,
+} from "@lib/util/product-configurator";
 import {
   PRODUCT_IMAGE_FIT_CLASS,
   PRODUCT_IMAGE_HOVER_CLASS,
@@ -19,6 +25,7 @@ import {
 } from "@lib/util/product-image-presets";
 import ProductImage from "@modules/common/components/product-image";
 import CircularAddToCart from "@modules/common/components/circular-add-to-cart";
+import { Gift, Pipette } from "lucide-react";
 import { useCallback, useState } from "react";
 
 type CompactProductCardProps = {
@@ -48,6 +55,12 @@ export default function CompactProductCard({
   const openModal = useCallback(() => setIsOpen(true), []);
   const closeModal = useCallback(() => setIsOpen(false), []);
 
+  // Gift cards y bases entonables se configuran en el PDP: la card lleva ahí y
+  // no ofrece ni quick view ni quick-add (ver `lib/util/product-configurator`).
+  const needsConfigurator = requiresConfigurator(product);
+  const isGiftCard = isGiftCardProduct(product);
+  const ctaLabel = configuratorCtaLabel(product);
+
   const handleCardClick = (e: React.MouseEvent) => {
     e.preventDefault();
     openModal();
@@ -69,29 +82,23 @@ export default function CompactProductCard({
 
   // Etiquetas de variantes (formato + colores). Se apagan por demo desde el
   // admin; los productos sin options reales devuelven listas vacías.
-  const variantLabels = areVariantLabelsVisible
-    ? getVariantLabels(product)
-    : null;
+  //
+  // En los productos con configurador tampoco van: listar las presentaciones
+  // ("$10.000 · $25.000 +2") no aporta cuando el precio ya dice "Desde" y la
+  // elección es justamente el próximo paso en el PDP.
+  const variantLabels =
+    areVariantLabelsVisible && !needsConfigurator
+      ? getVariantLabels(product)
+      : null;
 
   const productImage = useSecondImage
     ? product.images?.[1]?.url || product.thumbnail || product.images?.[0]?.url
     : product.thumbnail || product.images?.[0]?.url;
 
-  return (
+  const cardClassName = `group relative flex cursor-pointer flex-col overflow-hidden rounded-[24px] border border-gray-200 bg-[#F6F6F6] shadow-sm transition-shadow hover:shadow-md ${!inStock ? "opacity-60" : ""}`;
+
+  const cardBody = (
     <>
-      <div
-        className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-[24px] border border-gray-200 bg-[#F6F6F6] shadow-sm transition-shadow hover:shadow-md ${!inStock ? "opacity-60" : ""}`}
-        onClick={handleCardClick}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleCardClick(e as any);
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        aria-label={`Vista rápida de ${product.title}`}
-      >
         <div className="relative aspect-square overflow-hidden w-full">
           {/* Badge de promo + colores del producto en un solo stack, para que
               las etiquetas no se solapen con el badge. */}
@@ -146,7 +153,12 @@ export default function CompactProductCard({
             <div className="mt-1">
               <div className="flex min-w-0 items-baseline gap-2 whitespace-nowrap">
                 <p className="shrink-0 font-semibold text-[18px] text-gray-900 leading-[100%]">
-                  {priceWithSymbol}
+                  {/* El precio de la card es el de la variante más barata, y en
+                      estos productos el cliente todavía elige (monto de la gift
+                      card, color de la base): "Desde" evita prometer ese precio. */}
+                  {needsConfigurator
+                    ? `Desde ${priceWithSymbol}`
+                    : priceWithSymbol}
                 </p>
                 {hasDiscount &&
                   promotionType !== "buyget" &&
@@ -167,19 +179,67 @@ export default function CompactProductCard({
             </div>
           </div>
 
-          {inStock && (
-            <div ref={buttonRef}>
-              <CircularAddToCart
-                quantity={quantity}
-                onIncrement={handleIncrement}
-                isLoading={isLoading}
-                disabled={!canAdd || !canIncrement}
-                canIncrement={canIncrement}
-                size="sm"
-              />
-            </div>
+          {/* El CTA del configurador ocupa el MISMO slot que el add-to-cart (no
+              una fila extra abajo), para que la card mida igual que las demás de
+              la fila. Va como <span> y no <button> porque toda la card ya es el
+              link al PDP y un botón adentro de un <a> es HTML inválido. */}
+          {needsConfigurator ? (
+            <span
+              className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-[--primary-color] bg-[--primary-color] text-white transition group-hover:opacity-90"
+              title={ctaLabel ?? undefined}
+            >
+              {isGiftCard ? (
+                <Gift className="h-4 w-4" />
+              ) : (
+                <Pipette className="h-4 w-4" />
+              )}
+            </span>
+          ) : (
+            inStock && (
+              <div ref={buttonRef}>
+                <CircularAddToCart
+                  quantity={quantity}
+                  onIncrement={handleIncrement}
+                  isLoading={isLoading}
+                  disabled={!canAdd || !canIncrement}
+                  canIncrement={canIncrement}
+                  size="sm"
+                />
+              </div>
+            )
           )}
         </div>
+    </>
+  );
+
+  if (needsConfigurator) {
+    return (
+      <LocalizedClientLink
+        aria-label={`${ctaLabel}: ${product.title}`}
+        className={cardClassName}
+        href={`/products/${product.handle}`}
+      >
+        {cardBody}
+      </LocalizedClientLink>
+    );
+  }
+
+  return (
+    <>
+      <div
+        aria-label={`Vista rápida de ${product.title}`}
+        className={cardClassName}
+        onClick={handleCardClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleCardClick(e as any);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+      >
+        {cardBody}
       </div>
 
       <ProductQuickViewModal

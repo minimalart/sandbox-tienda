@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.1 — 2026-09-13
+
+- Share app-settings and external readers across physical package copies using a process-local, versioned contract registry.
+- Preserve late registration, replacement, disconnect, missing-reader defaults and the existing admin/cart exports.
+- Add a regression loading three independent built copies of the package.
+
+## 0.6.0 — 2026-09-12
+
+- Export `DrawerTabs` and `DrawerTabPanel` from the public admin entrypoint.
+- Preserve the canonical Tiendas/B2B scrolling and panel mounting behavior.
+- Accept translated previous/next labels; server consumers do not require UI peers.
+
 ## 0.2.0
 
 - Nuevo subpath `./admin` con el slot `SiteScopeBar` + registrador

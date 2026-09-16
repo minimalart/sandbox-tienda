@@ -136,6 +136,7 @@ const hasBlockSearch = (p: any): boolean => {
 
 const SORT_OPTIONS = [
   { label: 'Por defecto (el del preset)', value: '' },
+  { label: 'Ranking comercial', value: 'ranking' },
   { label: 'Más recientes', value: 'created_at' },
   { label: 'Precio: menor a mayor', value: 'price_asc' },
   { label: 'Precio: mayor a menor', value: 'price_desc' },
@@ -230,6 +231,7 @@ export const homeConfig: Config = {
           { label: 'Personalizado (elegir de Typesense)', value: 'custom' },
         ]),
         title: text('Título (override, opcional)'),
+        mobileTitle: text('Título en mobile (opcional)'),
         description: textarea('Bajada (opcional — vacío = sin bajada)'),
         source: select('Qué traer (pisa el contenido del preset)', SOURCE_OPTIONS),
         value: text('Valor (búsqueda libre o tag)'),
@@ -239,12 +241,17 @@ export const homeConfig: Config = {
           { label: 'Normal', value: 'default' },
           { label: 'Compacta', value: 'compact' },
         ]),
+        layout: select('Presentación', [
+          { label: 'Carrusel', value: 'carousel' },
+          { label: 'Grilla de 4', value: 'grid-4' },
+        ]),
         viewAllLabel: text('Botón "ver todas" — texto (opcional)'),
         viewAllHref: text('Botón "ver todas" — link'),
       },
       defaultProps: {
         preset: 'featuredProducts',
         title: '',
+        mobileTitle: '',
         description: '',
         source: 'newest',
         value: '',
@@ -253,6 +260,7 @@ export const homeConfig: Config = {
         // pise el limit del preset con un 12 que el usuario nunca eligió.
         sortBy: '',
         cardVariant: 'default',
+        layout: 'carousel',
         viewAllLabel: '',
         viewAllHref: '/store',
       },
@@ -495,9 +503,9 @@ export const homeConfig: Config = {
     },
 
     // ── CampaignHero → hero de la landing institucional ──────────────────
-    // Bloque exclusivo del template `campaign`. Renderiza el hero dos-columnas
-    // (copy + imagen a la derecha) con eyebrow, título, subtítulo, CTA e
-    // hasta 3 trust badges bajo el CTA. El componente REAL vive en el
+    // Bloque exclusivo del template `campaign`. Renderiza el hero compacto
+    // (imagen a la izquierda + copy a la derecha) con eyebrow, CTA y trust
+    // badges optativos. El componente REAL vive en el
     // storefront (`modules/home-campaign/components/campaign-hero`); el
     // HomeRenderer del storefront tiene el `case 'CampaignHero'` que mapea
     // estas props al componente.
@@ -509,10 +517,11 @@ export const homeConfig: Config = {
         subtitle: textarea('Subtítulo'),
         image: s3ImageField('Imagen del hero'),
         imageAlt: text('Alt de la imagen'),
-        ctaText: text('CTA — texto'),
-        ctaHref: text('CTA — link'),
-        // Fondo/CTA con override manual: sirven como escape para instituciones
-        // que necesitan otro tratamiento sin cambiar el primario global.
+        ctaText: text('CTA — texto (vacío = oculto)'),
+        ctaHref: text('CTA — link (vacío = oculto)'),
+        // CTA/eyebrow con override manual: sirven como escape para instituciones
+        // que necesitan otro tratamiento sin cambiar el primario global. El
+        // fondo del hero también puede editarse, pero conserva blanco por default.
         backgroundColor: text('Fondo del hero (hex, vacío = blanco)'),
         ctaBackgroundColor: text('CTA fondo (hex, vacío = color primario)'),
         ctaTextColor: text('CTA texto (hex, vacío = blanco)'),
@@ -533,7 +542,7 @@ export const homeConfig: Config = {
         },
       },
       defaultProps: {
-        eyebrow: 'BENEFICIO EXCLUSIVO PARA LA COMUNIDAD',
+        eyebrow: '',
         title: 'Llevá la tecnología del aula a tu casa',
         subtitle:
           'Kits de robótica, electrónica y programación creados junto a Educabot.',
@@ -546,10 +555,7 @@ export const homeConfig: Config = {
         ctaTextColor: '',
         eyebrowBackgroundColor: '',
         eyebrowTextColor: '',
-        trustBadges: [
-          { id: 'cuotas', icon: 'credit-card', label: '3 cuotas sin interés' },
-          { id: 'retiro', icon: 'store', label: 'Retiro gratis en la escuela' },
-        ],
+        trustBadges: [],
       },
       render: (p: any) => (
         <SectionCard
@@ -596,7 +602,7 @@ const campaignLayout = {
   root: { props: {} },
   content: [
     b('CampaignHero', {
-      eyebrow: 'BENEFICIO EXCLUSIVO PARA LA COMUNIDAD',
+      eyebrow: '',
       title: 'Llevá la tecnología del aula a tu casa',
       subtitle:
         'Kits de robótica, electrónica y programación creados junto a Educabot.',
@@ -604,10 +610,7 @@ const campaignLayout = {
       imageAlt: '',
       ctaText: 'Ver los kits',
       ctaHref: '#tienda',
-      trustBadges: [
-        { id: 'cuotas', icon: 'credit-card', label: '3 cuotas sin interés' },
-        { id: 'retiro', icon: 'store', label: 'Retiro gratis en la escuela' },
-      ],
+      trustBadges: [],
     }),
     b('ProductosDestacados', {
       preset: 'custom',
@@ -617,6 +620,7 @@ const campaignLayout = {
       value: '',
       limit: 8,
       cardVariant: 'default',
+      layout: 'grid-4',
       viewAllHref: '/store',
     }),
   ],

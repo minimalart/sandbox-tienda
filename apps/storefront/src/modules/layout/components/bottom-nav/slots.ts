@@ -19,7 +19,7 @@
  * El registro con el label, el href y el ícono de cada candidato vive en
  * `index.tsx`, junto a los ítems fijos.
  */
-import type { MobileNavSlotId } from "@lib/site-config/types";
+import type { MobileNavDisplay, MobileNavSlotId } from "@lib/site-config/types";
 
 /**
  * Orden por defecto cuando la tienda no configuró `assets.mobileNav`.
@@ -69,6 +69,20 @@ export function resolveMobileNavOrder(
  * En ese caso la barra vuelve a 4 columnas, que es lo mejor que se puede hacer:
  * inventar un ítem sería peor.
  */
+/**
+ * Ícono (default) o sólo texto para el candidato dado.
+ *
+ * Cualquier valor que no sea exactamente `'text'` cae a `'icon'`: la config
+ * llega de un JSON guardado por el backoffice y un valor viejo o inventado no
+ * puede dejar el ítem sin dibujar.
+ */
+export function resolveMobileNavDisplay(
+  configured: Partial<Record<MobileNavSlotId, string>> | undefined,
+  id: MobileNavSlotId,
+): MobileNavDisplay {
+  return configured?.[id] === "text" ? "text" : "icon";
+}
+
 export function pickMobileNavSlot(
   order: readonly MobileNavSlotId[],
   isAvailable: (id: MobileNavSlotId) => boolean,

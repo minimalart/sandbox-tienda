@@ -57,3 +57,24 @@ const TEMPLATES_WITHOUT_STORE_PAGE = new Set<TenantTemplate>(["campaign"]);
 export function storeFeedHref(template?: TenantTemplate): "/" | "/store" {
   return template && TEMPLATES_WITHOUT_STORE_PAGE.has(template) ? "/" : "/store";
 }
+
+/** Campaign keeps product browsing in quick view, without a dedicated PDP. */
+export function usesQuickViewOnly(template?: TenantTemplate): boolean {
+  return template === "campaign";
+}
+
+/** Normalize recipient copy at presentation time, preserving saved site content. */
+export function recipientWording(text: string, template?: TenantTemplate): string {
+  if (template !== "campaign") return text;
+  return text
+    .replace(/\buna persona válida\b/g, "un estudiante válido")
+    .replace(/\buna persona repetida\b/g, "un estudiante repetido")
+    .replace(/\bla persona ya cargada\b/g, "el estudiante ya cargado")
+    .replace(/\b([Ll])a persona\b/g, (_, letter) => letter === "L" ? "El estudiante" : "el estudiante")
+    .replace(/\b([Uu])na persona\b/g, (_, letter) => letter === "U" ? "Un estudiante" : "un estudiante")
+    .replace(/\b([Ll])as personas\b/g, (_, letter) => letter === "L" ? "Los estudiantes" : "los estudiantes")
+    .replace(/\b(destinatarios?|alumnos?|personas?)\b/gi, word => {
+      const value = word.toLowerCase().endsWith("s") ? "estudiantes" : "estudiante";
+      return word[0] === word[0].toUpperCase() ? value[0].toUpperCase() + value.slice(1) : value;
+    });
+}

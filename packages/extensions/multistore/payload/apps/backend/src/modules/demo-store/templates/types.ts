@@ -7,6 +7,9 @@
  * site-config/types.ts); kept loosely typed here so the backend doesn't have to
  * duplicate the full storefront type — the storefront validates on its side.
  */
+import type { BranchType } from '../../../lib/branch-types';
+import type { StoreLocatorZoneConfig } from '../../../lib/store-locator-config';
+
 export type DemoThemeConfig = {
   primary_color?: string;
   secondary_color?: string;
@@ -15,6 +18,8 @@ export type DemoThemeConfig = {
   header_background?: string;
   /** Fondo del footer. Ausente = el default del template. */
   footer_background?: string;
+  /** Fondo del boton "Promociones" del header. Ausente = el color primario. */
+  promo_button_color?: string;
   /** Logo positivo (fondos claros). */
   logo?: string;
   /** Logo negativo (fondos oscuros). Solo se guarda/expone por ahora. */
@@ -101,6 +106,14 @@ export type DemoContentConfig = {
    */
   mobileNav?: MobileNavSlotId[];
 
+  /**
+   * Cómo se dibuja cada entrada si le toca ese lugar: `icon` (el ícono con su
+   * label, lo que hacía la barra cuando estaba hardcodeada) o `text` (sólo el
+   * texto). Parcial a propósito: sólo viajan las que el operador cambió, y el
+   * storefront completa el resto con `icon`.
+   */
+  mobileNavDisplay?: Partial<Record<MobileNavSlotId, 'icon' | 'text'>>;
+
   /** Contact data shown on the contact page + footer (address/phone/email). */
   contact?: {
     address?: string;
@@ -182,7 +195,19 @@ export type DemoContentConfig = {
      * cadena vacía = no se muestra.
      */
     subtitle?: string;
-    /** Mostrar el filtro de ubicación (regiones). Default true. */
+    /**
+     * Zonas del filtro de ubicación. Dos formas: `preset` (una jurisdicción del
+     * catálogo de Argentina, por referencia) o `geometry` (dibujada a mano).
+     * `active: false` apaga una zona propia sin perder su polígono.
+     */
+    regions?: StoreLocatorZoneConfig[];
+    /**
+     * Tipos de sucursal de la tienda, en orden. Vacío = la tienda no clasifica
+     * sus sucursales; ausente = caen los tres de siempre (`resolveBranchTypes`).
+     */
+    types?: BranchType[];
+    /** Clave vieja del filtro por categoría: se lee, ya no se escribe. */
+    categories?: { type: string; label: string }[];
     showLocationFilters?: boolean;
     /** Mostrar el filtro de categoría (tipo de sucursal). Default true. */
     showCategoryFilters?: boolean;
@@ -245,10 +270,6 @@ export type DemoContentConfig = {
       backgroundColor?: string;
     };
     footer?: {
-      description?: string;
-      address?: string;
-      email?: string;
-      copyright?: string;
       poweredBy?: { label: string; href: string };
       /** Hex. Ausente = default del template (blanco en campaign). */
       backgroundColor?: string;
@@ -287,6 +308,13 @@ export type DemoStoreLike = {
   recurring_enabled?: boolean | null;
   /** Tintometría: expone la página color → bases y su link en el menú. */
   tinting_enabled?: boolean | null;
+  /**
+   * Mi cuenta: "Mis puntos" y "Gift Cards". El default de la columna es TRUE, así
+   * que la ausencia del valor significa VISIBLE — se lee con `!== false`, nunca
+   * con `!!`.
+   */
+  loyalty_enabled?: boolean | null;
+  gift_cards_enabled?: boolean | null;
   /** Página de contraseña: bloquea el storefront del demo hasta acertar la clave. */
   password_gate_enabled?: boolean | null;
   /**
@@ -328,6 +356,26 @@ export type TenantConfigPayload = {
       enabled: boolean;
     };
     /**
+     * Secciones de "Mi cuenta". A diferencia del resto de este bloque, estas DOS
+     * se publican SIEMPRE con su booleano explícito en vez de aparecer sólo
+     * cuando están prendidas.
+     *
+     * Es deliberado: el default es `true`, así que la AUSENCIA de la clave tiene
+     * que significar "visible" —un storefront nuevo contra un backend viejo, que
+     * todavía no las publica, tiene que seguir mostrando las secciones como
+     * siempre—. Por eso el consumidor lee `enabled !== false` y acá se emite el
+     * valor completo.
+     *
+     * Sólo gatean la vidriera: los módulos de fidelización y gift cards siguen
+     * teniendo sus propios switches de instancia en app-settings.
+     */
+    loyalty?: {
+      enabled: boolean;
+    };
+    giftCards?: {
+      enabled: boolean;
+    };
+    /**
      * Página de contraseña, presente sólo cuando el demo la tiene prendida.
      * `length` es el largo de la palabra (cuántas casillas dibujar). La palabra
      * en sí NO viaja: este payload es público.
@@ -344,6 +392,7 @@ export type TenantConfigPayload = {
       accent?: string;
       headerBackground?: string;
       footerBackground?: string;
+      promoButton?: string;
     };
     typography?: { fontFamily?: string };
   };

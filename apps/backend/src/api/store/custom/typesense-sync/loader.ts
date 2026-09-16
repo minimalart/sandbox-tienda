@@ -6,7 +6,9 @@ import {
 } from '../../../../modules/typesense/category-paths';
 import {
   attachActivePromotions,
+  attachChannelPrices,
   getCachedCategoryPathMap,
+  getCachedChannelPriceMap,
   PRODUCT_SYNC_FIELDS,
   resolveSyncCurrency,
 } from '../../../../modules/typesense/reindex';
@@ -69,16 +71,36 @@ export async function streamSyncProducts(
     console.warn('[typesense-sync] Could not build category path map:', (err as Error).message);
   }
 
+  // Precios channel-scoped: se arma UNA sola vez fuera del loop y se aplica por
+  // página. Sin esto, el sync sirve `calculated_price` base para todo el
+  // catálogo (Medusa no propaga `sales_channel_id` al pricing context) y el
+  // HOME del site channel-scoped queda con precios equivocados. Ver
+  // `buildChannelPriceMap` en reindex.ts para el detalle del algoritmo.
+  // NB: `getCachedChannelPriceMap` resuelve el pricing service internamente
+  // (necesario para leer `price_list_rule`, que NO está expuesto por
+  // RemoteQuery — ver comment en `buildChannelPriceMap`). El `scope` que
+  // recibimos tiene la misma superficie que MedusaContainer para el `resolve`,
+  // así que pasamos con un cast estructural en vez de importar el tipo.
+  const channelPriceMap = await getCachedChannelPriceMap(
+    scope as unknown as Parameters<typeof getCachedChannelPriceMap>[0],
+    currency_code,
+  );
+  console.warn(
+    `[typesense-sync] Channel price map built: ${channelPriceMap.size} variant(s) with overrides`,
+  );
+
   /**
    * Enriquece una página: ruta completa de categoría + promociones activas (con
-   * el descuento ya calculado). Se aplica por página y se descarta, para no
-   * sostener el catálogo entero en memoria (eso reventaba la caja de 2GB).
+   * el descuento ya calculado) + overrides channel-scoped por variant. Se
+   * aplica por página y se descarta, para no sostener el catálogo entero en
+   * memoria (eso reventaba la caja de 2GB).
    */
   const enrichPage = async (
     page: Record<string, unknown>[],
   ): Promise<Record<string, unknown>[]> => {
     const enriched = page.map((product) => attachCategoryFullPaths(product, categoryPathMap));
     await attachActivePromotions(query, enriched);
+    attachChannelPrices(enriched, channelPriceMap);
     return enriched;
   };
 

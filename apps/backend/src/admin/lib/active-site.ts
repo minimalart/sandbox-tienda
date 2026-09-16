@@ -159,15 +159,28 @@ export function setActiveSite(
   options: SetActiveSiteOptions = {},
 ): void {
   const id = typeof site === 'string' ? site : site?.id ?? null;
+  // An explicit selection replaces a tab's OAuth/deep-link pin too. Otherwise
+  // reloading ?site=A after selecting B silently keeps operating on A.
+  if (readPinnedFromUrl()) {
+    pinnedFromUrl = id;
+    try {
+      const current = globalThis as unknown as { location: Location; history: History };
+      const url = new URL(current.location.href);
+      if (id) url.searchParams.set(ACTIVE_SITE_QUERY_PARAM, id);
+      else url.searchParams.delete(ACTIVE_SITE_QUERY_PARAM);
+      current.history.replaceState(current.history.state, '', url);
+    } catch {
+      /* Non-browser test environments may not expose history. */
+    }
+  }
   try {
     const storage = safeStorage();
-    if (!storage) return;
-    if (id) {
+    if (storage && id) {
       storage.setItem(ACTIVE_SITE_STORAGE_KEY, id);
       if (typeof site === 'object' && site) {
         storage.setItem(`${ACTIVE_SITE_STORAGE_KEY}:snapshot`, JSON.stringify(site));
       }
-    } else {
+    } else if (storage) {
       storage.removeItem(ACTIVE_SITE_STORAGE_KEY);
       storage.removeItem(`${ACTIVE_SITE_STORAGE_KEY}:snapshot`);
     }

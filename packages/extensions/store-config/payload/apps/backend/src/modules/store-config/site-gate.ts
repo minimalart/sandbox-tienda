@@ -1,3 +1,4 @@
+import { siteStorefrontUrl } from '../../lib/multistore/public-url';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { MedusaError } from '@medusajs/framework/utils';
 import { STORE_CONFIG_MODULE } from './index';
@@ -36,6 +37,7 @@ export type SiteGateSite = {
   password: string;
   /** Ruta pública del sitio, para que el admin sepa dónde se aplica. */
   path: string;
+  public_url?: string;
   /** Sólo para demos. */
   demo_id?: string;
 };
@@ -171,6 +173,7 @@ export async function listGateSites(container: any): Promise<SiteGateSite[]> {
         enabled: Boolean(demo.password_gate_enabled) && password !== '',
         password,
         path: `/tienda/${demo.slug}`,
+        public_url: siteStorefrontUrl(demo),
         demo_id: demo.id,
       });
     }
@@ -259,6 +262,7 @@ export async function saveGateSite(
     enabled,
     password,
     path: `/tienda/${slug}`,
+    public_url: siteStorefrontUrl(demo),
     demo_id: demo.id,
   };
 }

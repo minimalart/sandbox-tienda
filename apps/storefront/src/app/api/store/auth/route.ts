@@ -1,6 +1,18 @@
 import { getCustomerSession } from "@lib/data/cookies";
-import { sessionCookieName } from "@lib/util/customer-session";
+import {
+  type CustomerSession,
+  sessionCookieName,
+} from "@lib/util/customer-session";
 import { sdk } from "@lib/config";
+import {
+  CART_CUSTOMER_ACCOUNT_FIELD,
+  type CartCustomerLink,
+  shouldTransferCartToCustomer,
+} from "@lib/util/cart-customer-transfer";
+import {
+  CART_COMPLETED_AT_FIELD,
+  isCompletedCart,
+} from "@lib/util/completed-cart";
 import {
   EMAIL_EXISTS_IN_OTHER_TENANT,
   TENANT_MISMATCH_ERROR,
@@ -10,6 +22,7 @@ import { getMedusaAdminClient } from "@lib/data/medusa-client";
 import { getStoreSettings } from "@lib/data/store-settings";
 import { getTenant } from "@lib/site-config/resolver";
 import { revalidateTag } from "next/cache";
+import { cookies as nextCookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 /**
@@ -68,6 +81,73 @@ async function checkMigratedCustomer(email: string): Promise<boolean> {
   }
 }
 
+/**
+ * Pasa a la cuenta el carrito que venía de invitado, con el token recién
+ * emitido.
+ *
+ * ── POR QUÉ ACÁ Y NO EN EL SERVER ACTION ────────────────────────────────────
+ *
+ * `lib/data/customer.ts` tiene un `login()` y un `signup()` que llaman a
+ * `transferCart()`, pero NINGÚN componente del storefront los usa: el formulario
+ * de cuenta entra por `useAuth()`, que hace POST a esta ruta. O sea que la
+ * transferencia automática existía sólo en código muerto y en la práctica no
+ * corría nunca.
+ *
+ * El síntoma que eso dejaba: agregar productos deslogueado, iniciar sesión, y
+ * que el carrito siguiera colgado del invitado. El layout levantaba el
+ * `CartMismatchBanner` y el usuario tenía que pasarlo a mano. DESDEELSUR-61 /
+ * BUG-16 corrigió el TEXTO de ese aviso; la causa de que apareciera es ésta.
+ *
+ * Va en el embudo de la cookie de sesión y no en cada `action` porque login,
+ * signup, el callback de Google y el link de tenant crean sesión por el mismo
+ * lugar y todos arrastran el mismo carrito.
+ *
+ * Best effort a propósito: si la transferencia falla, el login TIENE que seguir
+ * adelante — el banner queda como red de seguridad con su botón de reintento.
+ */
+async function transferGuestCartToCustomer(
+  session: CustomerSession,
+  token: string,
+): Promise<void> {
+  try {
+    const cartId = (await nextCookies()).get(
+      sessionCookieName(session, "cart"),
+    )?.value;
+    if (!cartId) return;
+
+    const headers = { authorization: `Bearer ${token}` };
+
+    // `customer.has_account` no viene en los fields default de
+    // `/store/carts/:id` y es lo único que distingue un carrito que ya es de la
+    // cuenta de uno colgado de un customer invitado. Sin el campo, el criterio
+    // de `cart-customer-transfer.ts` no puede decidir.
+    const { cart } = await sdk.client.fetch<{ cart: CartCustomerLink | null }>(
+      `/store/carts/${cartId}`,
+      {
+        method: "GET",
+        query: {
+          fields: `id,customer_id,${CART_CUSTOMER_ACCOUNT_FIELD},${CART_COMPLETED_AT_FIELD}`,
+        },
+        headers,
+        cache: "no-store",
+      },
+    );
+
+    // Un carrito que ya es orden no se transfiere: la cookie puede seguir
+    // apuntando a la compra recién hecha (la orden la crea el webhook de
+    // MercadoPago y la pantalla de éxito no siempre llega a limpiarla), y
+    // re-engancharla a la cuenta hace reaparecer sus ítems "Sin stock",
+    // bloqueando la próxima compra (DESDEELSUR-61 / BUG-08).
+    if (!cart || isCompletedCart(cart) || !shouldTransferCartToCustomer(cart)) {
+      return;
+    }
+
+    await sdk.store.cart.transferCart(cartId, {}, headers);
+  } catch {
+    /* Best effort: el CartMismatchBanner queda como reintento manual. */
+  }
+}
+
 // Helper para crear respuesta con cookie de auth
 async function createResponseWithAuthCookie(
   data: object,
@@ -86,6 +166,12 @@ async function createResponseWithAuthCookie(
     path: "/",
     sameSite: "lax",
   });
+  // El carrito de invitado pasa a la cuenta acá mismo: éste es el único punto
+  // por el que pasan TODOS los caminos que crean sesión (login, signup, Google,
+  // link de tenant). Se espera el resultado a propósito: el cliente re-renderiza
+  // el layout apenas responde esta ruta y ahí se decide si mostrar el banner.
+  await transferGuestCartToCustomer(session, token);
+
   // Multi-sucursal: hidratar el canal desde la dirección por defecto del cliente
   // (la sucursal lo sigue entre dispositivos / aunque se haya borrado la cookie).
   const channelId = session.mode === "b2c" ? await resolveBranchChannelForToken(token) : null;
@@ -124,6 +210,28 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
   } catch {
     return null;
   }
+}
+
+// Nombre y apellido tal como los manda Google en el id_token. `given_name` y
+// `family_name` son opcionales (hay cuentas —típicamente de Workspace— que solo
+// traen `name`), así que caemos a partir `name` por el primer espacio.
+function namesFromGoogleMetadata(
+  userMetadata: Record<string, any> | null | undefined,
+): { first_name: string; last_name: string } {
+  const given = (userMetadata?.given_name as string | undefined)?.trim() || "";
+  const family = (userMetadata?.family_name as string | undefined)?.trim() || "";
+
+  if (given || family) {
+    return { first_name: given, last_name: family };
+  }
+
+  const full = (userMetadata?.name as string | undefined)?.trim() || "";
+  if (!full) {
+    return { first_name: "", last_name: "" };
+  }
+
+  const [first, ...rest] = full.split(/\s+/);
+  return { first_name: first, last_name: rest.join(" ") };
 }
 
 // Extrae los tenant_ids del metadata del customer (soporta legacy string y array)
@@ -504,6 +612,7 @@ export async function POST(request: Request) {
         }
 
         const decoded = decodeJwtPayload(token);
+        const googleNames = namesFromGoogleMetadata(decoded?.user_metadata);
         const tenant = await getTenant();
         let authHeaders = { authorization: `Bearer ${token}` };
 
@@ -552,8 +661,8 @@ export async function POST(request: Request) {
             const { customer: createdCustomer } = await sdk.store.customer.create(
               {
                 email,
-                first_name: (decoded?.user_metadata?.given_name as string) || "",
-                last_name: (decoded?.user_metadata?.family_name as string) || "",
+                first_name: googleNames.first_name,
+                last_name: googleNames.last_name,
                 metadata: {
                   tenant_ids: [tenant.id],
                   sales_channel: "B2C Storefront",
@@ -617,6 +726,33 @@ export async function POST(request: Request) {
             tenantMismatch: true,
             originalTenant: tenantIds[0],
           });
+        }
+
+        // Backfill de nombre y apellido con lo que devolvió Google.
+        // El checkout guest de Medusa crea el customer solo con el email
+        // (`findOrCreateCustomerStep` → `createCustomers({ email })`), así que
+        // queda sin nombre; después el login con Google se engancha a ESE mismo
+        // registro por email y lo hereda vacío. En el checkout eso no era un
+        // detalle cosmético: el paso "Datos personales" es de solo lectura para
+        // quien está logueado, mostraba "—" y mandaba "" al guardar, cortando la
+        // compra con "email, first_name and last_name are required".
+        if (customer && (!customer.first_name || !customer.last_name)) {
+          const namePatch: Record<string, string> = {};
+          if (!customer.first_name && googleNames.first_name) {
+            namePatch.first_name = googleNames.first_name;
+          }
+          if (!customer.last_name && googleNames.last_name) {
+            namePatch.last_name = googleNames.last_name;
+          }
+
+          if (Object.keys(namePatch).length > 0) {
+            try {
+              await sdk.store.customer.update(namePatch, {}, authHeaders);
+              Object.assign(customer, namePatch);
+            } catch {
+              // El backfill es best-effort: no bloquea el login.
+            }
+          }
         }
 
         // Sin tenant asignado => vincular al tenant actual

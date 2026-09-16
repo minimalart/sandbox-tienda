@@ -4,6 +4,7 @@ import type { MobileNavSlotId } from "@lib/site-config/types";
 import {
   DEFAULT_MOBILE_NAV_ORDER,
   pickMobileNavSlot,
+  resolveMobileNavDisplay,
   resolveMobileNavOrder,
 } from "./slots.ts";
 
@@ -82,5 +83,25 @@ describe("pickMobileNavSlot", () => {
    */
   it("devuelve null si NINGÚN candidato aplica", () => {
     assert.equal(pickMobileNavSlot(resolveMobileNavOrder(undefined), () => false), null);
+  });
+});
+
+describe("resolveMobileNavDisplay", () => {
+  it("sin config el ítem va con ícono, como cuando estaba hardcodeado", () => {
+    assert.equal(resolveMobileNavDisplay(undefined, "promos"), "icon");
+  });
+
+  it("respeta el texto elegido para esa entrada", () => {
+    assert.equal(resolveMobileNavDisplay({ blog: "text" }, "blog"), "text");
+  });
+
+  /** La elección es POR entrada: la de una no arrastra a las otras. */
+  it("no contagia a las demás entradas", () => {
+    assert.equal(resolveMobileNavDisplay({ blog: "text" }, "promos"), "icon");
+  });
+
+  /** Un valor viejo o inventado no puede dejar el ítem sin dibujar. */
+  it("cualquier valor que no sea 'text' cae a ícono", () => {
+    assert.equal(resolveMobileNavDisplay({ promos: "emoji" }, "promos"), "icon");
   });
 });

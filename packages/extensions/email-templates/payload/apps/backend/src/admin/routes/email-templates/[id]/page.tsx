@@ -151,11 +151,10 @@ function AudienceTabStrip({
 
 // ─── Main editor ─────────────────────────────────────────────────────────────
 
-const EmailTemplateEditor = () => {
+const EmailTemplateEditor = ({ id }: { id: string }) => {
   const { t, i18n } = useTranslation('emailTemplates');
   registerEmailTemplatesTranslations(i18n);
   const navigate = useNavigate();
-  const { id = '' } = useParams();
 
   const { data: template, isLoading } = useEmailTemplate(id);
   const updateMut = useUpdateEmailTemplate(id);
@@ -622,4 +621,30 @@ const EmailTemplateEditor = () => {
   );
 };
 
-export default EmailTemplateEditor;
+/**
+ * Envoltorio de ruta. LO IMPORTANTE ES EL `key={id}`.
+ *
+ * Las solapas Usuario/Admin navegan entre dos filas de la MISMA ruta
+ * (`/email-templates/:id`), así que React Router reconcilia el mismo elemento en
+ * vez de desmontarlo: el componente sobrevive al cambio de plantilla y se queda
+ * con el estado de la anterior. Y `<Puck data={...}>` es NO CONTROLADO —toma
+ * `data` como documento inicial y después ignora la prop—, de modo que el lienzo
+ * seguía mostrando el diseño de la plantilla de la que venías. Ése era el
+ * "quedo trabado en un template" que se reportaba.
+ *
+ * No era sólo visual: el lienzo mostraba A, la URL era B, y Guardar escribía el
+ * diseño de A sobre B sin un solo aviso.
+ *
+ * El `key` remonta el editor entero cuando cambia el id. Se eligió eso y no
+ * resetear los `useState` uno por uno a propósito: `subject`, `design`,
+ * `sampleDataObj`, `sampleDataText`, los drawers abiertos y el estado interno de
+ * Puck son seis cosas que hay que acordarse de limpiar, y la séptima que alguien
+ * agregue en seis meses va a reintroducir exactamente este bug. El remontaje no
+ * se puede olvidar.
+ */
+const EmailTemplateEditorRoute = () => {
+  const { id = '' } = useParams();
+  return <EmailTemplateEditor key={id} id={id} />;
+};
+
+export default EmailTemplateEditorRoute;

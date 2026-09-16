@@ -77,6 +77,14 @@ alter table if exists "demo_store" add column if not exists "b2b_company_id" tex
 alter table if exists "demo_store" add column if not exists "b2b_test_email" text null;
 alter table if exists "demo_store" add column if not exists "b2b_test_password" text null;
 alter table if exists "demo_store" add column if not exists "recurring_enabled" boolean not null default false;
+-- Mi cuenta: "Mis puntos" (fidelización) y "Gift Cards". Van con DEFAULT TRUE, al
+-- revés que el resto de los flags: las dos secciones hoy están hardcodeadas como
+-- siempre visibles, así que nacer en false se las apagaría a TODAS las tiendas
+-- existentes el día del deploy. Postgres rellena las filas que ya existen con el
+-- default en el mismo ALTER, así que no necesitan el DO block + backfill que sí
+-- necesitó tintometría.
+alter table if exists "demo_store" add column if not exists "loyalty_enabled" boolean not null default true;
+alter table if exists "demo_store" add column if not exists "gift_cards_enabled" boolean not null default true;
 alter table if exists "demo_store" add column if not exists "password_gate_enabled" boolean not null default false;
 alter table if exists "demo_store" add column if not exists "password_gate_password" text null;
 alter table if exists "demo_store" add column if not exists "is_main" boolean not null default false;

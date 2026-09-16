@@ -1,3 +1,7 @@
+import { useQuery } from '@tanstack/react-query';
+import { fetchJson } from '../../../lib/http';
+import { useStorefrontOrigins } from '../../../hooks/use-storefront-base';
+import { buildPublicUrlFrom } from '../lib';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -53,6 +57,7 @@ type Props = { open: boolean; onOpenChange: (open: boolean) => void };
 
 export const DemoStoreCreate = ({ open, onOpenChange }: Props) => {
   const { t } = useTranslation('demo-stores');
+  const { base, hostSuffix, sitesBase } = useStorefrontOrigins();
   const { data: templatesData } = useDemoTemplates();
   const templates = templatesData?.demo_templates ?? [];
 
@@ -80,6 +85,10 @@ export const DemoStoreCreate = ({ open, onOpenChange }: Props) => {
   const [b2bEnabled, setB2bEnabled] = useState(false);
   const [recurringEnabled, setRecurringEnabled] = useState(false);
   const [tintingEnabled, setTintingEnabled] = useState(false);
+  // Arrancan en true: las secciones de "Mi cuenta" hoy se ven siempre, y una tienda
+  // nueva tiene que nacer igual que las que ya existen.
+  const [loyaltyEnabled, setLoyaltyEnabled] = useState(true);
+  const [giftCardsEnabled, setGiftCardsEnabled] = useState(true);
   // Stock location: por default se CREA uno nuevo (`Depósito Demo <nombre>`).
   // Con el toggle prendido, se elige uno existente y el backend lo linkea al SC
   // de la demo en vez de crear uno huérfano. Motivo: hasta hoy cada demo
@@ -97,6 +106,11 @@ export const DemoStoreCreate = ({ open, onOpenChange }: Props) => {
   const channelOptions = salesChannels.data?.sales_channels ?? [];
 
   const effectiveSlug = slugTouched ? slug : slugify(name);
+  const availability = useQuery({
+    queryKey: ['sites', 'slug-availability', effectiveSlug],
+    queryFn: () => fetchJson<{ available: boolean; message: string }>(`/admin/sites/slug-availability?slug=${encodeURIComponent(effectiveSlug)}`),
+    enabled: open && Boolean(effectiveSlug), staleTime: 0, retry: false,
+  });
   const tabIndex = TABS.findIndex((s) => s.value === tab);
   const isLast = tabIndex === TABS.length - 1;
 
@@ -169,6 +183,8 @@ export const DemoStoreCreate = ({ open, onOpenChange }: Props) => {
       b2b_enabled: b2bEnabled,
       recurring_enabled: recurringEnabled,
       tinting_enabled: tintingEnabled,
+      loyalty_enabled: loyaltyEnabled,
+      gift_cards_enabled: giftCardsEnabled,
     };
     // El toggle envía el ID sólo cuando está prendido Y hay un ID elegido.
     // Con el toggle apagado (o el select vacío) se omite y el backend cae al
@@ -233,7 +249,8 @@ export const DemoStoreCreate = ({ open, onOpenChange }: Props) => {
                       }}
                     />
                     <Text size="small" className="text-ui-fg-subtle">
-                      {t('FIELD_SLUG_HELP')}
+                      {t('FIELD_SLUG_HELP')}<br />
+                      {availability.isFetching ? 'Verificando disponibilidad…' : availability.isError ? 'No se pudo verificar la disponibilidad. Volvé a intentar.' : availability.data?.message}
                     </Text>
                     {/* El slug NO se puede cambiar después. Vale gastar una línea en
                         avisarlo acá: es el único momento en que se decide. */}
@@ -263,7 +280,8 @@ export const DemoStoreCreate = ({ open, onOpenChange }: Props) => {
                       </Select.Content>
                     </Select>
                     <Text size="small" className="text-ui-fg-subtle">
-                      {t('FIELD_CANONICAL_FORM_HELP')}
+                      {t('FIELD_CANONICAL_FORM_HELP')}<br />
+                  <span className="break-all font-medium">{buildPublicUrlFrom({ slug: effectiveSlug || 'tienda', canonical_form: canonicalForm }, { baseUrl: base, hostSuffix, sitesBaseUrl: sitesBase })}</span>
                     </Text>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
@@ -350,6 +368,18 @@ export const DemoStoreCreate = ({ open, onOpenChange }: Props) => {
                   </div>
                   <Text size="xsmall" className="text-ui-fg-subtle">
                     {t('FIELD_CHROME_BACKGROUND_HELP')}
+                  </Text>
+                  {/* Boton "Promociones" del header. Vacio = el color primario. */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <ColorField
+                      label={t('FIELD_PROMO_BUTTON_COLOR')}
+                      value={theme.promo_button_color ?? ''}
+                      fallback={theme.primary_color || '#2e7d32'}
+                      onChange={(v) => setThemeField('promo_button_color', v)}
+                    />
+                  </div>
+                  <Text size="xsmall" className="text-ui-fg-subtle">
+                    {t('FIELD_PROMO_BUTTON_COLOR_HELP')}
                   </Text>
                   <div className="flex flex-col gap-y-2">
                     <Label>{t('FIELD_TYPOGRAPHY')}</Label>
@@ -527,6 +557,24 @@ export const DemoStoreCreate = ({ open, onOpenChange }: Props) => {
                     </div>
                     <Switch className="shrink-0" checked={tintingEnabled} onCheckedChange={setTintingEnabled} />
                   </div>
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-ui-border-base p-3">
+                    <div className="flex min-w-0 flex-col">
+                      <Label>{t('LOYALTY_TOGGLE')}</Label>
+                      <Text size="small" className="text-ui-fg-subtle">
+                        {t('LOYALTY_TOGGLE_HELP')}
+                      </Text>
+                    </div>
+                    <Switch className="shrink-0" checked={loyaltyEnabled} onCheckedChange={setLoyaltyEnabled} />
+                  </div>
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-ui-border-base p-3">
+                    <div className="flex min-w-0 flex-col">
+                      <Label>{t('GIFT_CARDS_TOGGLE')}</Label>
+                      <Text size="small" className="text-ui-fg-subtle">
+                        {t('GIFT_CARDS_TOGGLE_HELP')}
+                      </Text>
+                    </div>
+                    <Switch className="shrink-0" checked={giftCardsEnabled} onCheckedChange={setGiftCardsEnabled} />
+                  </div>
                 </div>
               </ProgressTabs.Content>
             </div>
@@ -544,7 +592,7 @@ export const DemoStoreCreate = ({ open, onOpenChange }: Props) => {
               {isLast ? (
                 <Button
                   size="small"
-                  disabled={!canSubmit}
+                  disabled={!canSubmit || availability.data?.available !== true || availability.isFetching}
                   isLoading={create.isPending}
                   onClick={handleSubmit}
                 >

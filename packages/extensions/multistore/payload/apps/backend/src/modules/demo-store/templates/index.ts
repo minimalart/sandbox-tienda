@@ -196,6 +196,12 @@ export function buildTenantConfig(demo: DemoStoreLike): TenantConfigPayload {
     // storefront (el merge de `assets` es shallow por clave) y volvería a dejar
     // la barra en 4 columnas — justo lo que este campo arregla.
     ...(content.mobileNav?.length ? { mobileNav: content.mobileNav } : {}),
+    // Ícono o texto por entrada de la barra. Mismo criterio: sólo si hay algo
+    // que decir — la clave presente gana entera, y el storefront ya completa
+    // con `icon` lo que no venga.
+    ...(content.mobileNavDisplay && Object.keys(content.mobileNavDisplay).length
+      ? { mobileNavDisplay: content.mobileNavDisplay }
+      : {}),
     ...(content.sucursales ? { sucursales: content.sucursales } : {}),
     ...(content.shoppingList ? { shoppingList: content.shoppingList } : {}),
     ...(content.searchSuggestions ? { searchSuggestions: content.searchSuggestions } : {}),
@@ -262,13 +268,44 @@ export function buildTenantConfig(demo: DemoStoreLike): TenantConfigPayload {
      * el operador vacía un input (para que la sub-clave DESAPAREZCA y vuelva al
      * default del código, en vez de pisar el default con `""`).
      *
+     * `footer` del vertical se ARMA acá desde las fuentes compartidas
+     * (`content.contact` para email/phone/address; `content.footer` para
+     * description/copyright) y se mergea con lo que el operador cargó en
+     * `content.campaign.footer` (que hoy sólo aporta `poweredBy` y
+     * `backgroundColor`, propios del template). Antes esas 4 propiedades vivían
+     * duplicadas en `content.campaign.footer` — un 3er lugar de edición que
+     * pisaba a los otros dos.
+     *
      * Sólo se emite cuando `template_code === 'campaign'`: los demás templates
      * no leen `assets.campaign` y publicarlo sería ruido en el payload público.
      */
-    ...(template.tenant_template === 'campaign' && content.campaign
+    ...(template.tenant_template === 'campaign'
       ? (() => {
-          const cleaned = cleanCampaignOverride(content.campaign);
-          return cleaned ? { campaign: cleaned } : {};
+          const cleanedCampaign = content.campaign
+            ? (cleanCampaignOverride(content.campaign) as
+                | Record<string, unknown>
+                | undefined)
+            : undefined;
+          const campaignFooterOverride =
+            (cleanedCampaign?.footer as Record<string, unknown> | undefined) ?? {};
+          const email = contact.email?.trim() || undefined;
+          const phone = contact.phone?.trim() || undefined;
+          const address = contact.address?.trim() || undefined;
+          const description = footerDescription;
+          const copyright = footerCopyright;
+          const footer: Record<string, unknown> = { ...campaignFooterOverride };
+          if (email) footer.email = email;
+          if (phone) footer.phone = phone;
+          if (address) footer.address = address;
+          if (description) footer.description = description;
+          if (copyright) footer.copyright = copyright;
+          const campaign: Record<string, unknown> = { ...(cleanedCampaign ?? {}) };
+          if (Object.keys(footer).length) {
+            campaign.footer = footer;
+          } else {
+            delete campaign.footer;
+          }
+          return Object.keys(campaign).length ? { campaign } : {};
         })()
       : {}),
     // MercadoPago: which checkout(s) to show + the public key the embedded
@@ -298,6 +335,12 @@ export function buildTenantConfig(demo: DemoStoreLike): TenantConfigPayload {
         : {}),
       ...(demo.recurring_enabled ? { recurring: { enabled: true } } : {}),
       ...(demo.tinting_enabled ? { tinting: { enabled: true } } : {}),
+      // Mi cuenta. Estas DOS se publican SIEMPRE, con el booleano explícito, y no
+      // con el `...(x ? {} : {})` del resto: el default es `true`, así que la
+      // ausencia de la clave tiene que leerse como "visible" (storefront nuevo
+      // contra backend viejo). De ahí el `!== false` en vez de `!!`.
+      loyalty: { enabled: demo.loyalty_enabled !== false },
+      giftCards: { enabled: demo.gift_cards_enabled !== false },
       // Página de contraseña: se publica SÓLO si está prendida y con clave, y
       // únicamente `enabled` + `length` (cuántas casillas dibujar). Este payload
       // es PÚBLICO: agregar la palabra acá la filtraría a cualquiera que pegue
@@ -319,6 +362,8 @@ export function buildTenantConfig(demo: DemoStoreLike): TenantConfigPayload {
         // Fondos del chrome: ausentes = el storefront usa el default del template.
         headerBackground: theme.header_background || undefined,
         footerBackground: theme.footer_background || undefined,
+        // Boton "Promociones" del header: ausente = el storefront usa el primario.
+        promoButton: theme.promo_button_color || undefined,
       },
       typography: theme.typography ? { fontFamily: theme.typography } : undefined,
     },

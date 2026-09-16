@@ -15,6 +15,7 @@ import {
   applyCartGiftCard,
   applyCartStoreCredit,
   removeCartGiftCard,
+  emptyCartLineItems,
 } from '@lib/repositories/cart.repository'
 import { resolveCartGiftCardCode } from '@lib/server/gift-card-cart'
 import { getCartId, removeCartId } from '@lib/data/cookies'
@@ -463,6 +464,21 @@ export async function POST(request: Request) {
     }
 
     if (action === 'clearCart') {
+      // Se borran los line items ANTES de soltar la cookie. Con la cookie
+      // borrada primero no habría forma de saber qué carrito vaciar, y el carrito
+      // quedaría vivo con sus productos y el email del comprador — que es lo que
+      // hacía que llegara "te quedaron productos en el carrito" con el carrito
+      // vacío en pantalla (DESDEELSUR-61, BUG-17).
+      const result = await emptyCartLineItems()
+      if (!result.success) {
+        // No se suelta la cookie si el vaciado falló: dejar al comprador sin
+        // carrito mientras el del servidor sigue lleno es el desfasaje que
+        // causó el bug. Quien llama revierte su estado optimista.
+        return NextResponse.json(
+          { success: false, message: result.error || 'No se pudo vaciar el carrito' },
+          { status: 500 },
+        )
+      }
       await removeCartId()
       return NextResponse.json({ success: true })
     }

@@ -146,6 +146,19 @@ export const typesenseSchema: CollectionCreateSchema = {
       sort: false,
     },
 
+    // Channel-scoped price overrides. Cada entry viene de un `price_list_rule`
+    // con `attribute='sales_channel_id'`: representa el precio que debe aplicar
+    // cuando el storefront navega por ese canal. Se popula en el sync (ver
+    // `buildChannelPriceMap` en reindex.ts). El storefront lee este array,
+    // matchea por `sales_channel_id` activo y prefiere ese amount sobre el
+    // `calculated_price` base. Todos `optional` — si la config no tiene
+    // reglas channel-scoped, el array queda vacío y el fallback es el base.
+    { name: 'variants.channel_prices', type: 'object[]', facet: false, index: true, optional: true, sort: false },
+    { name: 'variants.channel_prices.sales_channel_id', type: 'string[]', facet: false, index: true, optional: true, sort: false },
+    { name: 'variants.channel_prices.calculated_amount', type: 'int64[]', facet: false, index: true, optional: true, sort: false },
+    { name: 'variants.channel_prices.original_amount', type: 'int64[]', facet: false, index: true, optional: true, sort: false },
+    { name: 'variants.channel_prices.currency_code', type: 'string[]', facet: false, index: true, optional: true, sort: false },
+
     // Options
     { name: 'options', type: 'object[]', facet: false, index: true, optional: true, sort: false },
     { name: 'options.id', type: 'string[]', facet: false, index: true, optional: true, sort: false },

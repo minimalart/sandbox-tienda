@@ -26,15 +26,18 @@ const CheckboxInput = forwardRef<HTMLInputElement, CheckboxInputProps>(
       )}
     >
       <input
-        className="peer size-full cursor-pointer appearance-none rounded-[5px] border border-gray-300 bg-white transition-colors indeterminate:border-[--primary-color] checked:border-[--primary-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--primary-color] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+        className="peer size-full cursor-pointer appearance-none rounded-[5px] border border-gray-300 bg-white transition-colors checked:[transition-delay:120ms] indeterminate:border-[--primary-color] checked:border-[--primary-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--primary-color] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
         data-styled-checkbox=""
         ref={ref}
         type="checkbox"
         {...props}
       />
+      {/* El tilde se dibuja solo: la longitud del trazo es ~12.4 unidades del
+          viewBox, así que con dasharray fijo en 13 y dashoffset 13 -> 0 el
+          path se va revelando de punta a punta en vez de aparecer de golpe. */}
       <svg
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 size-full text-[--primary-color] opacity-0 peer-checked:opacity-100 peer-indeterminate:opacity-0"
+        className="pointer-events-none absolute inset-0 size-full text-[--primary-color] [stroke-dasharray:13] [stroke-dashoffset:13] transition-[stroke-dashoffset] duration-300 ease-out peer-checked:[stroke-dashoffset:0] peer-indeterminate:opacity-0 motion-reduce:transition-none"
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"

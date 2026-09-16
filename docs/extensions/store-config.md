@@ -55,7 +55,9 @@ Los cuatro interruptores son independientes entre sí: consultar constancias, ge
 
 ## El mínimo de compra es un historial, no un campo
 
-Los cambios son sólo de alta: cada cambio crea un registro nuevo con su vigencia, y el histórico queda auditable. No se edita ni se borra el anterior.
+Cada cambio de mínimo es un registro nuevo con su vigencia, así el histórico dice cuánto rigió y cuándo. Un registro con un error (monto mal tipeado, vigencia equivocada) se corrige o se elimina desde el menú de su fila; no hace falta cargar otro encima.
+
+Con una tienda elegida, la tabla muestra también los registros marcados "Global": son los que hereda toda tienda sin serie propia. Editar o borrar uno de esos se lo cambia a todas las que heredan.
 
 El mínimo vigente es el que corresponde a la fecha de hoy, que no siempre es el último cargado: un registro con fecha futura no rige todavía, y uno con fecha de fin vencida ya no rige aunque sea el más reciente de la lista.
 

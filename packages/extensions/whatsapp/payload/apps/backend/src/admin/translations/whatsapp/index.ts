@@ -145,6 +145,7 @@ export const en = {
   EVENT_ORDER_CONFIRMATION: 'Order confirmation',
   EVENT_ORDER_TRACKING: 'Shipment tracking (Andreani)',
   EVENT_ORDER_DELIVERY: 'Out for delivery (own fleet)',
+  EVENT_ORDER_READY_FOR_PICKUP: 'Ready for store pickup',
   EVENT_ORDER_CANCELLED: 'Order cancelled',
   EVENT_PASSWORD_RESET: 'Password reset',
   EVENT_CART_ABANDONED_1: 'Abandoned cart · step 1 (1h)',
@@ -178,6 +179,8 @@ export const en = {
   VAR_DRIVER_NAME: 'Driver name',
   VAR_DRIVER_PHONE: 'Driver phone',
   VAR_VEHICLE_TYPE: 'Vehicle type',
+  VAR_STORE_NAME: 'Pickup store',
+  VAR_STORE_ADDRESS: 'Store address',
   VAR_RESET_URL: 'Reset link',
   VAR_RECOVERY_URL: 'Cart recovery link',
   VAR_CONFIRMATION_URL: 'Renewal payment link',
@@ -190,6 +193,8 @@ export const en = {
   // Sidebar / nav labels
   NAV_TEMPLATES: 'Templates',
   NAV_ADVISOR: 'Advisor',
+  NAV_FLOWS: 'Conversation flow',
+  NAV_JOURNEYS: 'Journeys',
   NAV_SETTINGS: 'Settings',
 
   // Floating button (storefront)
@@ -371,6 +376,7 @@ export const es: typeof en = {
   EVENT_ORDER_CONFIRMATION: 'Confirmación de pedido',
   EVENT_ORDER_TRACKING: 'Seguimiento de envío (Andreani)',
   EVENT_ORDER_DELIVERY: 'En camino — flota propia',
+  EVENT_ORDER_READY_FOR_PICKUP: 'Listo para retirar en tienda',
   EVENT_ORDER_CANCELLED: 'Pedido cancelado',
   EVENT_PASSWORD_RESET: 'Restablecer contraseña',
   EVENT_CART_ABANDONED_1: 'Carrito abandonado · paso 1 (1h)',
@@ -404,6 +410,8 @@ export const es: typeof en = {
   VAR_DRIVER_NAME: 'Nombre del conductor',
   VAR_DRIVER_PHONE: 'Teléfono del conductor',
   VAR_VEHICLE_TYPE: 'Tipo de vehículo',
+  VAR_STORE_NAME: 'Sucursal de retiro',
+  VAR_STORE_ADDRESS: 'Dirección de la sucursal',
   VAR_RESET_URL: 'Link de reseteo',
   VAR_RECOVERY_URL: 'Link de recuperación del carrito',
   VAR_CONFIRMATION_URL: 'Link de pago de la renovación',
@@ -416,6 +424,8 @@ export const es: typeof en = {
   // Sidebar / nav labels
   NAV_TEMPLATES: 'Plantillas',
   NAV_ADVISOR: 'Asesor',
+  NAV_FLOWS: 'Recorrido',
+  NAV_JOURNEYS: 'Recorridos de clientes',
   NAV_SETTINGS: 'Ajustes',
 
   // Botón flotante (storefront)

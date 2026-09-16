@@ -182,3 +182,52 @@ test('el destinatario del aviso ya no se resuelve en silencio', () => {
   assert.match(fn, /catch\s*\(error\)/);
   assert.match(fn, /logger\.warn/);
 });
+
+/**
+ * ── LA CORRECCIÓN DEL 2026-09-09, MISMO DÍA ─────────────────────────────────
+ *
+ * El re-arme con revive se deployó y el log lo desmintió en el primer tick:
+ *
+ *   [event-bus-monitor] Reintentando arrancar... Conexión: en `ready`, no hace falta tocarla.
+ *   [event-bus-monitor] El reintento falló CONTRA LA CONEXIÓN: Connection is closed.
+ *
+ * Estaba mirando `worker.client` — y la que se muere es la BLOQUEANTE, que BullMQ
+ * duplica aparte (`worker.js:120`). Revivir la conexión equivocada no da un
+ * error: da un diagnóstico que dice "está todo bien" mientras nada funciona, que
+ * es peor.
+ */
+
+test('revive la conexión BLOQUEANTE, no la del worker', () => {
+  const body = SRC.slice(SRC.indexOf('async function reviveConnection'));
+  const fn = body.slice(0, body.indexOf('\n}\n'));
+  const blocking = fn.indexOf('blockingConnection');
+  const client = fn.indexOf('worker.client');
+  assert.ok(blocking > -1, 'no mira la conexión bloqueante: vuelve el falso `ready` del 09/09');
+  assert.ok(
+    client === -1 || blocking < client,
+    '`worker.client` antes de la bloqueante: prioriza la conexión que NO se muere',
+  );
+  assert.match(fn, /reconnect/, 'no usa el reconnect() de BullMQ');
+});
+
+test('dice CUÁL conexión miró', () => {
+  /**
+   * Sin esto, un `ready` en el log no se puede interpretar: no se sabe si es la
+   * conexión que importa. Es exactamente lo que nos hizo perder el tick del 09/09.
+   */
+  const body = SRC.slice(SRC.indexOf('async function reviveConnection'));
+  const fn = body.slice(0, body.indexOf('\n}\n'));
+  assert.match(fn, /source\.label/);
+  assert.match(fn, /NO la bloqueante/);
+});
+
+test('el import del destinatario prueba las dos formas del especificador', () => {
+  /**
+   * `admin-recipient.js` NO existe cuando el job corre desde `src/`, y así venía
+   * fallando SIEMPRE en producción con la extensión de email instalada.
+   */
+  const body = SRC.slice(SRC.indexOf('async function importAdminRecipient'));
+  const fn = body.slice(0, body.indexOf('\n}\n'));
+  assert.match(fn, /admin-recipient\.js/);
+  assert.match(fn, /admin-recipient'/, 'no prueba la forma sin extensión');
+});

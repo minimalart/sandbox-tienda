@@ -21,7 +21,7 @@ const OrderCheckoutRecipients = ({ data: order }: { data: { id: string; items?: 
     {checkout?.units?.map((unit: any, index: number) => {
       const person = checkout.people.find((p: any) => p.id === unit.person_id);
       const item = order.items?.find((i: any) => i.id === unit.order_line_id);
-      return <div key={unit.id} className="mt-3 border-t border-ui-border-base pt-3"><Text weight="plus">{item?.product_title ?? item?.title ?? unit.order_line_id} · Unidad {index + 1}</Text><Text size="small">{person?.first_name} {person?.last_name} · DNI {person?.document}</Text></div>;
+      return <div key={unit.id} className="mt-3 border-t border-ui-border-base pt-3"><Text weight="plus">{item?.product_title ?? item?.title ?? unit.order_line_id} · Unidad {index + 1}</Text><Text size="small">{person?.first_name} {person?.last_name}{person?.document ? ` · DNI ${person.document}` : ''}{person?.grade ? ` · ${person.grade}` : ''}</Text></div>;
     })}
     {checkout?.can_view_documents && <Button className="mt-4" variant="secondary" onClick={() => load(!revealed)}>{revealed ? 'Ocultar documentos' : 'Consultar documentos completos'}</Button>}
   </Container>;

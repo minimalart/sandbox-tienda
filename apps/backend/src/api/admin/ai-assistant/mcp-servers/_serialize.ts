@@ -15,6 +15,7 @@ export function toPublicServer(s: any) {
     auth_type: s.auth_type,
     auth_header_name: s.auth_header_name ?? null,
     enabled: s.enabled,
+    trust_read_only_hints: s.trust_read_only_hints === true,
     has_secret: Boolean(s.auth_secret_enc),
     oauth_client_id: s.oauth_client_id ?? null,
     oauth_scope: s.oauth_scope ?? null,

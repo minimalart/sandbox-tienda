@@ -5,7 +5,6 @@ import { useTenant } from "@lib/site-config/context";
 import { selectTotalItems, useCartStore } from "@lib/stores/cart.store";
 import { pickContrastText } from "@lib/util/contrast";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
-import HomeTopbar from "@modules/home/components/topbar";
 import { ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useCallback } from "react";
@@ -20,8 +19,9 @@ type CampaignHeaderProps = {
 /**
  * Header del template Campaña (landing institucional).
  *
- * Minimalista: announcement bar arriba (opcional), header sticky con logo +
- * subtítulo institucional, pill "Powered by" (opcional) y botón de carrito.
+ * Minimalista: header sticky con logo + subtítulo institucional, pill
+ * "Powered by" (opcional) y botón de carrito. Campaign tiene chrome propio y
+ * deliberadamente no monta la topbar global.
  *
  * `chrome.backgroundColor` (opcional) pisa el fondo; sin config el preset
  * default es blanco. El resto de los tokens (subtitle color, borders, badge
@@ -39,7 +39,11 @@ export default function CampaignHeader({
 
   const liveCount = useCartStore(selectTotalItems);
   const openCart = useCartStore((state) => state.openCart);
-  const cartCount = liveCount || initialCartCount;
+  // El contador del server sólo vale hasta que el store hidrata: después manda
+  // el store aunque sea 0. Con `liveCount || initialCartCount` un carrito vaciado
+  // en el cliente seguía mostrando el badge viejo del payload cacheado.
+  const cartIsHydrated = useCartStore((state) => state.isHydrated);
+  const cartCount = cartIsHydrated ? liveCount : initialCartCount;
 
   // Registrar el botón del carrito como target de la animación "fly-to-cart".
   const { registerCartIcon } = useAddToCartAnimation();
@@ -72,13 +76,6 @@ export default function CampaignHeader({
     : { backgroundColor: "#ffffff", color: "var(--campaign-bg, #0f1114)" };
 
   return (
-    <>
-      {/* Topbar unificada con el resto de templates: se edita desde el plugin
-          `banners` en admin (`/app/banners`) con placement `top_bar`. Reemplaza
-          el campo hardcoded `assets.campaign.announcement`, que queda en el
-          schema por compat pero ya no se renderiza. */}
-      <HomeTopbar />
-
       <header
         className={
           bg
@@ -177,6 +174,5 @@ export default function CampaignHeader({
           </nav>
         )}
       </header>
-    </>
   );
 }

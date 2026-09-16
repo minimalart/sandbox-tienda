@@ -111,6 +111,20 @@ export type ErpSaleResult = {
   external_ref?: string;
   response?: unknown;
   /**
+   * Documento TAL CUAL se le envió al ERP (en Zeus, el body de `POST /pedidos`).
+   *
+   * Existe porque el outbox guardaba la INTENCIÓN (`ErpSalePayload`: qué se
+   * vendió) y el ACUSE (`response`), pero no el documento emitido — y todos los
+   * parámetros que el ERP pide auditar (sucursal, depósito, punto de venta,
+   * condición de venta, tipo de comprobante) salen de la config recién al
+   * enviar. Sin esto, responder "qué le mandamos" obliga a reconstruirlo contra
+   * la config de HOY, que puede no ser la que se usó.
+   *
+   * Opcional: un adapter que no lo devuelva deja `request_payload` en null y
+   * su comportamiento no cambia.
+   */
+  request?: unknown;
+  /**
    * Sucursal emisora con la que se insertó el pedido. Hace falta para volver a
    * preguntar por el comprobante: en Zeus, `pedidoFacturado` e
    * `imprimirComprobante` piden `idtransac` + `sucursal`, y la sucursal podría
@@ -271,12 +285,44 @@ export type ErpTintingPriceRaw = {
   tax_rate: number | null;
 };
 
+/**
+ * Reconstrucción del documento que se le enviaría (o se le envió) al ERP por
+ * una venta, SIN enviar nada.
+ *
+ * Sirve para responder "¿qué le mandaron a nuestro sistema?" sin esperar a la
+ * próxima venta, y para auditar una orden vieja cuyo body no quedó guardado.
+ */
+export type ErpSalePreview = {
+  /** El documento armado, listo para mostrar/copiar. */
+  request: unknown;
+  /**
+   * Advertencias sobre la FIDELIDAD de lo que se devuelve, en castellano y
+   * pensadas para mostrarse en el admin. La reconstrucción usa la config
+   * VIGENTE: si alguien tocó sucursal o depósito después de la venta, lo que
+   * sale de acá no es lo que el ERP recibió, y eso hay que decirlo.
+   */
+  warnings: string[];
+};
+
 export interface ErpAdapter {
   readonly provider: string;
   getCapabilities(): ErpCapabilities;
   validateCredentials(ctx: AdapterContext): Promise<ErpValidationResult>;
   getStockBySku(skus: string[], ctx: AdapterContext): Promise<Map<string, ErpStockResult>>;
   notifySale(payload: ErpSalePayload, ctx: AdapterContext): Promise<ErpSaleResult>;
+  /**
+   * Arma el documento de venta sin enviarlo. Opcional: un adapter que no lo
+   * implemente simplemente no ofrece la vista previa (la ruta responde 501).
+   *
+   * `clientCode` evita la resolución en vivo del cliente contra el ERP: para
+   * una orden ya enviada, el código real quedó en `response_payload` y usar ese
+   * es más fiel que volver a buscarlo (el cliente pudo cambiar desde entonces).
+   */
+  previewSale?(
+    payload: ErpSalePayload,
+    ctx: AdapterContext,
+    opts?: { clientCode?: string | null }
+  ): Promise<ErpSalePreview>;
   /**
    * Catálogo modificado desde `since` (null = todo). Opcional: los adapters que
    * no lo implementan declaran `catalog_pull: false` y el motor no los llama.

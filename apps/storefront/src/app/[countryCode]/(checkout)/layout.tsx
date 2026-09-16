@@ -1,3 +1,4 @@
+import { AddToCartAnimationProvider } from "@lib/context/add-to-cart-animation";
 import { retrieveCart } from "@lib/data/cart";
 import { retrieveCustomer } from "@lib/data/customer";
 import { TenantProvider } from "@lib/site-config/context";
@@ -40,6 +41,10 @@ export default async function CheckoutLayout({
   return (
     <TenantProvider tenant={tenantForClient(tenant)} siteSlug={demoSlug ?? undefined} sitePrefix={sitePrefix}>
       <StoreProvider cart={cart}>
+        {/* El carrusel de sugerencias abre el quick view, y ProductActions usa la
+            animación de "vuelo al carrito": sin este provider el click en una
+            card tiraba el checkout entero. */}
+        <AddToCartAnimationProvider>
         <div
           className={
             isSportsTemplate
@@ -135,6 +140,7 @@ export default async function CheckoutLayout({
           <PromoConflictGuard />
           <Toaster />
         </div>
+        </AddToCartAnimationProvider>
       </StoreProvider>
     </TenantProvider>
   );

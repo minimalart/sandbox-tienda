@@ -1,19 +1,21 @@
 "use client";
 
 import {
+  ChevronLeftIcon,
   HeartIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import { useAddToCartAnimation } from "@lib/context/add-to-cart-animation";
+import { useBackNavigation } from "@lib/hooks/use-back-navigation";
 import { useSiteHref, useTenantSections } from "@lib/site-config/context";
 import { SEARCH_HINTS, useRotatingHint } from "@lib/hooks/use-rotating-hint";
 import { useWishlist } from "@lib/hooks/use-wishlist";
 import { useWishlistDrawerStore } from "@lib/stores/wishlist-drawer.store";
 import ShoppingListModal from "@modules/shopping-list/components/shopping-list-modal";
 import { ListPlus } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SEARCH_DEBOUNCE_MS } from "@lib/typesense/core/timing";
 
@@ -26,8 +28,14 @@ export default function CollapsedHeaderMobile({
   visible,
 }: CollapsedHeaderMobileProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const siteHref = useSiteHref();
+  // En la PDP el header flotante también lleva "Volver": la flecha de la barra
+  // de búsqueda se va con el header al scrollear y el cliente se quedaba sin
+  // forma visible de salir del producto.
+  const isProductsPage = pathname?.includes("/products");
+  const goBack = useBackNavigation();
   const { isShoppingListVisible } = useTenantSections();
   const openWishlistDrawer = useWishlistDrawerStore((s) => s.open);
   const { items: wishlistItems } = useWishlist();
@@ -128,6 +136,17 @@ export default function CollapsedHeaderMobile({
         opacity: visible ? 1 : 0,
       }}
     >
+      {isProductsPage ? (
+        <button
+          aria-label="Volver"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[--primary-color] text-white shadow-sm transition-opacity hover:opacity-90"
+          data-testid="pdp-back-button-collapsed"
+          onClick={goBack}
+          type="button"
+        >
+          <ChevronLeftIcon aria-hidden="true" className="size-5" />
+        </button>
+      ) : null}
       <div className="relative flex flex-1 items-center">
         <MagnifyingGlassIcon
           aria-hidden="true"

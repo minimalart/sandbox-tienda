@@ -14,9 +14,15 @@ import {
 } from '@medusajs/ui';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StoreLocation, useAdminSalesChannels, useStoreLocations } from '../../hooks/api';
+import {
+  StoreLocation,
+  useAdminSalesChannels,
+  useBranchTypes,
+  useStoreLocations,
+} from '../../hooks/api';
+import { BRANCH_TYPE_COLORS, branchTypeColor } from '../../../lib/branch-types';
 import { registerStoreLocationsTranslations } from '../../translations/store-locations';
-import { StoreLocationActionsMenu, StoreLocationForm, STORE_TYPE_LABEL_KEY } from './components';
+import { StoreLocationActionsMenu, StoreLocationForm } from './components';
 import { ExtensionVersion } from '../../components/common/extension-version';
 import { SiteScopeBar } from '../../components/common/site-scope-bar';
 
@@ -56,6 +62,11 @@ const StoreLocations = () => {
     return map;
   }, [channelsData]);
 
+  // Sin canales: la unión de los tipos de todas las tiendas, que es lo único
+  // con lo que se puede resolver una tabla donde las filas son de varias.
+  const { data: typesData } = useBranchTypes();
+  const branchTypes = typesData?.branch_types ?? [];
+
   const columns = useMemo(
     () => [
       columnHelper.accessor('name', {
@@ -65,10 +76,16 @@ const StoreLocations = () => {
       columnHelper.accessor('store_type', {
         header: t('COLUMN_TYPE'),
         cell: ({ getValue }) => {
-          const type = getValue();
+          const id = getValue();
+          if (!id) return <span className="text-ui-fg-muted">—</span>;
+          // Sin la tienda a mano en la fila, se resuelve contra la unión de los
+          // tipos de todas: alcanza para el label y el color, y un id que ya no
+          // existe se muestra crudo en vez de desaparecer.
+          const index = branchTypes.findIndex((type) => type.id === id);
+          const type = index >= 0 ? branchTypes[index] : undefined;
           return (
-            <Badge size="small" color={type === 'point_of_sale' ? 'blue' : 'purple'}>
-              {t(STORE_TYPE_LABEL_KEY[type] ?? type)}
+            <Badge size="small" color={BRANCH_TYPE_COLORS[branchTypeColor(type, index)].badge}>
+              {type?.label ?? id}
             </Badge>
           );
         },
@@ -120,7 +137,7 @@ const StoreLocations = () => {
         ),
       }),
     ],
-    [t, channelNames]
+    [t, channelNames, branchTypes]
   );
 
   const table = useDataTable({

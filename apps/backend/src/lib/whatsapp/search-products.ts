@@ -29,6 +29,10 @@ type VariantRow = {
 type ProductRow = { id: string; title?: string; thumbnail?: string | null; variants?: VariantRow[] };
 
 /** Títulos de variante "placeholder" que no aportan info (no se muestran al cliente). */
+/** El tope de filas de una lista de WhatsApp. Se repite para no atar este
+ * módulo —que es del catálogo— al del grafo. */
+const WA_LIMITS_LIST_ROWS = 10;
+
 const PLACEHOLDER_VARIANT_TITLES = new Set(
   ['default variant', 'default title', 'único', 'unico', 'default'].map((s) => s.toLowerCase()),
 );
@@ -304,6 +308,127 @@ export async function hydrateWaVariants(
   return out;
 }
 
+/** Una presentación comprable, con la forma que espera `optionsFrom` del recorrido. */
+export type WaPresentationOption = {
+  /** El `variant_id`: lo que el cliente elija sirve directo para agregar al carrito. */
+  value: string;
+  label: string;
+  description?: string;
+};
+
+/**
+ * Las presentaciones comprables de un producto (1 L, 4 L, 20 L…), listas para que
+ * un `ask_list` del recorrido las ofrezca.
+ *
+ * Se entra por `variantId` —la variante que el cliente acaba de tocar— o por
+ * `productId`. Reusa `hydrateWaProductIds`, que ya devuelve UNA fila por variante
+ * comprable con precio calculado y stock real contra Medusa, así que no hay una
+ * segunda definición de "qué es comprable" que se pueda ir desincronizando.
+ *
+ * Las que no tienen stock van AL FINAL y marcadas, no se esconden: con una sola
+ * presentación sin stock, ocultarla dejaría la pregunta vacía y el recorrido mudo.
+ */
+export async function listWaProductPresentations(
+  container: MedusaContainer,
+  opts: { variantId?: string; productId?: string; limit?: number },
+): Promise<WaPresentationOption[]> {
+  const ctx = await resolveWaOrderContext(container);
+  let productId = opts.productId;
+
+  if (!productId && opts.variantId) {
+    const query = container.resolve(ContainerRegistrationKeys.QUERY);
+    const { data } = (await query.graph({
+      entity: 'product_variant',
+      fields: ['id', 'product.id'],
+      filters: { id: opts.variantId },
+    })) as { data: Array<{ product?: { id?: string } }> };
+    productId = data?.[0]?.product?.id;
+  }
+  if (!productId) return [];
+
+  const { hits } = await hydrateWaProductIds(container, [productId], {
+    limit: opts.limit ?? WA_LIMITS_LIST_ROWS,
+    ctx,
+  });
+
+  const money = (cents: number | null): string =>
+    cents === null ? 'sin precio' : `$${Math.round(cents).toLocaleString('es-AR')}`;
+
+  const ordered = [...hits].sort((a, b) => Number(b.in_stock) - Number(a.in_stock));
+  return ordered.map((h) => ({
+    value: h.variant_id,
+    // El título del producto ya lo dijo el paso anterior; acá interesa la variante.
+    label: `${h.variant_title || h.product_title} · ${money(h.unit_price)}`,
+    ...(h.in_stock ? {} : { description: 'Sin stock' }),
+  }));
+}
+
+/**
+ * Los productos que el operador ELIGIÓ A MANO para un paso del recorrido, ya
+ * resueltos a opciones comprables.
+ *
+ * Es la cuarta forma de llenar una lista, y la única que no sale de una consulta:
+ * la búsqueda por texto usa Typesense, el asesor usa facetas, y
+ * `listWaProductPresentations` deriva del producto elegido. Pero el documento pide
+ * "{{producto recomendado 1/2/3}}", y eso es una decisión comercial — no hay
+ * relevancia que la calcule.
+ *
+ * DOS COSAS QUE NO SON OBVIAS:
+ *
+ * 1. Se respeta el ORDEN en que el operador los acomodó. `hydrateWaProductIds` ya
+ *    restaura el orden de los ids que recibe, así que alcanza con no re-ordenar
+ *    después — y por eso acá NO se ordena por stock como en las presentaciones:
+ *    si alguien puso el recomendado primero, va primero.
+ *
+ * 2. El canal de venta SIGUE MANDANDO. Fijar un producto a mano es curación, no un
+ *    permiso: `hydrateWaProductIds` scopea contra el catálogo y `wa_add_to_cart`
+ *    vuelve a chequear el canal en `getWaVariantDetail`. Un producto fijado que no
+ *    esté en el canal del bot se mostraría y no se podría comprar, así que se
+ *    filtra ACÁ y el operador no lo ve aparecer.
+ */
+export async function listWaPinnedProducts(
+  container: MedusaContainer,
+  productIds: string[],
+  opts: { limit?: number; ctx?: WaOrderContext } = {},
+): Promise<WaPresentationOption[]> {
+  const ids = productIds.map((id) => String(id ?? '').trim()).filter(Boolean);
+  if (ids.length === 0) return [];
+
+  // `ctx` inyectable por el mismo motivo que en `getWaVariantDetail`: resolverlo
+  // adentro ata el test a levantar media tienda para probar una regla de filtrado.
+  const ctx = opts.ctx ?? (await resolveWaOrderContext(container));
+  const { hits } = await hydrateWaProductIds(container, ids, {
+    limit: opts.limit ?? WA_LIMITS_LIST_ROWS,
+    ctx,
+  });
+
+  // Sólo lo que el bot puede vender. Un producto fuera del canal se muestra y
+  // después rebota en el carrito: mejor que no aparezca.
+  const query = container.resolve(ContainerRegistrationKeys.QUERY);
+  const { data: rows } = (await query.graph({
+    entity: 'product',
+    fields: ['id', 'sales_channels.id'],
+    filters: { id: [...new Set(hits.map((h) => h.product_id))] },
+  })) as { data: Array<{ id: string; sales_channels?: Array<{ id?: string }> | null }> };
+  const vendible = new Set(
+    rows
+      .filter((r) => isInBotChannels((r.sales_channels ?? []).map((c) => c?.id), ctx.sales_channel_ids))
+      .map((r) => r.id),
+  );
+
+  const money = (cents: number | null): string =>
+    cents === null ? 'sin precio' : `$${Math.round(cents).toLocaleString('es-AR')}`;
+
+  return hits
+    .filter((h) => vendible.has(h.product_id))
+    .map((h) => ({
+      value: h.variant_id,
+      // Acá SÍ va el título del producto: el cliente todavía no lo eligió.
+      label: `${h.title} · ${money(h.unit_price)}`,
+      ...(h.in_stock ? {} : { description: 'Sin stock' }),
+    }));
+}
+
 export type WaVariantDetail = {
   title: string;
   unit_price: number | null;
@@ -314,15 +439,47 @@ export type WaVariantDetail = {
 };
 
 /**
+ * ¿Este producto lo atiende el bot?
+ *
+ * El canal de venta es LO QUE ELIGE qué se vende por chat: se arma un canal para
+ * WhatsApp, se le asignan los productos y se lo elige en Admin → WhatsApp →
+ * Ajustes. Lo que no esté en ninguno de esos canales no se muestra y no se compra.
+ *
+ * Está separada de la consulta a propósito: es la regla, y siendo pura se puede
+ * afirmar en un test sin levantar Medusa.
+ *
+ * Sin canales configurados devuelve `false` y no `true`: un contexto que no pudo
+ * resolver sus canales tiene que CERRAR la puerta. Abrirla "porque no sé" es
+ * exactamente cómo el gate de promociones falló abierto.
+ */
+export function isInBotChannels(
+  productChannelIds: Array<string | null | undefined>,
+  botChannelIds: string[],
+): boolean {
+  if (botChannelIds.length === 0) return false;
+  const allowed = new Set(botChannelIds);
+  return productChannelIds.some((id) => typeof id === 'string' && allowed.has(id));
+}
+
+/**
  * Detalle de una variante para mostrarla "en grande": título, precio, imagen y
- * handle (para armar el link a la ficha del producto en el storefront). Devuelve
- * null si no se encuentra.
+ * handle (para armar el link a la ficha del producto en el storefront).
+ *
+ * Devuelve null si no se encuentra O SI EL PRODUCTO NO ESTÁ EN LOS CANALES DEL
+ * BOT. Esto último es el gate de compra, y no es una precaución teórica: es la
+ * única puerta que mira `wa_add_to_cart` antes de agregar, y filtraba nada más que
+ * por id. La vidriera ya estaba acotada —`searchWaProducts` y el asesor guiado
+ * filtran por canal— pero el `variant_id` llega en el TAP DEL CLIENTE, y un
+ * carrusel viejo que quedó arriba en la conversación sigue siendo un botón vivo:
+ * se tocaba y entraba al carrito aunque el producto ya no estuviera en el canal.
+ * Que un producto APAREZCA y que se pueda COMPRAR son dos chequeos distintos.
  */
 export async function getWaVariantDetail(
   container: MedusaContainer,
   variantId: string,
+  opts: { ctx?: WaOrderContext } = {},
 ): Promise<WaVariantDetail | null> {
-  const ctx = await resolveWaOrderContext(container);
+  const ctx = opts.ctx ?? (await resolveWaOrderContext(container));
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
   const priceContext = QueryContext({
     currency_code: ctx.currency_code,
@@ -336,6 +493,10 @@ export async function getWaVariantDetail(
       'product.title',
       'product.handle',
       'product.thumbnail',
+      // Se pide acá y no con una segunda consulta: `query.graph` no filtra
+      // `product_variant` por el canal del producto, así que el scope se resuelve
+      // sobre la fila que ya vino.
+      'product.sales_channels.id',
       'calculated_price.calculated_amount',
     ],
     filters: { id: variantId },
@@ -344,12 +505,19 @@ export async function getWaVariantDetail(
     data: Array<{
       id: string;
       title?: string;
-      product?: { title?: string; handle?: string | null; thumbnail?: string | null };
+      product?: {
+        title?: string;
+        handle?: string | null;
+        thumbnail?: string | null;
+        sales_channels?: Array<{ id?: string }> | null;
+      };
       calculated_price?: { calculated_amount?: number } | null;
     }>;
   };
   const v = variants?.[0];
   if (!v) return null;
+  const channelIds = (v.product?.sales_channels ?? []).map((c) => c?.id);
+  if (!isInBotChannels(channelIds, ctx.sales_channel_ids)) return null;
   return {
     title: displayTitle(v.product?.title, v.title),
     unit_price: v.calculated_price?.calculated_amount ?? null,

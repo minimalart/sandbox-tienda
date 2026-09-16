@@ -854,4 +854,49 @@ export type ErpSalePayload = {
       country_code: string | null;
     };
   };
+  /**
+   * Escuela/institución dueña de la tienda desde la que se hizo la compra.
+   * Presente sólo cuando el `sales_channel_id` de la orden mapea a un
+   * `demo_store` con `policy.recipients.enabled` (chequeo real: existe snapshot
+   * en `site_checkout_snapshot` vía `order_cart`). Ausente/`null` en la tienda
+   * principal — mismo payload que hoy para adapters que no lo consumen.
+   *
+   * `external_ref` es hoy el `slug` del `demo_store`. Si el negocio necesita
+   * renombrar el slug sin romper la trazabilidad en el ERP, agregar una columna
+   * dedicada `demo_store.external_ref` inmutable y cambiar la fuente acá.
+   */
+  school?: {
+    external_ref: string;
+    name: string;
+    source_site_id: string;
+  } | null;
+  /**
+   * Asignación de productos a alumnos, agrupada por SKU y con `quantity` por
+   * destinatario para preservar la split del checkout (ej. 2 unidades del kit
+   * de robótica → 1 para Juan, 1 para Martina). El `schema_version` es explícito
+   * para poder evolucionar el contrato sin romper la persistencia en Odoo.
+   *
+   * Presente sólo cuando hay snapshot; los ítems sin destinatario (líneas que
+   * el step Alumnos no cubre) NO se listan acá — el ERP los ve como líneas
+   * comunes sin recipients.
+   *
+   * `external_id` es el id que nuestro storefront genera con `crypto.randomUUID()`
+   * al alta del alumno. NO usar `document` como identidad: puede venir vacío y
+   * puede repetirse entre alumnos en carritos distintos.
+   */
+  student_assignments?: {
+    schema_version: '1.0';
+    items: Array<{
+      sku: string;
+      quantity: number;
+      recipients: Array<{
+        external_id: string;
+        first_name: string;
+        last_name: string;
+        document: string | null;
+        grade: string | null;
+        quantity: number;
+      }>;
+    }>;
+  } | null;
 };

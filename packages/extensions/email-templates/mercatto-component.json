@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "email-templates",
   "name": "Plantillas de email",
-  "version": "1.5.0",
+  "version": "1.10.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -16,6 +16,7 @@
     "CORPORATE_INVITE_SENDGRID_TEMPLATE_ID",
     "EMAIL_FROM",
     "EMAIL_ICONS_BASE_URL",
+    "ORDER_PICKUP_INSTRUCTIONS",
     "SENDGRID_API_KEY"
   ],
   "files": [
@@ -78,6 +79,26 @@
     {
       "source": "payload/apps/backend/src/subscribers/order-placed-email.test.ts",
       "target": "apps/backend/src/subscribers/order-placed-email.test.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/mark-order-ready-for-pickup.ts",
+      "target": "apps/backend/src/workflows/mark-order-ready-for-pickup.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/mark-order-ready-for-pickup.test.ts",
+      "target": "apps/backend/src/workflows/mark-order-ready-for-pickup.test.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/orders/[id]/ready-for-pickup",
+      "target": "apps/backend/src/api/admin/orders/[id]/ready-for-pickup"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/widgets/order-pickup-widget.tsx",
+      "target": "apps/backend/src/admin/widgets/order-pickup-widget.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/store-pickup-ready-email.ts",
+      "target": "apps/backend/src/subscribers/store-pickup-ready-email.ts"
     }
   ],
   "migrations": [
@@ -88,19 +109,19 @@
   "managed_files": [
     {
       "path": "apps/backend/src/admin/hooks/api/email-templates.tsx",
-      "sha256": "ec4a001a21c5a86b421d34ff5f94f5372f9208b12b195b1ee00b4da67148ebe8"
+      "sha256": "84cf7eb994f5c651f451c45d485f6c21bb10ec4efa4cb65a0e21e7ef71128fa6"
     },
     {
       "path": "apps/backend/src/admin/routes/email-templates/[id]/components/real-sends-panel.tsx",
-      "sha256": "09ef60350a5189945eb1ac456b3dd4b333248c57d78d72bcd0749e0ba557e6af"
+      "sha256": "b392746ac88740d0bb75b7bb89d44e0f2b538bd8617b618ddd8df9ca231a6097"
     },
     {
       "path": "apps/backend/src/admin/routes/email-templates/[id]/components/test-send-modal.tsx",
-      "sha256": "887e00bd320f34b474a0cb9073f34c915ff81b351b043af94081e4886fe208ea"
+      "sha256": "64a7ddb44130b7562d0650598f774f14f6e3da20c85eca72ffdf4e36a5ffca36"
     },
     {
       "path": "apps/backend/src/admin/routes/email-templates/[id]/page.tsx",
-      "sha256": "29fffbd4126b12d2d795836ea72a9d6fa4308b0cddc796c99935c6e8b2b270d7"
+      "sha256": "f5a1ea46e02c1668877ec2e67cb9d85a4280be5175dcee8aa0489fd960def56f"
     },
     {
       "path": "apps/backend/src/admin/routes/email-templates/credenciales/page.tsx",
@@ -108,267 +129,307 @@
     },
     {
       "path": "apps/backend/src/admin/routes/email-templates/page.tsx",
-      "sha256": "8ce51bedf321997740ec43fa007457129f5ead9766362a25cb4d9d35ad861535"
+      "sha256": "b2369d9a88e74281022178a08945ae36270836ab74c0b137f4e080b5386d736f"
     },
     {
       "path": "apps/backend/src/admin/routes/email-templates/settings/page.tsx",
-      "sha256": "c47737205d5ff58de2f0de70fa9eb0ef23bda60ad5fe38ba6709dfc6b46e9511"
+      "sha256": "fea0ab407393ab8c948bcb6d19b723dcc4c94278a91a49d1a52e053fde12d596"
     },
     {
       "path": "apps/backend/src/admin/translations/email-templates/index.ts",
-      "sha256": "4b3f1a7008e9360c9b798ef1bfaa6e2f09e528b21e95f9caf9fafb3e7a58303e"
+      "sha256": "f481eb4a2559e4ddcb5ee7deaba06612107b44a3eb5bb6200737687f449017e0"
+    },
+    {
+      "path": "apps/backend/src/admin/widgets/order-pickup-widget.tsx",
+      "sha256": "df4f6e7e4196dde2aa334d9a7e362b48c33f8f695c57629bf58d3cc9a623eead"
     },
     {
       "path": "apps/backend/src/api/admin/email-templates/[id]/preview/route.ts",
-      "sha256": "9ca4584a8179dfd3b4d0c4fa355f840a233220ee5d1e0c3f246ef539f75c1b89"
+      "sha256": "3251b9ea1cde6af8256d62959304230fc3bea0637783d5853a2a26496e6b0b3e"
     },
     {
       "path": "apps/backend/src/api/admin/email-templates/[id]/publish/route.ts",
-      "sha256": "7b4cb1ea40edf2d0e9e30df5c1a5cc8cebfda4faf32ce2812bc81b1aa5f352df"
+      "sha256": "debfd94a1362ba9afa9f62928226f02143a928ee0499fcd254bbfcf2fc07ef04"
     },
     {
       "path": "apps/backend/src/api/admin/email-templates/[id]/route.ts",
-      "sha256": "9c46dc649d2b162a4319e3a58d01a0405a24322d1973e1c2c81fd6a705048aa3"
+      "sha256": "7ab48017a55348c78e76da59e577ff4dbb8d0761f77f3de75c06b3afb1f65fe6"
     },
     {
       "path": "apps/backend/src/api/admin/email-templates/[id]/sends/route.ts",
-      "sha256": "1019e6a7ddd5078e3dab18966cf1ac6172e92b60615957b0937567acc94a6524"
+      "sha256": "c4a862d8653199b67d9862b12056bc50728f03d205ad7f47ce0e65d8a396bf7b"
     },
     {
       "path": "apps/backend/src/api/admin/email-templates/[id]/test-send/route.ts",
-      "sha256": "95b58342da51e0f7a6adb50a4ef04b33c6aa31c957412e0b73a1daceaf1d1f88"
+      "sha256": "7ac44b45b5fb38af962339f07e53c94c008bae948250c712d4d20a67e5bfec67"
     },
     {
       "path": "apps/backend/src/api/admin/email-templates/[id]/unpublish/route.ts",
-      "sha256": "77d7c8deb9453761222efd21cce7d13b62da3f4677ceff79a0448acee1df7f1d"
+      "sha256": "b4f1d984c369a82d4a82dc7a93926b7e4ebfd26e61e916c30c93a6719ea9d603"
     },
     {
       "path": "apps/backend/src/api/admin/email-templates/route.ts",
-      "sha256": "e44c44849a06b1aaa2156ffa9cc79d792e2aaa4a1dd34f6a581aaaaeff27e17f"
+      "sha256": "735e92d9989b1dd0a47274c566929bf85d50ccedb1d28f861d7b331b2dc642ab"
     },
     {
       "path": "apps/backend/src/api/admin/email-templates/sends-analysis.test.ts",
-      "sha256": "aa898391ec73150ade6cd942cded2142fc9bdee2dfdda2a94623b858dffc6c11"
+      "sha256": "4f9a3308044abe7b05781d20fd5de5b841e5909f3049f4857c301d4c46c743c6"
     },
     {
       "path": "apps/backend/src/api/admin/email-templates/sends-analysis.ts",
-      "sha256": "e617406b70f06733029ac8116da92fb47790dcfd397158928d4811ea270e0741"
+      "sha256": "d00ebed0b7d1894bfface2cfce350ee872b24f9101fadae3ed9fbf7d77b5d35f"
     },
     {
       "path": "apps/backend/src/api/admin/email-templates/validators.test.ts",
-      "sha256": "4adb0f5a495d8dfb8c231dc5656e2cdea4e122576eccd6028569eadf9267b0d5"
+      "sha256": "25ccdf574b109f95a943277535a6379294dbfa9becc9d53bca7a175d3f444f89"
     },
     {
       "path": "apps/backend/src/api/admin/email-templates/validators.ts",
-      "sha256": "a5348e7dc4eb4a6a2425bb36c7e046329d69312b14b6fd5595afa0b1b1508a7f"
+      "sha256": "63d4840f58f78c673c0f0dc56539bc2f1a20f837ef9c66fd8eccf47dbad95d26"
+    },
+    {
+      "path": "apps/backend/src/api/admin/orders/[id]/ready-for-pickup/route.ts",
+      "sha256": "3b1ce46c55f481ba450aafb443290164603402ae20a5e19f2cc41eadbc63892c"
     },
     {
       "path": "apps/backend/src/modules/email-template/branding-defaults.test.ts",
-      "sha256": "574e0df4e54e426585fcc82cc358a90253883c19ce77a214e2c7c6ff4144a323"
+      "sha256": "ea8a6964be64dbb8fe515dd42d0fb9b5066df6304c30df2b9c80350a0daef8e6"
     },
     {
       "path": "apps/backend/src/modules/email-template/branding-defaults.ts",
-      "sha256": "80b43fb4ca936869d5b12f49e8614402c5b24bdd8bba6da2722be4efe41fdf2a"
+      "sha256": "7a042e468f0da1e4fd34f0fbe28243441da6e64d7440123a16ca22da1b14ef26"
     },
     {
       "path": "apps/backend/src/modules/email-template/index.ts",
-      "sha256": "c8d191aba4ea8c88708a1fbfcbb30a97e567ca79efd536ca26f23eeff170448e"
+      "sha256": "3dba7e657b80a99dd2a2a14931443215322befad6e3f47553917eac4645d7f5a"
     },
     {
       "path": "apps/backend/src/modules/email-template/migrations/Migration20260616120000.ts",
-      "sha256": "1e3107b44b985fb7afcd1c560cbaa66b5ca141d360b1ecc3f6432bf0a94cb580"
+      "sha256": "0ba453ac6483964163dadebe4bc20a5d13177f8d8a8fb42b7eb2220fc1d6862a"
     },
     {
       "path": "apps/backend/src/modules/email-template/migrations/Migration20260618120000.ts",
-      "sha256": "05e8316bc80cb7ee58be4cddc5745c2c1b66f71baf688188b51aad06aa7c516b"
+      "sha256": "3c5f39843ac4f6da3553ca66873490228389f8a75fa558d1b2ccd1e4effabe5a"
     },
     {
       "path": "apps/backend/src/modules/email-template/migrations/Migration20260807220000EmailTemplate.ts",
-      "sha256": "19c66cb4da9158995ccee438efea7a412792a317d0b7d226ad25679cf5ed1cbf"
+      "sha256": "68319e9a9194eb3c8a9bdeaab66cdb0ddddbe4fe33c8d2457b09dd571a915e49"
     },
     {
       "path": "apps/backend/src/modules/email-template/models/email-template.ts",
-      "sha256": "cca93e1d8723bbeae135cacc0e313eac04060bee50a53a69612e1769f82390d9"
+      "sha256": "2994678f520bd0a48641a4247e72fd06bbe3c23d856a6e857ac90a6eec825ef9"
     },
     {
       "path": "apps/backend/src/modules/email-template/models/index.ts",
-      "sha256": "ba4e7b6ea4232e414c2d499d472ede47b762e38c4e4da183b71506a280178a20"
+      "sha256": "93a800d1e7c08787f63f69f3b622974f735b7881acd96e5df9c4a200e5687e90"
+    },
+    {
+      "path": "apps/backend/src/modules/email-template/render-email-pickup.test.ts",
+      "sha256": "f7ece17660e6c873e412ed1fee577e6abbd41327bc77b4706a72ec174891a7f5"
     },
     {
       "path": "apps/backend/src/modules/email-template/render-email.ts",
-      "sha256": "51dd61c6fcf48d63334672f7d3bfee24035a4b1ce55750db38a37470b63c7d06"
+      "sha256": "bff06e7514d80e048be48a62a9b111e3cd7b59b42c5e0c995d825bf1ed5e35c6"
     },
     {
       "path": "apps/backend/src/modules/email-template/render.ts",
-      "sha256": "41681efb3e0e6780983faacb2d044c4f364c315e0cd3c3b9e36f71eb8b9d7f8c"
+      "sha256": "28f188d90a4f6955da75de94481a0a9771730ab0a81ce30121d7d8604e5603db"
     },
     {
       "path": "apps/backend/src/modules/email-template/service.ts",
-      "sha256": "0221ecff7f56fbb1c0b47178c57fe25d8fd500425c51c3814ebd4cd3e97f9993"
+      "sha256": "2d19168129fbd4ff04e679732d6d480e178d025a4adee86837275b4bceb0ad37"
     },
     {
       "path": "apps/backend/src/modules/email-template/site-scope.ts",
-      "sha256": "2609deddaf9e60939a2fa8496d42d1c81b3368c8ee6769712008c81a50b1b751"
+      "sha256": "6c5c387727d78523392cede318a5acbe39a2bd86d3e99cb12da748e73d4a4b32"
     },
     {
       "path": "apps/backend/src/modules/email-template/types.ts",
-      "sha256": "12b776a987d298ffc3658b3d762f180ff53c44c7fa3edd7ec429c3fed96aa510"
+      "sha256": "dfb1b2c810768f2551def6509ee267df684027f4adcd2df3ab1cdfce974fbeb4"
     },
     {
       "path": "apps/backend/src/modules/email-template/unique-key-scope.test.ts",
-      "sha256": "5417e9b244bfa53c0ca58a40a1f97644119daecc97aa65167905793d8ddcdb7c"
+      "sha256": "9ca5aec85b218960e461ac1e08e48a90f0a5246a975a7384621851b9eb37138d"
     },
     {
       "path": "apps/backend/src/modules/email/admin-recipient.ts",
-      "sha256": "e2e4506d2cd8453030b07a3c474f004025d0728aad7228fc21fb33529ae5eada"
+      "sha256": "1f8c771944cfaeb8daf0f2f429c92ac3789e5cb672fac7cab9ca5e7e82916693"
     },
     {
       "path": "apps/backend/src/modules/email/db-template-pick.test.ts",
-      "sha256": "0ea7a4c270106f64ca465b4b5cf9930aa0662444f32f70ee8364780daaa34b59"
+      "sha256": "3493fa38d1bb6f7f831ec9fd63b9716d63c6e20e5f334a641122ffcd643046d5"
     },
     {
       "path": "apps/backend/src/modules/email/db-template-pick.ts",
-      "sha256": "9026c4fa88193430e1615fd8fa254fc218b189fda754fffe6cbf1aecf2aa5012"
+      "sha256": "ff7f5ede360a8016822a127090f38d8dbc18a4d0cba5a0f9ade53deb38be8cb1"
     },
     {
       "path": "apps/backend/src/modules/email/index.ts",
-      "sha256": "2d1ce681855a0ee42046e7b01bc7f6d5e8fb6880b850da5735c34288ccce65af"
+      "sha256": "28379d17ba3393bb49fe48c1b1e48d055c1efe48d01dbbf6e7094f4f8975b601"
+    },
+    {
+      "path": "apps/backend/src/modules/email/pickup-context.test.ts",
+      "sha256": "8ea1dcd1311e72c4fd63c6c4ba8c1864218a316d1ca957a5c2e8ff733e3efad6"
+    },
+    {
+      "path": "apps/backend/src/modules/email/pickup-context.ts",
+      "sha256": "55174cdcfb6f29f5d4c4406323c32aaab068a3132d1df7f2cfdbbfbe23f1d3b2"
+    },
+    {
+      "path": "apps/backend/src/modules/email/sender-display-name.test.ts",
+      "sha256": "6a7888e7f61ec55c5eadb9fc3e0661f1fd2faa029bed96c33522ea9d6cf3054a"
     },
     {
       "path": "apps/backend/src/modules/email/service.ts",
-      "sha256": "81a6198475a82a8afa9549c0057479ecca95dcb90fdf636c5fe6778eac115396"
+      "sha256": "86ea34a76019cd992dc87d8be3c683f127723e6f34c329a4a102b4ee562238a8"
     },
     {
       "path": "apps/backend/src/modules/email/settings.ts",
-      "sha256": "7dc703cad6ac4579e1a80eea1419d3c660db9b5b2b2cde501bc6d924548d417e"
+      "sha256": "ce231312a6e5027bce626f78e9d6e53ad43a3dda1d03fdc994938c8be9a65eeb"
     },
     {
       "path": "apps/backend/src/modules/email/site-branding.test.ts",
-      "sha256": "9e8a1075b8aff87255f999ecde2b2b6f2abbe0d85900068dfea9ad6a0d9111f9"
+      "sha256": "6bbaee916ea667de5724ffce63ae3082e1d6a28633201b233d05added02a9d10"
     },
     {
       "path": "apps/backend/src/modules/email/template-variables.test.ts",
-      "sha256": "51997eee5be6cb9fbd7b199c6982944e8293c2c16c44c7463ade6a805a8f018c"
+      "sha256": "eaf9a58e524924d25066b22ded59fab12d1cff8156704e8fb3af94194c34a3e8"
     },
     {
       "path": "apps/backend/src/modules/email/template-variables.ts",
-      "sha256": "24ae0800083575503c25acaf24ddfdaf2a3eac485e701de281721ca0d5276ed2"
+      "sha256": "84d5fb7f63a9216a4ded863a116dee8be65b166c95680788ae5e3f45964ca01b"
     },
     {
       "path": "apps/backend/src/modules/email/templates/b2b-client-approved.ts",
-      "sha256": "d19520c68bb8083a6ba5dc432b93d3454c75d62d6df8dfd758f918628735c72a"
+      "sha256": "d6f7e14f5ae4ab365fad85413516444f081abc761720f45cc2c683d76bbc2378"
     },
     {
       "path": "apps/backend/src/modules/email/templates/cart-abandoned.ts",
-      "sha256": "45ff7b6ee27b672a91489f92f596fb23d4a23506cb4f44a4a5cdb5cd342fb577"
+      "sha256": "6c184f4367247b367a0512ddef544418af4e2c1054c569a04d418b77a4b1666c"
     },
     {
       "path": "apps/backend/src/modules/email/templates/company-register.ts",
-      "sha256": "d01b15f6f9d83af47eaa3051f6398df57aefff5386b899ceb3cdfb356aa50417"
+      "sha256": "2cd1b950543c7b90865f3f89d8c949876a7ae1b33bfd4d299db3cac109223ea4"
     },
     {
       "path": "apps/backend/src/modules/email/templates/customer-register.ts",
-      "sha256": "9bde2fcefba6fbb459e4a388bf96d371803a11df952fcb5c3b967d4f461a5525"
+      "sha256": "75e229818f527e5ad174735d97ea625faf4b7b2758cbaf716976666c3f37f7e3"
     },
     {
       "path": "apps/backend/src/modules/email/templates/email-helpers.ts",
-      "sha256": "3489d723e1aa7e92ab0c3623915ebd65e54c14ddcde7d0835629ac3e1e8558b0"
+      "sha256": "ee8446524db79506c1136834cddbfadc629b3f2b08669b48d0f975d7995cd786"
     },
     {
       "path": "apps/backend/src/modules/email/templates/index.ts",
-      "sha256": "06eebf209891a2e0de50b397f94bb6c4580dbbc142542595d1f2e55aa064626f"
+      "sha256": "c9728a23904c9d9b68cb714008cd723781839efb93043a0cdf66a3f3777b9f1c"
     },
     {
       "path": "apps/backend/src/modules/email/templates/invite.ts",
-      "sha256": "ddcdab50774ac912963fd90994a6f12558e2467d829787173eb872bf0a679aad"
+      "sha256": "428b127afd898e32f8346aa475fdcb1e8c0d712efd6a8a159ba8a66ae32905e0"
     },
     {
       "path": "apps/backend/src/modules/email/templates/kit-cde-notification.ts",
-      "sha256": "0433f0e6685cbf75eaaa742cb8c125877f633e56f01629001ca3a5a4ef99b208"
+      "sha256": "391df6b2f6dc9de0c7faeabdd35b5006cedb5c4e57b55b11918516e6dbccf6db"
     },
     {
       "path": "apps/backend/src/modules/email/templates/order-cancelled.ts",
-      "sha256": "4873750720476a685d391cbaa4396d9869c980375c9015b595e7c9b4c0c0ffc4"
+      "sha256": "fe5f1cc6b3ae336ce2789fe6cdcb0a35bed3dded224e4f0f893a70683f87cac5"
     },
     {
       "path": "apps/backend/src/modules/email/templates/order-confirmation.ts",
-      "sha256": "55f0def214ceaf1acec47dcbd2aad08b2ccf8906c690913048ed522d632b2c13"
+      "sha256": "b539758a4d14efcb4dea9c2c357c580e20d4f47d3dad03dbc9362c41c6c42be9"
     },
     {
       "path": "apps/backend/src/modules/email/templates/order-invoice.ts",
-      "sha256": "3c33550d39c0cc1fd3339db81b92b83c89f232fa97e2180d275e917d04049549"
+      "sha256": "28a8393982e36f5a06c02f155a5fb592338aeae5428ea9259a21cbec1de5a447"
     },
     {
       "path": "apps/backend/src/modules/email/templates/order-notification-admin.ts",
-      "sha256": "6c4ec6fbf48f7e7130b82fafc11dfa7111ae534a22ed38fc183d387061c60256"
+      "sha256": "0c02f414fc3e8cb900c4ec359151d04758ddfd755fbb37ebc9018a9fb3cf4ad3"
+    },
+    {
+      "path": "apps/backend/src/modules/email/templates/order-ready-for-pickup.ts",
+      "sha256": "fe2c45099bde3f6bd35c7a04528251951955a625a5bd48a9798d1edb19bfe73b"
     },
     {
       "path": "apps/backend/src/modules/email/templates/order-tracking.ts",
-      "sha256": "b24b7350033680ddad770d0f2fa641278a932a908ea9229217438045414996ae"
+      "sha256": "7e2f1fa80ecae57736287b737297488fe7c230e75eb00165e561354c4c3f88d6"
     },
     {
       "path": "apps/backend/src/modules/email/templates/password-reset.ts",
-      "sha256": "6b317a480ec00668801465046b5f7198c7c606aadaed63de039682439203f853"
+      "sha256": "ba4f61eeb00873d7f980cf7ce691b1f4c16429d36c23278eb1257f2980e9aa1f"
     },
     {
       "path": "apps/backend/src/modules/email/templates/quotation-notification-admin.ts",
-      "sha256": "c35d49b2abe609fe60783b82deaf205ec636be7300d162dcc85d7dca6cad1a12"
+      "sha256": "1cf3f9a627c725e65c596229da9fb6b47a8a218c5484871f388aecdd8a851126"
     },
     {
       "path": "apps/backend/src/modules/email/templates/quotation-rejected-admin.ts",
-      "sha256": "66b48d72f8a31d6cfc7b9daee78d857f0c9126c33ba5482e2511c8f7a6b71edb"
+      "sha256": "266184b1adf326e75ba4d5a9df2188d73859304a0f5c9ecb7772d159959659fa"
     },
     {
       "path": "apps/backend/src/modules/email/templates/return-requested.ts",
-      "sha256": "81eac3945a977fcd3bb6ee3015d4a53721ccb03d39930c6473e444cf0ddcc387"
+      "sha256": "3704650bda7b8f52413d4ccf9b51815c0f9074371891f8cc4bbd96aad802251c"
     },
     {
       "path": "apps/backend/src/modules/email/templates/stock-sync-report.ts",
-      "sha256": "296aa489547577d05ed8e7385cb561bfd6251c5f4620fcd1133728745bd1cdb5"
+      "sha256": "9a6ba424ff7e46a668fdc5101dff4be12e5d08511c0828579d529c562f57a1a0"
     },
     {
       "path": "apps/backend/src/modules/email/templates/types.ts",
-      "sha256": "82f024740b86d1dd0ce2bd613f895e0266efd105793e44fc01cc6a2dc163893d"
+      "sha256": "11c1fbc1e8517f3bfcd2fccdb1e2627fb47dc63eab7ed1ec0dbb0c33a359f5b2"
     },
     {
       "path": "apps/backend/src/modules/email/templates/whatsapp-handoff-admin.ts",
-      "sha256": "4e06aa90ab06de10c7a9538b0db5b61eafb0b40d6adf8cea223bbac3b8faa60c"
+      "sha256": "119a578af39821758a7419e6045bb3a05ff51df1cb2a5593620c9376c3636d4a"
     },
     {
       "path": "apps/backend/src/scripts/email-template-designs.test.ts",
-      "sha256": "9b40a74611ba7f8d43071a29a0af270904236e436817d3e295aadbcaa402e3ea"
+      "sha256": "e9acf8f457d8566c60aaa3061028e38933c614d1e65a09df277d7a734400f150"
     },
     {
       "path": "apps/backend/src/scripts/email-template-designs.ts",
-      "sha256": "59d65af7f2c4ba29c0b99c11235a1c2cc658fff100f5b348c83457815a3113dd"
+      "sha256": "b0a0d63b91667ad66204299d0d6c3cb70ccc5bca22d0c1f71ebc8e8cf63988d3"
     },
     {
       "path": "apps/backend/src/scripts/seed-email-templates.ts",
-      "sha256": "36331ce512bff83912145973fd1f688a06ceca86c4f527285959fd495006dc9d"
+      "sha256": "9fc5449163c8c5bd6348f0b04b86422ba74f4b175275bb6a9473ef6584cf3f0f"
     },
     {
       "path": "apps/backend/src/subscribers/order-cancelled-email.test.ts",
-      "sha256": "65b1a644a45be267c65811dbfd3cb12075f9624239a875bd7d5d74393dfeedb3"
+      "sha256": "209a8e317876012ec9a5e1f0b28b0c3a17d3a8286311024084778113994ac690"
     },
     {
       "path": "apps/backend/src/subscribers/order-cancelled-email.ts",
-      "sha256": "af42af50514ccfcf976c2bc26547636e3fdff72eb6fd16dd1a5825836e15bd21"
+      "sha256": "78069bf55ba72fe62a3f696b94e0bd15505a51b5059a5078daeebce62a7c4b45"
     },
     {
       "path": "apps/backend/src/subscribers/order-placed-email.test.ts",
-      "sha256": "88b44473d423bccc0651f2a4bdf5a06ee60776c4c92fbc2bcc26276245b17816"
+      "sha256": "61e12436eccda6c29b09e0f509651f9be114f0a8cae2b078313aad34c3230a2e"
     },
     {
       "path": "apps/backend/src/subscribers/order-placed-email.ts",
-      "sha256": "f9996525b1d6b7bfb203cbfee47303510ef972476283a7bf81b100fa3ba6946a"
+      "sha256": "7cb531be85d0eb754e8d42be8130be4296d6576a0489949121b6d14e204b9742"
+    },
+    {
+      "path": "apps/backend/src/subscribers/store-pickup-ready-email.ts",
+      "sha256": "a775d6ff01a42b43ffd52153f6557d486ed7fafa32104846aba87ed20f1f81e0"
     },
     {
       "path": "apps/backend/src/workflows/create-email-template.ts",
-      "sha256": "f6d36be773e43ae8f913fbcdd39a5afc4fd7e894cf2cbb48c69afdf84c1355bb"
+      "sha256": "c2a596d014261cf5143f18f1d481c8e835bc02cfeb4c36edd88edd450d6abbfc"
+    },
+    {
+      "path": "apps/backend/src/workflows/mark-order-ready-for-pickup.test.ts",
+      "sha256": "9d7d5eab0ba945621b8a1419e787691486933ededdbcaf8edcc7087bc301d1f8"
+    },
+    {
+      "path": "apps/backend/src/workflows/mark-order-ready-for-pickup.ts",
+      "sha256": "cf3698918ab933948405c7233d22115994f9a5e2b12e8c0cb27ac95d1c7ab621"
     },
     {
       "path": "apps/backend/src/workflows/update-email-template.ts",
-      "sha256": "c07f9256b4a41e17765643de1cf9834befbfa3d94efc57c77f5b57b0a4681c9f"
+      "sha256": "b13c77a6c0ae04e59e886b54ed00ca748e52d7f641f837ae00da9d94f6ec0eef"
     }
   ],
   "integrations": {
