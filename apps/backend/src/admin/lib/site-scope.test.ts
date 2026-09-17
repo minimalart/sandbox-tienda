@@ -143,10 +143,14 @@ test('ninguna pantalla `scoped` corresponde a una ruta que el backend dejó pend
     'recurring-orders': 'admin/recurring-orders',
     // pdf-catalogs: moved to @minimalart/mercatto-plugin-pdf-catalog
     'site-credentials': 'admin/site-credentials',
+    // La pantalla se llama por su lugar en el menú (`whatsapp/flujos`) y la ruta por
+    // el recurso (`whatsapp-flows`): otra vez el motivo por el que este mapa existe.
+    'whatsapp-flujos': 'admin/whatsapp-flows',
     // El nombre de la pantalla y el de la ruta no coinciden, y está bien: la ruta
     // es del MÓDULO (`app-settings`) y la pantalla es del lugar donde vive en el
     // menú (`settings/extension-settings`). Por eso este mapa existe.
     'extension-settings': 'admin/app-settings',
+    'marketing-privacy': 'admin/app-settings',
     // Preferencias se declara por PESTAÑA, así que cada una mapea a la ruta que
     // realmente la alimenta. Antes había una sola entrada para las siete, apuntando a
     // `settings`, y eso hacía pasar el test para pestañas cuya ruta no filtraba.

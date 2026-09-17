@@ -1,0 +1,36 @@
+export type SitesHubConfig = {
+  sections: string[];
+  accent: string;
+  invitation_label: string;
+  invitation_url: string;
+  benefits_title: string;
+  benefits_description: string;
+  items: { title: string; description: string }[];
+  name: string;
+  logo: string;
+  footer_logo: string;
+  background: string;
+  foreground: string;
+  title: string;
+  description: string;
+  search_placeholder: string;
+  hero_image: string;
+  list_title: string;
+  cta_label: string;
+  cta_url: string;
+  cta_title: string;
+  cta_description: string;
+  cta_image: string;
+  footer_description: string;
+  contact_email: string;
+  address: string;
+  privacy_url: string;
+  terms_url: string;
+};
+export type DirectorySite = { slug: string; name: string; logo: string | null; url: string };
+export type SitesHubPage = {
+  sites: DirectorySite[];
+  count: number;
+  next_offset: number | null;
+  config: SitesHubConfig;
+};

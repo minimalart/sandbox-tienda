@@ -6,6 +6,25 @@ import { readTintMetadata } from '../tinting/line-metadata';
 import type { ErpSalePayload } from '../types';
 
 /**
+ * Snapshot congelado del step Alumnos + escuela que lo emitió. Se resuelve por
+ * `order → order_cart → site_checkout_session.snapshot_id → site_checkout_snapshot`.
+ * Ausente en la tienda principal (no hay `demo_store` asociado), ausente en
+ * repos que no tengan la extensión multistore instalada — el `try/catch` del
+ * loader cubre ambos casos y devuelve `null` sin ruido.
+ */
+type RecipientsSnapshot = {
+  site: { id: string; slug: string; name: string };
+  people: Array<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    document?: string | null;
+    grade?: string | null;
+  }>;
+  units: Array<{ id: string; line_id: string; line_key: string; person_id: string | null }>;
+};
+
+/**
  * Arma el payload de venta (PRD §8.3) por ALLOWLIST desde la orden: solo los
  * campos que el ERP necesita. Del pago viaja apenas `{provider_id, monto,
  * moneda}` — nunca `payment.data` ni tokens del provider. El documento fiscal
@@ -42,6 +61,7 @@ type OrderGraphResult = {
   } | null;
   shipping_address?: OrderAddress;
   items?: Array<{
+    id?: string;
     title?: string | null;
     /**
      * Título del PRODUCTO, sin el color: en las líneas entonadas `title` lleva
@@ -176,6 +196,10 @@ export const SALE_ORDER_FIELDS: readonly string[] = [
   'shipping_address.province',
   'shipping_address.postal_code',
   'shipping_address.country_code',
+  // El `id` de cada item es lo que después usamos para mapear `unit → sku` en
+  // el enrichment de destinatarios: `mapOrderUnits` matchea por
+  // `metadata.checkout_line_key` y devuelve `order_line_id` = ese id.
+  'items.id',
   'items.title',
   // Sin este campo el remito diría el color DOS VECES: `title` ya lo trae
   // pegado en las líneas entonadas y el adapter de Zeus arma la descripción
@@ -221,6 +245,142 @@ export const SALE_ORDER_FIELDS: readonly string[] = [
   'payment_collections.payments.provider_id',
   'payment_collections.payments.captured_at',
 ];
+
+/**
+ * Trae el snapshot de destinatarios y el `demo_store` (escuela) que emitió el
+ * checkout. Devuelve `null` cuando: la orden no vino de un site con recipients,
+ * el snapshot expiró/no existe, o la extensión multistore no está instalada
+ * (tablas ausentes). En todos los casos el resultado es "no hay data extra que
+ * enviar al ERP" — el payload viaja idéntico al de la tienda principal.
+ *
+ * Todo el bloque va en try/catch a propósito: cualquier fallo acá NO debe
+ * bloquear el envío del pedido al ERP. La regresión que evita es la típica
+ * "una extensión opcional rompe el checkout completo" cuando en realidad su
+ * ausencia es un estado válido.
+ */
+export async function loadRecipientsSnapshot(
+  container: MedusaContainer,
+  orderId: string
+): Promise<RecipientsSnapshot | null> {
+  try {
+    const query: any = container.resolve(ContainerRegistrationKeys.QUERY);
+    const { data: links } = await query.graph({
+      entity: 'order_cart',
+      fields: ['cart_id'],
+      filters: { order_id: orderId },
+    });
+    const cartId = links?.[0]?.cart_id;
+    if (!cartId) return null;
+
+    const pg: any = container.resolve(ContainerRegistrationKeys.PG_CONNECTION);
+    const session = await pg('site_checkout_session').where({ cart_id: cartId }).first();
+    if (!session?.snapshot_id) return null;
+
+    const snapshot = await pg('site_checkout_snapshot')
+      .where({ id: session.snapshot_id, cart_id: cartId })
+      .first();
+    if (!snapshot) return null;
+
+    // Un snapshot existe cuando el checkout policy del site está activo (aunque
+    // sea para OTROS steps: billing, delivery, etc.). Sin `recipients.enabled`,
+    // people/units siempre vienen vacíos: no hay data de escuela para reportar.
+    // Chequeamos el flag del policy congelado en el snapshot (no la config
+    // actual del site) para preservar la semántica en el momento del checkout.
+    if (snapshot.policy?.recipients?.enabled !== true) return null;
+
+    const site = await pg('demo_store').where({ id: snapshot.site_id }).first();
+    if (!site || site.is_main === true) return null;
+
+    // `pg` (knex) parsea `jsonb` a objetos JS al leer, no hace falta JSON.parse
+    // — mismo tratamiento que en `api/admin/orders/[id]/checkout/route.ts`.
+    return {
+      site: { id: site.id, slug: site.slug, name: site.name },
+      people: snapshot.people ?? [],
+      units: snapshot.units ?? [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Transforma el shape flat del snapshot (`units[]` con `person_id` por unidad)
+ * al shape agrupado por SKU que le proponemos a Odoo (§8.3 del contrato).
+ *
+ * Agrupación:
+ *  - Cada `unit` se resuelve a un `order.item` por `line_key` (usando la misma
+ *    lógica que `mapOrderUnits`, replicada acá para no depender del módulo
+ *    demo-store desde el ERP builder).
+ *  - Items del pedido con el mismo SKU se colapsan en un único `item` — cliente
+ *    poco común, pero pasa con líneas tintadas o promo splits.
+ *  - Dentro de cada SKU los recipients se agrupan por `external_id` con la
+ *    `quantity` que le corresponde (suma de unidades asignadas a esa persona).
+ *
+ * Salidas explícitas:
+ *  - `document`: `null` si el alumno no cargó DNI (viene `undefined`/`''`).
+ *  - `grade`:    `null` si no cargó grado.
+ *  - Líneas sin recipients no se listan (el ERP las ve como líneas comunes).
+ */
+export function toStudentAssignments(
+  snapshot: RecipientsSnapshot,
+  orderItems: Array<{ id?: string; variant_sku?: string | null; metadata?: Record<string, unknown> | null }>
+): ErpSalePayload['student_assignments'] {
+  const peopleById = new Map(snapshot.people.map((p) => [p.id, p]));
+
+  // Map `line_key` → order item (id + sku). `mapOrderUnits` exige match único,
+  // acá lo replicamos silencioso: si el key no matchea 1-a-1, la unidad se
+  // descarta del envío en vez de romper el pedido en el ERP.
+  const itemByLineKey = new Map<string, { id: string; sku: string | null }>();
+  for (const item of orderItems) {
+    const key = item?.metadata?.checkout_line_key;
+    if (typeof key !== 'string' || !item?.id) continue;
+    if (itemByLineKey.has(key)) {
+      // Ambigüedad: dos líneas con el mismo checkout_line_key. Lo tratamos
+      // como no-match para no arriesgar mandarle a Odoo destinatarios pegados
+      // a la línea equivocada. `mapOrderUnits` tira error en este caso.
+      itemByLineKey.set(key, { id: '', sku: null });
+      continue;
+    }
+    itemByLineKey.set(key, { id: item.id, sku: item.variant_sku ?? null });
+  }
+
+  // Agrupar por SKU → { qty, recipients: personId → qty }
+  const bySku = new Map<string, { qty: number; recipients: Map<string, number> }>();
+  for (const unit of snapshot.units) {
+    if (!unit.person_id) continue;
+    const mapped = itemByLineKey.get(unit.line_key);
+    if (!mapped || !mapped.id || !mapped.sku) continue;
+    const bucket = bySku.get(mapped.sku) ?? { qty: 0, recipients: new Map<string, number>() };
+    bucket.qty += 1;
+    bucket.recipients.set(unit.person_id, (bucket.recipients.get(unit.person_id) ?? 0) + 1);
+    bySku.set(mapped.sku, bucket);
+  }
+
+  if (bySku.size === 0) return null;
+
+  return {
+    schema_version: '1.0',
+    items: [...bySku.entries()].map(([sku, { qty, recipients }]) => ({
+      sku,
+      quantity: qty,
+      recipients: [...recipients.entries()].map(([pid, qtyPerPerson]) => {
+        const person = peopleById.get(pid);
+        // Guardia: `assertCoverage` garantiza que el `person_id` existe en
+        // `people`, pero si el snapshot llegara corrupto preferimos no romper
+        // el envío al ERP — se manda con datos vacíos y el operador humano lo
+        // detecta antes que el proceso automatizado.
+        return {
+          external_id: pid,
+          first_name: person?.first_name ?? '',
+          last_name: person?.last_name ?? '',
+          document: person?.document ?? null,
+          grade: person?.grade ?? null,
+          quantity: qtyPerPerson,
+        };
+      }),
+    })),
+  };
+}
 
 /** Devuelve `null` si la orden no existe. */
 export async function buildSalePayload(
@@ -305,6 +465,26 @@ export async function buildSalePayload(
       },
     },
   };
+
+  // Enrichment de escuela + asignación de alumnos. Vive DESPUÉS del `payload`
+  // base para que si `loadRecipientsSnapshot` tira, los campos queden `null` y
+  // el envío al ERP siga sin datos extra (mismo comportamiento que tienda
+  // principal). Al día de hoy los adapters existentes (Odoo, Bsale, Zeus,
+  // Contabilium) NO leen estos dos campos, así que la outbox los persiste como
+  // registro business pero el `sale.order.create` de Odoo NO los envía hasta
+  // que el equipo Odoo confirme los nombres técnicos finales (ver adapters/odoo.ts).
+  const recipients = await loadRecipientsSnapshot(container, opts.orderId);
+  if (recipients) {
+    payload.school = {
+      external_ref: recipients.site.slug,
+      name: recipients.site.name,
+      source_site_id: recipients.site.id,
+    };
+    payload.student_assignments = toStudentAssignments(recipients, order.items ?? []);
+  } else {
+    payload.school = null;
+    payload.student_assignments = null;
+  }
 
   return sanitizePayload(payload) as ErpSalePayload;
 }

@@ -2,7 +2,8 @@ import { Input, Select, Switch, Text } from '@medusajs/ui';
 import type { ReactElement } from 'react';
 
 import { ACTIONS, argsOf } from '../_editor';
-import { ProductPicker, VariantPicker } from '../_product-picker';
+import { ProductPicker, SingleProductPicker } from '../_product-picker';
+import { CatalogFilterField } from './catalog-filter-field';
 import type { NodeInspectorProps } from './types';
 
 /**
@@ -42,11 +43,16 @@ export function ActionInspector({ node, patch, patchArg }: NodeInspectorProps): 
               value={Array.isArray(node.args?.[field.name]) ? (node.args?.[field.name] as string[]) : []}
               onChange={(ids) => patchArg(field.name, ids)}
             />
-          ) : field.kind === 'variant' ? (
-            <VariantPicker
+          ) : field.kind === 'product' ? (
+            <SingleProductPicker
               value={typeof node.args?.[field.name] === 'string' ? (node.args?.[field.name] as string) : ''}
               onChange={(value) => patchArg(field.name, value)}
               help={field.help}
+            />
+          ) : field.kind === 'filter' ? (
+            <CatalogFilterField
+              value={(node.args?.[field.name] ?? {}) as Record<string, unknown>}
+              onChange={(filtro) => patchArg(field.name, filtro)}
             />
           ) : (
             <Input
@@ -56,7 +62,7 @@ export function ActionInspector({ node, patch, patchArg }: NodeInspectorProps): 
               onChange={(e) => patchArg(field.name, e.target.value)}
             />
           )}
-          {field.help && field.kind !== 'variant' && (
+          {field.help && field.kind !== 'product' && (
             <Text size="xsmall" className="text-ui-fg-subtle">
               {field.help}
             </Text>

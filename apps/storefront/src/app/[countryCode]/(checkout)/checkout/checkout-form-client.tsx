@@ -10,7 +10,7 @@ import {
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { buildShippingAddressKey } from "@lib/util/shipping-address-key";
-import { goToCheckoutStep, isCheckoutStepEditing } from "@lib/util/checkout-step";
+import { goToCheckoutStep, isCheckoutStepEditing, nextVisibleStep } from "@lib/util/checkout-step";
 import isAddressComplete from "@lib/util/validate-address";
 import type { HttpTypes } from "@medusajs/types";
 import Addresses from "@modules/checkout/components/addresses";
@@ -29,11 +29,11 @@ import Recipients from '@modules/checkout/components/recipients';
 type PaymentMethod = { id: string };
 type PaymentSession = { provider_id: string; status: string; id: string };
 
-function BenefitsContinueButton() {
+function BenefitsContinueButton({ nextStep }: { nextStep: string }) {
   return (
     <button
       className="mt-4 w-full rounded-lg bg-[--primary-color] px-4 py-3 font-medium text-sm text-white hover:opacity-90"
-      onClick={() => goToCheckoutStep("payment")}
+      onClick={() => goToCheckoutStep(nextStep)}
       type="button"
     >
       Continuar al pago
@@ -43,6 +43,8 @@ function BenefitsContinueButton() {
 
 type CheckoutFormClientProps = {
   checkout?: CheckoutState | null;
+  /** La policy se está refrescando: `checkout` todavía describe el cart anterior. */
+  checkoutLoading?: boolean;
   onCheckoutUpdate?: (state: CheckoutState) => void;
   googleMapsApiKey: string;
   cart: HttpTypes.StoreCart;
@@ -56,6 +58,7 @@ export default function CheckoutFormClient({
   customer,
   onCartUpdate,
   checkout,
+  checkoutLoading,
   onCheckoutUpdate,
 }: CheckoutFormClientProps) {
   const tenant = useTenant();
@@ -181,13 +184,22 @@ export default function CheckoutFormClient({
   // Use a short delay to allow cart state updates to propagate before
   // deciding whether to redirect (avoids race condition when navigating
   // right after onCartUpdate sets new cart state).
+  //
+  // Mientras la policy se refresca NO se redirige: `checkout` todavía describe
+  // el cart anterior (p. ej. `personal.complete: false` porque el email recién
+  // se guardó) y `effectiveStep` sería el paso viejo. Los 100ms alcanzaban para
+  // que propagara el state del cart pero no para el round-trip de la policy
+  // (~1,4s), así que el "Continuar" del primer paso rebotaba a `?step=personal`
+  // y había que apretarlo dos veces. El efecto vuelve a correr cuando
+  // `checkoutLoading` baja, ya con datos frescos.
   useEffect(() => {
+    if (checkoutLoading) return;
     if (currentStep.replace(/^edit-/, '') === effectiveStep) return;
     const timer = setTimeout(() => {
       goToCheckoutStep(effectiveStep, { replace: true });
     }, 100);
     return () => clearTimeout(timer);
-  }, [currentStep, effectiveStep]);
+  }, [currentStep, effectiveStep, checkoutLoading]);
 
   // Track which steps the user has actually submitted (i.e., advanced past via
   // the Continue button or otherwise moved forward in the step order). A step
@@ -424,6 +436,7 @@ export default function CheckoutFormClient({
           cart={cart}
           customer={customer}
           onCartUpdate={onCartUpdate}
+          nextStep={nextVisibleStep(stepOrder, 'personal', 'address')}
         />
       </CheckoutStep>}
 
@@ -470,15 +483,15 @@ export default function CheckoutFormClient({
           onCartUpdate={onCartUpdate}
           refreshingOptions={shippingLoading}
           shippingCoverage={shippingCoverage}
-          nextStep={(() => { const i = stepOrder.indexOf('delivery'); return (i >= 0 && stepOrder[i + 1]) || 'payment'; })()}
+          nextStep={nextVisibleStep(stepOrder, 'delivery', 'payment')}
         />
       </CheckoutStep>}
 
       {policyBlocks && visible('billing') && <CheckoutStep stepNumber={stepNumber('billing')} title={checkout?.policy?.sections?.billing?.title?.trim() || "Facturación"} subtitle={checkout?.policy?.sections?.billing?.subtitle?.trim() || undefined} icon={<UserIcon className="h-4 w-4" />} isCompleted={!!policyBlocks.find(b => b.id === 'billing')?.complete} isEditing={isCheckoutStepEditing(currentStep, effectiveStep, 'billing', submittedSteps)} isOpen={effectiveStep === 'billing'} onEdit={() => editStep('billing')}>
-        <PersonalInfo cart={cart} customer={customer} onCartUpdate={onCartUpdate} />
+        <PersonalInfo cart={cart} customer={customer} onCartUpdate={onCartUpdate} nextStep={nextVisibleStep(stepOrder, 'billing', 'payment')} />
       </CheckoutStep>}
       {checkout?.configured && checkout.policy.recipients.enabled && <CheckoutStep stepNumber={stepNumber('recipients')} title={tenant.template === 'campaign' ? 'Estudiantes' : wording(checkout.policy.sections?.recipients?.title?.trim() || 'Destinatarios de productos')} subtitle={tenant.template === 'campaign' ? undefined : (checkout.policy.sections?.recipients?.subtitle?.trim() || 'Indicá quién recibirá cada unidad de tu compra.')} icon={<UserIcon className="h-4 w-4" />} isCompleted={checkout.recipients_complete && effectiveStep !== 'recipients'} isEditing={isCheckoutStepEditing(currentStep, effectiveStep, 'recipients', submittedSteps)} isOpen={effectiveStep === 'recipients'} onEdit={() => editStep('recipients')} completedSummary={wording(`${checkout.people.length} personas · ${checkout.units.length} unidades`)}>
-        <Recipients buyer={customer ?? undefined} state={checkout} items={cart.items ?? []} onSaved={next => onCheckoutUpdate?.(next)} onContinue={() => { const idx = stepOrder.indexOf('recipients'); const next = idx >= 0 ? stepOrder[idx + 1] : undefined; if (next) goToCheckoutStep(next); }} />
+        <Recipients buyer={customer ?? undefined} state={checkout} items={cart.items ?? []} onSaved={next => onCheckoutUpdate?.(next)} onContinue={() => { const next = nextVisibleStep(stepOrder, 'recipients'); if (next) goToCheckoutStep(next); }} />
       </CheckoutStep>}
 
       {/* Step 4: Beneficios */}
@@ -511,7 +524,7 @@ export default function CheckoutFormClient({
           <GiftCardCode cart={cart} onCartUpdate={onCartUpdate} />
           <LoyaltyRewardsCheckout cart={cart} onCartUpdate={onCartUpdate} />
         </div>
-        <BenefitsContinueButton />
+        <BenefitsContinueButton nextStep={nextVisibleStep(stepOrder, 'benefits', 'payment') ?? 'payment'} />
       </CheckoutStep>}
 
       {/* Step 5: Forma de pago */}

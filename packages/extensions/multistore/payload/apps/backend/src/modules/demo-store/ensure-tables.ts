@@ -213,6 +213,23 @@ create table if not exists site_credential (
 );
 create unique index if not exists IDX_site_credential_site_integration on site_credential (site_id, integration) where deleted_at is null;
 create index if not exists IDX_site_credential_integration on site_credential (integration) where deleted_at is null;
+
+-- product_sales_mode: modo de venta de un Product dentro de una tienda (PRD
+-- Bundles V2 §5). Espeja Migration20260917120000DemoStore. Nace vacía: sin fila,
+-- el producto se vende suelto y en bundles, que es lo que ya hacían todos.
+create table if not exists product_sales_mode (
+  id text not null,
+  product_id text not null,
+  site_id text not null,
+  sales_mode text not null default 'standalone_and_bundle',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  deleted_at timestamptz null,
+  constraint product_sales_mode_pkey primary key (id)
+);
+create unique index if not exists IDX_product_sales_mode_product_site_unique on product_sales_mode (product_id, site_id) where deleted_at is null;
+create index if not exists IDX_product_sales_mode_site_mode on product_sales_mode (site_id, sales_mode) where deleted_at is null;
+create index if not exists IDX_product_sales_mode_deleted_at on product_sales_mode (deleted_at) where deleted_at is null;
 `;
 
 let ensured: Promise<void> | null = null;

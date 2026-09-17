@@ -70,6 +70,13 @@ export const ContentConfigSchema = z
         categories: z.boolean().optional(),
         // Etiquetas de formato/color en las cards del catálogo.
         variantLabels: z.boolean().optional(),
+        // Bundled Products: habilita el módulo `bundle` para esta tienda.
+        // Cuando está en false (default) el bloque Puck `BundlesGrid` del home
+        // no renderiza nada, y las rutas storefront pueden asumir que la
+        // capacidad no está activa. La creación de bundles en el admin es
+        // independiente de este flag — el operador puede tener bundles
+        // guardados sin exponerlos todavía en el storefront.
+        bundles: z.boolean().optional(),
       })
       .partial()
       .optional(),

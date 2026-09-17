@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { SALE_ORDER_FIELDS, lineQuantityOf, lineTotalOf } from './build-sale-payload.ts';
+import { describe, test } from 'node:test';
+import { SALE_ORDER_FIELDS, lineQuantityOf, lineTotalOf, toStudentAssignments } from './build-sale-payload.ts';
 
 /**
  * Estos tests existen por un comprobante emitido en CERO.
@@ -96,4 +96,173 @@ test('un total 0 explícito se respeta y no se recalcula', () => {
 test('valores basura no propagan NaN al comprobante', () => {
   assert.equal(lineQuantityOf({ quantity: 'dos' as unknown as number }), 0);
   assert.equal(lineTotalOf({ total: 'mucho' as unknown as number, unit_price: 10 }), 0);
+});
+
+/**
+ * Los tests de `toStudentAssignments` cubren el contrato que le prometimos a
+ * Odoo (schema_version 1.0): items agrupados por SKU, cada uno con la lista
+ * de destinatarios y la `quantity` que a cada uno le corresponde. La
+ * transformación es pura sobre `snapshot.people`, `snapshot.units` y los
+ * items del pedido — sin acceso a la DB, cero side effects.
+ */
+describe('toStudentAssignments — transformación snapshot → items agrupados', () => {
+  const site = { id: 'ds_01', slug: 'san_agustin', name: 'Colegio San Agustín' };
+  const ana = { id: 'p-ana', first_name: 'Ana', last_name: 'García', document: '40123456', grade: '4A' };
+  const juan = { id: 'p-juan', first_name: 'Juan', last_name: 'Pérez', document: '45123456', grade: '4A' };
+  const sinDoc = { id: 'p-sin', first_name: 'Martina', last_name: 'López', grade: undefined };
+
+  test('1 línea × 1 destinatario', () => {
+    const result = toStudentAssignments(
+      { site, people: [ana], units: [{ id: 'u1', line_id: 'l1', line_key: 'k1', person_id: ana.id }] },
+      [{ id: 'oi_1', variant_sku: 'EDU-KIT-4', metadata: { checkout_line_key: 'k1' } }]
+    );
+    assert.equal(result?.schema_version, '1.0');
+    assert.equal(result?.items.length, 1);
+    assert.equal(result?.items[0]!.sku, 'EDU-KIT-4');
+    assert.equal(result?.items[0]!.quantity, 1);
+    assert.equal(result?.items[0]!.recipients.length, 1);
+    assert.equal(result?.items[0]!.recipients[0]!.external_id, ana.id);
+    assert.equal(result?.items[0]!.recipients[0]!.quantity, 1);
+    assert.equal(result?.items[0]!.recipients[0]!.document, '40123456');
+    assert.equal(result?.items[0]!.recipients[0]!.grade, '4A');
+  });
+
+  test('1 línea con quantity=2 se splitea entre 2 destinatarios', () => {
+    const result = toStudentAssignments(
+      {
+        site,
+        people: [ana, juan],
+        units: [
+          { id: 'u1', line_id: 'l1', line_key: 'k1', person_id: ana.id },
+          { id: 'u2', line_id: 'l1', line_key: 'k1', person_id: juan.id },
+        ],
+      },
+      [{ id: 'oi_1', variant_sku: 'EDU-KIT-4', metadata: { checkout_line_key: 'k1' } }]
+    );
+    assert.equal(result?.items[0]!.quantity, 2);
+    assert.equal(result?.items[0]!.recipients.length, 2);
+    // La quantity de cada recipient tiene que sumar la total.
+    const total = result?.items[0]!.recipients.reduce((s, r) => s + r.quantity, 0);
+    assert.equal(total, 2);
+  });
+
+  test('mismo destinatario en varias líneas: aparece en cada item que le toca', () => {
+    const result = toStudentAssignments(
+      {
+        site,
+        people: [ana],
+        units: [
+          { id: 'u1', line_id: 'l1', line_key: 'k1', person_id: ana.id },
+          { id: 'u2', line_id: 'l2', line_key: 'k2', person_id: ana.id },
+        ],
+      },
+      [
+        { id: 'oi_1', variant_sku: 'EDU-KIT-4', metadata: { checkout_line_key: 'k1' } },
+        { id: 'oi_2', variant_sku: 'EDU-MICROSCOPIO', metadata: { checkout_line_key: 'k2' } },
+      ]
+    );
+    assert.equal(result?.items.length, 2);
+    assert.ok(result?.items.every((i) => i.recipients[0]!.external_id === ana.id));
+    assert.ok(result?.items.every((i) => i.quantity === 1));
+  });
+
+  test('unidades sin person_id se ignoran (no aparecen en items)', () => {
+    const result = toStudentAssignments(
+      {
+        site,
+        people: [ana],
+        units: [
+          { id: 'u1', line_id: 'l1', line_key: 'k1', person_id: ana.id },
+          { id: 'u2', line_id: 'l1', line_key: 'k1', person_id: null },
+        ],
+      },
+      [{ id: 'oi_1', variant_sku: 'EDU-KIT-4', metadata: { checkout_line_key: 'k1' } }]
+    );
+    // Sólo 1 recipient con qty 1 — la unidad sin persona no se cuenta.
+    assert.equal(result?.items[0]!.quantity, 1);
+    assert.equal(result?.items[0]!.recipients[0]!.quantity, 1);
+  });
+
+  test('sin unidades con person_id → devuelve null (nada que mandar al ERP)', () => {
+    const result = toStudentAssignments(
+      {
+        site,
+        people: [ana],
+        units: [{ id: 'u1', line_id: 'l1', line_key: 'k1', person_id: null }],
+      },
+      [{ id: 'oi_1', variant_sku: 'EDU-KIT-4', metadata: { checkout_line_key: 'k1' } }]
+    );
+    assert.equal(result, null);
+  });
+
+  test('document/grade opcionales llegan como null explícito', () => {
+    const result = toStudentAssignments(
+      { site, people: [sinDoc], units: [{ id: 'u1', line_id: 'l1', line_key: 'k1', person_id: sinDoc.id }] },
+      [{ id: 'oi_1', variant_sku: 'EDU-KIT-4', metadata: { checkout_line_key: 'k1' } }]
+    );
+    assert.equal(result?.items[0]!.recipients[0]!.document, null);
+    assert.equal(result?.items[0]!.recipients[0]!.grade, null);
+    assert.equal(result?.items[0]!.recipients[0]!.first_name, 'Martina');
+  });
+
+  test('unit con checkout_line_key ambiguo (2 líneas con el mismo key) se descarta', () => {
+    // `mapOrderUnits` de demo-store tira error acá; en el enrichment del ERP
+    // preferimos NO mandar la unidad ambigua antes que romper el envío al ERP.
+    const result = toStudentAssignments(
+      { site, people: [ana], units: [{ id: 'u1', line_id: 'l1', line_key: 'k1', person_id: ana.id }] },
+      [
+        { id: 'oi_1', variant_sku: 'EDU-KIT-4', metadata: { checkout_line_key: 'k1' } },
+        { id: 'oi_2', variant_sku: 'EDU-KIT-4', metadata: { checkout_line_key: 'k1' } },
+      ]
+    );
+    // Ambigüedad → unidad descartada → no hay items con destinatarios → null.
+    assert.equal(result, null);
+  });
+
+  test('unit cuyo line_key no matchea ningún order item se descarta silenciosamente', () => {
+    // Puede pasar si la orden se editó administrativamente eliminando líneas
+    // después del snapshot. NO tirar acá evita bloquear el envío al ERP.
+    const result = toStudentAssignments(
+      { site, people: [ana], units: [{ id: 'u1', line_id: 'l1', line_key: 'k_removed', person_id: ana.id }] },
+      [{ id: 'oi_1', variant_sku: 'EDU-KIT-4', metadata: { checkout_line_key: 'k1' } }]
+    );
+    assert.equal(result, null);
+  });
+
+  test('items con el mismo SKU en dos líneas distintas se colapsan', () => {
+    // Caso raro (típicamente por tint splits o promos): dos líneas de la orden
+    // con el mismo variant_sku. Se agregan bajo el mismo `sku` en el output.
+    const result = toStudentAssignments(
+      {
+        site,
+        people: [ana, juan],
+        units: [
+          { id: 'u1', line_id: 'l1', line_key: 'k1', person_id: ana.id },
+          { id: 'u2', line_id: 'l2', line_key: 'k2', person_id: juan.id },
+        ],
+      },
+      [
+        { id: 'oi_1', variant_sku: 'EDU-KIT-4', metadata: { checkout_line_key: 'k1' } },
+        { id: 'oi_2', variant_sku: 'EDU-KIT-4', metadata: { checkout_line_key: 'k2' } },
+      ]
+    );
+    assert.equal(result?.items.length, 1);
+    assert.equal(result?.items[0]!.sku, 'EDU-KIT-4');
+    assert.equal(result?.items[0]!.quantity, 2);
+    assert.equal(result?.items[0]!.recipients.length, 2);
+  });
+
+  test('items sin variant_sku o sin checkout_line_key se ignoran', () => {
+    const result = toStudentAssignments(
+      { site, people: [ana], units: [
+        { id: 'u1', line_id: 'l1', line_key: 'k1', person_id: ana.id },
+        { id: 'u2', line_id: 'l2', line_key: 'k2', person_id: ana.id },
+      ] },
+      [
+        { id: 'oi_1', variant_sku: null, metadata: { checkout_line_key: 'k1' } },
+        { id: 'oi_2', variant_sku: 'EDU-KIT-4', metadata: {} },
+      ]
+    );
+    assert.equal(result, null);
+  });
 });

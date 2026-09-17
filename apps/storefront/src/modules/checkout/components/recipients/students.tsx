@@ -18,14 +18,15 @@ import {
   handleImageError,
 } from '@lib/util/placeholder-image';
 import type { RecipientsProps } from './index';
+import type { Assignments } from './student-assignments';
 import {
-  assignedQuantity,
-  assignmentProgress,
-  assignStudentQuantities,
-  selectedUnitIds,
-  type Assignments,
-  type StudentLine,
-} from './student-assignments';
+  assignTargetQuantities,
+  buildAssignmentTargets,
+  selectedTargetUnitIds,
+  targetAssignedQuantity,
+  targetsProgress,
+  type AssignmentTarget,
+} from './assignment-targets';
 
 const outline =
   'inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40';
@@ -39,16 +40,62 @@ const blankStudent = (): CheckoutPerson => ({
   grade: '',
 });
 
-function ProductImage({ item }: { item: StudentLine }) {
+/**
+ * Foto del target: un kit apila las miniaturas de lo que trae adentro.
+ *
+ * Es la misma señal que usa el minicarrito (`BundleSummaryRow`), y a propósito:
+ * con una sola foto un kit de doce productos se ve igual que un producto suelto,
+ * y acá el comprador está decidiendo a quién le toca cada cosa.
+ */
+function TargetImage({
+  target,
+  size = 48,
+  rounded = 'rounded-md',
+  border = 'border-gray-100',
+}: {
+  target: AssignmentTarget;
+  size?: number;
+  rounded?: string;
+  border?: string;
+}) {
+  const stack = target.kind === 'bundle' ? target.thumbnails.slice(0, 3) : [];
+
+  if (stack.length < 2) {
+    return (
+      <img
+        src={target.thumbnail || PLACEHOLDER_IMAGE}
+        onError={handleImageError}
+        alt=""
+        style={{ width: size, height: size }}
+        className={`shrink-0 border bg-white object-contain ${size >= 64 ? 'p-2' : 'p-1'} ${rounded} ${border}`}
+      />
+    );
+  }
+
+  // Las miniaturas se reparten el sobrante de la caja, así la pila entra
+  // completa en el mismo espacio que ocupaba la foto única.
+  const tile = Math.round(size * 0.72);
+  const step = (size - tile) / (stack.length - 1);
+
   return (
-    <img
-      src={
-        item.thumbnail || item.variant?.product?.thumbnail || PLACEHOLDER_IMAGE
-      }
-      onError={handleImageError}
-      alt=""
-      className="h-12 w-12 shrink-0 rounded-md border border-gray-100 bg-white object-contain p-1"
-    />
+    <div style={{ width: size, height: size }} className="relative shrink-0">
+      {stack.map((url, i) => (
+        <img
+          key={url}
+          src={url}
+          onError={handleImageError}
+          alt=""
+          style={{
+            width: tile,
+            height: tile,
+            left: i * step,
+            top: i * step,
+            zIndex: stack.length - i,
+          }}
+          className={`absolute border bg-white object-contain p-1 ${rounded} ${border}`}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -79,15 +126,15 @@ export default function Students({
   const [busy, setBusy] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
-  const lines: StudentLine[] = items.filter((item) =>
-    state.units.some((u) => u.line_id === item.id),
+  // La unidad de asignación es el KIT, no cada producto que lo compone: un kit
+  // de doce productos se pregunta UNA vez (PRD Bundles V2 §22-§23). Las líneas
+  // sueltas siguen siendo su propio target, así que el flujo mixto no cambia.
+  const targets: AssignmentTarget[] = buildAssignmentTargets(items, state.units);
+  const pending = targets.filter(
+    (target) =>
+      targetAssignedQuantity(state.units, assignments, target) !== target.quantity,
   );
-  const pending = lines.filter(
-    (line) =>
-      assignedQuantity(state.units, assignments, line.id) !==
-      Number(line.quantity),
-  );
-  const progress = assignmentProgress(state.units, assignments, lines);
+  const progress = targetsProgress(state.units, assignments, targets);
   const student =
     pendingStudent || students.find((p) => p.id === activeStudent);
   const modalOpen = !!draft || !!activeStudent;
@@ -134,9 +181,9 @@ export default function Students({
     if (!preserveQuantities)
       setQuantities(
         Object.fromEntries(
-          lines.map((line) => [
-            line.id,
-            assignedQuantity(state.units, assignments, line.id, id),
+          targets.map((target) => [
+            target.id,
+            targetAssignedQuantity(state.units, assignments, target, id),
           ]),
         ),
       );
@@ -198,7 +245,7 @@ export default function Students({
     setBusy(true);
     setError('');
     try {
-      const keep = selectedUnitIds(state.units, assignments, lines);
+      const keep = selectedTargetUnitIds(state.units, assignments, targets);
       const next = await checkoutRequest({
         action: 'recipients',
         revision: state.revision,
@@ -238,12 +285,12 @@ export default function Students({
             className="flex flex-wrap gap-x-4 gap-y-3"
             aria-label="Estado de asignación por producto"
           >
-            {lines.map((line) => {
-              const count = assignedQuantity(state.units, assignments, line.id);
-              const complete = count === Number(line.quantity);
-              const remaining = Math.max(0, Number(line.quantity) - count);
-              const excess = Math.max(0, count - Number(line.quantity));
-              const name = line.product_title || line.title;
+            {targets.map((target) => {
+              const count = targetAssignedQuantity(state.units, assignments, target);
+              const complete = count === target.quantity;
+              const remaining = Math.max(0, target.quantity - count);
+              const excess = Math.max(0, count - target.quantity);
+              const name = target.title;
               const status = complete
                 ? 'Asignación completa'
                 : excess
@@ -251,24 +298,26 @@ export default function Students({
                   : `${remaining} ${remaining === 1 ? 'unidad por asignar' : 'unidades por asignar'}`;
               return (
                 <li
-                  key={line.id}
+                  key={target.id}
                   title={`${name}: ${status}`}
                   className="flex w-16 shrink-0 flex-col items-center"
                 >
-                  <img
-                    src={
-                      line.thumbnail ||
-                      line.variant?.product?.thumbnail ||
-                      PLACEHOLDER_IMAGE
+                  <TargetImage
+                    target={target}
+                    size={64}
+                    rounded="rounded-full"
+                    border={
+                      complete
+                        ? 'border-green-200'
+                        : excess
+                          ? 'border-amber-300'
+                          : 'border-gray-200'
                     }
-                    onError={handleImageError}
-                    alt=""
-                    className={`h-16 w-16 rounded-full border bg-white object-contain p-2 ${complete ? 'border-green-200' : excess ? 'border-amber-300' : 'border-gray-200'}`}
                   />
                   <span
                     role="status"
                     aria-atomic="true"
-                    className={`relative -mt-2 flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums ring-2 ring-white ${complete ? 'bg-green-600 text-white' : excess ? 'bg-amber-100 text-amber-900' : 'bg-gray-900 text-white'}`}
+                    className={`relative -mt-2 flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums ring-2 ring-white ${complete ? 'bg-green-600 text-white' : excess ? 'bg-amber-100 text-amber-900' : 'bg-[--primary-color] text-white'}`}
                   >
                     <span className="sr-only">
                       {name}: {status}
@@ -324,9 +373,9 @@ export default function Students({
           )}
 
           {students.map((p) => {
-            const products = lines.filter(
-              (line) =>
-                assignedQuantity(state.units, assignments, line.id, p.id) > 0,
+            const products = targets.filter(
+              (target) =>
+                targetAssignedQuantity(state.units, assignments, target, p.id) > 0,
             );
             return (
               <article
@@ -370,47 +419,45 @@ export default function Students({
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </header>
-                {products.map((line) => (
+                {products.map((target) => (
                   <div
-                    key={line.id}
+                    key={target.id}
                     className="flex items-center gap-3 rounded-md border border-gray-100 bg-gray-50/60 p-2"
                   >
-                    <ProductImage item={line} />
+                    <TargetImage target={target} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-gray-900">
-                        {line.product_title || line.title}
-                      </p>
+                      <p className="text-sm text-gray-900">{target.title}</p>
                       <p className="mt-0.5 text-xs text-gray-500">
-                        {assignedQuantity(
-                          state.units,
-                          assignments,
-                          line.id,
-                          p.id,
-                        )}{' '}
-                        {assignedQuantity(
-                          state.units,
-                          assignments,
-                          line.id,
-                          p.id,
-                        ) === 1
-                          ? 'unidad'
-                          : 'unidades'}
+                        {target.kind === 'bundle'
+                          ? (target.subtitle ?? 'Kit completo')
+                          : `${targetAssignedQuantity(
+                              state.units,
+                              assignments,
+                              target,
+                              p.id,
+                            )} ${
+                              targetAssignedQuantity(
+                                state.units,
+                                assignments,
+                                target,
+                                p.id,
+                              ) === 1
+                                ? 'unidad'
+                                : 'unidades'
+                            }`}
                       </p>
                     </div>
                     <button
                       type="button"
                       className="p-1 text-gray-500"
-                      aria-label={`Quitar ${line.product_title || line.title} de ${p.first_name}`}
+                      aria-label={`Quitar ${target.title} de ${p.first_name}`}
                       disabled={!!activeStudent || !!draft}
                       onClick={() =>
                         changeAssignments(
                           Object.fromEntries(
                             Object.entries(assignments).filter(
                               ([id, person]) =>
-                                person !== p.id ||
-                                !state.units.some(
-                                  (u) => u.id === id && u.line_id === line.id,
-                                ),
+                                person !== p.id || !target.unitIds.includes(id),
                             ),
                           ),
                         )
@@ -596,28 +643,31 @@ export default function Students({
                       </p>
                     </div>
                   </div>
-                  {lines.map((line) => {
-                    const otherCount = state.units.filter(
-                      (u) =>
-                        u.line_id === line.id &&
-                        assignments[u.id] &&
-                        assignments[u.id] !== student.id,
-                    ).length;
-                    const max = Math.max(0, line.quantity - otherCount);
-                    const count = quantities[line.id] || 0;
+                  {targets.map((target) => {
+                    const otherSlots = targetAssignedQuantity(
+                      state.units,
+                      assignments,
+                      target,
+                    ) - targetAssignedQuantity(
+                      state.units,
+                      assignments,
+                      target,
+                      student.id,
+                    );
+                    const max = Math.max(0, target.quantity - otherSlots);
+                    const count = quantities[target.id] || 0;
                     return (
                       <div
-                        key={line.id}
+                        key={target.id}
                         className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white p-3"
                       >
-                        <ProductImage item={line} />
+                        <TargetImage target={target} />
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm text-gray-900">
-                            {line.product_title || line.title}
-                          </p>
+                          <p className="text-sm text-gray-900">{target.title}</p>
                           <p className="mt-1 text-xs text-gray-500">
-                            Disponible para asignar: {Math.max(0, max - count)}{' '}
-                            de {line.quantity}
+                            {target.kind === 'bundle'
+                              ? `${target.subtitle ?? ''} · el kit va completo a un estudiante`
+                              : `Disponible para asignar: ${Math.max(0, max - count)} de ${target.quantity}`}
                           </p>
                         </div>
                         <div className="flex items-center rounded-md border border-gray-200">
@@ -625,18 +675,18 @@ export default function Students({
                             type="button"
                             className="p-2 disabled:opacity-30"
                             disabled={count <= 0}
-                            aria-label={`Reducir ${line.product_title || line.title}`}
+                            aria-label={`Reducir ${target.title}`}
                             onClick={() =>
                               setQuantities((q) => ({
                                 ...q,
-                                [line.id]: Math.max(0, count - 1),
+                                [target.id]: Math.max(0, count - 1),
                               }))
                             }
                           >
                             <Minus className="h-4 w-4" />
                           </button>
                           <output
-                            aria-label={`Cantidad de ${line.product_title || line.title}`}
+                            aria-label={`Cantidad de ${target.title}`}
                             className="min-w-8 text-center text-sm"
                           >
                             {count}
@@ -645,11 +695,11 @@ export default function Students({
                             type="button"
                             className="p-2 disabled:opacity-30"
                             disabled={count >= max}
-                            aria-label={`Aumentar ${line.product_title || line.title}`}
+                            aria-label={`Aumentar ${target.title}`}
                             onClick={() =>
                               setQuantities((q) => ({
                                 ...q,
-                                [line.id]: Math.min(max, count + 1),
+                                [target.id]: Math.min(max, count + 1),
                               }))
                             }
                           >
@@ -690,10 +740,10 @@ export default function Students({
                             pendingStudent,
                           ]);
                         changeAssignments(
-                          assignStudentQuantities(
+                          assignTargetQuantities(
                             state.units,
                             assignments,
-                            lines,
+                            targets,
                             student.id,
                             quantities,
                           ),

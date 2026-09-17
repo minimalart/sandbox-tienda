@@ -131,6 +131,46 @@ export type EventBusWorkerSupervisorLike = {
   snapshot(): EventBusWorkerSupervisorSnapshot;
 };
 
+/**
+ * ── EL SUPERVISOR VIVO DEL PROCESO ──────────────────────────────────────────
+ *
+ * El monitor (`jobs/event-bus-monitor.ts`) leía el supervisor SÓLO del servicio
+ * que le devuelve `container.resolve(Modules.EVENT_BUS)`. En producción esa
+ * lectura da `null` aunque el supervisor esté corriendo en el mismo proceso, y
+ * el aviso sale diciendo la mentira exacta al revés — logs del backend de
+ * mercatto del 2026-09-17, tres líneas seguidas:
+ *
+ *     15:48:26  [event-bus-supervisor] El worker del event bus murió tras 359 ms:
+ *               Connection is closed.. Se cierra y se construye uno nuevo en 1000 ms
+ *     15:48:27  [event-bus-monitor] Re-arme: el servicio de event bus no expone
+ *               supervisor del worker (módulo de Medusa sin envolver).
+ *     15:48:27  [event-bus-supervisor] RECUPERADO: el worker volvió a conectarse
+ *
+ * El bus estuvo mudo UN SEGUNDO y el mail dijo que el fix no estaba instalado.
+ * Con el supervisor invisible, el síntoma de "código viejo" y el de "código nuevo
+ * curándose solo" son IDÉNTICOS, que es justo lo que hizo perder un día de
+ * diagnóstico.
+ *
+ * Por qué acá y no un import del módulo: el worker consumidor es UNO por proceso,
+ * así que un registro de proceso es el modelo honesto y sobrevive a lo que el
+ * contenedor de Medusa haga con las instancias. Y este archivo YA está en el
+ * grafo de imports estáticos del monitor (`describeSupervisor`,
+ * `requestSupervisorRestart`), así que no agrega un `import()` dinámico más —
+ * el del destinatario del mail viene fallando en producción justamente por eso
+ * (`Cannot find module '.../modules/email/admin-recipient.js'`).
+ */
+let liveSupervisor: EventBusWorkerSupervisorLike | null = null;
+
+/** El supervisor que está vigilando el worker en ESTE proceso, o `null`. */
+export function getLiveEventBusWorkerSupervisor(): EventBusWorkerSupervisorLike | null {
+  return liveSupervisor;
+}
+
+/** Sólo para los tests: deja el registro como al arranque del proceso. */
+export function resetLiveEventBusWorkerSupervisor(): void {
+  liveSupervisor = null;
+}
+
 export const DEFAULT_MIN_DELAY_MS = 1_000;
 export const DEFAULT_MAX_DELAY_MS = 60_000;
 const DEFAULT_CLOSE_DEADLINE_MS = 5_000;
@@ -191,6 +231,9 @@ export class EventBusWorkerSupervisor implements EventBusWorkerSupervisorLike {
   /** Idempotente. NO se awaitea: el loop vive lo que vive el proceso. */
   start(): void {
     if (this.loop) return;
+    // Se publica ANTES de arrancar el loop: entre `start()` y la primera muerte
+    // puede pasar un tick del monitor, y ese tick tiene que verlo.
+    liveSupervisor = this;
     this.onWorker?.(this.worker, 'initial');
     this.loop = this.supervise().catch((error: unknown) => {
       // El loop no puede morir. Si murió, es un bug del supervisor y hay que verlo.
@@ -209,6 +252,9 @@ export class EventBusWorkerSupervisor implements EventBusWorkerSupervisorLike {
    * como "detenido" y no como "murió".
    */
   stop(): void {
+    // Sólo se despublica si el vigente es ESTE. Un supervisor viejo que se apaga
+    // después de que otro tomó el proceso no puede dejar el registro vacío.
+    if (liveSupervisor === this) liveSupervisor = null;
     this.stopped = true;
     this.state = 'stopped';
     this.nextRetryAt = null;

@@ -84,3 +84,41 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<v
   await service.deleteWhatsappFlowVersions([id]);
   res.json({ id, deleted: true });
 }
+
+/**
+ * POST /admin/whatsapp-flows/versions/:id — le cambia el NOMBRE, y nada más.
+ *
+ * Ruta propia y no un campo del guardado normal por una razón concreta:
+ * `saveDraft` escribe `graph: input.graph` siempre, y `POST /admin/whatsapp-flows`
+ * normaliza el cuerpo — así que un renombrado sin grafo lo dejaría VACÍO. Renombrar
+ * desde la tabla, donde nadie tiene el grafo a mano, habría borrado el recorrido.
+ *
+ * Se puede renombrar cualquier versión del alcance, incluida la publicada: el nombre
+ * es una etiqueta para el operador y no cambia en nada lo que atiende a los clientes.
+ */
+export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<void> {
+  const service = req.scope.resolve(WHATSAPP_FLOW_MODULE) as WhatsappFlowModuleService;
+  const resolution = await siteFromRequest(req);
+  const id = req.params.id as string;
+
+  const version = (await service
+    .retrieveWhatsappFlowVersion(id)
+    .catch(() => null)) as Record<string, unknown> | null;
+
+  assertRowInSite(version, resolution, {
+    kind: 'site_column',
+    table: 'whatsapp_flow_version',
+    column: 'site_id',
+    empty: 'global',
+  });
+
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const name = typeof body.name === 'string' ? body.name.trim().slice(0, 120) : '';
+  if (!name) {
+    res.status(400).json({ message: 'El recorrido necesita un nombre.' });
+    return;
+  }
+
+  await service.updateWhatsappFlowVersions([{ id, name }] as never);
+  res.json({ id, name });
+}

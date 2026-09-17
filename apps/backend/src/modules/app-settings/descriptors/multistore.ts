@@ -1,6 +1,7 @@
 import importerSettings from './fragments/catalog-import';
 import { normalizeSiteSuffix } from '../../../lib/multistore/site-hosts';
 import { defineSettings } from './types';
+import { sitesHubSettings } from './fragments/sites-hub';
 
 /**
  * Ajustes de Multitienda.
@@ -96,6 +97,7 @@ export default defineSettings({
     },
   ],
   settings: [
+    ...sitesHubSettings,
     ...importerSettings.settings,
     // ─── URL pública ─────────────────────────────────────────────────────────
     {

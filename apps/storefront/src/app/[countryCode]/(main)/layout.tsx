@@ -31,7 +31,7 @@ import BrandsStickyBanner from '@modules/layout/components/brands-sticky-banner'
 import CompareFloatingTray from '@modules/layout/components/compare-floating-tray';
 import BranchGate from '@modules/layout/components/branch-gate';
 import CartMismatchBanner from '@modules/layout/components/cart-mismatch-banner';
-import CookieConsent from '@modules/layout/components/cookie-consent';
+
 import PromoConflictGuard from '@modules/layout/components/promo-conflict-guard';
 import CartDrawerMount from '@modules/layout/components/cart-drawer/cart-drawer-mount';
 import MobileNavController from '@modules/layout/components/mobile-nav-controller';
@@ -294,9 +294,6 @@ export default async function PageLayout(props: {
 								<WhatsappFloatingButtonSlot />
 							</Suspense>
 							<PromoConflictGuard />
-							{/* Banner de cookies: solo si está activado en Admin →
-							    Preferencias → Tienda. */}
-							{storeSettings.cookie_banner_enabled && <CookieConsent />}
 							<Toaster />
 						</BannersProvider>
 					</AddToCartAnimationProvider>

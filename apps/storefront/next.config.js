@@ -28,6 +28,19 @@ const backendImagePattern = (() => {
 const nextConfig = {
   reactStrictMode: true,
   /**
+   * Raíz del workspace para Turbopack. Sin esto, Next la INFIERE buscando
+   * lockfiles hacia arriba: dentro de un git worktree (`.claude/worktrees/**`)
+   * encuentra el `pnpm-workspace.yaml` del checkout principal, se queda con esa
+   * raíz y después no puede resolver `next` desde el worktree — el dev server
+   * arranca y muere con "We couldn't find the Next.js package".
+   *
+   * Fijarla en el repo que contiene ESTE archivo da la misma raíz de siempre en
+   * CI/Vercel (el root del repo) y la correcta en cada worktree.
+   */
+  turbopack: {
+    root: require("node:path").resolve(__dirname, "../.."),
+  },
+  /**
    * Skew protection: identifica el build en cada request de asset (`?dpl=<id>`), para
    * que una pestaña con el bundle de un deploy viejo pida SUS chunks y no los del
    * deploy nuevo (que tienen otro hash y dan 404 → `ChunkLoadError` → pantalla de

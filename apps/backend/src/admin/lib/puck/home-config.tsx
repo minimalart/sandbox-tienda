@@ -170,6 +170,7 @@ export const homeConfig: Config = {
         'Categorias',
         'ProductosDestacados',
         'Combos',
+        'BundlesGrid',
         'BannerPromo',
         'MasCategorias',
         'Blog',
@@ -181,7 +182,7 @@ export const homeConfig: Config = {
     },
     campaign: {
       title: 'Campaña (landing institucional)',
-      components: ['CampaignHero', 'ProductosDestacados'],
+      components: ['CampaignHero', 'ProductosDestacados', 'BundlesGrid'],
     },
   },
   components: {
@@ -310,6 +311,51 @@ export const homeConfig: Config = {
       defaultProps: { title: 'Combos y cajas', description: '', kits: [] },
       render: (p: any) => (
         <SectionCard label="Combos / Emprendedores" props={p} note={`${(p.kits ?? []).length} combos`} media={skeletonRow(2)} />
+      ),
+    },
+
+    // ── BundlesGrid → grid de bundles publicados ───────────────────────────
+    // Requiere `content_config.sections.bundles === true` en la tienda; sin
+    // eso el renderer del storefront omite el bloque. Los bundles vienen del
+    // backend scopeados por publishable key: si `handles` está vacío se
+    // muestran TODOS los publicados de la tienda; si tiene contenido, esa
+    // lista pisa el default y respeta el orden ingresado.
+    BundlesGrid: {
+      label: 'Bundles (kits configurables)',
+      fields: {
+        title: text('Título'),
+        subtitle: textarea('Bajada (opcional)'),
+        limit: number('Cantidad máxima (vacío = 6)', 1, 24),
+        handles: {
+          type: 'array',
+          label: 'Handles específicos (opcional — vacío = todos los publicados)',
+          arrayFields: {
+            handle: text('Handle del bundle'),
+          },
+          defaultItemProps: { handle: '' },
+        },
+        viewAllLabel: text('Botón "ver todos" — texto (opcional)'),
+        viewAllHref: text('Botón "ver todos" — link (default /bundles)'),
+      },
+      defaultProps: {
+        title: 'Armá tu kit',
+        subtitle: '',
+        limit: 6,
+        handles: [],
+        viewAllLabel: '',
+        viewAllHref: '/bundles',
+      },
+      render: (p: any) => (
+        <SectionCard
+          label="Bundles (kits configurables)"
+          props={p}
+          note={
+            (p.handles ?? []).length > 0
+              ? `${(p.handles ?? []).length} handle(s) fijos`
+              : 'Todos los publicados de la tienda'
+          }
+          media={skeletonRow(3)}
+        />
       ),
     },
 

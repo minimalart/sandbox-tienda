@@ -3,8 +3,8 @@
   "upstream": {
     "repo": "minimalart/medusa-b2c-boilerplate",
     "channel": "stable",
-    "version": null,
-    "commit": "cac34004efb309aa2d946fd12f54da9736dc201b",
+    "version": "1.0.1",
+    "commit": "697be0d086c6b7fe8257472d6ce6aab14e6f0f4b",
     "installed_at": "2026-09-17T21:50:29.574Z",
     "run_id": null
   },

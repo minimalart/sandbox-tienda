@@ -1,0 +1,20 @@
+#cc-main {
+  --cc-font-family: inherit;
+  --cc-bg: hsl(var(--background, 0 0% 100%));
+  --cc-primary-color: hsl(var(--foreground, 0 0% 10%));
+  --cc-secondary-color: hsl(var(--foreground, 0 0% 10%));
+  --cc-btn-primary-bg: var(--primary-color, Highlight);
+  --cc-btn-primary-color: hsl(var(--primary-foreground, 0 0% 100%));
+  --cc-btn-primary-border-color: var(--primary-color, Highlight);
+  --cc-btn-secondary-bg: hsl(var(--background, 0 0% 100%));
+  --cc-btn-secondary-color: hsl(var(--foreground, 0 0% 10%));
+  --cc-btn-secondary-border-color: hsl(var(--foreground, 0 0% 10%));
+  --cc-cookie-category-block-bg: hsl(var(--background, 0 0% 100%));
+  --cc-cookie-category-block-border: hsl(var(--foreground, 0 0% 10%));
+  --cc-toggle-on-bg: var(--primary-color, Highlight);
+  --cc-btn-secondary-hover-bg: hsl(var(--muted, 0 0% 90%));
+  --cc-btn-secondary-hover-color: hsl(var(--foreground, 0 0% 10%));
+  --cc-cookie-category-block-hover-bg: hsl(var(--muted, 0 0% 90%));
+  --cc-separator-border-color: hsl(var(--border, 0 0% 80%));
+  --cc-z-index: 2147483000;
+}

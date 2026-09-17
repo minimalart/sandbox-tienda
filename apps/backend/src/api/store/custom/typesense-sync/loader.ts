@@ -1,5 +1,6 @@
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 import { QueryContext } from '@medusajs/utils';
+import { attachBundleOnlyChannels, getBundleOnlyChannelMap } from '../../../../modules/typesense/bundle-only-channels';
 import {
   attachCategoryFullPaths,
   type CategoryPathMap,
@@ -89,6 +90,10 @@ export async function streamSyncProducts(
     `[typesense-sync] Channel price map built: ${channelPriceMap.size} variant(s) with overrides`,
   );
 
+  // Canales donde cada producto no se vende suelto (PRD Bundles V2 §47). Se
+  // arma UNA vez: son pocas filas y no cambian durante el sync.
+  const bundleOnlyChannelMap = await getBundleOnlyChannelMap(query);
+
   /**
    * Enriquece una página: ruta completa de categoría + promociones activas (con
    * el descuento ya calculado) + overrides channel-scoped por variant. Se
@@ -101,6 +106,7 @@ export async function streamSyncProducts(
     const enriched = page.map((product) => attachCategoryFullPaths(product, categoryPathMap));
     await attachActivePromotions(query, enriched);
     attachChannelPrices(enriched, channelPriceMap);
+    attachBundleOnlyChannels(enriched, bundleOnlyChannelMap);
     return enriched;
   };
 

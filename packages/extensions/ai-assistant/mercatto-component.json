@@ -449,7 +449,7 @@
     },
     {
       "path": "apps/backend/src/api/webhooks/kapso/route.ts",
-      "sha256": "0854bbf1697e88cf55f206417340a505c5282619dd3cbfd9985eabde6e015156"
+      "sha256": "ecb488e85c9b921396384120ac901bda0650ffeba0accf343d26504afcb9a7b4"
     },
     {
       "path": "apps/backend/src/jobs/embed-pending-memories.ts",
@@ -609,11 +609,11 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/names.ts",
-      "sha256": "684cae603906f1e700b721d84a01852dac57941775a9be0966b44b5a079fdba2"
+      "sha256": "dab1ab8c64c7fd2c8c61f48eff619d330046ff0b064df9e2a208de13a2ef0f8e"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/whatsapp-tools.ts",
-      "sha256": "b65c540586f9ddddf62feb5704665f2f9015705074df5e34b089b23b6fc7d6dd"
+      "sha256": "1d564a1e1beb24e52b25b40276cca9ff7e79d9e273b3d8eadc8529fccc40fe7a"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/policy.test.ts",

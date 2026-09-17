@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactElement } from 'react';
 
 import { actionLabel, type Graph } from '../_editor';
 import { WA } from '../lib/skin';
+import { ActionPreview } from './action-preview';
 import {
   canTimeOut,
   choicesForStep,
@@ -194,23 +195,32 @@ function Turn({
   if (turn.role === 'system') {
     return (
       <div className="rounded-md border border-dashed bg-ui-bg-base p-2">
-        {turn.kind === 'action' && turn.step?.kind === 'run_tool' && (
-          <>
-            <Text size="xsmall" weight="plus">
-              Acción: {actionLabel(turn.step.tool)}
-            </Text>
-            {Object.entries(turn.step.args).length > 0 && (
-              <Text size="xsmall" className="text-ui-fg-subtle">
-                {Object.entries(turn.step.args)
-                  .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : String(v)}`)
-                  .join(' · ')}
+        {turn.kind === 'action' && turn.step?.kind === 'run_tool' ? (
+          <div className="flex flex-col gap-y-2">
+            <div>
+              <Text size="xsmall" weight="plus">
+                Acción: {actionLabel(turn.step.tool)}
               </Text>
-            )}
-          </>
+              {Object.entries(turn.step.args).length > 0 && (
+                <Text size="xsmall" className="text-ui-fg-subtle">
+                  {Object.entries(turn.step.args)
+                    .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : String(v)}`)
+                    .join(' · ')}
+                </Text>
+              )}
+            </div>
+            {/**
+              * Las acciones de sólo lectura se CORREN contra el catálogo real y se
+              * dibuja lo que el cliente recibiría. Las que tocan el carrito o generan
+              * un pago siguen describiéndose: la vista previa dice cuál es cuál.
+              */}
+            <ActionPreview tool={turn.step.tool} args={turn.step.args} onTap={onTap} />
+          </div>
+        ) : (
+          <Text size="xsmall" className="text-ui-fg-subtle">
+            {turn.message}
+          </Text>
         )}
-        <Text size="xsmall" className="text-ui-fg-subtle">
-          {turn.message}
-        </Text>
       </div>
     );
   }

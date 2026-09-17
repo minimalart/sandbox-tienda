@@ -1,4 +1,5 @@
 import { cookies as nextCookies } from 'next/headers'
+import { getPrivacyConfiguration } from '../data/privacy'
 
 /**
  * Lee el GA client_id de la cookie `_ga` (server-side) para puentearlo al
@@ -12,6 +13,10 @@ import { cookies as nextCookies } from 'next/headers'
  * Devuelve null si GA no cargó todavía (cookie ausente) o el formato no calza.
  */
 export async function getGaClientId(): Promise<string | null> {
+  const config = await getPrivacyConfiguration()
+  // Browser permission remains local to the consent engine in this release.
+  // Do not create persistent attribution for later, unattributed server events.
+  if (!config.available || !config.analytics?.enabled || (config.consent?.enabled && config.consent.mode !== 'informational')) return null
   const cookies = await nextCookies()
   const rawGaCookie = cookies.get('_ga')?.value
 

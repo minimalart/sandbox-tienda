@@ -175,6 +175,12 @@ export const typesenseSchema: CollectionCreateSchema = {
     { name: 'sales_channels.id', type: 'string[]', facet: true, index: true, optional: true, sort: false },
     { name: 'sales_channels.name', type: 'string[]', facet: true, index: true, optional: true, sort: false },
 
+    // Canales donde el producto NO se vende suelto (PRD Bundles V2 §47). El
+    // indice es uno para todas las tiendas, asi que la exclusion viaja por canal
+    // y no como un booleano del producto. Opcional a proposito: los documentos
+    // que todavia no se re-sincronizaron matchean el != y siguen visibles.
+    { name: 'bundle_only_channels', type: 'string[]', facet: true, index: true, optional: true, sort: false },
+
     // Stock
     { name: 'stock_available', type: 'int64', facet: false, index: true, optional: true, sort: true },
 

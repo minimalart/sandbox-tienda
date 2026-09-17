@@ -15,6 +15,10 @@ import { productExportMiddlewares } from './product-export-middlewares';
 import { multistoreMiddlewares } from './multistore-middlewares';
 import { apiKeyRbacMiddlewares } from './api-key-rbac-middlewares';
 import { setPricingChannel } from './store/utils/set-pricing-channel';
+import {
+  hideBundleOnlyProducts,
+  rejectBundleOnlyLineItem,
+} from './store/utils/sales-mode-visibility';
 
 // Handler de errores por defecto de Medusa. Lo envolvemos para reportar a Sentry
 // y luego delegamos en él para conservar el formato de respuesta estándar.
@@ -87,6 +91,21 @@ const pricingChannelMiddlewares: MiddlewareRoute[] = [
   { matcher: '/store/carts/:id', method: 'POST', middlewares: [setPricingChannel()] },
 ];
 
+// Productos bundle_only: no se listan ni se venden sueltos en la tienda que los
+// configuró así (PRD Bundles V2 §8-§9). El filtro de lectura corre sobre las
+// mismas rutas que setPricingChannel — donde Medusa ya resolvió
+// `filterableFields` — y el guard de escritura sobre el add-to-cart. El workflow
+// de bundles no pasa por acá, así que sus line items se crean igual.
+const salesModeMiddlewares: MiddlewareRoute[] = [
+  { matcher: '/store/products', method: 'GET', middlewares: [hideBundleOnlyProducts()] },
+  { matcher: '/store/products/:id', method: 'GET', middlewares: [hideBundleOnlyProducts()] },
+  {
+    matcher: '/store/carts/:id/line-items',
+    method: 'POST',
+    middlewares: [rejectBundleOnlyLineItem()],
+  },
+];
+
 export default defineMiddlewares({
   routes: [
     { matcher: '/*', middlewares: [memoryRequestLogger] },
@@ -96,6 +115,7 @@ export default defineMiddlewares({
     ...extensionMiddlewares,
     ...storeAuthMiddlewares,
     ...pricingChannelMiddlewares,
+    ...salesModeMiddlewares,
   ],
   // Captura de errores HTTP en Sentry, acotada a 5xx para no inundar la cuota.
   // Sentry.isInitialized() es false sin DSN o con SENTRY_ENABLED=false -> no-op.

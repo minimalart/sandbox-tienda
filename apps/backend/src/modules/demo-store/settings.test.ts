@@ -56,7 +56,9 @@ test('el dominio de tiendas es opcional, de instancia y rechaza URLs completas',
 });
 
 test('Tiendas incluye los ajustes y variables del importador', () => {
-  assert.deepEqual([...byKey.keys()].sort(), [...MANAGED_KEYS].sort());
+  assert.deepEqual([...byKey.keys()].sort(), [...MANAGED_KEYS, 'SITES_HUB_PUCK'].sort());
+  assert.equal(byKey.get('SITES_HUB_PUCK')?.scope, 'instance');
+  assert.equal(byKey.get('SITES_HUB_PUCK')?.type, 'json');
   assert.deepEqual((descriptors.envOnly ?? []).map((e) => e.key).sort(), [...ENV_ONLY_KEYS, 'APPLY', 'DEFAULT_CURRENCY_CODE', 'DEMO_IMPORT_CRON', 'DEMO_SLUG'].sort());
 });
 

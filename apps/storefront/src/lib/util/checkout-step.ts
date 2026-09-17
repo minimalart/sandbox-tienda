@@ -37,3 +37,21 @@ export function isCheckoutStepEditing(
 ): boolean {
   return active === step && (requested === "edit-" + step || submitted.has(step));
 }
+
+/**
+ * Siguiente paso visible después de `current`.
+ *
+ * El orden de pasos NO es fijo: sale de la policy de la tienda, que puede
+ * ocultar bloques enteros (una tienda de retiro en el colegio no muestra
+ * `address` ni `delivery`). Por eso ningún formulario puede hardcodear a dónde
+ * va el "Continuar" — tiene que preguntarle al `stepOrder` ya filtrado por
+ * visibilidad. `fallback` cubre el caso de que `current` no esté en la lista.
+ */
+export function nextVisibleStep(
+  stepOrder: readonly string[],
+  current: string,
+  fallback?: string,
+): string | undefined {
+  const idx = stepOrder.indexOf(current.replace(/^edit-/, ""));
+  return (idx >= 0 ? stepOrder[idx + 1] : undefined) ?? fallback;
+}

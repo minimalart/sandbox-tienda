@@ -444,7 +444,7 @@
     },
     {
       "path": "apps/backend/src/api/store/custom/typesense-sync/loader.ts",
-      "sha256": "486d6ae93114673a6215c067a231466f4ef9fd9e8997b3613aca8a7d54be1fdd"
+      "sha256": "40e8a4571875621e1f672434decf595576c56f2a4a470e35494bc2825b19de8f"
     },
     {
       "path": "apps/backend/src/api/store/custom/typesense-sync/route.ts",
@@ -475,6 +475,14 @@
       "sha256": "ed4d853802d072604b769e0c7af04c5de0e908fbd964dd71c6718583c50f8e30"
     },
     {
+      "path": "apps/backend/src/modules/typesense/bundle-only-channels.test.ts",
+      "sha256": "bc32194ff0bbe4351bc19c1982fe20cc1bf694b564b8abeecc69a4ed3c6b69c9"
+    },
+    {
+      "path": "apps/backend/src/modules/typesense/bundle-only-channels.ts",
+      "sha256": "1fc636469d2d1663eed2726848e073bca03fff3cfae8dc8d89adb0ae5e51a89e"
+    },
+    {
       "path": "apps/backend/src/modules/typesense/category-descendants.ts",
       "sha256": "5cc6017cc90867f03a87db295277909a1a158a2cb8ab8191a8fb7cb4ccd18924"
     },
@@ -492,7 +500,7 @@
     },
     {
       "path": "apps/backend/src/modules/typesense/product-mapper.ts",
-      "sha256": "72c95949937474f4ccbddc5511d95cb16c8a5fb57ba0deba538bd1b557bdd3b0"
+      "sha256": "d919be460d7749dd29e1043273cbe62f51e87ba1d7c15ed87f398deb8b3650d8"
     },
     {
       "path": "apps/backend/src/modules/typesense/reindex-queue.ts",
@@ -500,7 +508,7 @@
     },
     {
       "path": "apps/backend/src/modules/typesense/reindex.ts",
-      "sha256": "b862c875ed4022f2ffcf98fdfbd7e820273b96c2b0e0642504be36840762e24a"
+      "sha256": "e997c2d7c048eee4bb3ee96c0f91999424d4a2d2b99d7eaad269a158e877e9b5"
     },
     {
       "path": "apps/backend/src/modules/typesense/run-sync.ts",
@@ -512,7 +520,7 @@
     },
     {
       "path": "apps/backend/src/modules/typesense/schema.ts",
-      "sha256": "50682550231c13c5c7f06c85496fe139bd40ddb67edc889f14c5a1d61fc9a861"
+      "sha256": "892a4f12e55b25e22da6094396e4b713cd9e47fbdcfa3d63e7ecf7b4df61a0aa"
     },
     {
       "path": "apps/backend/src/modules/typesense/search-defaults.test.ts",
@@ -572,7 +580,7 @@
     },
     {
       "path": "apps/backend/src/scripts/typesense-sync.ts",
-      "sha256": "40b9ef481fe3fbf325c99bd60afc1576c21717d912b6a004f7cf66717213a058"
+      "sha256": "fdbd6c839d8c51b846a100f2bdbb0e4e5c26fda028ed3b62fd39b9bb13157d07"
     },
     {
       "path": "apps/backend/src/subscribers/erp-catalog-typesense-sync.ts",
@@ -623,8 +631,12 @@
       "sha256": "49609717c57c827ff1bb8592c5449e8e41a45456a0ef8fa4a3d5f386b7c0d652"
     },
     {
+      "path": "apps/storefront/src/lib/typesense/core/filters.test.ts",
+      "sha256": "574f58d8ea9d0fbe9c139fecaf12dee5483286c6911905e93c11a4a9b6468fcd"
+    },
+    {
       "path": "apps/storefront/src/lib/typesense/core/filters.ts",
-      "sha256": "9d57e13029f6e957d0f57b9ff08f3e8ec80db9aecf2c23061dd5bab16ffa90d5"
+      "sha256": "08ee76aa5cc20d64e2b38a2bcca6d090b6728f27d82c9d27f86ad6bba7757649"
     },
     {
       "path": "apps/storefront/src/lib/typesense/core/normalize.test.ts",
@@ -676,7 +688,7 @@
     },
     {
       "path": "apps/storefront/src/lib/typesense/search-core.ts",
-      "sha256": "44e879ee1afb44d25d087049c8176a1c683128acc8c2b77f3e5c442afbcccb7f"
+      "sha256": "4106c6db9ff143cdd2737b57e12d126678e9a25184f12cc1b9b637fb035e6f5e"
     },
     {
       "path": "apps/storefront/src/lib/typesense/types.ts",

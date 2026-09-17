@@ -178,7 +178,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/components/storefront-settings-card.tsx",
-      "sha256": "68b8c229a504e3a26b2afc305a8ad6e431e223f22ec1f4cc7838af594d5c9fd2"
+      "sha256": "a0d43b95b7bb4b6449dfaaaef5102784f372dbbcce9aef4637540f651e833cea"
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/credenciales/page.tsx",
@@ -186,7 +186,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/page.tsx",
-      "sha256": "a71afb9ff261dceb81d2de66ef717bd0d45a180af3e0b3a92cf94aac7fa31111"
+      "sha256": "09269bc9ad3f5ad5be17ad43f998616bdcd9e0827e384b4d774da66c4c1b2b87"
     },
     {
       "path": "apps/backend/src/admin/translations/store-config/index.ts",

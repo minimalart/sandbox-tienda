@@ -1,4 +1,5 @@
 import type { ErpOdooSettings, ErpSalePayload } from '../types';
+import { htmlToMarkdown } from './html-to-markdown';
 import { OdooRpcClient, type OdooRpcConfig } from './odoo-rpc-client';
 import {
   ErpAuthError,
@@ -101,6 +102,18 @@ type ProductTemplateCatalogRow = {
    * no tiene marca asignada. En instancias sin el módulo el field ni se pide.
    */
   product_brand_id?: OdooMany2One;
+  /**
+   * Peso en la unidad configurada (Odoo default: kg). Campo standard de
+   * `product.template`, siempre disponible. `0` = sin peso cargado.
+   */
+  weight?: number | null;
+  /**
+   * HTML del módulo `website_sale`/derivados. En la instancia de EducaBot
+   * mostrada en el sample llega poblado en el 81% de los productos publicados
+   * como copy comercial narrativo. Ausente (undefined) en instancias sin el
+   * módulo — nunca se pide sin haberlo confirmado con la sonda.
+   */
+  description_ecommerce?: string | false | null;
 };
 
 type ProductCategoryRow = {
@@ -193,8 +206,58 @@ function codeOrNull(value: string | false | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+/**
+ * Custom fields opcionales del módulo `Alumnos` en `sale.order`. Se envían solo
+ * si el equipo Odoo ya los creó — sondeamos con `fields_get` antes de armar el
+ * payload y filtramos silenciosamente los que faltan.
+ *
+ * Regla dura: el envío al ERP NUNCA se bloquea porque estos campos no existan.
+ * Odoo rechaza el `create` con `Invalid field 'x_...' on model 'sale.order'`
+ * ante nombres desconocidos, así que sin la sonda perdemos ventas cuando el
+ * cliente todavía no configuró su Odoo. Con la sonda: sin campo, sin dato en
+ * esa columna, orden creada igual.
+ */
+const OPTIONAL_SALE_ORDER_FIELDS = [
+  'x_school_external_ref',
+  'x_school_name',
+  'x_source_site_id',
+  'x_student_assignments',
+] as const;
+
+/**
+ * Fields de `product.template` que aportan info al catálogo pero no existen en
+ * TODA instancia Odoo — mismo patrón que `OPTIONAL_SALE_ORDER_FIELDS`. Se
+ * sondean con `fields_get` una vez por instancia y solo se piden si están
+ * presentes; los ausentes quedan como `null` en el `ErpCatalogRow` (compat).
+ *
+ * - `description_ecommerce`: HTML del módulo `website_sale`/OCA argentinos. En
+ *   la instancia EducaBot es la fuente PRINCIPAL de descripción de catálogo
+ *   (81% coverage sobre los 62 publicados, medido 2026-09-17).
+ */
+const OPTIONAL_PRODUCT_TEMPLATE_FIELDS = ['description_ecommerce'] as const;
+
+/** 5min de cache: si el cliente crea los campos, la próxima ronda los recoge. */
+const OPTIONAL_FIELDS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 export class OdooErpAdapter implements ErpAdapter {
   readonly provider = 'odoo';
+
+  /**
+   * Cache por instancia Odoo (`baseUrl::db`) de qué custom fields opcionales
+   * están definidos. Multi-tenant: si dos clientes distintos tienen su propia
+   * Odoo, cada uno vive en su bucket — no comparten resultados.
+   */
+  private optionalFieldsCache = new Map<string, { at: number; fields: Set<string> }>();
+
+  /**
+   * Espeja `optionalFieldsCache` para el modelo `product.template`. Vive
+   * separado del de `sale.order` para no re-sondear el modelo equivocado en
+   * cada flujo (venta vs catálogo).
+   */
+  private productTemplateOptionalFieldsCache = new Map<
+    string,
+    { at: number; fields: Set<string> }
+  >();
 
   // Inyectable para tests; en runtime cada call construye su cliente con las
   // credenciales del context (los adapters son stateless por llamada).
@@ -231,6 +294,101 @@ export class OdooErpAdapter implements ErpAdapter {
   private odooSettings(ctx: AdapterContext): ErpOdooSettings | null {
     const settings = ctx.settings as { odoo?: ErpOdooSettings } | null | undefined;
     return settings?.odoo ?? null;
+  }
+
+  /**
+   * Sonda `sale.order.fields_get` para descubrir cuáles de los custom fields
+   * opcionales existen en esta Odoo. Cachea por 5min por `baseUrl::db`.
+   *
+   * `fields_get(allfields=[...])` en Odoo devuelve un dict SOLO con los fields
+   * que existen — los ausentes simplemente no aparecen. No lanza excepción por
+   * nombres desconocidos (a diferencia de `create`), así que la sonda es segura.
+   *
+   * Si la sonda misma falla (red, permisos, timeout), asumimos "ninguno existe"
+   * — nunca vamos a intentar mandarlos y perder la orden. Se cachea también el
+   * negativo para no re-intentar en cada envío.
+   */
+  private async resolveAvailableOptionalFields(
+    client: OdooRpcClient,
+    ctx: AdapterContext
+  ): Promise<Set<string>> {
+    const settings = this.odooSettings(ctx);
+    const cacheKey = `${settings?.base_url ?? ''}::${settings?.db ?? ''}`;
+    const cached = this.optionalFieldsCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < OPTIONAL_FIELDS_CACHE_TTL_MS) {
+      return cached.fields;
+    }
+    let present: Set<string>;
+    try {
+      const result = await client.executeKw<Record<string, unknown>>(
+        'sale.order',
+        'fields_get',
+        [OPTIONAL_SALE_ORDER_FIELDS as unknown as string[]],
+        { attributes: ['type'] }
+      );
+      present = new Set(Object.keys(result ?? {}));
+      const missing = OPTIONAL_SALE_ORDER_FIELDS.filter((f) => !present.has(f));
+      // Log de una línea por refresh de cache: da visibilidad sin llenar el log
+      // (queda logeado ~cada 5min en el peor caso, no por cada orden).
+      if (missing.length > 0) {
+        // eslint-disable-next-line no-console
+        console.info(
+          `[erp:odoo] sale.order fields sonda (${cacheKey}) — presentes=${
+            [...present].join(',') || '(ninguno)'
+          } faltantes=${missing.join(',')} — se omiten los faltantes en el create.`
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[erp:odoo] fields_get sonda falló (${cacheKey}) — se envía sale.order SIN los custom fields opcionales: ${message}`
+      );
+      present = new Set();
+    }
+    this.optionalFieldsCache.set(cacheKey, { at: Date.now(), fields: present });
+    return present;
+  }
+
+  /**
+   * Sonda `product.template.fields_get` para descubrir qué campos opcionales
+   * de la lista `OPTIONAL_PRODUCT_TEMPLATE_FIELDS` existen en esta instancia.
+   * Mismo patrón que `resolveAvailableOptionalFields` sobre `sale.order`: si un
+   * campo no está, se omite del `search_read` y el catalog row queda con `null`.
+   *
+   * Justificación: el módulo que expone `description_ecommerce` no está en
+   * TODAS las Odoo (es un OCA argentino o un derivado de `website_sale`), así
+   * que pedirlo a ciegas rompe `search_read` de instancias que no lo tienen.
+   */
+  private async resolveAvailableProductTemplateFields(
+    client: OdooRpcClient,
+    ctx: AdapterContext
+  ): Promise<Set<string>> {
+    const settings = this.odooSettings(ctx);
+    const cacheKey = `${settings?.base_url ?? ''}::${settings?.db ?? ''}`;
+    const cached = this.productTemplateOptionalFieldsCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < OPTIONAL_FIELDS_CACHE_TTL_MS) {
+      return cached.fields;
+    }
+    let present: Set<string>;
+    try {
+      const result = await client.executeKw<Record<string, unknown>>(
+        'product.template',
+        'fields_get',
+        [OPTIONAL_PRODUCT_TEMPLATE_FIELDS as unknown as string[]],
+        { attributes: ['type'] }
+      );
+      present = new Set(Object.keys(result ?? {}));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[erp:odoo] product.template fields_get sonda falló (${cacheKey}) — se pide el catálogo SIN los campos opcionales: ${message}`
+      );
+      present = new Set();
+    }
+    this.productTemplateOptionalFieldsCache.set(cacheKey, { at: Date.now(), fields: present });
+    return present;
   }
 
   /**
@@ -383,6 +541,37 @@ export class OdooErpAdapter implements ErpAdapter {
       domain.push(['is_published', '=', true]);
     }
 
+    // Sonda una vez por instancia (5 min de cache): qué campos opcionales del
+    // template están presentes. Se resuelve ANTES del loop para no repetir el
+    // `fields_get` en cada página.
+    const optionalTemplateFields = await this.resolveAvailableProductTemplateFields(client, ctx);
+
+    // Base: campos standard que siempre existen. Los opcionales se agregan
+    // solo si la sonda los confirmó — pedir un campo inexistente hace fallar
+    // el `search_read` entero.
+    const baseFields: string[] = [
+      'id',
+      'default_code',
+      'name',
+      'list_price',
+      'categ_id',
+      'write_date',
+      'active',
+      'sale_ok',
+      'type',
+      // `weight` es standard de Odoo core (`product.template.weight`, float en
+      // kg por default). No requiere sonda.
+      'weight',
+      // `product_brand_id` viene del módulo `product_brand` (OCA); si el
+      // módulo no está instalado, Odoo devuelve el field como `undefined`
+      // en la respuesta (no falla el read).
+      'product_brand_id',
+    ];
+    const requestedFields = [
+      ...baseFields,
+      ...OPTIONAL_PRODUCT_TEMPLATE_FIELDS.filter((f) => optionalTemplateFields.has(f)),
+    ];
+
     const out: ErpCatalogRow[] = [];
     let offset = 0;
     while (offset < CATALOG_MAX_PRODUCTS) {
@@ -395,21 +584,7 @@ export class OdooErpAdapter implements ErpAdapter {
           // por producto y matan el payload (Cloudflare corta la conexión con
           // 61+ productos). Las imágenes se traen por SKU vía
           // `fetchProductImage`, que es fase separada del sync.
-          fields: [
-            'id',
-            'default_code',
-            'name',
-            'list_price',
-            'categ_id',
-            'write_date',
-            'active',
-            'sale_ok',
-            'type',
-            // `product_brand_id` viene del módulo `product_brand` (OCA); si el
-            // módulo no está instalado, Odoo devuelve el field como `undefined`
-            // en la respuesta (no falla el read).
-            'product_brand_id',
-          ],
+          fields: requestedFields,
           limit: CATALOG_PAGE_SIZE,
           offset,
           order: 'id asc',
@@ -445,10 +620,30 @@ export class OdooErpAdapter implements ErpAdapter {
     // listas por índice y v1 solo trae la base.
     const prices: Record<number, number | null> = { [ODOO_BASE_PRICE_LIST_INDEX]: listPrice };
 
+    // `description_ecommerce` es HTML del builder de Odoo. Se convierte a
+    // Markdown para guardarlo en `product.description` (text plain de Medusa)
+    // preservando énfasis, listas y encabezados sin exponer al storefront a
+    // sanitizar HTML crudo. Si el campo no está presente en la instancia (ver
+    // `resolveAvailableProductTemplateFields`), llega como `undefined` y el
+    // helper devuelve `null` → misma semántica que antes del cambio.
+    const description =
+      typeof row.description_ecommerce === 'string'
+        ? htmlToMarkdown(row.description_ecommerce)
+        : null;
+
+    // `weight` en Odoo llega como float en la UoM configurada (default kg).
+    // Rechazamos 0, negativos y valores no finitos; el planner interpreta
+    // `null` como "sin peso cargado" y no dispara diff, evitando updates
+    // masivos inútiles cuando el ERP no lo tiene poblado.
+    const weight =
+      typeof row.weight === 'number' && Number.isFinite(row.weight) && row.weight > 0
+        ? row.weight
+        : null;
+
     return {
       code,
       title: typeof row.name === 'string' && row.name.trim() ? row.name.trim() : null,
-      description: null,
+      description,
       prices,
       // El template no expone `tax_rate` directo — vive en `taxes_id` (many2many)
       // y requiere resolver el impuesto. v1 lo deja en null: el planner cae al
@@ -466,7 +661,7 @@ export class OdooErpAdapter implements ErpAdapter {
       family: null,
       barcode: null,
       factory_code: null,
-      weight: null,
+      weight,
       length: null,
       height: null,
       width: null,
@@ -675,6 +870,32 @@ export class OdooErpAdapter implements ErpAdapter {
     };
     if (noteLines.length > 0) {
       orderPayload.note = noteLines.join('\n');
+    }
+
+    // Custom fields opcionales (escuela + asignación de alumnos). Se agregan
+    // SOLO si Odoo ya los tiene definidos — `resolveAvailableOptionalFields`
+    // hace la sonda. Sin campos, la orden se crea igual sin esa data: el
+    // envío al ERP NUNCA se bloquea porque el cliente no configuró su Odoo.
+    if (payload.school || payload.student_assignments) {
+      const available = await this.resolveAvailableOptionalFields(client, ctx);
+      if (payload.school) {
+        if (available.has('x_school_external_ref')) {
+          orderPayload.x_school_external_ref = payload.school.external_ref;
+        }
+        if (available.has('x_school_name')) {
+          orderPayload.x_school_name = payload.school.name;
+        }
+        if (available.has('x_source_site_id')) {
+          orderPayload.x_source_site_id = payload.school.source_site_id;
+        }
+      }
+      if (payload.student_assignments && available.has('x_student_assignments')) {
+        // Serializado como string: en Odoo 15/16 el custom field default es
+        // `Text` y acepta directo. En Odoo 17+ con `Jsonb`, `JSON.parse` en el
+        // ORM al persistir es trivial. Mandar como string cubre ambos casos
+        // sin tener que sondear el `type` del campo.
+        orderPayload.x_student_assignments = JSON.stringify(payload.student_assignments);
+      }
     }
 
     const created = await client.executeKw<number>('sale.order', 'create', [orderPayload]);

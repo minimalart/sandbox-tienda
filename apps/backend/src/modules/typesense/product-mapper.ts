@@ -302,6 +302,12 @@ export class ProductMapper {
               name: channel.name as string,
             }))
           : [],
+      // Canales donde este producto no se vende suelto. Siempre presente (vacío
+      // incluido) para que el documento no dependa de que alguien haya
+      // configurado algo — ver `bundle-only-channels.ts`.
+      bundle_only_channels: Array.isArray(product?.bundle_only_channels)
+        ? (product.bundle_only_channels as string[])
+        : [],
       metadata: {
         ...((product.metadata as AnyRecord | null) ?? {}),
         // Always present — the storefront filters on it (see schema note)

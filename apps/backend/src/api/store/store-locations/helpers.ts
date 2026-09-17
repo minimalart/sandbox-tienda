@@ -36,10 +36,19 @@ export function readStrictFlag(query: Record<string, unknown>): boolean {
  * Public shape exposed to the storefront — visible locations only,
  * without internal fields (code, delivers_kits, delivery_pin, is_visible,
  * sales_channel_ids).
+ *
+ * `stock_location_id` SÍ va: es la clave con la que el checkout empareja la
+ * sucursal elegida con su shipping option de "retiro en tienda" (cada
+ * fulfillment set cuelga de una stock location). Sin él, el checkout tomaba
+ * la primera option de retiro de la lista y TODAS las órdenes quedaban
+ * atadas a la misma sucursal, con la ubicación de despacho equivocada en el
+ * admin. No es un dato interno: `GET /store/shipping-options` ya expone ese
+ * mismo id en `service_zone.fulfillment_set.location.id`.
  */
 export const toPublicStoreLocation = (location: Record<string, any>) => ({
   id: location.id,
   name: location.name,
+  stock_location_id: location.stock_location_id ?? null,
   street: location.street,
   city: location.city,
   province: location.province,

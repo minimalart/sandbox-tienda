@@ -23,96 +23,84 @@
   ],
   "files": [
     {
-      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/tiendas",
-      "target": "apps/storefront/src/app/[countryCode]/(main)/tiendas"
+      "source": "payload/apps/backend/src/admin/hooks/api/demo-stores.tsx",
+      "target": "apps/backend/src/admin/hooks/api/demo-stores.tsx"
     },
     {
-      "source": "payload/apps/backend/src/api/admin/catalog-imports",
-      "target": "apps/backend/src/api/admin/catalog-imports"
+      "source": "payload/apps/backend/src/admin/lib/puck/directory-config.tsx",
+      "target": "apps/backend/src/admin/lib/puck/directory-config.tsx"
     },
     {
       "source": "payload/apps/backend/src/admin/routes/catalog-imports",
       "target": "apps/backend/src/admin/routes/catalog-imports"
     },
     {
+      "source": "payload/apps/backend/src/admin/routes/sites",
+      "target": "apps/backend/src/admin/routes/sites"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/translations/demo-stores",
+      "target": "apps/backend/src/admin/translations/demo-stores"
+    },
+    {
       "source": "payload/apps/backend/src/admin/widgets/catalog-commercial.tsx",
       "target": "apps/backend/src/admin/widgets/catalog-commercial.tsx"
-    },
-    {
-      "source": "payload/apps/backend/src/jobs/process-catalog-imports.ts",
-      "target": "apps/backend/src/jobs/process-catalog-imports.ts"
-    },
-    {
-      "source": "payload/apps/backend/src/scripts/test-catalog-import-fixture.ts",
-      "target": "apps/backend/src/scripts/test-catalog-import-fixture.ts"
-    },
-    {
-      "source": "payload/apps/backend/src/modules/store-importer",
-      "target": "apps/backend/src/modules/store-importer"
-    },
-    {
-      "source": "payload/apps/backend/src/jobs/process-demo-store-imports.ts",
-      "target": "apps/backend/src/jobs/process-demo-store-imports.ts"
-    },
-    {
-      "source": "payload/apps/backend/src/scripts/backfill-woocommerce-variant-prices.ts",
-      "target": "apps/backend/src/scripts/backfill-woocommerce-variant-prices.ts"
-    },
-    {
-      "source": "payload/apps/backend/src/api/store/carts/[id]/checkout",
-      "target": "apps/backend/src/api/store/carts/[id]/checkout"
-    },
-    {
-      "source": "payload/apps/backend/src/api/admin/orders/[id]/checkout",
-      "target": "apps/backend/src/api/admin/orders/[id]/checkout"
     },
     {
       "source": "payload/apps/backend/src/admin/widgets/order-checkout-recipients.tsx",
       "target": "apps/backend/src/admin/widgets/order-checkout-recipients.tsx"
     },
     {
-      "source": "payload/apps/backend/src/workflows/hooks/site-checkout-validation.ts",
-      "target": "apps/backend/src/workflows/hooks/site-checkout-validation.ts"
+      "source": "payload/apps/backend/src/api/admin/catalog-imports",
+      "target": "apps/backend/src/api/admin/catalog-imports"
     },
     {
-      "source": "payload/apps/backend/src/jobs/cleanup-checkout-recipients.ts",
-      "target": "apps/backend/src/jobs/cleanup-checkout-recipients.ts"
+      "source": "payload/apps/backend/src/api/admin/orders/[id]/checkout",
+      "target": "apps/backend/src/api/admin/orders/[id]/checkout"
     },
     {
-      "source": "payload/apps/backend/src/scripts/seed-site-footer.ts",
-      "target": "apps/backend/src/scripts/seed-site-footer.ts"
+      "source": "payload/apps/backend/src/api/admin/product-sales-modes/route.ts",
+      "target": "apps/backend/src/api/admin/product-sales-modes/route.ts"
     },
     {
-      "source": "payload/apps/backend/src/modules/demo-store",
-      "target": "apps/backend/src/modules/demo-store"
-    },
-    {
-      "source": "payload/apps/backend/src/api/admin/sites",
-      "target": "apps/backend/src/api/admin/sites"
+      "source": "payload/apps/backend/src/api/admin/site-credentials/route.ts",
+      "target": "apps/backend/src/api/admin/site-credentials/route.ts"
     },
     {
       "source": "payload/apps/backend/src/api/admin/site-templates",
       "target": "apps/backend/src/api/admin/site-templates"
     },
     {
-      "source": "payload/apps/backend/src/api/store/sites",
-      "target": "apps/backend/src/api/store/sites"
+      "source": "payload/apps/backend/src/api/admin/sites",
+      "target": "apps/backend/src/api/admin/sites"
+    },
+    {
+      "source": "payload/apps/backend/src/api/store/carts/[id]/checkout",
+      "target": "apps/backend/src/api/store/carts/[id]/checkout"
     },
     {
       "source": "payload/apps/backend/src/api/store/demo-stores",
       "target": "apps/backend/src/api/store/demo-stores"
     },
     {
-      "source": "payload/apps/backend/src/admin/routes/sites",
-      "target": "apps/backend/src/admin/routes/sites"
+      "source": "payload/apps/backend/src/api/store/sites",
+      "target": "apps/backend/src/api/store/sites"
     },
     {
-      "source": "payload/apps/backend/src/admin/hooks/api/demo-stores.tsx",
-      "target": "apps/backend/src/admin/hooks/api/demo-stores.tsx"
+      "source": "payload/apps/backend/src/jobs/cleanup-checkout-recipients.ts",
+      "target": "apps/backend/src/jobs/cleanup-checkout-recipients.ts"
     },
     {
-      "source": "payload/apps/backend/src/admin/translations/demo-stores",
-      "target": "apps/backend/src/admin/translations/demo-stores"
+      "source": "payload/apps/backend/src/jobs/process-catalog-imports.ts",
+      "target": "apps/backend/src/jobs/process-catalog-imports.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/jobs/process-demo-store-imports.ts",
+      "target": "apps/backend/src/jobs/process-demo-store-imports.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/links/bundle-demo-store.ts",
+      "target": "apps/backend/src/links/bundle-demo-store.ts"
     },
     {
       "source": "payload/apps/backend/src/links/demo-store-region.ts",
@@ -127,12 +115,28 @@
       "target": "apps/backend/src/links/demo-store-stock-location.ts"
     },
     {
-      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/demo",
-      "target": "apps/storefront/src/app/[countryCode]/(main)/demo"
+      "source": "payload/apps/backend/src/modules/demo-store",
+      "target": "apps/backend/src/modules/demo-store"
     },
     {
-      "source": "payload/apps/backend/src/api/admin/site-credentials/route.ts",
-      "target": "apps/backend/src/api/admin/site-credentials/route.ts"
+      "source": "payload/apps/backend/src/modules/store-importer",
+      "target": "apps/backend/src/modules/store-importer"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/backfill-woocommerce-variant-prices.ts",
+      "target": "apps/backend/src/scripts/backfill-woocommerce-variant-prices.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/seed-site-footer.ts",
+      "target": "apps/backend/src/scripts/seed-site-footer.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/scripts/test-catalog-import-fixture.ts",
+      "target": "apps/backend/src/scripts/test-catalog-import-fixture.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/workflows/hooks/site-checkout-validation.ts",
+      "target": "apps/backend/src/workflows/hooks/site-checkout-validation.ts"
     },
     {
       "source": "payload/apps/backend/src/workflows/update-demo-store-sales-channel.ts",
@@ -141,6 +145,18 @@
     {
       "source": "payload/apps/backend/src/workflows/update-demo-store-stock-location.ts",
       "target": "apps/backend/src/workflows/update-demo-store-stock-location.ts"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(directory)/tiendas",
+      "target": "apps/storefront/src/app/[countryCode]/(directory)/tiendas"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/[countryCode]/(main)/demo",
+      "target": "apps/storefront/src/app/[countryCode]/(main)/demo"
+    },
+    {
+      "source": "payload/apps/storefront/src/app/api/sites-directory",
+      "target": "apps/storefront/src/app/api/sites-directory"
     }
   ],
   "migrations": [
@@ -162,6 +178,7 @@
     "apps/backend/src/modules/demo-store/migrations/Migration20260907180000DemoStore.ts",
     "apps/backend/src/modules/demo-store/migrations/Migration20260908180000DemoStore.ts",
     "apps/backend/src/modules/demo-store/migrations/Migration20260914120000DemoStore.ts",
+    "apps/backend/src/modules/demo-store/migrations/Migration20260917120000DemoStore.ts",
     "apps/backend/src/modules/store-importer/migrations/Migration20260907210000StoreImporter.ts",
     "apps/backend/src/modules/store-importer/migrations/Migration20260909170000CatalogSettings.ts"
   ],
@@ -169,6 +186,10 @@
     {
       "path": "apps/backend/src/admin/hooks/api/demo-stores.tsx",
       "sha256": "62bb2bb499d4141cf16988237bc50d14dcdb074f54f31ac07f287a8a3922e71b"
+    },
+    {
+      "path": "apps/backend/src/admin/lib/puck/directory-config.tsx",
+      "sha256": "dd86be308b5cf6a549feda4b57064f744a76b3ab4a5ad568d487479722a03b6f"
     },
     {
       "path": "apps/backend/src/admin/routes/catalog-imports/page.tsx",
@@ -251,6 +272,10 @@
       "sha256": "7d09e294f2f971bcc3ca5b3cbf7aa6c34692c6f668ad002e5f7e3fdabd44076c"
     },
     {
+      "path": "apps/backend/src/admin/routes/sites/directory/page.tsx",
+      "sha256": "eafda02c312cdc102998c19992a9c758d694ed95a6b45df12efea9ae4a44bec6"
+    },
+    {
       "path": "apps/backend/src/admin/routes/sites/lib.test.ts",
       "sha256": "e830085dcd35473c1bdbccdc852109feb74e100b3c0d2aa0d8041b2b193fbc47"
     },
@@ -260,11 +285,11 @@
     },
     {
       "path": "apps/backend/src/admin/routes/sites/page.tsx",
-      "sha256": "bc2bb6aae2070ff9187d33a06893ba99aeaaeb89e3d888a7de97e10766eac827"
+      "sha256": "26b911d41354f9feca7f94f3d5e9817adb929120ceb9ff2116659b8ba8598c18"
     },
     {
       "path": "apps/backend/src/admin/routes/sites/settings/page.tsx",
-      "sha256": "3a5d9323e11e1266e0244eff3716bf1910684770655548e80a66132bbf1ccddb"
+      "sha256": "eaaa5e112a7aea413b69a742747e5ed95640697900a3fd8314f61cf3865b415e"
     },
     {
       "path": "apps/backend/src/admin/translations/demo-stores/index.ts",
@@ -305,6 +330,10 @@
     {
       "path": "apps/backend/src/api/admin/orders/[id]/checkout/route.ts",
       "sha256": "c7e03e08f7c32f88c8487b524a552fbca59880196df2cebdd9f11e3733d1828b"
+    },
+    {
+      "path": "apps/backend/src/api/admin/product-sales-modes/route.ts",
+      "sha256": "f53313d483a926f9fb8f32a0e160b3cc52f4b6378123283abcec5a031ccb691c"
     },
     {
       "path": "apps/backend/src/api/admin/site-credentials/route.ts",
@@ -352,7 +381,7 @@
     },
     {
       "path": "apps/backend/src/api/admin/sites/schemas.ts",
-      "sha256": "b120d4930366b4b747efcc5447fce3a78b7ff7aab50dd0f514d8faad1c255980"
+      "sha256": "36f76f94540d4462c7c1b7d7bb197d56f1d7e0a7f24fdb81dd00d9fd89d3302e"
     },
     {
       "path": "apps/backend/src/api/admin/sites/slug-availability/route.ts",
@@ -388,7 +417,7 @@
     },
     {
       "path": "apps/backend/src/api/store/sites/route.ts",
-      "sha256": "8d7fec21a33ee69d4521ea75dc6ff037ed3cc608529ff7af63bcfd1f687a2177"
+      "sha256": "2c85eab211aaf976a591b60b7b902da14b1e6ebe0c9c0c7db15149874eef49e0"
     },
     {
       "path": "apps/backend/src/jobs/cleanup-checkout-recipients.ts",
@@ -401,6 +430,10 @@
     {
       "path": "apps/backend/src/jobs/process-demo-store-imports.ts",
       "sha256": "7370abc8f2b806d168d9634ddce57e1bf2074822b12fec870b785839828fc421"
+    },
+    {
+      "path": "apps/backend/src/links/bundle-demo-store.ts",
+      "sha256": "1bf450af1cbdb31f427039076a0856ed05b4a03b86c6f177bd269fc52931880c"
     },
     {
       "path": "apps/backend/src/links/demo-store-region.ts",
@@ -499,8 +532,20 @@
       "sha256": "2a03048cc54d42ab79756271239ba59fc2538bb391ce9ad607467d327fb26cf2"
     },
     {
+      "path": "apps/backend/src/modules/demo-store/directory-document.ts",
+      "sha256": "b0e1210ae499a645bf1a4f74a17a73e21719c10c44895411640ad3e5e7cc68d3"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/directory-page.test.ts",
+      "sha256": "27064c73c638575daf5af246cc5e55a88e6fa1f544b6607540b32a0b01f43207"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/directory-page.ts",
+      "sha256": "a85d2219fcd7bef3572122795ab0f431953f2b0fbd52853fc098c8a52c7b2dc0"
+    },
+    {
       "path": "apps/backend/src/modules/demo-store/ensure-tables.ts",
-      "sha256": "79c883a8558cb793e322f3017310967e3417326ea8a598926d40be997d5890e8"
+      "sha256": "17120046efeca438ef5fc408868bd98389ff6b0afc74124c03ceb0c20cfb8c71"
     },
     {
       "path": "apps/backend/src/modules/demo-store/index.ts",
@@ -587,6 +632,10 @@
       "sha256": "69c6582ec741ca4d0fc02d8826304834e5da7b6edcc73473cc57d92dc9de2589"
     },
     {
+      "path": "apps/backend/src/modules/demo-store/migrations/Migration20260917120000DemoStore.ts",
+      "sha256": "2e59d0922bc061aeebb92b04c2527f1d9b8b636d42c3472578305d90bc63673a"
+    },
+    {
       "path": "apps/backend/src/modules/demo-store/models/demo-store.ts",
       "sha256": "18a6d0d4e47fc46f2cc33b3c3a6d7ddce3cc5e9b8cdb4bd8977b0c8f6029aa4b"
     },
@@ -596,7 +645,11 @@
     },
     {
       "path": "apps/backend/src/modules/demo-store/models/index.ts",
-      "sha256": "a3b59111a9df20666419ebc9dde92e3cfb37bbb27d2721c378346e28dded7e66"
+      "sha256": "cefff73234b9f6f48472885576dd59f88d4d7966f694dfbfb362d9521b6985a8"
+    },
+    {
+      "path": "apps/backend/src/modules/demo-store/models/product-sales-mode.ts",
+      "sha256": "2dcbaf4f5afbabf02b18ec38ecff3423acb9aaad2f4c3cf6f1a0b7edcc1e3a9e"
     },
     {
       "path": "apps/backend/src/modules/demo-store/models/site-setting.ts",
@@ -636,15 +689,15 @@
     },
     {
       "path": "apps/backend/src/modules/demo-store/reserved-slugs.ts",
-      "sha256": "dc655e30325417a2f7d06d13d7585c7f1aadb4665200dfd9f7b5697b05729ea7"
+      "sha256": "bfa57a5e699b19a13edeb7474b028a26cb22d05ba6e84769a33d82a43bf79a7e"
     },
     {
       "path": "apps/backend/src/modules/demo-store/service.ts",
-      "sha256": "b118563b2547ce84265b67050e5217470563c5852aee21dd7fd7c5a3ff2d6927"
+      "sha256": "bacd9aef8cc99dbe7ca30246ecb6159f4ad03c2006586241040690f8f386ac4f"
     },
     {
       "path": "apps/backend/src/modules/demo-store/settings.test.ts",
-      "sha256": "317c3acc6d70628fc92b83966d9793c7d782076e861b7511ff887075ee592fe5"
+      "sha256": "0c3c1108837e397d9feae1927689c0a3473f088763ae30e4549c199826e44270"
     },
     {
       "path": "apps/backend/src/modules/demo-store/settings.ts",
@@ -839,12 +892,20 @@
       "sha256": "19468d75a2e5044d69e68f6a441f40de680c5c920ea0eb8b6a4edad62167d123"
     },
     {
+      "path": "apps/storefront/src/app/[countryCode]/(directory)/tiendas/page.tsx",
+      "sha256": "e5c5fb9557a8c709bb8eff4bc234fa359e0a25ef538ce75bbb21821e6698481c"
+    },
+    {
+      "path": "apps/storefront/src/app/[countryCode]/(directory)/tiendas/sites-directory.tsx",
+      "sha256": "f1e3ecc70caf88f6863f2ebbd88f7703bb551b28302cbc0c1589c594d344db16"
+    },
+    {
       "path": "apps/storefront/src/app/[countryCode]/(main)/demo/[slug]/page.tsx",
       "sha256": "07f79236ddc896818ab7e8fbc3975d02f4ab7bd7e998f21a7ca31413419f2bf1"
     },
     {
-      "path": "apps/storefront/src/app/[countryCode]/(main)/tiendas/page.tsx",
-      "sha256": "85d3d528fa1e0598272dc003c81b429a365372871f1f0a74c29fade3ac7efaf8"
+      "path": "apps/storefront/src/app/api/sites-directory/route.ts",
+      "sha256": "5615e438dc21ad908f8a0b8e0a3171b8b46eb35ce0b5ea416ac31e7ab25747c5"
     }
   ],
   "integrations": {

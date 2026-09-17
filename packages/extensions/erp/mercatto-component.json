@@ -371,16 +371,24 @@
       "sha256": "850ba9c0f81d37091425da76ba052cf1027bb8a4d4a012e47dddd43600ced18b"
     },
     {
+      "path": "apps/backend/src/modules/erp/adapters/html-to-markdown.test.ts",
+      "sha256": "578f43883b65639e3ad5b22df9553d286164b52a8f2ef340eb7ed40b80813873"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/adapters/html-to-markdown.ts",
+      "sha256": "c8075fabce016d16b30d824e7b93b3cb6ca12677193efc54b4a562dea946e674"
+    },
+    {
       "path": "apps/backend/src/modules/erp/adapters/odoo-rpc-client.ts",
       "sha256": "adfbac593702028eb2d14e4ec7ad0c0cf9eb29adf344a3e6f5833ed2bed57e53"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/odoo.test.ts",
-      "sha256": "a06997914cafafeb8e4fd7f4d28c98fd901750d3ec4f4bdb0cb72c57d5cb2b7c"
+      "sha256": "b43f23f0c5534888e76df5d776af986cb0b64b423c3aeb092eb662284283258e"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/odoo.ts",
-      "sha256": "5949b379ad0468d5126bca0326827043a1bc1ea0c5cc0bfe2422396696120595"
+      "sha256": "c4b132fb5092c388ca1240b7e0f4e9a4e439de4a635e16ffd07628d33a62b5c4"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/registry.ts",
@@ -532,11 +540,11 @@
     },
     {
       "path": "apps/backend/src/modules/erp/outbox/build-sale-payload.test.ts",
-      "sha256": "3478ce82cc8d7a88e8f22bbcc879b497f65a682511ee20678e25ad6249b9b35c"
+      "sha256": "a3922e9dd68aa485eb4d63de674160149414f99cd24af91ac355e447d0007cba"
     },
     {
       "path": "apps/backend/src/modules/erp/outbox/build-sale-payload.ts",
-      "sha256": "61856a10cbd73cacb12232d713b548aa545e9cc5a8e0a3d49f1ba62dcb9ae186"
+      "sha256": "55cd5a89e068a12e56f9abcb136fb08b822472c6a65f77d35d1c0824307a5a31"
     },
     {
       "path": "apps/backend/src/modules/erp/outbox/enqueue-sale.ts",
@@ -572,7 +580,7 @@
     },
     {
       "path": "apps/backend/src/modules/erp/sanitize.test.ts",
-      "sha256": "73347959e430f956497a1142132e1a80075d5213c78b321fb7c1bc74f232676a"
+      "sha256": "091f9ad3aafe43174d09c446fdbcf5c2075be558600fb4a7d5fd9ad5a359abd9"
     },
     {
       "path": "apps/backend/src/modules/erp/sanitize.ts",
@@ -724,11 +732,11 @@
     },
     {
       "path": "apps/backend/src/modules/erp/sync/plan-product-updates.test.ts",
-      "sha256": "f3c65d8606135650375dbb69fd84b96c8f3d72d1c1ffb1d1c4bb9a1152fa4165"
+      "sha256": "f9a09b32b4bdd64eed419eaa8a122ccabf499e1799cf403c116065c4bbdd9833"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/plan-product-updates.ts",
-      "sha256": "5e8fcbdf62a7709f6f57ae72fabef8e6bbb08a1c9d13ab71e62a7f2c6f05d3fb"
+      "sha256": "15b964ac310d53b7b72588becde38d0bf501156716c74a115bcf81ff50af50a0"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/plan-stock-updates.test.ts",
@@ -748,11 +756,11 @@
     },
     {
       "path": "apps/backend/src/modules/erp/sync/product-description.test.ts",
-      "sha256": "b5fdd0afc9444ce353dd99577eb9629fc340cfbccbcfc6be15482b18c571ac93"
+      "sha256": "4a8d6eb3ba6f164c8cf47b1a9b2cacf61e9ef0c4c3de021d7848557023db9235"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/product-description.ts",
-      "sha256": "7d4e8242276ab8183d0939738d7159e5f24ad21aeb80248e7853b714d0826f6e"
+      "sha256": "76ad029abae0e8f18b0f8869a29e329646e10663c44b3644cf6d9594b38d67d2"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/product-family.test.ts",
@@ -900,7 +908,7 @@
     },
     {
       "path": "apps/backend/src/modules/erp/types.ts",
-      "sha256": "714b31e5a9355144a28fc061c0c025763a8c70da16aab95ed2234f677a4b2aa2"
+      "sha256": "d9521eee6e1d8d8941fbe8e7e544eca67e3e7dec5d583abb04a61b977b74a999"
     },
     {
       "path": "apps/backend/src/scripts/backfill-tinting-base-titles.ts",

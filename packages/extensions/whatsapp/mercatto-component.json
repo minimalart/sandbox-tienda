@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "whatsapp",
   "name": "WhatsApp",
-  "version": "1.18.0",
+  "version": "1.25.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [],
@@ -97,7 +97,7 @@
   "managed_files": [
     {
       "path": "apps/backend/src/admin/hooks/api/kapso.tsx",
-      "sha256": "aadfdad61afb438c0ea19acfdad6e3a485efe7fa02d648ecd28ea82aae1c00b2"
+      "sha256": "fcdbb9486e93e6afbc23de73372f39a2686b2068c1b1eee1e6f0731043d2d504"
     },
     {
       "path": "apps/backend/src/admin/hooks/api/whatsapp-advisor.tsx",
@@ -121,7 +121,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/whatsapp/components/floating-button-card.tsx",
-      "sha256": "1541b1df39d526687c07bf21003013f6767a28e4426e8604228aa9ad2cb7dc89"
+      "sha256": "464d3da22d9ae05177e1ba0c25f9a857e87a7c748a7c9384c73e3fae25806f15"
     },
     {
       "path": "apps/backend/src/admin/routes/whatsapp/components/template-create-modal.tsx",
@@ -220,6 +220,14 @@
       "sha256": "6422bb6eaf21da97fda3e87f618edd948607062c4341d47292cc05755cecc98a"
     },
     {
+      "path": "apps/backend/src/modules/kapso-whatsapp/abandoned-cart-delivery.test.ts",
+      "sha256": "01022db6c7cb735f754ef0a90ac58b1506f38f99e0f673ffa2d0995e1c519112"
+    },
+    {
+      "path": "apps/backend/src/modules/kapso-whatsapp/abandoned-cart-delivery.ts",
+      "sha256": "2f86f203ba007e46447e05019ff8104ad868ae70882bce1ca94b3e67e975ebc2"
+    },
+    {
       "path": "apps/backend/src/modules/kapso-whatsapp/bot-channels.test.ts",
       "sha256": "5227faaaceaaf732c997ba03d2b19e8ec1733d3d860e528225a18e9235699e8b"
     },
@@ -249,7 +257,7 @@
     },
     {
       "path": "apps/backend/src/modules/kapso-whatsapp/service.ts",
-      "sha256": "82f6c17d438692cb67d9873491df1574ccd916263a9bc18c1be8e24ab00f2a8e"
+      "sha256": "f7b3458f40518bf83426765744caf928b640c70862c8ac9d0740c4e762c81a05"
     },
     {
       "path": "apps/backend/src/modules/kapso-whatsapp/settings.ts",

@@ -47,6 +47,28 @@ describe('normalizeProductDescription — la guardia de propiedad (D01)', () => 
     assert.deepEqual(run(null), { description: null, applied: [], discarded: null });
     assert.deepEqual(run('   '), { description: null, applied: [], discarded: null });
   });
+
+  it('preserva `\\n\\n` de contenido editorial multi-línea (Markdown desde eCommerce)', () => {
+    // Cuando el HTML rico de Odoo se convierte a Markdown (htmlToMarkdown) llega
+    // con `\n\n` entre bloques. La versión previa aplastaba todo con `collapse`
+    // y perdíamos encabezados/listas. D01 debe pasar el texto intacto salvo
+    // colapsar runs de espacios/tabs por línea.
+    const markdown =
+      '### Características Principales\n\n' +
+      '- **Diseño ergonómico** para el aula.\n' +
+      '- Estructura de acero.\n\n' +
+      'Ideal para nivel primario.';
+    const result = run(markdown, 'Combo Pupitre');
+    assert.equal(result.description, markdown);
+    assert.deepEqual(result.applied, []);
+    assert.equal(result.discarded, null);
+  });
+
+  it('colapsa espacios/tabs dobles por línea pero no toca los `\\n\\n`', () => {
+    const input = 'Título del bloque\n\n-   item con  tabs\ty espacios';
+    const result = run(input, 'Producto');
+    assert.equal(result.description, 'Título del bloque\n\n- item con tabs y espacios');
+  });
 });
 
 describe('normalizeProductDescription — caso de lectura (D07)', () => {

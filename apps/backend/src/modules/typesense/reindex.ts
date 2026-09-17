@@ -14,6 +14,7 @@ import type { Logger, MedusaContainer } from '@medusajs/framework/types';
 import { QueryContext } from '@medusajs/utils';
 import { ProductMapper } from './product-mapper';
 import { loadAdvisorRules } from './advisor';
+import { attachBundleOnlyChannels, getBundleOnlyChannelMap } from './bundle-only-channels';
 import {
   attachCategoryFullPaths,
   buildCategoryPathMap,
@@ -688,6 +689,11 @@ async function fetchEnrichedProducts(
   // channel-scoped queda con precios equivocados hasta el próximo full sync.
   const channelMap = await getCachedChannelPriceMap(container, currencyCode);
   attachChannelPrices(enriched, channelMap);
+
+  // Canales donde el producto no se vende suelto (PRD Bundles V2 §47). Sin esto
+  // el incremental borraría el campo del documento y el producto volvería a
+  // aparecer en el buscador de la tienda que lo esconde.
+  attachBundleOnlyChannels(enriched, await getBundleOnlyChannelMap(query));
 
   return enriched;
 }

@@ -1,3 +1,4 @@
+import './dashboard-dataset';
 import { Module } from '@medusajs/framework/utils';
 import CompanyModuleService from './service';
 import { COMPANY_MODULE } from './types';

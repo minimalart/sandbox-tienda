@@ -12,6 +12,7 @@ import {
 } from '@medusajs/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CardSiteContext } from '../../../components/common/card-site-context';
 import {
   useKapsoFloatingButton,
   useUpdateKapsoFloatingButton,
@@ -25,6 +26,17 @@ import { registerWhatsappTranslations } from '../../../translations/whatsapp';
  * teléfono, el mensaje y el texto accesible se guardan con el botón "Guardar"
  * porque se escriben de a varias teclas. Sin teléfono válido el botón NO se
  * muestra en la tienda, y lo avisamos con un badge.
+ *
+ * **ES POR TIENDA, y hasta ahora no se decía.** Cada tienda atiende por su propio
+ * número: la ruta de admin ya escribía la fila de la tienda activa y la pública ya
+ * leía la de la tienda que pregunta, pero la card no mostraba NINGÚN selector. El
+ * operador editaba el botón de la tienda que estuviera activa sin enterarse de cuál
+ * era, y el único síntoma posible aparece del otro lado —un cliente abriendo el
+ * WhatsApp de otro negocio—, donde ya no hay forma de detectarlo.
+ *
+ * El contexto va en la CARD y no en la página porque la página tiene otras tres
+ * cards con su propio alcance: una franja arriba de todo prometería un aislamiento
+ * que no es el mismo para las cuatro.
  */
 export const FloatingButtonCard = () => {
   const { t, i18n } = useTranslation('whatsapp');
@@ -98,6 +110,12 @@ export const FloatingButtonCard = () => {
           disabled={busy}
         />
       </div>
+
+      {/* El hook va por `sdk.client.fetch`, que lleva `x-site-id` en `globalHeaders`
+          (`lib/client.ts`), y la query key lleva la tienda: el selector de acá cambia
+          de verdad la fila que se edita. `dirty` hace que cambiar de tienda pregunte
+          antes de llevarse los cambios sin guardar. */}
+      <CardSiteContext scope="site" dirty={dirty} />
 
       <div className="flex flex-col gap-6 px-6 pb-6">
         {missingPhone && (

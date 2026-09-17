@@ -91,9 +91,10 @@ export { EMPTY_GRAPH };
  * `kind` decide con qué se edita:
  *   text     → un input, admite `{{answers.<paso>}}` y `{{vars.<clave>}}`
  *   products → buscador de catálogo con foto, en el orden en que los ve el cliente
- *   variant  → un producto concreto elegido por su foto, o el que eligió el cliente
+ *   product  → un producto concreto elegido por su foto, o el que eligió el cliente
+ *   filter   → una condición del catálogo (categoría, precio) en vez de una lista
  */
-export type ActionArgKind = 'text' | 'products' | 'variant';
+export type ActionArgKind = 'text' | 'products' | 'product' | 'filter';
 
 export type ActionArgField = {
   name: string;
@@ -106,24 +107,44 @@ export type ActionArgField = {
 export const ACTION_ARGS: Record<string, ActionArgField[]> = {
   wa_search_products: [
     { name: 'query', label: 'Qué buscar', kind: 'text', placeholder: '{{text}}', help: 'Dejalo en {{text}} para buscar lo que el cliente escribió.' },
+    {
+      name: 'save_as',
+      label: 'Dónde dejar los resultados (opcional)',
+      kind: 'text',
+      placeholder: 'resultados',
+      help: 'Con esto la búsqueda NO manda nada: deja los productos en vars.<clave> y los dibuja la pregunta siguiente, que así puede sumar sus propias opciones ("Hacer otra búsqueda", "Necesito ayuda"). Vacío = manda el carrusel ella misma.',
+    },
   ],
   wa_product_detail: [
-    { name: 'variant_id', label: 'Producto a mostrar', kind: 'variant', placeholder: '{{vars.selected_variant}}' },
+    { name: 'variant_id', label: 'Producto a mostrar', kind: 'product', placeholder: '{{vars.selected_variant}}' },
   ],
   wa_list_presentations: [
-    { name: 'variant_id', label: 'Producto del que listar presentaciones', kind: 'variant', placeholder: '{{vars.selected_variant}}' },
+    { name: 'variant_id', label: 'Producto del que listar presentaciones', kind: 'product', placeholder: '{{vars.selected_variant}}' },
     { name: 'save_as', label: 'Dónde dejar las opciones', kind: 'text', placeholder: 'presentations', help: 'La pregunta siguiente las lee con vars.<esta clave>.' },
   ],
   wa_list_pinned: [
     { name: 'product_ids', label: 'Productos', kind: 'products', help: 'El orden es el que ve el cliente. Los que no estén en el canal de venta del bot no se muestran.' },
     { name: 'save_as', label: 'Dónde dejar las opciones', kind: 'text', placeholder: 'pinned', help: 'La pregunta siguiente las lee con vars.<esta clave>.' },
   ],
+  wa_checkout_link: [
+    {
+      name: 'save_as',
+      label: 'Dónde dejar el link (opcional)',
+      kind: 'text',
+      placeholder: 'link_pago',
+      help: 'Con esto el paso no manda nada: deja el link en vars.<clave> y lo escribe el mensaje siguiente con {{vars.<clave>}}. Vacío = el paso queda mudo dentro de un recorrido.',
+    },
+  ],
+  wa_list_filtered: [
+    { name: 'filter', label: 'Qué productos', kind: 'filter' },
+    { name: 'save_as', label: 'Dónde dejar las opciones', kind: 'text', placeholder: 'filtrados', help: 'La pregunta siguiente las lee con vars.<esta clave>.' },
+  ],
   wa_add_to_cart: [
-    { name: 'variant_id', label: 'Qué agregar', kind: 'variant', placeholder: '{{answers.elegir_producto}}' },
+    { name: 'variant_id', label: 'Qué agregar', kind: 'product', placeholder: '{{answers.elegir_producto}}' },
     { name: 'quantity', label: 'Cantidad', kind: 'text', placeholder: '1', help: 'Podés atarla a un paso: {{answers.cantidad}}.' },
   ],
   wa_set_quantity: [
-    { name: 'variant_id', label: 'Qué producto', kind: 'variant', placeholder: '{{answers.elegir_producto}}' },
+    { name: 'variant_id', label: 'Qué producto', kind: 'product', placeholder: '{{answers.elegir_producto}}' },
     { name: 'quantity', label: 'Nueva cantidad', kind: 'text', placeholder: '{{answers.cantidad}}', help: '0 lo saca del carrito.' },
   ],
 };
@@ -670,6 +691,7 @@ export const ACTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: 'wa_product_detail', label: 'Mostrar un producto' },
   { value: 'wa_list_presentations', label: 'Buscar las presentaciones de un producto' },
   { value: 'wa_list_pinned', label: 'Mostrar productos elegidos a mano' },
+  { value: 'wa_list_filtered', label: 'Mostrar productos por categoría o precio' },
   { value: 'wa_add_to_cart', label: 'Agregar al carrito' },
   { value: 'wa_set_quantity', label: 'Cambiar la cantidad' },
   { value: 'wa_view_cart', label: 'Ver el carrito' },

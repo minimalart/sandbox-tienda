@@ -19,6 +19,7 @@ import {
   sendWhatsappList,
   sendWhatsappText,
 } from '../send-whatsapp-text';
+import { toolHandledTurn } from './tool-spoke';
 import {
   advance,
   flowTapId,
@@ -166,9 +167,23 @@ async function runStep(input: FlowTurnInput, step: FlowStep, state: FlowState): 
       }
 
       case 'run_tool': {
-        // Las tools ya le hablan al cliente ellas mismas y emiten sus propios
-        // eventos del embudo. `waUsedAi: false` porque el recorrido es del grafo.
-        const out = await runWhatsappNativeTool(step.tool, step.args, {
+        /**
+         * EL ACUSE DE QUE LA TOOL HABLÓ, y no lo que devuelve.
+         *
+         * Las tools devuelven texto PARA EL MODELO —"No encontré productos, pedile
+         * que lo nombre de otra forma"— porque nacieron para el agente. En un
+         * recorrido NO HAY modelo: ese texto no lo lee nadie. Tomar la devolución
+         * como "turno atendido" dejaba al bot MUDO justo cuando más importa decir
+         * algo: una búsqueda sin resultados, un carrusel que Meta rechaza, una
+         * cantidad inválida. El cliente escribía el nombre de un producto y no
+         * volvía nada, para siempre.
+         *
+         * `sentUserMessage` es el acuse bueno porque las tools lo prenden dentro del
+         * `if (sent)`, o sea exactamente cuando el mensaje salió. Si no habló, el
+         * recorrido cede el turno y contesta el router o el modelo — que es la red
+         * anti-silencio que ya existe.
+         */
+        const toolCtx: AnyRecord = {
           container,
           waPhone: phone,
           waUsedAi: false,
@@ -185,8 +200,19 @@ async function runStep(input: FlowTurnInput, step: FlowStep, state: FlowState): 
           // señal que las tools ya respetan para no encimar mensajes. Así el nodo
           // puede quedarse con la confirmación y dibujar él los botones que siguen.
           sentUserMessage: step.silent,
-        } as never);
-        return out !== undefined;
+        };
+        const out = await runWhatsappNativeTool(step.tool, step.args, toolCtx as never);
+        const atendido = toolHandledTurn({
+          returned: out,
+          silent: step.silent,
+          spoke: toolCtx.sentUserMessage === true,
+        });
+        // Queda en el embudo: una acción que no habla es un hueco del recorrido, y
+        // sin este evento el único síntoma es que el cliente no recibe nada.
+        if (!atendido) {
+          track('send_failed', { node_id: step.nodeId, kind: 'tool_muda', tool: step.tool, out });
+        }
+        return atendido;
       }
 
       case 'run_agent': {

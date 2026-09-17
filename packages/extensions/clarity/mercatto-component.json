@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "clarity",
+  "name": "Microsoft Clarity",
+  "version": "1.0.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:clarity",
+  "environment": [],
+  "files": [
+    {
+      "source": "payload/apps/storefront/src/lib/analytics/clarity.tsx",
+      "target": "apps/storefront/src/lib/analytics/clarity.tsx"
+    },
+    {
+      "source": "payload/apps/backend/src/api/admin/marketing-privacy/clarity",
+      "target": "apps/backend/src/api/admin/marketing-privacy/clarity"
+    }
+  ],
+  "migrations": [],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/api/admin/marketing-privacy/clarity/route.ts",
+      "sha256": "ea42bae1e227cedc8e9c3d46a99452d397e9e5599db98d80d661aaa4bb0ddb3d"
+    },
+    {
+      "path": "apps/storefront/src/lib/analytics/clarity.tsx",
+      "sha256": "dc02f45ef2e7b3d12a817bcd243ae2965f4746dd24b1408e1a8c53952ef085f5"
+    }
+  ],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": [],
+    "admin_translation": null
+  }
+}

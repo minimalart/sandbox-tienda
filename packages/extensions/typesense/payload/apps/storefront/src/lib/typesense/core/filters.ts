@@ -12,7 +12,12 @@ export const quoteFilterValue = (value: string) =>
 // facet-universe, para que los usuarios nunca vean conteos de facetas para
 // productos que no existen en la tienda (canal incorrecto, sin precio,
 // hidden_from_store, etc.).
-export function buildBaseFilterBy(params: TypesenseProductsParams): string {
+export const BUNDLE_ONLY_FILTER_FIELD = "bundle_only_channels";
+
+export function buildBaseFilterBy(
+  params: TypesenseProductsParams,
+  options?: { omitBundleOnly?: boolean },
+): string {
   const filters: string[] = [];
   const quote = quoteFilterValue;
 
@@ -26,6 +31,14 @@ export function buildBaseFilterBy(params: TypesenseProductsParams): string {
     params.salesChannelId || process.env.NEXT_PUBLIC_SALES_CHANNEL_ID;
   if (salesChannelId) {
     filters.push(`sales_channels.id:=${quote(salesChannelId)}`);
+    // Productos que en ESTA tienda sólo se venden dentro de un kit (PRD Bundles
+    // V2 §47). El índice es uno solo para todas las tiendas, así que la
+    // exclusión viaja por canal: el mismo producto puede seguir vendiéndose
+    // suelto en otra. Los documentos sin el campo —índice sin re-sincronizar—
+    // matchean el `!=` y siguen visibles, así que prender esto no vacía nada.
+    if (!options?.omitBundleOnly) {
+      filters.push(`${BUNDLE_ONLY_FILTER_FIELD}:!=[${quote(salesChannelId)}]`);
+    }
   }
 
   if (params.productIds?.length) {

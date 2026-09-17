@@ -58,6 +58,7 @@ import type { RouteScopeState } from './scoped-routes';
 
 /** Clave: la ruta relativa a `src/api`, sin `route.ts`. Ej: `store/banners/[id]`. */
 export const STORE_ROUTE_SCOPE: Record<string, RouteScopeState> = {
+  'store/marketing-privacy': { state: 'not-applicable', reason: 'configuracion publica resuelta por x-site-slug explicito o tienda principal; proyeccion allowlist sin secretos, como sites/[slug]/config' },
   'store/demo-stores': { state: 'not-applicable', reason: 'alias compatible del indice publico de tiendas' },
   'store/sites': { state: 'not-applicable', reason: 'indice publico de tiendas publicadas; proyeccion limitada a nombre, slug, logo, plantilla y forma canonica' },
   'store/orders/by-cart': { state: 'not-applicable', reason: 'consulta por capability cart_id para retorno de pago invitado; devuelve únicamente order_id y no lista órdenes ni datos personales' },
@@ -124,6 +125,53 @@ export const STORE_ROUTE_SCOPE: Record<string, RouteScopeState> = {
 
   // ── barcode-scanner ─────────────────────────────────────────────
   'store/barcode-scanner/lookup': { state: 'scoped' },
+
+  // ── bundles ─────────────────────────────────────────────────────
+  // Las dos GET aceptan `?sales_channel_id=` del cliente y resuelven el
+  // demo_store desde ahí (`resolveActiveBundleStore` en api/store/bundles/
+  // resolve-store.ts). Fallback: `siteFromPublishableKey`. Es el mismo
+  // patrón declarado para blog / banners / marcas / videos / looks /
+  // sucursales / pdf-catalog / payment-benefits / recomendaciones — 9 rutas
+  // ya `pending` acá por el mismo motivo. Se pasan a `pending` en vez de
+  // `scoped` porque:
+  //   - con el canal de OTRA tienda, se ve el bundle de esa tienda (fuga
+  //     obvia declarada como aceptable en el encabezado de este archivo);
+  //   - sin la query param, el helper cae al fallback `siteFromPublishableKey`
+  //     que en el boilerplate real (pks compartidas entre tiendas) resuelve
+  //     al primer site del listado — típicamente NO al de la tienda hija.
+  // Cuando exista pk exclusiva por tenant, se puede subir a `scoped` sin
+  // cambio de contrato del storefront.
+  'store/bundles': {
+    state: 'pending',
+    reason:
+      'BLOQUEADA POR INFRA: el eje real hoy es `?sales_channel_id=` (mismo patrón que blog/banners), ' +
+      'y el fallback siteFromPublishableKey no disambigua cuando la pk sirve a varias tiendas. Subir ' +
+      'a scoped requiere pk exclusiva por tenant.',
+  },
+  'store/bundles/[handle]': {
+    state: 'pending',
+    reason:
+      'BLOQUEADA POR INFRA: mismo motivo que store/bundles — el eje declarado por el cliente ' +
+      '(`?sales_channel_id=`) es la única forma de scopear correctamente hoy, y el fallback por ' +
+      'pk no disambigua con las pks compartidas del boilerplate.',
+  },
+  // Las dos escritas resuelven la tienda POR EL CART (no por la key): el
+  // workflow lee `cart.sales_channel_id`, matchea la demo_store por ese canal
+  // y valida el link bundle↔store server-side. El cart, a su vez, nació con el
+  // canal que la publishable key habilita — es la misma cadena de confianza
+  // que usa `set-pricing-channel` para el cart lookup (path 2).
+  'store/bundles/confirm': {
+    state: 'not-applicable',
+    reason:
+      'eje = cart_id: el workflow deriva la demo_store desde cart.sales_channel_id y valida ' +
+      'el link bundle↔store; rechaza cualquier bundle no linkeado a la tienda del cart',
+  },
+  'store/bundles/reconfigure': {
+    state: 'not-applicable',
+    reason:
+      'eje = cart_id: mismo camino que confirm — la demo_store se deriva del cart y el workflow ' +
+      'valida el link antes de mutar line items',
+  },
 
   // ── billing-profiles ────────────────────────────────────────────
   // El eje es el CLIENTE autenticado (o el carrito, que ya trae su canal del core).

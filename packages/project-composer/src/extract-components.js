@@ -35,6 +35,7 @@ const definitions = resolveOwnership(catalog);
 const sourceExtensions = catalog.extensions.filter((extension) => extension.type !== 'plugin');
 const sourceExtensionIds = sourceExtensions.map((extension) => extension.id);
 const allExtensionIds = catalog.extensions.map((extension) => extension.id);
+require('./privacy-integrations').writePrivacyIntegrations(root, allExtensionIds);
 const catalogById = new Map(catalog.extensions.map((extension) => [extension.id, extension]));
 
 fs.writeFileSync(

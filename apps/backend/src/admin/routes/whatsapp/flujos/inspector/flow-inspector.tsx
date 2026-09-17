@@ -18,6 +18,8 @@ import { getActiveSiteSnapshot } from '../../../../lib/active-site';
  */
 export function FlowSettings({
   siteId,
+  name,
+  onNameChange,
   activeVersion,
   publishedAt,
   exclusive,
@@ -26,6 +28,9 @@ export function FlowSettings({
   onNotesChange,
 }: {
   siteId: string | null;
+  /** El nombre del recorrido. Es para el operador: el cliente nunca lo ve. */
+  name: string;
+  onNameChange: (value: string) => void;
   activeVersion: number | null;
   publishedAt: string | null;
   exclusive: boolean;
@@ -37,7 +42,20 @@ export function FlowSettings({
 
   return (
     <div className="flex flex-col gap-y-6">
-      <div className="flex flex-col gap-y-1">
+      {/* El nombre va PRIMERO y acá: es lo que distingue este recorrido de los otros
+          en la tabla, y se toca en el mismo lugar donde se lo está editando. Se
+          guarda con el resto del recorrido, no aparte. */}
+      <label className="flex flex-col gap-y-1">
+        <Text size="xsmall" weight="plus">
+          Nombre
+        </Text>
+        <Input size="small" value={name} onChange={(e) => onNameChange(e.target.value)} />
+        <Text size="xsmall" className="text-ui-fg-subtle">
+          Es para vos: sirve para reconocerlo en la lista. El cliente nunca lo ve.
+        </Text>
+      </label>
+
+      <div className="flex flex-col gap-y-1 border-t pt-5">
         <Text size="xsmall" weight="plus">
           Alcance
         </Text>

@@ -1,5 +1,8 @@
 /** Canonical ownership map for code that is extracted from the boilerplate core. */
 module.exports = {
+  'clarity': ["apps/storefront/src/lib/analytics/clarity.tsx","apps/backend/src/api/admin/marketing-privacy/clarity"],
+  'google-merchant': ["apps/backend/src/api/admin/marketing-privacy/merchant","apps/backend/src/api/feeds/google-merchant","apps/backend/src/lib/google-merchant-feed.ts","apps/backend/src/lib/google-merchant-report.ts","apps/backend/src/lib/marketing-providers.test.ts"],
+  'consent-management': ["apps/storefront/src/lib/consent/provider.tsx","apps/storefront/src/lib/consent/theme.css","apps/storefront/tests/privacy"],
   'space-designer': [
     'apps/storefront/public/space-designer',
     'apps/storefront/src/modules/space-designer',
@@ -190,6 +193,7 @@ module.exports = {
     'apps/backend/src/api/admin/newsletter-subscriptions',
     'apps/backend/src/api/store/newsletter-subscriptions',
     'apps/backend/src/admin/routes/newsletter-subscriptions',
+    'apps/backend/src/admin/routes/marketing-privacy/newsletter',
     'apps/backend/src/admin/hooks/api/newsletter-subscriptions.tsx',
     'apps/storefront/src/app/api/store/newsletter',
   ],
@@ -502,7 +506,9 @@ module.exports = {
    * admin del cliente no tenía multitienda. Ahora se instala.
    */
   multistore: [
-    'apps/storefront/src/app/[countryCode]/(main)/tiendas',
+    'apps/storefront/src/app/[countryCode]/(directory)/tiendas',
+    'apps/storefront/src/app/api/sites-directory',
+    'apps/backend/src/admin/lib/puck/directory-config.tsx',
     'apps/backend/src/api/admin/catalog-imports',
     'apps/backend/src/admin/routes/catalog-imports',
     'apps/backend/src/admin/widgets/catalog-commercial.tsx',

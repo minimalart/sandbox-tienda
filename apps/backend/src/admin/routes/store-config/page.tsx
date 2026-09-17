@@ -29,7 +29,6 @@ import {
   MinimumPurchaseEditDrawer,
 } from './components/minimum-purchase-create-drawer';
 import { BranchSettingsCard } from './components/branch-settings-card';
-import { StorefrontSettingsCard } from './components/storefront-settings-card';
 import { AiConfigCard } from './components/ai-config-card';
 import { FiscalDocsTab } from './components/fiscal-docs-card';
 import { SiteGateCard } from './components/site-gate-card';
@@ -215,7 +214,6 @@ const StoreConfig = () => {
             <Tabs.List>
               <Tabs.Trigger value="commerce">{t('TAB_COMMERCE')}</Tabs.Trigger>
               <Tabs.Trigger value="branches">{t('TAB_BRANCHES')}</Tabs.Trigger>
-              <Tabs.Trigger value="storefront">{t('TAB_STOREFRONT')}</Tabs.Trigger>
               <Tabs.Trigger value="legal">{t('TAB_LEGAL')}</Tabs.Trigger>
               <Tabs.Trigger value="ai">{t('TAB_AI')}</Tabs.Trigger>
               <Tabs.Trigger value="fiscal">{t('TAB_FISCAL')}</Tabs.Trigger>
@@ -278,13 +276,6 @@ const StoreConfig = () => {
                 hideEnvOnly
                 hideSiteContext
               />
-            </div>
-          </Tabs.Content>
-
-          <Tabs.Content value="storefront">
-            <SiteScopeBar screen="store-config.storefront" />
-            <div className="px-6 py-4">
-              <StorefrontSettingsCard />
             </div>
           </Tabs.Content>
 

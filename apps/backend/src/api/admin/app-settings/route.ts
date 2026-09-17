@@ -1,3 +1,4 @@
+import { withLegacyCartTemplates } from '../../../modules/app-settings/abandoned-cart-settings';
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework';
 import { MedusaError } from '@medusajs/framework/utils';
 import { z } from 'zod';
@@ -76,7 +77,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const resolution = await siteFromRequest(req);
     if (unknownSite(resolution)) return res.status(400).json(UNKNOWN_SITE_BODY);
 
-    const settings = await getStates(req.scope, descriptors, resolution);
+    const settings = await withLegacyCartTemplates(req.scope, await getStates(req.scope, descriptors, resolution), resolution);
 
     return res.status(200).json({
       settings,
@@ -135,7 +136,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       resolution,
     });
 
-    const settings = await getStates(req.scope, descriptors, resolution);
+    const settings = await withLegacyCartTemplates(req.scope, await getStates(req.scope, descriptors, resolution), resolution);
 
     return res.status(200).json({
       settings,

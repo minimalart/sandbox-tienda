@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 
 import { ADMIN_ROUTE_SCOPE } from '../lib/multistore/scoped-routes';
 
@@ -228,7 +228,17 @@ function reaches(file: string, needle: RegExp, depth = 1): boolean {
 
   for (const match of source.matchAll(/from '(\.[^']+)'/g)) {
     const target = resolve(dirname(file), match[1]!);
-    if (!target.startsWith(`${API_DIR}/`)) continue;
+    /**
+     * `sep` y no `'/'`: en Windows `resolve` devuelve backslashes y la comparación
+     * contra `${API_DIR}/` no matcheaba NUNCA. El salto por import quedaba muerto en
+     * silencio, así que una ruta que guarda a través de un helper —`fiscal-documents`,
+     * `orders/[id]/ready-for-pickup`— se contaba como sin guardar.
+     *
+     * Un tripwire que en una plataforma mide menos de lo que dice es peor que no
+     * tenerlo: el falso rojo enseña a ignorarlo, y el día del rojo de verdad ya nadie
+     * lo mira.
+     */
+    if (!target.startsWith(API_DIR + sep)) continue;
     for (const candidate of [`${target}.ts`, join(target, 'index.ts')]) {
       if (reaches(candidate, needle, depth - 1)) return true;
     }

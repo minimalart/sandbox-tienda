@@ -1,4 +1,7 @@
 import type { SettingDescriptor, SettingsNamespace } from './types';
+import clarity from './clarity';
+import googleMerchant from './google-merchant';
+import { marketingPrivacyCapabilities } from '../../../lib/marketing-privacy-capabilities';
 import abandonedCart from './abandoned-cart';
 import aiAssistant from './ai-assistant';
 import andreani from './andreani';
@@ -6,6 +9,7 @@ import b2b from './b2b';
 import catalogador from './catalogador';
 import checkoutLinks from './checkout-links';
 import corporate from './corporate';
+import consentManagement from './consent-management';
 import correoArgentino from './correo-argentino';
 import delivery from './delivery';
 import emailTemplates from './email-templates';
@@ -45,6 +49,8 @@ export const settingsNamespaces: SettingsNamespace[] = [
   b2b,
   catalogador,
   checkoutLinks,
+  clarity,
+  consentManagement,
   corporate,
   correoArgentino,
   delivery,
@@ -53,6 +59,7 @@ export const settingsNamespaces: SettingsNamespace[] = [
   fiscalDocumentation,
   ga4,
   giftCards,
+  googleMerchant,
   landingPages,
   loyaltyEngine,
   mercadopago,
@@ -66,7 +73,19 @@ export const settingsNamespaces: SettingsNamespace[] = [
   typesense,
   videos,
   whatsapp,
-];
+].filter((n) =>
+  n.namespace === 'extension:consent-management'
+    ? marketingPrivacyCapabilities.consent
+    : n.namespace === 'extension:ga4'
+      ? marketingPrivacyCapabilities.analytics
+      : n.namespace === 'extension:newsletter'
+        ? marketingPrivacyCapabilities.newsletter
+        : n.namespace === 'extension:clarity'
+          ? marketingPrivacyCapabilities.clarity
+          : n.namespace === 'extension:google-merchant'
+            ? marketingPrivacyCapabilities.merchant
+            : true
+);
 
 export const allDescriptors: SettingDescriptor[] = settingsNamespaces.flatMap((n) => n.settings);
 

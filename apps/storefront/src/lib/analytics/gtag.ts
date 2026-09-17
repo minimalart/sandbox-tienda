@@ -12,14 +12,13 @@
 // PRIVACIDAD: nunca enviamos datos personales del usuario (email, nombre,
 // dirección, teléfono). Solo datos de producto.
 
-export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
-export const isGAEnabled = Boolean(GA_MEASUREMENT_ID)
+import { analyticsPermitted, analyticsTarget } from './runtime'
 
 declare global {
   interface Window {
     dataLayer?: unknown[]
     gtag?: (
-      command: 'config' | 'event' | 'js' | 'set',
+      command: 'config' | 'event' | 'js' | 'set' | 'consent',
       targetIdOrEventName: string | Date,
       params?: Record<string, unknown>,
     ) => void
@@ -71,13 +70,13 @@ export function sumItemsValue(items: GA4Item[]): number {
 /** Dispara un evento si GA está activo y gtag ya cargó. No-op en otro caso. */
 function sendEvent(name: string, params: Record<string, unknown>): void {
   if (
-    !isGAEnabled ||
+    !analyticsPermitted() ||
     typeof window === 'undefined' ||
     typeof window.gtag !== 'function'
   ) {
     return
   }
-  window.gtag('event', name, params)
+  window.gtag('event', name, { ...params, send_to: analyticsTarget() })
 }
 
 /**
@@ -86,13 +85,14 @@ function sendEvent(name: string, params: Record<string, unknown>): void {
  */
 export function trackPageView(url: string): void {
   if (
-    !isGAEnabled ||
+    !analyticsPermitted() ||
     typeof window === 'undefined' ||
     typeof window.gtag !== 'function'
   ) {
     return
   }
   window.gtag('event', 'page_view', {
+    send_to: analyticsTarget(),
     page_path: url,
     page_location: window.location.href,
     page_title: document.title,

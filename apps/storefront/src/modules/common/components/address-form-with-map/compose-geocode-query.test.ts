@@ -57,4 +57,57 @@ describe('composeGeocodeQuery', () => {
       'Corrientes 1234, CABA, Argentina'
     );
   });
+  it('no repite la ciudad ni la provincia que la calle ya trae adentro', () => {
+    // Caso real de DESDEELSUR-70: sin autocompletado de Places el comprador
+    // escribe la dirección entera en el campo calle. La query vieja salía
+    // "San Martín 300, 25 de Mayo, Neuquén, 25 de Mayo, Neuquén, Q8319,
+    // Argentina" y Google la resolvía en Veinticinco de Mayo de MISIONES.
+    assert.equal(
+      composeGeocodeQuery({
+        address1: 'San Martín 300, 25 de Mayo, Neuquén',
+        city: '25 de Mayo',
+        province: 'Neuquén',
+        postalCode: 'Q8319',
+      }),
+      'San Martín 300, 25 de Mayo, Neuquén, Q8319, Argentina'
+    );
+  });
+
+  it('compara sin tildes ni mayúsculas', () => {
+    assert.equal(
+      composeGeocodeQuery({
+        address1: 'Belgrano 450, NEUQUEN',
+        city: 'Neuquén',
+        province: '',
+        postalCode: '8300',
+      }),
+      'Belgrano 450, NEUQUEN, 8300, Argentina'
+    );
+  });
+
+  it('una calle que CONTIENE el nombre de la ciudad no la borra de la query', () => {
+    // "Av. Lima 500" es un solo segmento: no dice que la ciudad sea Lima.
+    // Por eso la comparación es por segmento entero y no por substring.
+    assert.equal(
+      composeGeocodeQuery({
+        address1: 'Av. Lima 500',
+        city: 'Lima',
+        province: 'Buenos Aires',
+        postalCode: '1073',
+      }),
+      'Av. Lima 500, Lima, Buenos Aires, 1073, Argentina'
+    );
+  });
+
+  it('ciudad y provincia con el mismo nombre se escriben una sola vez', () => {
+    assert.equal(
+      composeGeocodeQuery({
+        address1: 'Avenida Argentina 120',
+        city: 'Neuquén',
+        province: 'Neuquén',
+        postalCode: 'Q8300',
+      }),
+      'Avenida Argentina 120, Neuquén, Q8300, Argentina'
+    );
+  });
 });

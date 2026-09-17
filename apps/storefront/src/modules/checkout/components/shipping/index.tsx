@@ -158,6 +158,56 @@ function isStorePickupOption(sm: HttpTypes.StoreCartShippingOption): boolean {
   return sm.data?.pickup_kind === "store";
 }
 
+/**
+ * Stock location a la que está anclada una shipping option, vía su service
+ * zone. Es el único puente entre una opción y una sucursal física.
+ *
+ * El id viaja porque `lib/data/fulfillment.ts` pide explícitamente
+ * `*service_zone.fulfillment_set.location.address` — sin ese `fields` la
+ * expansión no viene y esto devuelve `null` para todas.
+ */
+function stockLocationIdOf(
+  sm: HttpTypes.StoreCartShippingOption,
+): string | null {
+  const zone = (
+    sm as unknown as {
+      service_zone?: { fulfillment_set?: { location?: { id?: string } } };
+    }
+  ).service_zone;
+  return zone?.fulfillment_set?.location?.id ?? null;
+}
+
+/**
+ * La opción de "retiro en tienda" que corresponde a una sucursal.
+ *
+ * Con un fulfillment set por sucursal hay N opciones de retiro homónimas, una
+ * por stock location. Quedarse con la PRIMERA —lo que se hacía antes— mandaba
+ * TODAS las órdenes de retiro a la misma sucursal: la elegida de verdad sólo
+ * viajaba en `cart.metadata.store_id`, que el admin no mira. El modal de
+ * "Crear fulfillment" de Medusa preselecciona la ubicación siguiendo
+ * `order.shipping_methods[0].shipping_option_id → service_zone.fulfillment_set.location`,
+ * así que proponía siempre la misma sucursal y el operador tenía que
+ * corregirla a mano, pedido por pedido.
+ *
+ * El fallback a la primera disponible es deliberado: una tienda con una sola
+ * opción de retiro (el caso del boilerplate) no tiene nada que emparejar y
+ * tiene que seguir comportándose igual que siempre.
+ */
+function pickupOptionForStore(
+  methods: HttpTypes.StoreCartShippingOption[] | undefined,
+  store: StorePickupLocation | null,
+): HttpTypes.StoreCartShippingOption | undefined {
+  const available = methods?.filter(
+    (m) => isStorePickupOption(m) && !m.insufficient_inventory,
+  );
+  if (!available?.length) return undefined;
+  const stockLocationId = store?.stock_location_id;
+  const matching = stockLocationId
+    ? available.find((m) => stockLocationIdOf(m) === stockLocationId)
+    : undefined;
+  return matching ?? available[0];
+}
+
 function isKitShippingOption(sm: HttpTypes.StoreCartShippingOption): boolean {
   return !!(sm as any).data?.kit_prices;
 }
@@ -364,6 +414,10 @@ const Shipping: React.FC<ShippingProps> = ({
           province: "",
           latitude: null,
           longitude: null,
+          // La metadata del carrito no guarda la stock location: quien la
+          // necesita para emparejar la opción de retiro es `handleSelectStore`,
+          // y ahí la sucursal viene de la lista del endpoint, no de acá.
+          stock_location_id: null,
         }
       : null;
 
@@ -408,6 +462,25 @@ const Shipping: React.FC<ShippingProps> = ({
 
   const _cdeMethods = availableShippingMethods?.filter(
     (sm) => isCdeShippingOption(sm) && !isDropzone(sm) && hasKit,
+  );
+
+  // Las opciones de retiro en tienda son N copias del MISMO gesto comercial
+  // —una por stock location—, así que renderizarlas todas dibujaba una lista de
+  // radios homónimos ("Retiro en tienda" cinco veces en desdeelsur) entre los
+  // que no hay forma de elegir. Se muestra uno solo: la sucursal se elige en la
+  // lista de abajo y ESA elección fija la opción real (ver pickupOptionForStore).
+  //
+  // El representante es el que está seleccionado, si lo hay, para que el radio
+  // siga marcado cuando la opción efectiva es la de otra sucursal.
+  const _storePickupMethods =
+    _pickupMethods?.filter((sm) => isStorePickupOption(sm)) ?? [];
+  const _representativeStorePickup =
+    _storePickupMethods.find((sm) => sm.id === shippingMethodId) ??
+    _storePickupMethods.find((sm) => !sm.insufficient_inventory) ??
+    _storePickupMethods[0];
+  const _visiblePickupMethods = (_pickupMethods ?? []).filter(
+    (sm) =>
+      !isStorePickupOption(sm) || sm.id === _representativeStorePickup?.id,
   );
 
   const hasPickupOptions = !!_pickupMethods?.length;
@@ -992,18 +1065,20 @@ const Shipping: React.FC<ShippingProps> = ({
           selected_cde_name: "",
         });
 
-        const currentIsPickup = _pickupMethods?.find(
-          (m) => m.id === shippingMethodId,
-        );
-        if (!currentIsPickup) {
-          const first = _pickupMethods?.find(
-            (m) => isStorePickupOption(m) && !m.insufficient_inventory,
+        // La opción de retiro tiene que ser la de ESTA sucursal, no la que
+        // hubiera quedado seleccionada. Antes esta rama sólo actuaba si no
+        // había ningún pickup elegido, y tomaba la primera de la lista: la
+        // sucursal real quedaba únicamente en la metadata del carrito y el
+        // `shipping_option_id` de la orden —que es de donde el admin deduce la
+        // ubicación de despacho— apuntaba siempre a la misma.
+        const target = pickupOptionForStore(_pickupMethods, store);
+        if (target && target.id !== shippingMethodId) {
+          await handleSetShippingMethod(
+            target.id,
+            resolveDeliveryMode(target),
+            undefined,
+            { pickup_kind: "store" },
           );
-          if (first) {
-            handleSetShippingMethod(first.id, resolveDeliveryMode(first), undefined, {
-              pickup_kind: "store",
-            });
-          }
         } else {
           await onCartUpdate?.();
         }
@@ -1200,10 +1275,17 @@ const Shipping: React.FC<ShippingProps> = ({
                   }
 
                   const isStorePickup = isStorePickupOption(pickupMethod);
+                  // El radio de "retiro en tienda" es el representante de N
+                  // opciones homónimas: si ya hay sucursal elegida, la que vale
+                  // es la de esa sucursal, no la que el radio lleva pegada.
+                  const targetId = isStorePickup
+                    ? (pickupOptionForStore(_pickupMethods, selectedStore)?.id ??
+                      v)
+                    : v;
                   handleSetShippingMethod(
-                    v,
+                    targetId,
                     mode,
-                    optAmount,
+                    calculatedPricesMap[targetId] ?? optAmount,
                     isStorePickup ? { pickup_kind: "store" } : undefined,
                   );
                   return;
@@ -1221,7 +1303,7 @@ const Shipping: React.FC<ShippingProps> = ({
             >
               {[
                 ...(_shippingMethods || []),
-                ...(_pickupMethods || []),
+                ..._visiblePickupMethods,
                 ...(_cdeMethods || []),
               ].map((option) => {
                 const isDisabled =

@@ -4,6 +4,8 @@ import type { MedusaContainer } from '@medusajs/framework/types';
 import { salesChannelProductIds } from '../catalog/channel-products';
 import { resolveWaOrderContext, type WaOrderContext } from './order-context';
 import { TYPESENSE } from '../../modules/typesense';
+import { buildCatalogFilterBy, catalogSortBy, type WaCatalogFilter } from './flow/catalog-filter';
+import { groupHitsByProduct } from './group-hits';
 
 export type WaProductHit = {
   product_id: string;
@@ -108,6 +110,44 @@ async function typesenseProductIds(
 }
 
 /**
+ * Los productos que cumplen un filtro declarativo (categoría, precio, promoción…).
+ *
+ * No hay `q`: el paso no busca lo que el cliente escribió, muestra una SELECCIÓN. Por
+ * eso `q: '*'`, que en Typesense es "traeme todo lo que pase el filtro", y por eso el
+ * orden puede ser por precio sin pisar ninguna relevancia — no hay ninguna que pisar.
+ *
+ * Devuelve ids de producto, que es lo que `hydrateWaProductIds` sabe convertir en
+ * filas con precio calculado y stock real. El índice no se usa nunca para el precio ni
+ * para el stock: ahí puede estar desactualizado, y ofrecer un precio viejo es el error
+ * más caro que puede cometer el bot.
+ */
+export async function waFilteredProductIds(
+  container: MedusaContainer,
+  filter: WaCatalogFilter,
+  salesChannelIds: string[],
+  limit = 30,
+): Promise<string[]> {
+  try {
+    const ts = container.resolve(TYPESENSE) as {
+      search: (p: Record<string, unknown>) => Promise<{ hits?: Array<{ document?: { id?: string } }> }>;
+    };
+    const sort = catalogSortBy(filter);
+    const resp = await ts.search({
+      q: '*',
+      query_by: 'title',
+      per_page: Math.min(Math.max(limit, 1), 100),
+      filter_by: buildCatalogFilterBy(filter, salesChannelIds),
+      ...(sort ? { sort_by: sort } : {}),
+    });
+    return (resp?.hits ?? []).map((h) => h?.document?.id).filter(Boolean) as string[];
+  } catch {
+    // Sin Typesense no hay filtro por catálogo: el paso queda vacío y lo dice, en vez
+    // de caer a una consulta a Medusa que no sabría resolver categorías ni promociones.
+    return [];
+  }
+}
+
+/**
  * Hidrata una lista de `product_id` (en orden de relevancia) contra Medusa:
  * precio CALCULADO para la región y stock real. Devuelve UNA fila por VARIANTE
  * comprable, no `variants[0]` — en una pinturería 1 l y 20 l son opciones
@@ -123,7 +163,9 @@ export async function hydrateWaProductIds(
   opts: { limit?: number; ctx?: WaOrderContext } = {},
 ): Promise<{ hits: WaProductHit[]; ctx: WaOrderContext }> {
   const ctx = opts.ctx ?? (await resolveWaOrderContext(container));
-  const limit = Math.min(Math.max(Number(opts.limit) || 5, 1), 10);
+  // Mismo techo que la búsqueda y por lo mismo: cada fila es una variante, así que
+  // quien vaya a agrupar por producto necesita pedir de más.
+  const limit = Math.min(Math.max(Number(opts.limit) || 5, 1), 50);
   if (productIds.length === 0) return { hits: [], ctx };
 
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
@@ -189,7 +231,13 @@ export async function searchWaProducts(
   opts: { query: string; limit?: number; ctx?: WaOrderContext },
 ): Promise<{ hits: WaProductHit[]; ctx: WaOrderContext }> {
   const q = opts.query?.trim();
-  const limit = Math.min(Math.max(Number(opts.limit) || 8, 1), 10);
+  /**
+   * El techo es 50 y no 10 porque el caller puede querer AGRUPAR después: cada fila es
+   * una variante, así que para quedarse con diez productos distintos hay que pedir
+   * bastantes más. Lo que se le muestra al cliente lo recorta quien llama, que es el
+   * único que sabe si va a agrupar.
+   */
+  const limit = Math.min(Math.max(Number(opts.limit) || 8, 1), 50);
   const ctx = opts.ctx ?? (await resolveWaOrderContext(container));
   if (!q) return { hits: [], ctx };
 
@@ -397,8 +445,11 @@ export async function listWaPinnedProducts(
   // `ctx` inyectable por el mismo motivo que en `getWaVariantDetail`: resolverlo
   // adentro ata el test a levantar media tienda para probar una regla de filtrado.
   const ctx = opts.ctx ?? (await resolveWaOrderContext(container));
+  const tope = opts.limit ?? WA_LIMITS_LIST_ROWS;
+  // Se hidrata de más para poder agrupar: si cada producto tiene cuatro
+  // presentaciones, pedir diez filas alcanza para dos productos y medio.
   const { hits } = await hydrateWaProductIds(container, ids, {
-    limit: opts.limit ?? WA_LIMITS_LIST_ROWS,
+    limit: Math.min(ids.length * 5, 50),
     ctx,
   });
 
@@ -419,14 +470,69 @@ export async function listWaPinnedProducts(
   const money = (cents: number | null): string =>
     cents === null ? 'sin precio' : `$${Math.round(cents).toLocaleString('es-AR')}`;
 
-  return hits
-    .filter((h) => vendible.has(h.product_id))
+  /**
+   * UNA opción por PRODUCTO. Sin agrupar, un producto con cuatro presentaciones se
+   * come cuatro de las diez filas que acepta WhatsApp y el cliente ve el mismo nombre
+   * repetido. La presentación se elige en el paso siguiente, que es para lo que existe
+   * "Buscar las presentaciones de un producto".
+   */
+  return groupHitsByProduct(hits.filter((h) => vendible.has(h.product_id)))
+    .slice(0, tope)
     .map((h) => ({
       value: h.variant_id,
       // Acá SÍ va el título del producto: el cliente todavía no lo eligió.
       label: `${h.title} · ${money(h.unit_price)}`,
       ...(h.in_stock ? {} : { description: 'Sin stock' }),
     }));
+}
+
+/**
+ * Los productos que cumplen un filtro, listos para ofrecer.
+ *
+ * Se apoya en `listWaPinnedProducts` a propósito: una vez resueltos los ids, elegirlos
+ * a mano o por filtro es exactamente el mismo problema —hidratar, chequear canal,
+ * agrupar por producto y armar la etiqueta— y tener dos caminos para eso garantiza que
+ * uno de los dos quede atrás.
+ */
+export async function listWaFilteredProducts(
+  container: MedusaContainer,
+  filter: WaCatalogFilter,
+  opts: { limit?: number; ctx?: WaOrderContext } = {},
+): Promise<WaPresentationOption[]> {
+  const ctx = opts.ctx ?? (await resolveWaOrderContext(container));
+  const ids = await waFilteredProductIds(container, filter, ctx.sales_channel_ids, 30);
+  if (ids.length === 0) return [];
+  return listWaPinnedProducts(container, ids, { limit: opts.limit, ctx });
+}
+
+/**
+ * ACEPTAR UN PRODUCTO DONDE SE PIDE UNA VARIANTE.
+ *
+ * El editor deja elegir PRODUCTOS, que es como piensa el operador: nadie arma un
+ * recorrido decidiendo que muestre "Látex interior 4 L" en vez de "Látex interior".
+ * Las tools, en cambio, necesitan una variante — es lo que se agrega a un carrito.
+ *
+ * La traducción se hace ACÁ y en cada turno, no al guardar el recorrido. Si se
+ * resolviera al guardar, el paso quedaría clavado a una variante concreta: se
+ * discontinúa esa presentación y el paso deja de funcionar sin que nadie toque nada.
+ * Resolviendo en vivo, el recorrido dice "este producto" y siempre apunta a una
+ * variante que existe hoy.
+ *
+ * El prefijo del id es el discriminador (`prod_` contra `variant_`), que es la
+ * convención de Medusa y no una heurística nuestra.
+ */
+export async function resolveWaVariantId(
+  container: MedusaContainer,
+  id: string,
+  opts: { ctx?: WaOrderContext } = {},
+): Promise<string | null> {
+  const limpio = String(id ?? '').trim();
+  if (!limpio) return null;
+  if (!limpio.startsWith('prod_')) return limpio;
+
+  const { hits } = await hydrateWaProductIds(container, [limpio], { limit: 50, ctx: opts.ctx });
+  // La misma representante que ve el cliente en el carrusel: con stock si hay alguna.
+  return groupHitsByProduct(hits)[0]?.variant_id ?? null;
 }
 
 export type WaVariantDetail = {

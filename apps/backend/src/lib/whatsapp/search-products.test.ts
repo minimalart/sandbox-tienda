@@ -154,7 +154,9 @@ describe('listWaPinnedProducts', () => {
       ['prod_a', 'prod_b'],
       { ctx: ctx() },
     );
-    assert.deepEqual(out.map((o) => o.label.split(' · ')[0]), ['Primero — 20 L', 'Segundo — 20 L']);
+    // La etiqueta es el PRODUCTO, no "Producto — presentación": la fila representa a
+    // todas las presentaciones y el cliente todavía no eligió ninguna.
+    assert.deepEqual(out.map((o) => o.label.split(' · ')[0]), ['Primero', 'Segundo']);
   });
 
   it('descarta los que NO están en el canal del bot', async () => {
@@ -168,7 +170,7 @@ describe('listWaPinnedProducts', () => {
       ['prod_a', 'prod_b'],
       { ctx: ctx() },
     );
-    assert.deepEqual(out.map((o) => o.label.split(' · ')[0]), ['Vendible — 20 L']);
+    assert.deepEqual(out.map((o) => o.label.split(' · ')[0]), ['Vendible']);
   });
 
   it('sin ids devuelve vacío sin consultar nada', async () => {
@@ -183,6 +185,34 @@ describe('listWaPinnedProducts', () => {
       { ctx: ctx() },
     );
     assert.equal(out.length, 1);
+  });
+
+  it('un producto con varias presentaciones ocupa UNA sola fila', async () => {
+    /**
+     * Es el motivo del agrupado: WhatsApp acepta 10 filas, así que una pinturería que
+     * vende cada pintura en cuatro presentaciones le ofrecía al cliente dos productos y
+     * seis repetidos con el mismo nombre.
+     */
+    const conPresentaciones = {
+      id: 'prod_a',
+      title: 'Látex interior',
+      thumbnail: null,
+      variants: ['1 L', '4 L', '10 L', '20 L'].map((t, i) => ({
+        id: `var_${i}`,
+        title: t,
+        manage_inventory: false,
+        calculated_price: { calculated_amount: 1000 },
+      })),
+    };
+    const out = await listWaPinnedProducts(
+      containerPinned({ productos: [conPresentaciones], canalesPorProducto: { prod_a: ['sc_wa'] } }),
+      ['prod_a'],
+      { ctx: ctx() },
+    );
+    assert.equal(out.length, 1);
+    assert.equal(out[0]?.label.split(' · ')[0], 'Látex interior');
+    // Y detrás queda una variante de verdad, o se rompe agregar al carrito.
+    assert.equal(out[0]?.value, 'var_0');
   });
 
   it('el value es el variant_id, listo para el carrito', async () => {

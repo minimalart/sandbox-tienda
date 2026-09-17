@@ -42,6 +42,7 @@ import { findDescriptor } from '../modules/app-settings/descriptors';
 import { resolveSettingSync } from '../modules/app-settings/resolve';
 import { getKapsoSettings } from '../modules/kapso-whatsapp/settings';
 import { readSettingsViaPg } from '../modules/app-settings/read-via-pg';
+import { canSendConsentEvent } from '../lib/consent-server-events';
 
 // ─── App-settings ────────────────────────────────────────────────────────────
 
@@ -61,3 +62,23 @@ registerAppSettingsSyncReader((namespace, key) => {
 registerExternalReader(EXTERNAL_KEYS.KAPSO_WHATSAPP_SETTINGS, () => getKapsoSettings());
 // Stable reader key also supported by the currently published runtime 0.4.0.
 registerExternalReader('app-settings/via-pg', () => readSettingsViaPg);
+registerExternalReader('consent/event-permission', () => canSendConsentEvent);
+
+// Jobs and workflows resolve the same site-scoped values as the settings API.
+registerExternalReader('app-settings/scoped', () => async (container: import('@medusajs/framework/types').MedusaContainer, namespace: string, resolution: import('../lib/multistore/types').SiteResolution) => {
+  const { findNamespace } = await import('../modules/app-settings/descriptors/index.js');
+  const { resolveMany } = await import('../modules/app-settings/service.js');
+  const descriptors = findNamespace(namespace)?.settings;
+  if (!descriptors) throw new Error(`Unknown settings namespace: ${namespace}`);
+  if (namespace === 'extension:abandoned-cart') {
+    const { getStates } = await import('../modules/app-settings/service.js');
+    const { withLegacyCartTemplates } = await import('../modules/app-settings/abandoned-cart-settings.js');
+    const states = await withLegacyCartTemplates(container, await getStates(container, descriptors, resolution), resolution);
+    return Object.fromEntries(states.map(state => [state.key, state.value]));
+  }
+  return resolveMany(container, descriptors, resolution);
+});
+registerExternalReader('multistore/storefront-url', () => async (site: { id: string; slug: string; is_main: boolean }) => {
+  const { siteStorefrontUrl } = await import('../lib/multistore/public-url.js');
+  return siteStorefrontUrl(site);
+});

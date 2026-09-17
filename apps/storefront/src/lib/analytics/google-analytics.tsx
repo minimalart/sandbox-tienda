@@ -1,55 +1,53 @@
-'use client'
+'use client';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef } from 'react';
+import { useConsent } from '../consent/context';
+import type { AnalyticsSettings, ConsentState } from '../consent/contract';
+import { configureAnalytics, initializeAnalytics } from './runtime';
+import { trackPageView } from './gtag';
 
-import Script from 'next/script'
-import { usePathname, useSearchParams } from 'next/navigation'
-import { Suspense, useEffect } from 'react'
-import { GA_MEASUREMENT_ID, isGAEnabled, trackPageView } from './gtag'
-
-// Trackea page_view en cada cambio de ruta. El App Router navega del lado del
-// cliente sin recargar, así que el config de gtag va con send_page_view:false
-// y nosotros disparamos el evento a mano acá. useSearchParams obliga a un
-// límite de Suspense, por eso este componente va envuelto abajo.
-function GAPageView() {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-
+function Tracker({ config }: { config: AnalyticsSettings | null }) {
+  const consent = useConsent();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const query = searchParams?.toString();
+  const lastPage = useRef('');
   useEffect(() => {
-    if (!pathname) {
-      return
+    const permitted = configureAnalytics(config, consent);
+    const update = (event: Event) =>
+      configureAnalytics(config, (event as CustomEvent<ConsentState>).detail);
+    window.addEventListener('brick:consent:state', update);
+    if (permitted && config) {
+      initializeAnalytics();
+      let script = document.getElementById('brick-ga4-loader') as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement('script');
+        script.id = 'brick-ga4-loader';
+        script.async = true;
+        script.src =
+          'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(config.measurementId);
+        document.head.appendChild(script);
+      }
+      const url = query ? pathname + '?' + query : pathname;
+      const pageKey = config.measurementId + ':' + url;
+      if (pathname && lastPage.current !== pageKey) {
+        trackPageView(url!);
+        lastPage.current = pageKey;
+      }
+    } else {
+      lastPage.current = '';
     }
-    const query = searchParams?.toString()
-    trackPageView(query ? `${pathname}?${query}` : pathname)
-  }, [pathname, searchParams])
-
-  return null
+    return () => {
+      window.removeEventListener('brick:consent:state', update);
+      configureAnalytics(null, { active: true, ready: false, categories: {} });
+    };
+  }, [config, consent.active, consent.ready, consent.categories, pathname, query]);
+  return null;
 }
-
-/**
- * Integración OPCIONAL de Google Analytics 4. Si no hay measurement id
- * (NEXT_PUBLIC_GA_MEASUREMENT_ID) no renderiza nada y la app funciona igual.
- * Se monta una sola vez en el root layout.
- */
-export default function GoogleAnalytics() {
-  if (!isGAEnabled) {
-    return null
-  }
-
+export default function GoogleAnalytics({ config }: { config: AnalyticsSettings | null }) {
   return (
-    <>
-      <Script
-        id='ga4-loader'
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-        strategy='afterInteractive'
-      />
-      <Script id='ga4-init' strategy='afterInteractive'>
-        {`window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${GA_MEASUREMENT_ID}', { send_page_view: false });`}
-      </Script>
-      <Suspense fallback={null}>
-        <GAPageView />
-      </Suspense>
-    </>
-  )
+    <Suspense fallback={null}>
+      <Tracker config={config} />
+    </Suspense>
+  );
 }

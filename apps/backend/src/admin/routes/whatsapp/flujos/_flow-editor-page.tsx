@@ -96,6 +96,7 @@ export function FlowEditorPage({ versionId }: { versionId: string }): ReactEleme
           saveState: editor.saveState,
           issueCount: editor.issues.length,
         }}
+        name={editor.name}
         onGoToIssue={() => editor.setIssuesOpen(true)}
         onTest={editor.simulator.openPanel}
         testing={editor.simulator.open}
@@ -246,6 +247,8 @@ export function FlowEditorPage({ versionId }: { versionId: string }): ReactEleme
         open={editor.settingsOpen}
         onOpenChange={editor.setSettingsOpen}
         siteId={editor.data?.site_id ?? null}
+        name={editor.name}
+        onNameChange={editor.setName}
         activeVersion={editor.data?.active?.version ?? null}
         publishedAt={editor.data?.active?.published_at ?? null}
         exclusive={editor.exclusive}

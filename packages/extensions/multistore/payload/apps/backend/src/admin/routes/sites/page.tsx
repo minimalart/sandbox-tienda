@@ -178,6 +178,7 @@ const DemoStores = () => {
               <Heading>{t('TITLE')}</Heading>
               <ExtensionVersion extension="demo-stores" />
             </div>
+            <Button size="small" variant="secondary" onClick={() => navigate('/sites/directory')}>{i18n.language.startsWith('en') ? 'Edit directory' : 'Editar directorio'}</Button>
             <Button size="small" variant="secondary" onClick={() => setCreateOpen(true)}>
               {t('CREATE_BUTTON')}
             </Button>

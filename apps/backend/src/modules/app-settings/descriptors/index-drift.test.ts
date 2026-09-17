@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync } from 'node:fs';
 import { settingsNamespaces } from './index.ts';
+import { marketingPrivacyCapabilities as capabilities } from '../../../lib/marketing-privacy-capabilities.ts';
 
 /**
  * `index.ts` es el ÚNICO punto de ensamblaje de los descriptores, y se mantiene a
@@ -20,6 +21,11 @@ import { settingsNamespaces } from './index.ts';
 
 /** Los `.ts` de esta carpeta que son descriptores, no infraestructura ni tests. */
 function descriptorFiles(): string[] {
+  const selected: Record<string, boolean> = {
+    'consent-management': capabilities.consent, ga4: capabilities.analytics,
+    newsletter: capabilities.newsletter, clarity: capabilities.clarity,
+    'google-merchant': capabilities.merchant,
+  };
   return readdirSync(import.meta.dirname)
     .filter(
       (f) =>
@@ -29,6 +35,7 @@ function descriptorFiles(): string[] {
         f !== 'types.ts',
     )
     .map((f) => f.replace(/\.ts$/, ''))
+    .filter((f) => selected[f] !== false)
     .sort();
 }
 

@@ -20,9 +20,11 @@ type PersonalInfoProps = {
   onCartUpdate?: (
     cart?: HttpTypes.StoreCart | null,
   ) => Promise<HttpTypes.StoreCart | null>;
+  /** Paso al que avanza "Continuar", ya resuelto contra el stepOrder visible. */
+  nextStep?: string;
 };
 
-const PersonalInfo = ({ cart, customer, onCartUpdate }: PersonalInfoProps) => {
+const PersonalInfo = ({ cart, customer, onCartUpdate, nextStep }: PersonalInfoProps) => {
   const isLoggedIn = !!customer;
   const cartId = cart?.id ?? null;
   // Estar logueado no garantiza tener nombre: el checkout guest de Medusa crea
@@ -116,7 +118,9 @@ const PersonalInfo = ({ cart, customer, onCartUpdate }: PersonalInfoProps) => {
         await onCartUpdate(result.cart);
       }
 
-      goToCheckoutStep("address");
+      // El paso siguiente lo decide la policy de la tienda: hardcodear "address"
+      // empujaba a un paso inexistente en tiendas que lo ocultan.
+      if (nextStep) goToCheckoutStep(nextStep);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Error al guardar";
       setError(message);

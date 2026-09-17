@@ -438,11 +438,23 @@ export function planProductUpdate(input: {
   } else if (row.description?.trim()) {
     const fingerprint = descriptionRulesFingerprint(titleRules);
     const storedSource = existing.metadata?.zeus_source_description;
+    // Target vacío + `description` en la allowlist: el operador dijo explícito
+    // "quiero que el ERP maneje descripciones", y no hay contenido en Medusa,
+    // así que llenar no pisa a nadie. Sin este gate, ERPs que exponen la
+    // descripción por un módulo agregado más tarde (Odoo con
+    // `description_ecommerce`, por ejemplo) nunca terminan de llenar el campo
+    // aunque el operador prendió el sync. Cuando `description` NO está en la
+    // allowlist, la política defensiva original vale — un target vacío puede
+    // ser una decisión editorial (desdeelsur borró la desc a propósito) y se
+    // respeta.
+    const existingHasHumanContent = Boolean(existing.description?.trim());
     const reason =
       typeof storedSource !== 'string'
-        ? textDiffers(row.description, existing.description)
-          ? null // lo guardado no es el crudo del ERP: no es nuestro, no se toca.
-          : 'never_normalized'
+        ? !existingHasHumanContent && allows('description')
+          ? 'empty_target'
+          : textDiffers(row.description, existing.description)
+            ? null // lo guardado no es el crudo del ERP: no es nuestro, no se toca.
+            : 'never_normalized'
         : storedSource !== row.description
           ? 'source_changed'
           : existing.metadata?.zeus_description_rules_v !== fingerprint

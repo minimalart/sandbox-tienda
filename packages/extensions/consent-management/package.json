@@ -1,0 +1,7 @@
+{
+  "name": "@repo/extension-consent-management",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Consent Management component source package",
+  "dependencies": {}
+}

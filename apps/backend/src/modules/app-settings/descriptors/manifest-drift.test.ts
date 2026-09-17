@@ -101,7 +101,13 @@ test('cada descriptor tiene key UPPER_SNAKE, label, group y namespace consistent
       assert.equal(d.namespace, ns.namespace, `${d.key}: namespace desalineado`);
       assert.ok(d.label.trim().length > 0, `${d.key}: sin label`);
       assert.ok(d.group.trim().length > 0, `${d.key}: sin group`);
-      assert.ok(d.env.length > 0, `${d.key}: sin env var de la que heredar`);
+      // Privacy provider configuration is stored per site and deliberately has no env fallback.
+      const databaseOnly = new Set([
+        'extension:multistore/SITES_HUB_PUCK', // Editorial Puck document; no environment fallback.
+        'extension:consent-management/CONFIG', 'extension:ga4/STOREFRONT_CONFIG',
+        'extension:clarity/CONFIG', 'extension:clarity/EXPORT_TOKEN', 'extension:google-merchant/CONFIG',
+      ]);
+      assert.ok(d.env.length > 0 || databaseOnly.has(`${d.namespace}/${d.key}`), `${d.key}: sin env var de la que heredar`);
       if (d.type === 'enum') assert.ok(d.options?.length, `${d.key}: enum sin options`);
       if (d.type === 'number' && d.min !== undefined && d.max !== undefined) {
         assert.ok(d.min <= d.max, `${d.key}: min > max`);
