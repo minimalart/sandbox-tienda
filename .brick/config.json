@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "upstream": {
+    "repo": "minimalart/medusa-b2c-boilerplate",
+    "channel": "stable",
+    "version": null,
+    "commit": "cac34004efb309aa2d946fd12f54da9736dc201b",
+    "installed_at": "2026-09-17T21:50:29.574Z",
+    "run_id": null
+  },
+  "custom": {
+    "enabled": false,
+    "paths": [],
+    "reason": null,
+    "approved_at": null,
+    "approved_by": null
+  }
+}
