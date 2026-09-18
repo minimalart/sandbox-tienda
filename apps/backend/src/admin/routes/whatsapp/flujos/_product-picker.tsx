@@ -1,5 +1,5 @@
 import { ArrowDownMini, ArrowUpMini, Trash, XMarkMini } from '@medusajs/icons';
-import { Button, IconButton, Input, Switch, Text } from '@medusajs/ui';
+import { IconButton, Input, Switch, Text } from '@medusajs/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 
@@ -162,10 +162,15 @@ export const SELECCION_DEL_CLIENTE = '{{vars.selected_variant}}';
  * error recién aparece con un cliente adelante.
  *
  * Ahora son dos modos explícitos: el producto que el cliente acaba de elegir, o uno
- * fijo buscado en el catálogo y elegido por su foto. El valor que se guarda es el
- * mismo string de siempre, así que el motor no cambia.
+ * fijo buscado en el catálogo y elegido por su foto.
+ *
+ * **Se elige un PRODUCTO, no una presentación.** Nadie arma un recorrido decidiendo
+ * que muestre "Látex interior 4 L" en vez de "Látex interior"; y si se guardara la
+ * presentación, el día que esa se discontinúa el paso deja de funcionar sin que nadie
+ * haya tocado nada. Se guarda el id del producto y la variante la resuelve el bot en
+ * cada turno, eligiendo la misma que ve el cliente en el carrusel.
  */
-export function VariantPicker({
+export function SingleProductPicker({
   value,
   onChange,
   help,
@@ -205,7 +210,7 @@ export function VariantPicker({
           onChange={(e) => onChange(e.target.value)}
         />
       ) : (
-        <ElegidoOBuscador
+        <ProductoElegido
           value={value}
           onChange={onChange}
           texto={texto}
@@ -224,7 +229,7 @@ export function VariantPicker({
   );
 }
 
-function ElegidoOBuscador({
+function ProductoElegido({
   value,
   onChange,
   texto,
@@ -240,40 +245,27 @@ function ElegidoOBuscador({
   cargando: boolean;
 }): ReactElement {
   /**
-   * Lo elegido se guarda como id de VARIANTE, que es lo que piden las acciones. Para
-   * poder mostrarlo con su foto hay que encontrar el producto que la contiene, y la
-   * API de admin no busca por id de variante: se busca por texto y se mira adentro.
-   * Mientras no se encuentre, se muestra el id — que es exactamente lo que se veía
-   * antes, así que no se pierde nada.
+   * Lo elegido es un id de PRODUCTO, así que se lo puede pedir derecho por id. Antes,
+   * cuando se guardaba la variante, había que traer cien productos y buscar adentro de
+   * cada uno: el producto elegido podía no aparecer nunca.
    */
-  const { data: candidatos = [] } = useQuery({
-    queryKey: ['whatsapp-flujos', 'variante', value],
-    queryFn: async () => {
-      const { products } = await sdk.admin.product.list({ limit: 100, fields: FIELDS });
-      return (products ?? []) as ProductoLite[];
-    },
-    enabled: value.trim().length > 0,
-  });
-
-  const elegido = useMemo(() => {
-    for (const producto of candidatos) {
-      const variante = (producto.variants ?? []).find((v) => v.id === value);
-      if (variante) return { producto, variante };
-    }
-    return null;
-  }, [candidatos, value]);
+  const { data: elegidos = [] } = useProductosPorId(value ? [value] : []);
+  const elegido = elegidos[0];
 
   if (value.trim()) {
     return (
       <div className="flex items-center gap-x-2 rounded-md border p-2">
-        <Thumb src={elegido?.producto.thumbnail} alt={elegido?.producto.title} />
+        <Thumb src={elegido?.thumbnail} alt={elegido?.title} />
         <span className="min-w-0 flex-1">
           <Text size="xsmall" className="truncate">
-            {elegido?.producto.title ?? value}
+            {elegido?.title ?? value}
           </Text>
-          {elegido?.variante.title && (
+          {(elegido?.variants?.length ?? 0) > 1 && (
             <Text size="xsmall" className="truncate text-ui-fg-subtle">
-              {elegido.variante.title}
+              {/* Que tenga varias no es un problema a resolver acá: el bot elige la
+                  misma que le muestra al cliente, y el paso "presentaciones" existe
+                  justamente para dejarlo elegir. */}
+              {elegido?.variants?.length} presentaciones
             </Text>
           )}
         </span>
@@ -296,11 +288,8 @@ function ElegidoOBuscador({
         <Resultados
           productos={resultados}
           cargando={cargando}
-          // Una acción de producto pide una VARIANTE: si el producto tiene una sola se
-          // toma sin preguntar, y si tiene varias se muestran para elegir cuál.
-          expandirVariantes
-          onPickVariant={(variantId) => {
-            onChange(variantId);
+          onPick={(producto) => {
+            onChange(producto.id);
             setTexto('');
           }}
         />
@@ -315,14 +304,10 @@ function Resultados({
   productos,
   cargando,
   onPick,
-  onPickVariant,
-  expandirVariantes = false,
 }: {
   productos: ProductoLite[];
   cargando: boolean;
-  onPick?: (producto: ProductoLite) => void;
-  onPickVariant?: (variantId: string) => void;
-  expandirVariantes?: boolean;
+  onPick: (producto: ProductoLite) => void;
 }): ReactElement {
   if (cargando && productos.length === 0) {
     return (
@@ -342,44 +327,26 @@ function Resultados({
 
   return (
     <div className="flex max-h-64 flex-col gap-y-1 overflow-y-auto">
-      {productos.map((producto) => {
-        const variantes = producto.variants ?? [];
-        const unaSola = expandirVariantes && variantes.length === 1;
-
-        return (
-          <div key={producto.id} className="flex flex-col gap-y-1">
-            <button
-              type="button"
-              className="flex items-center gap-x-2 rounded-md p-2 text-left hover:bg-ui-bg-base-hover"
-              disabled={expandirVariantes && variantes.length > 1}
-              onClick={() => {
-                if (!expandirVariantes) onPick?.(producto);
-                else if (unaSola) onPickVariant?.(variantes[0]?.id as string);
-              }}
-            >
-              <Thumb src={producto.thumbnail} alt={producto.title} />
-              <Text size="xsmall" className="min-w-0 flex-1 truncate">
-                {producto.title}
+      {productos.map((producto) => (
+        <button
+          key={producto.id}
+          type="button"
+          className="flex items-center gap-x-2 rounded-md p-2 text-left hover:bg-ui-bg-base-hover"
+          onClick={() => onPick(producto)}
+        >
+          <Thumb src={producto.thumbnail} alt={producto.title} />
+          <span className="min-w-0 flex-1">
+            <Text size="xsmall" className="truncate">
+              {producto.title}
+            </Text>
+            {(producto.variants?.length ?? 0) > 1 && (
+              <Text size="xsmall" className="truncate text-ui-fg-subtle">
+                {producto.variants?.length} presentaciones
               </Text>
-            </button>
-
-            {expandirVariantes && variantes.length > 1 && (
-              <div className="flex flex-wrap gap-1 pl-12">
-                {variantes.map((variante) => (
-                  <Button
-                    key={variante.id}
-                    size="small"
-                    variant="secondary"
-                    onClick={() => onPickVariant?.(variante.id)}
-                  >
-                    {variante.title ?? variante.id}
-                  </Button>
-                ))}
-              </div>
             )}
-          </div>
-        );
-      })}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }

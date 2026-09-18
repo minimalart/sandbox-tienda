@@ -9,11 +9,12 @@
  *   - sin promociones → borraba `has_promotion/promotions/discount/subtotal`
  * Centralizar los campos + la lógica de promociones acá evita esa divergencia.
  */
-import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
+import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import type { Logger, MedusaContainer } from '@medusajs/framework/types';
 import { QueryContext } from '@medusajs/utils';
 import { ProductMapper } from './product-mapper';
 import { loadAdvisorRules } from './advisor';
+import { attachBundleOnlyChannels, getBundleOnlyChannelMap } from './bundle-only-channels';
 import {
   attachCategoryFullPaths,
   buildCategoryPathMap,
@@ -23,6 +24,38 @@ import TypeSenseService from './service';
 
 type AnyRecord = Record<string, unknown>;
 type QueryGraph = { graph: (input: unknown) => Promise<{ data: unknown[] }> };
+
+/** Forma mínima del pricing service que consumimos para leer las reglas
+ *  channel-scoped. `listPriceListRules` NO está expuesto por el joiner-config
+ *  del pricing module (solo `PriceSet`, `PriceList`, `Price`, `PricePreference`),
+ *  así que la única forma de listar reglas es vía service. */
+type PricingModuleShape = {
+  listPriceListRules: (
+    filters?: { attribute?: string | string[] },
+    config?: { relations?: string[] },
+  ) => Promise<
+    Array<{
+      id: string;
+      price_list_id: string;
+      attribute: string;
+      value: string | string[];
+      price_list?: {
+        id: string;
+        status?: string | null;
+        deleted_at?: string | null;
+        starts_at?: string | null;
+        ends_at?: string | null;
+      } | null;
+    }>
+  >;
+};
+
+/** Bundle que necesita `buildChannelPriceMap`: query.graph para `price` y
+ *  `product_variant` (sí expuestos), y el pricing service para las reglas. */
+type ChannelPriceDeps = {
+  query: QueryGraph;
+  pricing: PricingModuleShape;
+};
 
 /**
  * Campos que se piden a `query.graph` para armar un documento completo.
@@ -332,25 +365,24 @@ const isActivePriceList = (pl: ChannelPriceListRow['price_list'], now: Date): bo
  * `calculated_price` base que ya se resuelve con esa misma moneda.
  */
 export async function buildChannelPriceMap(
-  query: QueryGraph,
+  deps: ChannelPriceDeps,
   currencyCode: string,
 ): Promise<ChannelPriceMap> {
+  const { query, pricing } = deps;
   const map: ChannelPriceMap = new Map();
 
-  // 1) Reglas activas cuyo attribute sea sales_channel_id
-  const { data: rules } = (await query.graph({
-    entity: 'price_list_rule',
-    fields: [
-      'price_list_id',
-      'value',
-      'price_list.id',
-      'price_list.status',
-      'price_list.deleted_at',
-      'price_list.starts_at',
-      'price_list.ends_at',
-    ],
-    filters: { attribute: 'sales_channel_id' },
-  })) as { data: ChannelPriceListRow[] };
+  // 1) Reglas activas cuyo attribute sea sales_channel_id.
+  //    NO usar `query.graph({ entity: 'price_list_rule' })` — el joiner-config
+  //    del pricing module (`@medusajs/pricing/dist/joiner-config.js`) sólo
+  //    expone PriceSet, PriceList, Price y PricePreference, así que Remote
+  //    Query no puede resolver ese alias y explota con "Service with alias
+  //    'price_list_rule' was not found" (incidente 2026-09-15, vaciando la
+  //    colección Typesense de EducaBot). El service `listPriceListRules` sí
+  //    está expuesto por la interfaz pública del módulo.
+  const rules = (await pricing.listPriceListRules(
+    { attribute: 'sales_channel_id' },
+    { relations: ['price_list'] },
+  )) as ChannelPriceListRow[];
 
   const now = new Date();
   const priceListChannels = new Map<string, string[]>();
@@ -503,9 +535,12 @@ export function invalidateReindexCaches(
   if (what === 'all') currencyCache = null;
 }
 
-/** Mapa `variant → channel_prices[]`, cacheado por `CACHE_TTL_MS` + currency. */
+/** Mapa `variant → channel_prices[]`, cacheado por `CACHE_TTL_MS` + currency.
+ *  Toma el `MedusaContainer` para resolver query.graph + pricing service, en
+ *  vez de un `QueryGraph` suelto: el service de pricing es indispensable para
+ *  leer `price_list_rule` (no expuesto por RemoteQuery). */
 export async function getCachedChannelPriceMap(
-  query: QueryGraph,
+  scope: MedusaContainer,
   currencyCode: string,
 ): Promise<ChannelPriceMap> {
   const now = Date.now();
@@ -518,7 +553,10 @@ export async function getCachedChannelPriceMap(
   }
   if (channelPricesInflight) return channelPricesInflight;
 
-  channelPricesInflight = buildChannelPriceMap(query, currencyCode)
+  const query = scope.resolve<QueryGraph>(ContainerRegistrationKeys.QUERY);
+  const pricing = scope.resolve(Modules.PRICING) as unknown as PricingModuleShape;
+
+  channelPricesInflight = buildChannelPriceMap({ query, pricing }, currencyCode)
     .then((value) => {
       channelPricesCache = {
         value: { currency: currencyCode, map: value },
@@ -625,12 +663,13 @@ const REINDEX_ID_CHUNK = 100;
  * (status != draft).
  */
 async function fetchEnrichedProducts(
-  query: QueryGraph,
+  container: MedusaContainer,
   productIds: string[],
   pathMap: CategoryPathMap,
   currencyCode: string,
   logger?: Logger,
 ): Promise<AnyRecord[]> {
+  const query = container.resolve<QueryGraph>(ContainerRegistrationKeys.QUERY);
   const { data: products } = (await query.graph({
     entity: 'product',
     fields: PRODUCT_SYNC_FIELDS as unknown as string[],
@@ -648,8 +687,13 @@ async function fetchEnrichedProducts(
   // Channel-scoped price overrides. Sin esto el reindex incremental sirve el
   // `calculated_price` base para todo el catálogo y el HOME de un site
   // channel-scoped queda con precios equivocados hasta el próximo full sync.
-  const channelMap = await getCachedChannelPriceMap(query, currencyCode);
+  const channelMap = await getCachedChannelPriceMap(container, currencyCode);
   attachChannelPrices(enriched, channelMap);
+
+  // Canales donde el producto no se vende suelto (PRD Bundles V2 §47). Sin esto
+  // el incremental borraría el campo del documento y el producto volvería a
+  // aparecer en el buscador de la tienda que lo esconde.
+  attachBundleOnlyChannels(enriched, await getBundleOnlyChannelMap(query));
 
   return enriched;
 }
@@ -688,7 +732,7 @@ export async function reindexProductsByIds(
   // entero cuando corre un backfill, así que acá llegan miles de ids de una.
   for (let i = 0; i < ids.length; i += REINDEX_ID_CHUNK) {
     const chunk = ids.slice(i, i + REINDEX_ID_CHUNK);
-    const enriched = await fetchEnrichedProducts(query, chunk, pathMap, currencyCode, logger);
+    const enriched = await fetchEnrichedProducts(container, chunk, pathMap, currencyCode, logger);
     for (const product of enriched) {
       foundIds.add(product.id as string);
       try {

@@ -1,71 +1,12 @@
 import { defineSettings } from './types';
+import { parseCron } from './fragments/cron';
 
-/**
- * Ajustes de recuperación de carritos abandonados.
- *
- * El manifest declaraba `environment: []` y el código lee 10 variables: hasta
- * este archivo, la cadencia de la secuencia de mails —lo más obviamente de
- * negocio que tiene la extensión— sólo se podía cambiar con un deploy.
- *
- * TRES DECISIONES QUE NO SON OBVIAS, y que hay que respetar al editar esto:
- *
- * 1. `defaultScope: 'instance'` para las siete, aunque "la cadencia de mails por
- *    tienda" suene a lo más `site` del mundo. El motivo es la invariante "se
- *    escribe donde se lee" de `precedence.ts:192`: el único lector es
- *    `getAbandonedCartSettings()`, que va por el camino SINCRÓNICO
- *    (`resolveSettingSync`), y ese camino resuelve con `SiteKind = 'none'` — lee
- *    la fila GLOBAL y NUNCA la de la tienda. Con `scope: 'site'`, el admin con
- *    una tienda activa escribiría en la fila de esa tienda y el barrido seguiría
- *    corriendo con la global: la perilla giraría y no gobernaría nada, sin un
- *    error en ningún lado.
- *
- *    Y no alcanza con "propagar la `SiteResolution`", que es el arreglo de fondo
- *    que documenta `resolve.ts:250-257`: `scan-abandoned-carts.ts` calcula UNA
- *    ventana de detección con UNA config y hace UNA query paginada sobre los
- *    carritos de todas las tiendas. Honrar tres cadencias distintas no es pasar
- *    un parámetro, es rehacer el barrido por tienda. El día que se haga, esto
- *    pasa a `site` y este comentario se borra; hasta entonces, `instance` es lo
- *    único que no miente.
- *
- * 2. EL ORDEN DE LOS TRES PASOS NO SE PUEDE VALIDAR ACÁ, y hace falta saberlo.
- *    La secuencia sólo tiene sentido con `PASO 1 < PASO 2 < PASO 3` (son horas
- *    de inactividad ACUMULADAS, no entre pasos). Ni el descriptor declarativo ni
- *    `refine` alcanzan:
- *
- *      - `min`/`max` son por campo y rangos disjuntos serían una jaula arbitraria
- *        (obligarían a que el paso 2 no pueda ser a las 12 h).
- *      - `refine(value)` recibe UN valor y nada más (`validate.ts:42-45`), y
- *        `buildWritePlan` valida clave por clave: no hay forma de mirar a los
- *        hermanos del mismo POST.
- *      - Un `refine` que leyera el valor guardado del hermano tendría que
- *        importar el resolver, y este archivo lo importa TAMBIÉN el bundle del
- *        admin (ver la nota de `types.ts`): metería `node:crypto` en el browser.
- *        Además compararía contra lo GUARDADO, no contra lo que se está
- *        guardando, así que daría errores falsos y dejaría pasar los reales.
- *
- *    Entonces el orden se garantiza donde SÍ se ven los tres juntos:
- *    `abandoned-cart/settings.ts:orderedStepHours()`, que es pura y está
- *    testeada. Un orden inválido no rompe: se normaliza. Lo que importa es que
- *    ese es el lugar, y no éste.
- *
- * 3. `ABANDONED_CART_SCAN_CRON` va en `envOnly` y `ABANDONED_CART_ENABLED` no.
- *    La diferencia es de MOMENTO: el `schedule:` lo hornea el job loader al
- *    arrancar (`job-loader.js:69-78`), cuando la base todavía no se consultó; el
- *    `enabled` se evalúa DENTRO del cuerpo del job
- *    (`jobs/scan-abandoned-carts.ts:71`), o sea en cada corrida, así que apagarlo
- *    desde el admin tiene efecto en la corrida siguiente sin reiniciar.
- */
 export default defineSettings({
   namespace: 'extension:abandoned-cart',
   title: 'Carritos abandonados',
-  /** Ver la nota 1 del encabezado antes de poner un `scope: 'site'` acá. */
-  defaultScope: 'instance',
+  defaultScope: 'site',
   envOnly: [
-    {
-      key: 'ABANDONED_CART_SCAN_CRON',
-      reason:
-        'Medusa hornea el cron al arrancar (job-loader.js:69-78): un valor en base no se podría aplicar sin reiniciar. Para apagar el barrido usá "Recuperación activa", que se evalúa en cada corrida.',
-    },
+    ...[1, 2, 3].map(step => ({ key: `KAPSO_TEMPLATE_CART_ABANDONED_${step}`, reason: 'Compatibilidad de lectura: la configuración heredada pertenece a extension:whatsapp.' })),
     {
       key: 'NEXT_PUBLIC_BASE_URL',
       reason:
@@ -78,6 +19,48 @@ export default defineSettings({
     },
   ],
   settings: [
+    {
+      key: 'ABANDONED_CART_SCAN_CRON',
+      env: ['ABANDONED_CART_SCAN_CRON'],
+      type: 'string',
+      tier: 'runtime',
+      group: 'Operación',
+      label: 'Cron (UTC)',
+      help: 'Cinco campos numéricos. Se aplica sin reiniciar.',
+      default: '*/15 * * * *',
+      refine: (value) => {
+        try {
+          parseCron(String(value));
+          return null;
+        } catch {
+          return 'Cron inválido / Invalid cron (UTC).';
+        }
+      },
+    },
+    ...[1, 2, 3].flatMap((step) => [
+      {
+        key: `ABANDONED_CART_EMAIL_TEMPLATE_${step}`,
+        env: [`ABANDONED_CART_EMAIL_TEMPLATE_${step}`],
+        type: 'string' as const,
+        tier: 'runtime' as const,
+        group: 'Plantillas',
+        label: `Paso ${step}: plantilla de email`,
+        help: 'Identificador de plantilla. Usá none para desactivar este canal.',
+        default: `cart-abandoned-${step}`,
+        maxLength: 200,
+      },
+      {
+        key: `ABANDONED_CART_WHATSAPP_TEMPLATE_${step}`,
+        env: [`ABANDONED_CART_WHATSAPP_TEMPLATE_${step}`],
+        type: 'string' as const,
+        tier: 'runtime' as const,
+        group: 'Plantillas',
+        label: `Paso ${step}: plantilla de WhatsApp`,
+        help: 'Nombre de una plantilla aprobada. Usá none para desactivar este canal.',
+        default: 'none',
+        maxLength: 200,
+      },
+    ]),
     // ─── Operación ───────────────────────────────────────────────────────────
     {
       key: 'ABANDONED_CART_ENABLED',
@@ -100,7 +83,7 @@ export default defineSettings({
       tier: 'runtime',
       group: 'Secuencia',
       label: 'Paso 1: horas de inactividad',
-      help: 'También es el UMBRAL DE DETECCIÓN: un carrito no se trackea hasta llegar acá, así que subirlo no sólo demora el primer mail, achica cuántos carritos entran al embudo. El paso 1 manda sólo email.',
+      help: 'También es el UMBRAL DE DETECCIÓN: un carrito no se trackea hasta llegar acá, así que subirlo no sólo demora el primer mail, achica cuántos carritos entran al embudo. Los canales dependen de las plantillas configuradas.',
       min: 1,
       max: 720,
       step: 1,
@@ -113,7 +96,7 @@ export default defineSettings({
       tier: 'runtime',
       group: 'Secuencia',
       label: 'Paso 2: horas de inactividad',
-      help: 'Tiene que ser mayor que el paso 1 (si no, la secuencia se reordena sola y el paso 1 no se manda nunca). Es el único paso que además manda WhatsApp, y sólo si la plantilla `KAPSO_TEMPLATE_CART_ABANDONED_2` tiene valor.',
+      help: 'Tiene que ser mayor que el paso 1 (si no, la secuencia se reordena sola y el paso 1 no se manda nunca). Cada canal usa la plantilla configurada para este paso.',
       min: 1,
       max: 720,
       step: 1,

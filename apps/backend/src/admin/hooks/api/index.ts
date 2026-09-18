@@ -1,6 +1,7 @@
 export * from './andreani';
 export * from './app-settings';
 export * from './billing-profiles';
+export * from './bundles';
 export * from './companies';
 export * from './company-credit';
 export * from './corporates';

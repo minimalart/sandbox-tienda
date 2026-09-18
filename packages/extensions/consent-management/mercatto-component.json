@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "consent-management",
+  "name": "Consent Management",
+  "version": "1.0.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:consent-management",
+  "environment": [],
+  "files": [
+    {
+      "source": "payload/apps/storefront/src/lib/consent/provider.tsx",
+      "target": "apps/storefront/src/lib/consent/provider.tsx"
+    },
+    {
+      "source": "payload/apps/storefront/src/lib/consent/theme.css",
+      "target": "apps/storefront/src/lib/consent/theme.css"
+    },
+    {
+      "source": "payload/apps/storefront/tests/privacy",
+      "target": "apps/storefront/tests/privacy"
+    }
+  ],
+  "migrations": [],
+  "managed_files": [
+    {
+      "path": "apps/storefront/src/lib/consent/provider.tsx",
+      "sha256": "7ee3a3e5b2cc3d6ec77c8e460690f503120c856b802806f2fbe15c850764c127"
+    },
+    {
+      "path": "apps/storefront/src/lib/consent/theme.css",
+      "sha256": "b8162a59cb9e18f72a461ba5d8f1a0033146cfa321a09b11b89820f29ed1e038"
+    },
+    {
+      "path": "apps/storefront/tests/privacy/browser.cjs",
+      "sha256": "f1007dc830767ef7ac026cbb7e7005f7da425968d6936511f698e24afb367952"
+    },
+    {
+      "path": "apps/storefront/tests/privacy/harness.tsx",
+      "sha256": "8f5763274481dadf857c936df7add06fb2372030b4d1440428ca980f2f271f23"
+    },
+    {
+      "path": "apps/storefront/tests/privacy/navigation.ts",
+      "sha256": "20fc5b2f1270aac109d20ce3663c088d15e16adc31db12e3c12d76173a1b301f"
+    }
+  ],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": [],
+    "admin_translation": null
+  }
+}

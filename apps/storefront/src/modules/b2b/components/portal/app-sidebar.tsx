@@ -23,6 +23,7 @@ import { useSiteHref, useSitePrefix } from "@lib/site-config/context";
 import { stripSitePrefix } from "@lib/site-config/site-path";
 import { MercattoIcon, MercattoLogo, MinimalartAttribution } from "@modules/b2b/components/b2b-brand";
 import { usePortalTheme } from "@modules/b2b/components/portal/theme";
+import { ConsentPreferencesLink } from "@lib/consent/context";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import {
   ChevronsUpDown,
@@ -140,6 +141,9 @@ export default function AppSidebar({
 
       {/* Footer: usuario logueado */}
       <SidebarFooter>
+        <div className="px-2 text-muted-foreground group-data-[collapsible=icon]:hidden">
+          <ConsentPreferencesLink />
+        </div>
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>

@@ -1,5 +1,11 @@
 import { MedusaService } from '@medusajs/framework/utils';
-import { DemoStore, ImportJob, SiteSetting, SiteSettingRevision } from './models';
+import {
+  DemoStore,
+  ImportJob,
+  ProductSalesMode,
+  SiteSetting,
+  SiteSettingRevision,
+} from './models';
 
 /** `NULL` = valor global de la instancia. */
 export type SiteScopeId = string | null;
@@ -11,6 +17,7 @@ const NAMESPACE_RE = /^(commerce|content|template:[a-z0-9-]+|extension:[a-z0-9-]
 class DemoStoreModuleService extends MedusaService({
   DemoStore,
   ImportJob,
+  ProductSalesMode,
   SiteSetting,
   SiteSettingRevision,
 }) {

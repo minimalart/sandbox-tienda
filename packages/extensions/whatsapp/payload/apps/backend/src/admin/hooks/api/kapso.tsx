@@ -8,6 +8,7 @@ import {
   UseQueryOptions,
 } from '@tanstack/react-query';
 import { sdk } from '../../lib/client';
+import { getActiveSiteId, siteHeader, siteScopedKey } from '../../lib/active-site';
 
 export interface KapsoInboxEmbedResponse {
   embed_url: string | null;
@@ -86,7 +87,13 @@ export const kapsoQueryKey = {
   inboxEmbed: () => [...kapsoQueryKey.all, 'inbox-embed'] as const,
   templates: () => [...kapsoQueryKey.all, 'templates'] as const,
   bindings: () => [...kapsoQueryKey.all, 'bindings'] as const,
-  floatingButton: () => [...kapsoQueryKey.all, 'floating-button'] as const,
+  /**
+   * LA TIENDA VA EN LA KEY. El `x-site-id` viaja por header y react-query no lo ve,
+   * así que con una key constante el cache de la tienda A se sirve estando parado en
+   * la B — y acá lo que se muestra es un TELÉFONO: el operador vería el número de otro
+   * negocio y lo guardaría creyendo que es el suyo.
+   */
+  floatingButton: () => siteScopedKey([...kapsoQueryKey.all, 'floating-button'], getActiveSiteId()),
   botChannels: () => [...kapsoQueryKey.all, 'bot-channels'] as const,
 };
 
@@ -240,6 +247,13 @@ export const useKapsoFloatingButton = (
     queryFn: async () =>
       sdk.client.fetch<KapsoFloatingButtonResponse>('/admin/kapso/floating-button', {
         method: 'GET',
+        /**
+         * El header POR LLAMADA, además del global. `lib/client.ts` resuelve
+         * `globalHeaders` UNA sola vez al construirse, así que si la card cambia de
+         * tienda sin recargar, ese header queda congelado en la que estaba activa
+         * cuando cargó el bundle — y se guardaría el teléfono en la tienda anterior.
+         */
+        headers: siteHeader(),
       }),
     ...options,
   });
@@ -256,7 +270,7 @@ export const useUpdateKapsoFloatingButton = (
     mutationFn: (body: UpdateKapsoFloatingButton) =>
       sdk.client.fetch<KapsoFloatingButtonResponse>('/admin/kapso/floating-button', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...siteHeader() },
         body,
       }),
     onSuccess: (data, variables, context) => {

@@ -474,6 +474,41 @@ describe('planProductUpdate — descripción (DESDEELSUR-34)', () => {
     assert.equal(result.product_update?.description, undefined);
   });
 
+  it('con `description` en la allowlist rellena un target vacío (empty_target)', () => {
+    // Escenario EducaBot: el ERP recién empieza a exponer `description_ecommerce`
+    // (Odoo con `website_sale`) y los productos en Medusa fueron importados sin
+    // description. El operador puso `description` en la allowlist para señalar
+    // "el ERP maneja este campo". Ahí sí llenamos vacíos.
+    const markdown = 'Copy comercial del catalogador.';
+    const fields: ErpProductField[] = [...DEFAULT_PRODUCT_FIELDS, 'description'];
+    const result = plan({
+      row: row({ description: markdown }),
+      existing: existing({ description: null }),
+      titleRules,
+      fields,
+    });
+    assert.equal(result.product_update?.description, markdown);
+    assert.equal(
+      (result.response_payload.description_rules as Record<string, unknown>).reason,
+      'empty_target'
+    );
+  });
+
+  it('con `description` en la allowlist NO toca contenido humano existente', () => {
+    // Misma allowlist que el test anterior, pero acá el catalogador ya escribió
+    // algo. La política defensiva sigue vigente: no pisar contenido humano.
+    const fields: ErpProductField[] = [...DEFAULT_PRODUCT_FIELDS, 'description'];
+    const redactada = 'Contenido curado por marketing.';
+    const result = plan({
+      row: row({ description: cruda }),
+      existing: existing({ description: redactada }),
+      titleRules,
+      fields,
+    });
+    assert.equal(result.product_update?.description, undefined);
+    assert.equal(result.response_payload.description_rules, undefined);
+  });
+
   it('deja el rastro que hace idempotente la corrida siguiente', () => {
     const first = plan({
       row: row({ description: cruda }),

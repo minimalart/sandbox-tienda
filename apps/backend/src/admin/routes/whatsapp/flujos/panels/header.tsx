@@ -23,6 +23,7 @@ import { statusPills, type StatusInput } from '../lib/status';
  */
 export function FlowHeader({
   status,
+  name,
   onGoToIssue,
   onTest,
   testing,
@@ -42,6 +43,8 @@ export function FlowHeader({
   publishing,
 }: {
   status: StatusInput;
+  /** El nombre del recorrido que se está editando. Vacío = todavía no tiene. */
+  name: string;
   onGoToIssue: () => void;
   onTest: () => void;
   testing: boolean;
@@ -65,7 +68,10 @@ export function FlowHeader({
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <Heading level="h2">{whatsappLabel('NAV_FLOWS')}</Heading>
+        {/* El NOMBRE y no "Recorrido": desde que hay varios, el título genérico no
+            dice cuál se está editando — y abrir el equivocado y publicarlo es el
+            error caro de esta pantalla. */}
+        <Heading level="h2">{name?.trim() || whatsappLabel('NAV_FLOWS')}</Heading>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           {pills.map((pill) =>
             pill.clickable ? (

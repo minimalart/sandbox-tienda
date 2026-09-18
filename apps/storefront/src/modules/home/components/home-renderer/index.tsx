@@ -4,6 +4,7 @@ import type { HomeLayoutBlock } from "@lib/site-config/types";
 import { Suspense } from "react";
 
 import BlogHighlights from "@modules/home/components/blog-highlights";
+import BundlesGrid from "@modules/home/components/bundles-grid";
 import CollectionsSection from "@modules/home/components/collections-section";
 import EntrepreneurBanner from "@modules/home/components/entrepreneur-banner";
 import FeaturedProductsGrid from "@modules/home/components/featured-products-grid";
@@ -352,6 +353,20 @@ export default async function HomeRenderer({
         } as any;
         return <MoreProductsSection config={config} />;
       }
+
+      // ── BundlesGrid → grid de bundles publicados (gated por sections.bundles)
+      case "BundlesGrid":
+        return (
+          <BundlesGrid
+            title={p.title}
+            subtitle={p.subtitle}
+            limit={typeof p.limit === "number" ? p.limit : undefined}
+            handles={Array.isArray(p.handles) ? p.handles : undefined}
+            viewAllLabel={p.viewAllLabel}
+            viewAllHref={p.viewAllHref}
+            countryCode={countryCode}
+          />
+        );
 
       default:
         if (GENERIC.has(block.type)) {

@@ -137,6 +137,12 @@ export function useFlowEditor(versionId: string) {
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [exclusive, setExclusive] = useState(false);
+  /**
+   * El nombre del recorrido. Vive acá y no en el servidor hasta que se guarde, como
+   * el grafo: cambiarlo es un cambio del recorrido, y tiene que marcarlo como sin
+   * guardar igual que mover un paso.
+   */
+  const [name, setNameState] = useState('');
   const [confirmSeed, setConfirmSeed] = useState(false);
   /**
    * A dónde se fue el trabajo cuando guardar creó un recorrido NUEVO.
@@ -219,6 +225,7 @@ export function useFlowEditor(versionId: string) {
     // Se edita LA versión que pide la URL, no "el borrador que haya": con varios, la
     // segunda opción abriría uno cualquiera.
     const inicial = normalizeGraph(abierto.version.graph);
+    setNameState(abierto.version.name ?? '');
     // Historial NUEVO: deshacer hasta antes de la carga dejaría el canvas mostrando
     // un recorrido que ya no es el que se está editando.
     setHistory(resetHistory(inicial));
@@ -528,7 +535,11 @@ export function useFlowEditor(versionId: string) {
   const save = useCallback(async (): Promise<boolean> => {
     setSaveState('saving');
     try {
-      const result = await saveMut.mutateAsync({ version_id: versionId, graph: currentGraph() as never });
+      const result = await saveMut.mutateAsync({
+        version_id: versionId,
+        graph: currentGraph() as never,
+        ...(name.trim() ? { name: name.trim() } : {}),
+      });
       if (result.draft.id !== versionId) setForkedTo(result.draft.id);
       setServerIssues(
         (result.issues ?? []).map((i) => ({ ...i, severity: 'blocking' as const })),
@@ -541,7 +552,7 @@ export function useFlowEditor(versionId: string) {
       toast.error(explicarFalla('No se pudo guardar', error));
       return false;
     }
-  }, [currentGraph, saveMut, versionId]);
+  }, [currentGraph, name, saveMut, versionId]);
 
   const saveManual = useCallback(async () => {
     if (await save()) toast.success('Borrador guardado.');
@@ -552,7 +563,11 @@ export function useFlowEditor(versionId: string) {
     async (notes?: string) => {
       setSaveState('saving');
       try {
-        const saved = await saveMut.mutateAsync({ version_id: versionId, graph: currentGraph() as never });
+        const saved = await saveMut.mutateAsync({
+          version_id: versionId,
+          graph: currentGraph() as never,
+          ...(name.trim() ? { name: name.trim() } : {}),
+        });
         const problemas = (saved.issues ?? []).map((i) => ({ ...i, severity: 'blocking' as const }));
         setServerIssues(problemas);
         setDirty(false);
@@ -573,7 +588,7 @@ export function useFlowEditor(versionId: string) {
         toast.error(explicarFalla('No se pudo publicar', error));
       }
     },
-    [currentGraph, exclusive, publishMut, saveMut, versionId],
+    [currentGraph, exclusive, name, publishMut, saveMut, versionId],
   );
 
   /**
@@ -828,6 +843,12 @@ export function useFlowEditor(versionId: string) {
     // acciones
     save: saveManual,
     publish,
+    name,
+    /** Cambiar el nombre marca el recorrido como sin guardar, igual que mover un paso. */
+    setName: (value: string) => {
+      setNameState(value);
+      setDirty(true);
+    },
     forkedTo,
     requestSeed,
     loadSeed,

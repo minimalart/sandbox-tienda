@@ -38,8 +38,13 @@ export async function GET(req: MedusaRequest, res: MedusaResponse): Promise<void
   const siteId = await siteOf(req);
   const flowKey = (req.query?.flow_key as string) || DEFAULT_FLOW_KEY;
 
+  /**
+   * Los generales también. Una tienda sin recorrido propio la atiende el general, así
+   * que esconderlo es esconder el recorrido que está atendiendo a sus clientes — y es
+   * lo que hacía que un recorrido "desapareciera" al elegir una tienda.
+   */
   const [drafts, active] = await Promise.all([
-    service.listDrafts(flowKey, siteId),
+    service.listDrafts(flowKey, siteId, { includeGlobal: true }),
     service.getActiveVersion(flowKey, siteId),
   ]);
 

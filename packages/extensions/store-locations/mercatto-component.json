@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "store-locations",
   "name": "Sucursales",
-  "version": "1.12.1",
+  "version": "1.13.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -199,7 +199,7 @@
     },
     {
       "path": "apps/backend/src/api/store/store-locations/helpers.ts",
-      "sha256": "6548b53c79372293a40a9437c3e75d633b06065adc51ad6ca427975c4049161a"
+      "sha256": "7c3232d5fa5b80a3ba64c66dc4683db8b6aa18faf3ac7c8083a930f5064e50d9"
     },
     {
       "path": "apps/backend/src/api/store/store-locations/middlewares.ts",

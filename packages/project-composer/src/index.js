@@ -197,6 +197,7 @@ function installSelectedExtensionPayloads(targetRoot, selection) {
 
 function writeExtensionIntegrationFiles(targetRoot, selection) {
   const ids = selection.extensions.map((extension) => extension.id);
+  require('./privacy-integrations').writePrivacyIntegrations(targetRoot, ids);
   const sourceIds = selection.extensions
     .filter((extension) => extension.type !== 'plugin')
     .map((extension) => extension.id);

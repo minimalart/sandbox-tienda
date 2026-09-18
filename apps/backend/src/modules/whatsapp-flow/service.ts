@@ -55,12 +55,28 @@ class WhatsappFlowModuleService extends MedusaService({ WhatsappFlowVersion }) {
   async listDrafts(
     flowKey: string = DEFAULT_FLOW_KEY,
     siteId: string | null = null,
+    /**
+     * Sumar los borradores GENERALES cuando se pregunta parado en una tienda.
+     *
+     * Es la misma precedencia que `getActiveVersion`: una tienda sin recorrido propio
+     * la atiende el general, así que el general es SUYO y tiene que poder verlo. Sin
+     * esto, un recorrido armado sin tienda activa desaparecía de la lista en cuanto
+     * alguien elegía una tienda — existía, atendía, y no se veía por ningún lado.
+     *
+     * Va como opción y no como default porque publicar NO puede elegir a ciegas entre
+     * los dos ámbitos: ahí la ruta decide con el `site_id` de la fila.
+     */
+    opts: { includeGlobal?: boolean } = {},
   ): Promise<FlowVersionRow[]> {
     const rows = (await this.listWhatsappFlowVersions(
       { flow_key: flowKey, status: 'draft' },
       { take: 200, order: { updated_at: 'DESC' } },
     )) as unknown as FlowVersionRow[];
-    return rows.filter((r) => siteKey(r.site_id) === siteKey(siteId));
+    return rows.filter(
+      (r) =>
+        siteKey(r.site_id) === siteKey(siteId) ||
+        (opts.includeGlobal === true && siteKey(r.site_id) === ''),
+    );
   }
 
   /**

@@ -45,6 +45,7 @@ const ROUTABLE_SEGMENTS = [
   'about',
   'account',
   'blog',
+  'bundles',
   'cart',
   'categories',
   'collections',

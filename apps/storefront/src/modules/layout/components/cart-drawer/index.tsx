@@ -69,6 +69,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ShoppingCart } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { buildCartPresentationFromItems } from "@modules/bundles/lib/cart-presentation";
+import { BundleSummaryRow } from "@modules/bundles/components/bundle-summary-row";
 import { useTypesenseProducts } from "@lib/hooks/use-typesense-products";
 import { searchProductsFromBrowser } from "@lib/typesense/search-browser";
 import type { TypesenseProductDocument } from "@lib/typesense";
@@ -1982,14 +1984,32 @@ const CartDrawer = ({ open, onClose, themeClassName }: CartDrawerProps) => {
                               />
                               <ul className="flex flex-col gap-2">
                                 <AnimatePresence initial={false}>
-                                  {[...items]
-                                    .sort((a, b) =>
+                                  {buildCartPresentationFromItems(
+                                    [...items].sort((a, b) =>
                                       (a.created_at ?? "") >
                                       (b.created_at ?? "")
                                         ? -1
                                         : 1,
-                                    )
-                                    .map((item) => (
+                                    ),
+                                  ).map((row) =>
+                                    // El kit ocupa UNA fila: el minicarrito usa
+                                    // la misma presentación que el carrito
+                                    // (PRD V2 §15) en vez de repetir el
+                                    // agrupamiento con otro criterio.
+                                    row.kind === "bundle" ? (
+                                      <BundleSummaryRow
+                                        key={row.bundleInstanceId}
+                                        bundle={row}
+                                        currencyCode={cart?.currency_code ?? "ars"}
+                                        onNavigate={onClose}
+                                        onRemove={async () => {
+                                          for (const line of row.items) {
+                                            await handleRemoveItem(line.id);
+                                          }
+                                        }}
+                                      />
+                                    ) : (
+                                      ((item) => (
                                       <CartItemRow
                                         currencyCode={
                                           cart?.currency_code ?? "ars"
@@ -2073,7 +2093,9 @@ const CartDrawer = ({ open, onClose, themeClassName }: CartDrawerProps) => {
                                           )
                                         }
                                       />
-                                    ))}
+                                    ))(row.item)
+                                    ),
+                                  )}
                                 </AnimatePresence>
                               </ul>
                               <div className="mt-4">

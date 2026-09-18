@@ -25,6 +25,7 @@ export type SiteScopeState = 'scoped' | 'unscoped' | 'instance';
  * ninguna: el usuario ve su tienda y crea algo que aparece en todas.
  */
 export const SCREEN_SITE_SCOPE: Record<string, SiteScopeState> = {
+  'marketing-privacy': 'scoped',
   marketplaces: 'scoped',
   // Migradas: sus rutas admin filtran y sus mutaciones guardan con la tienda.
   brands: 'scoped',
@@ -43,6 +44,16 @@ export const SCREEN_SITE_SCOPE: Record<string, SiteScopeState> = {
   'pdf-catalogs': 'scoped',
   videos: 'scoped',
   'recurring-orders': 'scoped',
+  /**
+   * Los recorridos de WhatsApp. "Sin tienda" NO es falta de filtro: es el recorrido
+   * GENERAL, el que atiende a toda tienda que no tenga uno propio, y es una capa real
+   * y editable — por eso la barra se monta con `allowInstance`.
+   *
+   * Parado en una tienda se ven los suyos Y los generales, con la misma precedencia
+   * que usa el bot para elegir cuál atiende. Esconder el general era esconder el
+   * recorrido que está atendiendo a esos clientes.
+   */
+  'whatsapp-flujos': 'scoped',
   // Lee y escribe SIEMPRE contra la tienda activa: sin tienda la ruta ni siquiera
   // deja guardar (400), así que no hay media migración posible acá.
   'site-credentials': 'scoped',
@@ -72,7 +83,6 @@ export const SCREEN_SITE_SCOPE: Record<string, SiteScopeState> = {
    */
   'store-config.commerce': 'instance',
   'store-config.branches': 'scoped',
-  'store-config.storefront': 'scoped',
   'store-config.ai': 'scoped',
   'store-config.fiscal': 'scoped',
   'store-config.min-purchase': 'scoped',

@@ -1,6 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
-import type { Logger } from '@medusajs/framework/types';
+import type { Logger, MedusaContainer } from '@medusajs/framework/types';
 import { verifyKapsoSignature } from '../../../lib/whatsapp/verify-kapso-signature';
 import { getKapsoSettings } from '../../../modules/kapso-whatsapp/settings';
 import {
@@ -31,6 +31,22 @@ import { STORE_CONFIG_MODULE } from '../../../modules/store-config';
 import type StoreConfigModuleService from '../../../modules/store-config/service';
 
 const WHATSAPP_AGENT_KEY = 'whatsapp';
+
+/**
+ * El contexto que reciben las tools nativas. Era un cast inline; pasó a tipo con
+ * nombre cuando el preparador del agente dejó de ser una variable suelta y tuvo que
+ * declarar qué devuelve.
+ */
+type NativeCtx = {
+  container: MedusaContainer;
+  store: AiStore;
+  waPhone: string;
+  isVariantSelection?: boolean;
+  sentUserMessage?: boolean;
+  waUsedAi?: boolean;
+  waSessionId?: string | null;
+  waSiteId?: string | null;
+};
 /** Cuántos pedidos recientes se resumen en el contexto del agente. */
 const MAX_ORDERS_IN_CONTEXT = 3;
 
@@ -358,6 +374,90 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
   // selección de la lista o un texto con intención reconocible, se resuelve acá y
   // el LLM no se llama. Antes TODO turno pasaba por el modelo, incluso los taps
   // (se traducían a un hint en lenguaje natural para que llamara la tool correcta).
+
+  /**
+   * TODO LO QUE UN AGENTE NECESITA PARA CONTESTAR: el RAG, quién es el cliente con
+   * sus pedidos, y el contexto de las tools nativas.
+   *
+   * Se arma UNA vez por turno y recién cuando alguien lo pide. Lo piden dos: un paso
+   * de tipo agente dentro del recorrido, y la caída al agente cuando el recorrido y
+   * el router no resolvieron el turno. Antes esto corría siempre, aunque el turno lo
+   * hubiera resuelto un botón — y cuesta una consulta de cliente más una de estado por
+   * cada pedido reciente.
+   */
+  let contextoDelAgente: Promise<{
+    memory: MemoryRuntimeOptions | undefined;
+    context: string | undefined;
+    nativeCtx: NativeCtx;
+  }> | null = null;
+
+  const prepararAgente = () => {
+    contextoDelAgente ??= (async () => {
+    // Config de memoria (RAG de FAQ/knowledge). Sin store-config → sin RAG.
+    let memory: MemoryRuntimeOptions | undefined;
+    try {
+      const storeConfig = container.resolve<StoreConfigModuleService>(STORE_CONFIG_MODULE);
+      memory = memoryOptionsFromConfig(await storeConfig.getAiConfig());
+    } catch {
+      memory = undefined;
+    }
+
+    // Contexto: datos YA verificados y scoped al teléfono del remitente.
+    let context: string | undefined;
+    const customer = await resolveWaCustomer(container, from);
+    if (customer) {
+      // Cachear identidad para prefijar el checkout link (Fase 2).
+      if (waSvc) await waSvc.setIdentity(from, { customer_id: customer.id, email: customer.email });
+      const recent = customer.orders.slice(0, MAX_ORDERS_IN_CONTEXT);
+      const blocks: string[] = [`Cliente: ${customer.name || '(sin nombre)'}`];
+      if (customer.email) blocks.push(`Email: ${customer.email}`);
+      if (recent.length === 0) {
+        blocks.push('El cliente no tiene pedidos registrados.');
+      } else {
+        for (const o of recent) {
+          const status = await getWaOrderStatus(container, o.id);
+          blocks.push(status ? formatOrderStatusForPrompt(status) : `Pedido #${o.display_id ?? '—'}: sin datos.`);
+        }
+        if (customer.orders.length > recent.length) {
+          blocks.push(`(y ${customer.orders.length - recent.length} pedido/s más antiguos)`);
+        }
+        trackWaEvent(container, {
+          siteId,
+          sessionId,
+          phone: from,
+          type: 'order_status',
+          payload: { orders: recent.length, identified: true },
+        });
+      }
+      context = blocks.join('\n\n');
+    } else {
+      logger.info(`[WhatsApp bot] Teléfono ${from} sin cliente asociado — se pide verificación.`);
+    }
+
+    // Contexto de tools nativas. Se mantiene la referencia para leer, tras el turno,
+    // si alguna tool ya le envió un mensaje al cliente (lista/botones/imagen).
+    // `waUsedAi: true` porque acá el turno lo resuelve el LLM: las tools que emitan
+    // eventos del embudo quedan marcadas como "gastó modelo". El router
+    // determinístico (que resuelve los botones sin LLM) pasa `false`.
+    //
+    // `waSessionId`/`waSiteId` no estaban: todo evento comercial resuelto por el
+    // modelo (search, added_to_cart, checkout_generated…) se escribía huérfano, y el
+    // embudo sólo veía los que pasaban por el router.
+    const nativeCtx = {
+      container,
+      store,
+      waPhone: from,
+      isVariantSelection,
+      waUsedAi: true,
+      waSessionId: sessionId,
+      waSiteId: siteId,
+    } as NativeCtx;
+
+      return { memory, context, nativeCtx };
+    })();
+    return contextoDelAgente;
+  };
+
   // ── Grafo configurable ──────────────────────────────────────────────────────
   // Va ANTES del router determinístico: es el que va a absorberlo. Mientras no
   // haya un grafo publicado, `runFlowTurn` devuelve `handled: false` sin tocar
@@ -372,6 +472,27 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
       siteId,
       text: rawText,
       selectionId: selectionId ?? null,
+      /**
+       * Cómo contesta un paso de tipo agente.
+       *
+       * El recorrido no sabe —ni tiene por qué— de dónde salen el cliente, sus
+       * pedidos o el RAG: los arma el mismo preparador que usa la caída al agente, y
+       * si el turno no pasa por ningún paso de agente no se arma nada.
+       */
+      askAgent: async ({ agentKey, message, context: extra }) => {
+        const preparado = await prepararAgente();
+        return runWhatsappTurn({
+          store,
+          agentKey,
+          message: message || (extra ?? ''),
+          // La instrucción del paso va PRIMERO: acota de qué se habla acá, y el
+          // contexto del cliente es el material con el que contesta.
+          context: [extra, preparado.context].filter(Boolean).join('\n\n') || undefined,
+          history,
+          nativeCtx: preparado.nativeCtx,
+          memory: preparado.memory,
+        });
+      },
     });
     if (flowed.handled) {
       if (waSvc) {
@@ -442,75 +563,7 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
     logger.warn(`[WhatsApp bot] El router falló para ${from}: ${(err as Error).message}`);
   }
 
-  // Config de memoria (RAG de FAQ/knowledge). Sin store-config → sin RAG.
-  let memory: MemoryRuntimeOptions | undefined;
-  try {
-    const storeConfig = container.resolve<StoreConfigModuleService>(STORE_CONFIG_MODULE);
-    memory = memoryOptionsFromConfig(await storeConfig.getAiConfig());
-  } catch {
-    memory = undefined;
-  }
-
-  // Contexto: datos YA verificados y scoped al teléfono del remitente.
-  let context: string | undefined;
-  const customer = await resolveWaCustomer(container, from);
-  if (customer) {
-    // Cachear identidad para prefijar el checkout link (Fase 2).
-    if (waSvc) await waSvc.setIdentity(from, { customer_id: customer.id, email: customer.email });
-    const recent = customer.orders.slice(0, MAX_ORDERS_IN_CONTEXT);
-    const blocks: string[] = [`Cliente: ${customer.name || '(sin nombre)'}`];
-    if (customer.email) blocks.push(`Email: ${customer.email}`);
-    if (recent.length === 0) {
-      blocks.push('El cliente no tiene pedidos registrados.');
-    } else {
-      for (const o of recent) {
-        const status = await getWaOrderStatus(container, o.id);
-        blocks.push(status ? formatOrderStatusForPrompt(status) : `Pedido #${o.display_id ?? '—'}: sin datos.`);
-      }
-      if (customer.orders.length > recent.length) {
-        blocks.push(`(y ${customer.orders.length - recent.length} pedido/s más antiguos)`);
-      }
-      trackWaEvent(container, {
-        siteId,
-        sessionId,
-        phone: from,
-        type: 'order_status',
-        payload: { orders: recent.length, identified: true },
-      });
-    }
-    context = blocks.join('\n\n');
-  } else {
-    logger.info(`[WhatsApp bot] Teléfono ${from} sin cliente asociado — se pide verificación.`);
-  }
-
-  // Contexto de tools nativas. Se mantiene la referencia para leer, tras el turno,
-  // si alguna tool ya le envió un mensaje al cliente (lista/botones/imagen).
-  // `waUsedAi: true` porque acá el turno lo resuelve el LLM: las tools que emitan
-  // eventos del embudo quedan marcadas como "gastó modelo". El router
-  // determinístico (que resuelve los botones sin LLM) pasa `false`.
-  //
-  // `waSessionId`/`waSiteId` no estaban: todo evento comercial resuelto por el
-  // modelo (search, added_to_cart, checkout_generated…) se escribía huérfano, y el
-  // embudo sólo veía los que pasaban por el router.
-  const nativeCtx = {
-    container,
-    store,
-    waPhone: from,
-    isVariantSelection,
-    waUsedAi: true,
-    waSessionId: sessionId,
-    waSiteId: siteId,
-  } as {
-    container: typeof container;
-    store: typeof store;
-    waPhone: string;
-    isVariantSelection?: boolean;
-    sentUserMessage?: boolean;
-    waUsedAi?: boolean;
-    waSessionId?: string | null;
-    waSiteId?: string | null;
-  };
-
+  const { memory, context, nativeCtx } = await prepararAgente();
   let reply: string;
   try {
     reply = await runWhatsappTurn({

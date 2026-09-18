@@ -66,6 +66,11 @@ concurrency:
 
 jobs:
   locks:
+    # Las ramas `brick/*` las atiende `brick-locks.yml`, que hace lo mismo pero
+    # sin la lógica de merge: una actualización de Brick la aprueba una persona
+    # desde el checker, no se mergea sola. Sin este guard los dos jobs se
+    # pisarían empujando locks al mismo commit.
+    if: "!startsWith(github.head_ref, 'brick/')"
     runs-on: ubuntu-latest
     # `secrets` is not a context you can read from a step-level `if:`, so the
     # presence of the token is resolved once here into a plain env string.

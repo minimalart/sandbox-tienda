@@ -40,6 +40,36 @@ describe('sanitizePayload — redacción por clave', () => {
     assert.equal(result.at, '2026-07-04T12:00:00.000Z');
     assert.equal(result.big, '10');
   });
+
+  // Contrato del envío al ERP: los datos personales viajan tal cual en el
+  // payload de venta (Odoo/Bsale/Zeus los necesitan para crear la orden).
+  // La regla de "no en logs" del proyecto se cumple por otro lado: NINGÚN
+  // logger del módulo erp vuelca el `payload` completo. Este test blindá el
+  // sanitizer para que un agregado bien intencionado de `student` o `person`
+  // al regex de claves sensibles no rompa silenciosamente el envío al ERP.
+  it('NO redacta datos personales (customer, alumnos y asignaciones)', () => {
+    const result = sanitizePayload({
+      customer: { first_name: 'Ana', last_name: 'García', document: '40123456' },
+      school: { external_ref: 'san_agustin', name: 'Colegio San Agustín', source_site_id: 'ds_01H...' },
+      student_assignments: {
+        schema_version: '1.0',
+        items: [
+          {
+            sku: 'EDU-KIT-4',
+            quantity: 1,
+            recipients: [
+              { external_id: 'p-1', first_name: 'Juan', last_name: 'Pérez', document: '45123456', grade: '4A', quantity: 1 },
+            ],
+          },
+        ],
+      },
+    }) as Record<string, any>;
+    assert.equal(result.customer.first_name, 'Ana');
+    assert.equal(result.customer.document, '40123456');
+    assert.equal(result.school.external_ref, 'san_agustin');
+    assert.equal(result.student_assignments.items[0].recipients[0].document, '45123456');
+    assert.equal(result.student_assignments.items[0].recipients[0].first_name, 'Juan');
+  });
 });
 
 describe('sanitizePayload — truncado y ciclos', () => {

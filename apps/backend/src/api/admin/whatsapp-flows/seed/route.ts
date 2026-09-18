@@ -2,6 +2,7 @@ import type { MedusaRequest, MedusaResponse } from '@medusajs/framework/http';
 
 import { validateGraph } from '../../../../lib/whatsapp/flow/graph';
 import { SEED_GRAPH } from '../../../../lib/whatsapp/flow/seed';
+import { COMPRA_GRAPH } from '../../../../lib/whatsapp/flow/seed-compra';
 import { siteFromRequest } from '../../../../lib/multistore/request';
 import { WHATSAPP_FLOW_MODULE } from '../../../../modules/whatsapp-flow';
 import type WhatsappFlowModuleService from '../../../../modules/whatsapp-flow/service';
@@ -33,13 +34,41 @@ export async function POST(req: MedusaRequest, res: MedusaResponse): Promise<voi
    * lado de lo que ya estaba en vez de reemplazarlo, y no hay nada que confirmar
    * porque no se pierde nada.
    */
+  /**
+   * DOS PUNTOS DE PARTIDA, y son distintos a propósito.
+   *
+   * `base` es lo que el bot atiende HOY: sirve para editar sobre algo reconocible y
+   * para comparar cuando se apague el router viejo. `compra` es el tramo de compra
+   * del documento de flujo optimizado (2.1 a 2.6), que es a dónde se quiere llegar
+   * — con la pregunta de contexto antes de mostrar productos y la cantidad por lista.
+   */
+  const plantilla =
+    body.template === 'compra'
+      ? {
+          graph: COMPRA_GRAPH,
+          name: 'Compra guiada',
+          notes: 'Tramo de compra del flujo de referencia (2.1 a 2.6).',
+        }
+      : {
+          graph: SEED_GRAPH,
+          name: 'Recorrido base',
+          notes: 'Cargado desde el recorrido que el bot atiende hoy.',
+        };
+
+  // El nombre que puso el operador gana sobre el de la plantilla: con varios
+  // recorridos, tres llamados "Recorrido base" no se distinguen en la tabla.
+  const nombre = typeof body.name === 'string' && body.name.trim() ? body.name.trim().slice(0, 120) : plantilla.name;
+
   const draft = await service.saveDraft({
     flowKey,
     siteId,
-    graph: SEED_GRAPH,
-    name: 'Recorrido base',
-    notes: 'Cargado desde el recorrido que el bot atiende hoy.',
+    graph: plantilla.graph,
+    name: nombre,
+    notes: plantilla.notes,
   });
 
-  res.json({ draft: { ...draft, graph: SEED_GRAPH }, issues: validateGraph(SEED_GRAPH) });
+  res.json({
+    draft: { ...draft, graph: plantilla.graph },
+    issues: validateGraph(plantilla.graph),
+  });
 }

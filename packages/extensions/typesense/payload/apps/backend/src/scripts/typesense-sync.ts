@@ -25,6 +25,10 @@ import {
   buildCategoryPathMap,
 } from '../modules/typesense/category-paths';
 import { loadAdvisorRules } from '../modules/typesense/advisor';
+import {
+  attachBundleOnlyChannels,
+  getBundleOnlyChannelMap,
+} from '../modules/typesense/bundle-only-channels';
 
 export default async function typesenseSync({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
@@ -77,6 +81,8 @@ export default async function typesenseSync({ container }: ExecArgs) {
 
   // Adjuntar promociones activas (badges + filtro "Promociones"). Ver
   // docs/recipes/promotions.md.
+  attachBundleOnlyChannels(enrichedProducts, await getBundleOnlyChannelMap(query));
+
   const withPromos = await attachActivePromotions(query, enrichedProducts, logger);
   logger.info(`Attached promotions to ${withPromos} products.`);
 

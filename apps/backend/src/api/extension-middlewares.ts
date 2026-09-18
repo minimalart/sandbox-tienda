@@ -22,6 +22,8 @@ import { adminRecommendationsMiddlewares } from './admin/recommendations/middlew
 import { storeRecommendationsMiddlewares } from './store/recommendations/middlewares';
 import { adminSitesMiddlewares } from './admin/sites/middlewares';
 import { adminPriceListsMiddlewares } from './admin/price-lists/middlewares';
+import { adminBundlesMiddlewares } from './admin/bundles/middlewares';
+import { storeBundlesMiddlewares } from './store/bundles/middlewares';
 
 export const extensionMiddlewares: MiddlewareRoute[] = [
   ...adminSiteCredentialsMiddlewares,
@@ -47,4 +49,6 @@ export const extensionMiddlewares: MiddlewareRoute[] = [
   ...storeRecommendationsMiddlewares,
   ...adminSitesMiddlewares,
   ...adminPriceListsMiddlewares,
+  ...adminBundlesMiddlewares,
+  ...storeBundlesMiddlewares,
 ];

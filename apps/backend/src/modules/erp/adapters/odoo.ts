@@ -1,4 +1,5 @@
 import type { ErpOdooSettings, ErpSalePayload } from '../types';
+import { htmlToMarkdown } from './html-to-markdown';
 import { OdooRpcClient, type OdooRpcConfig } from './odoo-rpc-client';
 import {
   ErpAuthError,
@@ -101,6 +102,18 @@ type ProductTemplateCatalogRow = {
    * no tiene marca asignada. En instancias sin el módulo el field ni se pide.
    */
   product_brand_id?: OdooMany2One;
+  /**
+   * Peso en la unidad configurada (Odoo default: kg). Campo standard de
+   * `product.template`, siempre disponible. `0` = sin peso cargado.
+   */
+  weight?: number | null;
+  /**
+   * HTML del módulo `website_sale`/derivados. En la instancia de EducaBot
+   * mostrada en el sample llega poblado en el 81% de los productos publicados
+   * como copy comercial narrativo. Ausente (undefined) en instancias sin el
+   * módulo — nunca se pide sin haberlo confirmado con la sonda.
+   */
+  description_ecommerce?: string | false | null;
 };
 
 type ProductCategoryRow = {
@@ -211,6 +224,18 @@ const OPTIONAL_SALE_ORDER_FIELDS = [
   'x_student_assignments',
 ] as const;
 
+/**
+ * Fields de `product.template` que aportan info al catálogo pero no existen en
+ * TODA instancia Odoo — mismo patrón que `OPTIONAL_SALE_ORDER_FIELDS`. Se
+ * sondean con `fields_get` una vez por instancia y solo se piden si están
+ * presentes; los ausentes quedan como `null` en el `ErpCatalogRow` (compat).
+ *
+ * - `description_ecommerce`: HTML del módulo `website_sale`/OCA argentinos. En
+ *   la instancia EducaBot es la fuente PRINCIPAL de descripción de catálogo
+ *   (81% coverage sobre los 62 publicados, medido 2026-09-17).
+ */
+const OPTIONAL_PRODUCT_TEMPLATE_FIELDS = ['description_ecommerce'] as const;
+
 /** 5min de cache: si el cliente crea los campos, la próxima ronda los recoge. */
 const OPTIONAL_FIELDS_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -223,6 +248,16 @@ export class OdooErpAdapter implements ErpAdapter {
    * Odoo, cada uno vive en su bucket — no comparten resultados.
    */
   private optionalFieldsCache = new Map<string, { at: number; fields: Set<string> }>();
+
+  /**
+   * Espeja `optionalFieldsCache` para el modelo `product.template`. Vive
+   * separado del de `sale.order` para no re-sondear el modelo equivocado en
+   * cada flujo (venta vs catálogo).
+   */
+  private productTemplateOptionalFieldsCache = new Map<
+    string,
+    { at: number; fields: Set<string> }
+  >();
 
   // Inyectable para tests; en runtime cada call construye su cliente con las
   // credenciales del context (los adapters son stateless por llamada).
@@ -312,6 +347,47 @@ export class OdooErpAdapter implements ErpAdapter {
       present = new Set();
     }
     this.optionalFieldsCache.set(cacheKey, { at: Date.now(), fields: present });
+    return present;
+  }
+
+  /**
+   * Sonda `product.template.fields_get` para descubrir qué campos opcionales
+   * de la lista `OPTIONAL_PRODUCT_TEMPLATE_FIELDS` existen en esta instancia.
+   * Mismo patrón que `resolveAvailableOptionalFields` sobre `sale.order`: si un
+   * campo no está, se omite del `search_read` y el catalog row queda con `null`.
+   *
+   * Justificación: el módulo que expone `description_ecommerce` no está en
+   * TODAS las Odoo (es un OCA argentino o un derivado de `website_sale`), así
+   * que pedirlo a ciegas rompe `search_read` de instancias que no lo tienen.
+   */
+  private async resolveAvailableProductTemplateFields(
+    client: OdooRpcClient,
+    ctx: AdapterContext
+  ): Promise<Set<string>> {
+    const settings = this.odooSettings(ctx);
+    const cacheKey = `${settings?.base_url ?? ''}::${settings?.db ?? ''}`;
+    const cached = this.productTemplateOptionalFieldsCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < OPTIONAL_FIELDS_CACHE_TTL_MS) {
+      return cached.fields;
+    }
+    let present: Set<string>;
+    try {
+      const result = await client.executeKw<Record<string, unknown>>(
+        'product.template',
+        'fields_get',
+        [OPTIONAL_PRODUCT_TEMPLATE_FIELDS as unknown as string[]],
+        { attributes: ['type'] }
+      );
+      present = new Set(Object.keys(result ?? {}));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[erp:odoo] product.template fields_get sonda falló (${cacheKey}) — se pide el catálogo SIN los campos opcionales: ${message}`
+      );
+      present = new Set();
+    }
+    this.productTemplateOptionalFieldsCache.set(cacheKey, { at: Date.now(), fields: present });
     return present;
   }
 
@@ -451,6 +527,87 @@ export class OdooErpAdapter implements ErpAdapter {
     return out;
   }
 
+  /**
+   * Resuelve el SKU (`default_code`) de un `product.product` por su ID interno.
+   *
+   * Nace del webhook `POST /webhooks/erp-odoo/stock`: los server actions
+   * nativos de tipo `webhook` mandan `product_id` como entero (el id de
+   * `product.product`), no como SKU. Este método hace el hop de resolución
+   * usando la misma auth que el resto del adapter — el endpoint no necesita
+   * conocer credenciales ni armar clientes RPC.
+   *
+   * Devuelve `null` si el producto fue borrado o si su `default_code` es
+   * vacío/`false`. Silencia errores de red devolviendo `null` también: el
+   * caller decide si abortar o loguear. Un webhook que no puede resolver el
+   * SKU no debe reventar; el cron `stock_sync` reconcilia después.
+   */
+  async lookupSkuByProductId(
+    productId: number,
+    ctx: AdapterContext
+  ): Promise<string | null> {
+    if (!Number.isInteger(productId) || productId <= 0) return null;
+    const client = this.buildClient(ctx);
+    try {
+      const rows = await client.executeKw<ProductProductLookupRow[]>(
+        'product.product',
+        'read',
+        [[productId], ['default_code']]
+      );
+      const row = rows?.[0];
+      return row ? codeOrNull(row.default_code) : null;
+    } catch (error) {
+      ctx.logger?.warn?.(
+        `Odoo lookupSkuByProductId(${productId}) falló: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Resuelve el `complete_name` (`WH/Stock`, `My Co/Stock/Shelf A`) de un
+   * `stock.location` por su id numérico. Contraparte de
+   * `lookupSkuByProductId` para el otro campo que el webhook nativo de Odoo
+   * envía como int scalar (many2one → id) sin poder navegar la relación.
+   *
+   * El `complete_name` es la clave que usa `settings.stock_sync.deposito_map`
+   * para mapear un depósito del ERP a una `stock_location` de Medusa —
+   * elegimos ese en vez del id porque es lo que ve el operador en el admin de
+   * Odoo, más estable frente a re-instalaciones que renumeran ids y consistente
+   * con lo que ya usan los otros adapters (Zeus, Bsale) cuando llenan
+   * `by_deposito` con nombres.
+   *
+   * Devuelve `null` si el location no existe o el nombre está vacío. Silencia
+   * errores de red por el mismo motivo que `lookupSkuByProductId`: el webhook
+   * no debe reventar por un lookup fallido; el cron reconcilia después.
+   */
+  async lookupLocationCompleteName(
+    locationId: number,
+    ctx: AdapterContext
+  ): Promise<string | null> {
+    if (!Number.isInteger(locationId) || locationId <= 0) return null;
+    const client = this.buildClient(ctx);
+    try {
+      const rows = await client.executeKw<Array<{ id: number; complete_name?: string | null }>>(
+        'stock.location',
+        'read',
+        [[locationId], ['complete_name']]
+      );
+      const row = rows?.[0];
+      if (!row) return null;
+      const name = typeof row.complete_name === 'string' ? row.complete_name.trim() : '';
+      return name.length > 0 ? name : null;
+    } catch (error) {
+      ctx.logger?.warn?.(
+        `Odoo lookupLocationCompleteName(${locationId}) falló: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return null;
+    }
+  }
+
   async getCatalogChanges(since: string | null, ctx: AdapterContext): Promise<ErpCatalogRow[]> {
     const client = this.buildClient(ctx);
     const domain: unknown[] = since ? [['write_date', '>', since]] : [];
@@ -465,6 +622,37 @@ export class OdooErpAdapter implements ErpAdapter {
       domain.push(['is_published', '=', true]);
     }
 
+    // Sonda una vez por instancia (5 min de cache): qué campos opcionales del
+    // template están presentes. Se resuelve ANTES del loop para no repetir el
+    // `fields_get` en cada página.
+    const optionalTemplateFields = await this.resolveAvailableProductTemplateFields(client, ctx);
+
+    // Base: campos standard que siempre existen. Los opcionales se agregan
+    // solo si la sonda los confirmó — pedir un campo inexistente hace fallar
+    // el `search_read` entero.
+    const baseFields: string[] = [
+      'id',
+      'default_code',
+      'name',
+      'list_price',
+      'categ_id',
+      'write_date',
+      'active',
+      'sale_ok',
+      'type',
+      // `weight` es standard de Odoo core (`product.template.weight`, float en
+      // kg por default). No requiere sonda.
+      'weight',
+      // `product_brand_id` viene del módulo `product_brand` (OCA); si el
+      // módulo no está instalado, Odoo devuelve el field como `undefined`
+      // en la respuesta (no falla el read).
+      'product_brand_id',
+    ];
+    const requestedFields = [
+      ...baseFields,
+      ...OPTIONAL_PRODUCT_TEMPLATE_FIELDS.filter((f) => optionalTemplateFields.has(f)),
+    ];
+
     const out: ErpCatalogRow[] = [];
     let offset = 0;
     while (offset < CATALOG_MAX_PRODUCTS) {
@@ -477,21 +665,7 @@ export class OdooErpAdapter implements ErpAdapter {
           // por producto y matan el payload (Cloudflare corta la conexión con
           // 61+ productos). Las imágenes se traen por SKU vía
           // `fetchProductImage`, que es fase separada del sync.
-          fields: [
-            'id',
-            'default_code',
-            'name',
-            'list_price',
-            'categ_id',
-            'write_date',
-            'active',
-            'sale_ok',
-            'type',
-            // `product_brand_id` viene del módulo `product_brand` (OCA); si el
-            // módulo no está instalado, Odoo devuelve el field como `undefined`
-            // en la respuesta (no falla el read).
-            'product_brand_id',
-          ],
+          fields: requestedFields,
           limit: CATALOG_PAGE_SIZE,
           offset,
           order: 'id asc',
@@ -527,10 +701,30 @@ export class OdooErpAdapter implements ErpAdapter {
     // listas por índice y v1 solo trae la base.
     const prices: Record<number, number | null> = { [ODOO_BASE_PRICE_LIST_INDEX]: listPrice };
 
+    // `description_ecommerce` es HTML del builder de Odoo. Se convierte a
+    // Markdown para guardarlo en `product.description` (text plain de Medusa)
+    // preservando énfasis, listas y encabezados sin exponer al storefront a
+    // sanitizar HTML crudo. Si el campo no está presente en la instancia (ver
+    // `resolveAvailableProductTemplateFields`), llega como `undefined` y el
+    // helper devuelve `null` → misma semántica que antes del cambio.
+    const description =
+      typeof row.description_ecommerce === 'string'
+        ? htmlToMarkdown(row.description_ecommerce)
+        : null;
+
+    // `weight` en Odoo llega como float en la UoM configurada (default kg).
+    // Rechazamos 0, negativos y valores no finitos; el planner interpreta
+    // `null` como "sin peso cargado" y no dispara diff, evitando updates
+    // masivos inútiles cuando el ERP no lo tiene poblado.
+    const weight =
+      typeof row.weight === 'number' && Number.isFinite(row.weight) && row.weight > 0
+        ? row.weight
+        : null;
+
     return {
       code,
       title: typeof row.name === 'string' && row.name.trim() ? row.name.trim() : null,
-      description: null,
+      description,
       prices,
       // El template no expone `tax_rate` directo — vive en `taxes_id` (many2many)
       // y requiere resolver el impuesto. v1 lo deja en null: el planner cae al
@@ -548,7 +742,7 @@ export class OdooErpAdapter implements ErpAdapter {
       family: null,
       barcode: null,
       factory_code: null,
-      weight: null,
+      weight,
       length: null,
       height: null,
       width: null,

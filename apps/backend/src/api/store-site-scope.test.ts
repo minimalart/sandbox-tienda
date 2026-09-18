@@ -96,7 +96,12 @@ const routes = storeRoutes();
  * media migración dejaría el blog filtrando por la key y las marcas por el query, que
  * es PEOR que el estado actual porque la incoherencia no se ve desde ninguna pantalla.
  */
-const MAX_PENDING = 19;
+// Se subió de 19 a 21 al agregar `store/bundles` y `store/bundles/[handle]`
+// como `pending`. Mismo motivo que las 9 rutas de contenido ya en la lista:
+// el eje real hoy es `?sales_channel_id=` declarado por el cliente y el
+// fallback por publishable key no disambigua con las pks compartidas del
+// boilerplate. Cuando exista pk exclusiva por tenant se puede bajar el techo.
+const MAX_PENDING = 21;
 
 test('el walk encuentra las rutas store (guard contra falso verde por vacío)', () => {
   // Si el walk se rompe, todo lo de abajo pasa trivialmente. Mismo guard que

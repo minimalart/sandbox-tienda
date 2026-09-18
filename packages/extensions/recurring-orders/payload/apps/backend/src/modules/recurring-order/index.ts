@@ -1,3 +1,4 @@
+import './dashboard-dataset';
 import { Module } from '@medusajs/framework/utils';
 import RecurringOrderModuleService from './service';
 import { RECURRING_ORDER_MODULE } from './types';

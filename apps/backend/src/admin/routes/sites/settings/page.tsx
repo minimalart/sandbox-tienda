@@ -3,6 +3,8 @@ import { Container, Heading, Toaster } from '@medusajs/ui';
 import { ExtensionSettingsCard } from '../../../components/app-settings/extension-settings-card';
 import { HelpDrawer } from '../../../components/common/help-drawer';
 import { SingleColumnLayout } from '../../../components/layouts/single-column';
+import { ExtensionSettingsEditorCard } from '../../../components/app-settings/extension-settings-editor-card';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Ajustes de instancia de Multitienda: el dominio público del storefront y el
@@ -29,7 +31,10 @@ import { SingleColumnLayout } from '../../../components/layouts/single-column';
  * las dos variables de MercadoPago dicen lo que hay que oír acá —que la cuenta de
  * cobro se edita en otro lado—.
  */
-const SitesSettingsPage = () => (
+const SitesSettingsPage = () => {
+  const { i18n } = useTranslation();
+  const en = i18n.language.startsWith('en');
+  return (
   <SingleColumnLayout>
     {/*
       El header propio existe SÓLO para colgar el botón de ayuda: `ExtensionSettingsCard`
@@ -76,9 +81,18 @@ const SitesSettingsPage = () => (
       description="Cuán rápido se le pide el catálogo a la tienda de origen."
       hideSiteContext
     />
+    <ExtensionSettingsEditorCard
+      namespace="extension:multistore"
+      groups={['Home del directorio']}
+      title={en ? 'Directory home' : 'Home del directorio'}
+      description={en ? 'Edit branding, sections and content with Puck.' : 'Editá la marca, las secciones y el contenido con Puck.'}
+      href="/sites/directory"
+      action={en ? 'Edit directory' : 'Editar directorio'}
+    />
     <Toaster />
   </SingleColumnLayout>
-);
+  );
+};
 
 // Sin `rank`: `sortMenuItemsByRank` ordena los hijos con rank ANTES que los sin
 // rank, así que ponerle uno la subiría por encima del listado de tiendas.

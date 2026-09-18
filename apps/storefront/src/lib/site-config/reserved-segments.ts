@@ -78,6 +78,7 @@ export const ROUTABLE_SEGMENTS: readonly string[] = [
   'about',
   'account',
   'blog',
+  'bundles',
   'cart',
   'categories',
   'collections',

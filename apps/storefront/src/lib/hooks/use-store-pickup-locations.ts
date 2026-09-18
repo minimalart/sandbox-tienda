@@ -21,6 +21,14 @@ export type StorePickupLocation = {
   province: string;
   latitude: number | null;
   longitude: number | null;
+  /**
+   * Stock location de la sucursal. Es la clave con la que el checkout elige la
+   * shipping option de retiro QUE CORRESPONDE a esta sucursal, porque cada
+   * fulfillment set cuelga de una stock location. `null` cuando la sucursal se
+   * restauró de la metadata del carrito (ahí sólo viajan id y nombre) o cuando
+   * todavía no se mapeó en el admin.
+   */
+  stock_location_id: string | null;
 };
 
 type RawStoreLocation = {
@@ -31,6 +39,7 @@ type RawStoreLocation = {
   province?: string | null;
   lat?: string | null;
   lng?: string | null;
+  stock_location_id?: string | null;
   /**
    * Si la sucursal se ofrece como punto de retiro. Lo calcula la API route
    * (`app/api/store/store-locations/route.ts`) a partir del flag "Permite
@@ -83,6 +92,7 @@ export function useStorePickupLocations(enabled: boolean) {
           province: l.province ?? "",
           latitude: toNum(l.lat),
           longitude: toNum(l.lng),
+          stock_location_id: l.stock_location_id ?? null,
         }));
       setLocations(mapped);
     } catch {

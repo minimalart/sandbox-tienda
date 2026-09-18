@@ -218,7 +218,30 @@ const Addresses = ({
     );
   }, [guestAddresses, cart?.region]);
 
-  const selected = customer ? selectedCustomerAddress : selectedGuestAddress;
+  // `cart.shipping_address` es una COPIA de la dirección elegida, no un enlace
+  // a ella: cuando el comprador edita o borra esa dirección de su libreta, la
+  // copia del cart queda huérfana. Para un comprador logueado la dirección de
+  // envío SIEMPRE sale de la libreta (`handleModalSubmit` guarda antes de
+  // seleccionar), así que una selección que ya no corresponde a ninguna
+  // dirección guardada no es una elección suya: es esa copia vieja.
+  //
+  // Mostrarla engañaba —aparecía una tarjeta fantasma con la dirección
+  // anterior, titulada con el nombre del cliente porque la copia no lleva
+  // `address_name`— y dejarla pasar era peor todavía: el pedido se enviaba a la
+  // dirección vieja aunque el comprador la hubiera corregido (DESDEELSUR-70).
+  const selectedCustomerAddressInBook = useMemo(() => {
+    if (!selectedCustomerAddress) {
+      return null;
+    }
+    const stillSaved = savedAddresses.some((addr) =>
+      areGuestCartAddressesEquivalent(selectedCustomerAddress, addr),
+    );
+    return stillSaved ? selectedCustomerAddress : null;
+  }, [selectedCustomerAddress, savedAddresses]);
+
+  const selected = customer
+    ? selectedCustomerAddressInBook
+    : selectedGuestAddress;
 
   useEffect(() => {
     if (!customer) {
@@ -265,6 +288,49 @@ const Addresses = ({
       setModalOpen(true);
     },
     [],
+  );
+
+  /**
+   * Copia `addr` a la dirección de envío del cart.
+   *
+   * Guardar una dirección en la libreta no alcanza: el cart guarda su propia
+   * copia y, si no se la actualiza, sigue apuntando a la versión anterior. Se
+   * llama al agregar (agregar implica elegir, como venía funcionando) y al
+   * editar la dirección que estaba seleccionada.
+   *
+   * Falla en silencio a propósito: la dirección YA se guardó en la libreta y no
+   * hay que perder eso. Si el cart no se pudo actualizar, el recargado deja la
+   * selección vacía y el comprador elige de la lista — molesto, pero nunca
+   * termina comprando con una dirección que no eligió.
+   */
+  const syncCartShippingAddress = useCallback(
+    async (addr: GuestCartAddress) => {
+      const email = cart?.email || customer?.email || "";
+      const shipping_address = toCartAddressPayload(addr);
+      try {
+        await fetch("/api/store/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "updateAddresses",
+            shipping_address,
+            billing_address: { ...shipping_address },
+            email,
+            ...(addr.latitude && addr.longitude
+              ? {
+                  shipping_coords: {
+                    latitude: Number(addr.latitude),
+                    longitude: Number(addr.longitude),
+                  },
+                }
+              : {}),
+          }),
+        });
+      } catch {
+        // Ver el comentario de arriba: no bloquea el guardado de la dirección.
+      }
+    },
+    [cart?.email, customer?.email],
   );
 
   const handleCustomerAddressRemove = useCallback(
@@ -367,6 +433,18 @@ const Addresses = ({
           );
 
           if (result.success) {
+            // Si la dirección editada era la que estaba elegida para el envío,
+            // la copia del cart quedó con los datos viejos. Se la actualiza
+            // ANTES de recargar para que el comprador siga viéndola elegida —
+            // y sobre todo para que el pedido no salga a la dirección anterior.
+            if (
+              areGuestCartAddressesEquivalent(
+                selectedCustomerAddress,
+                editingCustomerAddress,
+              )
+            ) {
+              await syncCartShippingAddress(addr);
+            }
             setModalOpen(false);
             setEditingCustomerAddress(null);
             window.location.reload();
@@ -418,10 +496,17 @@ const Addresses = ({
           return;
         }
 
+        // Agregar una dirección implica elegirla, como venía funcionando. Ahora
+        // la elección se hace donde vive de verdad —la copia del cart— y se
+        // recarga para que la libreta del cliente traiga la dirección nueva: de
+        // lo contrario no está en `savedAddresses` y la selección se descarta
+        // por huérfana.
+        await syncCartShippingAddress(addr);
         setSelectedCustomerAddress(addr);
         setModalOpen(false);
         setEditingGuestAddress(null);
         setEditingCustomerAddress(null);
+        window.location.reload();
       } catch {
         setFormError("No se pudo guardar la dirección");
       } finally {
@@ -434,6 +519,8 @@ const Addresses = ({
       customer,
       editingGuestAddress,
       editingCustomerAddress,
+      selectedCustomerAddress,
+      syncCartShippingAddress,
       updateCustomerAddress,
     ],
   );
@@ -717,10 +804,16 @@ const Addresses = ({
         </div>
       )}
 
-      {/* New address from modal (not saved, just selected) */}
-      {selected &&
-        ((customer && !savedAddresses.some((a) => isSelectedSaved(a))) ||
-          (!customer && guestAddressesInRegion.length === 0)) && (
+      {/*
+        Dirección elegida en el modal que todavía no está en ninguna lista.
+
+        Sólo para invitados: ellos sí pueden tener una dirección que no quedó
+        guardada. Un comprador logueado no — su dirección se guarda en la
+        libreta antes de elegirse, así que acá sólo caía la copia huérfana que
+        el cart arrastraba de una dirección ya editada o borrada, y se dibujaba
+        con el nombre del cliente como título (DESDEELSUR-70).
+      */}
+      {selected && !customer && guestAddressesInRegion.length === 0 && (
           <div className="mb-4 w-full rounded-xl border-2 border-[--primary-color] bg-[--primary-soft-bg] p-4">
             <p className="font-semibold text-[--text-dark] text-sm">
               {selected.address_name ||

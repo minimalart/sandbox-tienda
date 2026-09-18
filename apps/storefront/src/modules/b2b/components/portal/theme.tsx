@@ -31,7 +31,7 @@ export function PortalThemeProvider({ children }: { children: React.ReactNode })
 
   return (
     <Ctx.Provider value={{ dark, toggle }}>
-      <div className={dark ? "dark" : undefined}>{children}</div>
+      <div data-storefront-theme className={dark ? "dark" : undefined}>{children}</div>
     </Ctx.Provider>
   );
 }

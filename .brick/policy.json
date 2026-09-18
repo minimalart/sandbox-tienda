@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "classes": {
+    "ignored": [
+      "packages/plugins/**",
+      ".playwright-cli/**"
+    ],
+    "generated": [
+      "pnpm-lock.yaml",
+      "**/package-lock.json"
+    ],
+    "config": [
+      "README.md",
+      ".github/workflows/deploy-front.yml",
+      ".github/workflows/deploy-backend.yml",
+      "apps/backend/medusa-config.ts",
+      "apps/backend/package.json",
+      "apps/storefront/package.json",
+      "packages/project-catalog/src/catalog.json",
+      "apps/backend/src/lib/platform/catalog.json",
+      "apps/backend/src/admin/lib/extension-versions.ts"
+    ],
+    "custom": [
+      "apps/backend/src/custom/**",
+      "apps/storefront/src/custom/**"
+    ],
+    "managed": [
+      "**"
+    ]
+  },
+  "custom_roots": [
+    "apps/backend/src/custom/**",
+    "apps/storefront/src/custom/**"
+  ],
+  "validation": {
+    "required_checks": [
+      "quality"
+    ],
+    "full_build_check": "brick-validate",
+    "mode": "auto",
+    "full_build_triggers": [
+      "**/package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      ".npmrc",
+      "turbo.json",
+      "tsconfig.base.json",
+      "**/tsconfig*.json",
+      "apps/backend/medusa-config.ts",
+      "apps/backend/src/**/migrations/**",
+      ".github/workflows/**",
+      "Dockerfile*",
+      "patches/**"
+    ]
+  }
+}

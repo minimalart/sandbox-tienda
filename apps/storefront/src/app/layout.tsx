@@ -1,4 +1,5 @@
-import GoogleAnalytics from '@lib/analytics/google-analytics'
+import PrivacyRoot from '@lib/consent/root'
+import { getPrivacyConfiguration } from '@lib/data/privacy'
 import UtmCapture from '@lib/context/utm-capture'
 import { getTenantThemeStyles } from '@lib/site-config/theme'
 import { StorefrontSharedProviders } from '@lib/storefront-shared-providers'
@@ -10,8 +11,7 @@ import { Cormorant_Garamond, Inter, Manrope } from 'next/font/google'
 import Script from 'next/script'
 import 'styles/globals.css'
 
-// Optional analytics — set NEXT_PUBLIC_CLARITY_PROJECT_ID and NEXT_PUBLIC_GTM_ID in .env.local
-const CLARITY_PROJECT_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID
+// Optional legacy Google Tag Manager
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
 const GTM_ENABLED = Boolean(GTM_ID)
 
@@ -259,6 +259,8 @@ export async function generateViewport(): Promise<Viewport> {
 export default async function RootLayout(props: { children: React.ReactNode }) {
   // Inyectar CSS variables del tenant dinámicamente (cacheable)
   const themeStyles = await getTenantThemeStyles()
+  const privacy = await getPrivacyConfiguration()
+  const legacyTrackers = privacy.available && privacy.legacyAllowed && !privacy.consent?.enabled
 
   return (
     <html
@@ -268,7 +270,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       className={`${inter.variable} ${manrope.variable} ${cormorant.variable}`}
     >
       <body>
-        {GTM_ENABLED && (
+        {legacyTrackers && GTM_ENABLED && (
           <noscript>
             <iframe
               src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
@@ -279,7 +281,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             />
           </noscript>
         )}
-        {GTM_ENABLED && (
+        {legacyTrackers && GTM_ENABLED && (
           <Script id='google-tag-manager' strategy='afterInteractive'>
             {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
               new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -288,16 +290,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
               })(window,document,'script','dataLayer','${GTM_ID}');`}
           </Script>
         )}
-        {CLARITY_PROJECT_ID && (
-          <Script id='ms-clarity' strategy='afterInteractive'>
-            {`(function(c,l,a,r,i,t,y){
-              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");`}
-          </Script>
-        )}
-        <GoogleAnalytics />
+        <PrivacyRoot config={privacy}>
         <UtmCapture />
         {/*
           `StorefrontSharedProviders` es un Client Component wrapper que
@@ -310,6 +303,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <StorefrontSharedProviders>
           <main className='relative'>{props.children}</main>
         </StorefrontSharedProviders>
+        </PrivacyRoot>
       </body>
     </html>
   )

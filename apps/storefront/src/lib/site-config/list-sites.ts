@@ -4,6 +4,7 @@ import { fetchSiteConfig } from './active-tenant';
 import { sitesHubOrigin, isSitesHubHost, publicSiteUrl } from './site-hosts';
 import { getRequestHost } from '@lib/util/site-url';
 import { getBaseURL } from '@lib/util/env';
+import type { SitesHubConfig, SitesHubPage } from './sites-hub';
 
 export type PublicSiteListing = {
   slug: string; name: string; canonical_form: 'host' | 'path'; logo: string | null; template_code: string;
@@ -20,4 +21,11 @@ export const getSitesHubRequestOrigin = cache(async (): Promise<string | null> =
 });
 export const publicListingUrl = (site: PublicSiteListing): string => publicSiteUrl(site, {
   baseUrl: getBaseURL(), hostSuffix: process.env.NEXT_PUBLIC_SITE_HOST_SUFFIX ?? '',
+});
+
+export const listSitesHubPage = cache(async (offset = 0, query = ''): Promise<SitesHubPage> => {
+  const search = new URLSearchParams({ directory: '1', offset: String(offset), q: query });
+  const data = await fetchSiteConfig<{ sites: PublicSiteListing[]; count: number; next_offset: number | null; config: SitesHubConfig }>(`?${search}`, 'sites-directory', true);
+  if (!data || !Array.isArray(data.sites) || !data.config) throw new Error('No se pudo cargar el directorio.');
+  return { ...data, sites: data.sites.map(site => ({ ...site, url: publicListingUrl(site) })) };
 });

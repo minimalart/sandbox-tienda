@@ -15,7 +15,11 @@ import type {
 } from "./types";
 import { normalizeSearchQuery } from "./core/normalize";
 import { buildSortBy } from "./core/sort";
-import { buildBaseFilterBy, buildUserFilterBy } from "./core/filters";
+import {
+  BUNDLE_ONLY_FILTER_FIELD,
+  buildBaseFilterBy,
+  buildUserFilterBy,
+} from "./core/filters";
 import { buildQueryByFields } from "./core/query-by";
 import {
   CORE_FACET_FIELDS,
@@ -75,12 +79,24 @@ const mapFacetCounts = (
 // sentido pagar el 404 + reintento en CADA búsqueda de la sesión.
 let degradedToCoreFacets = false;
 
+// Igual que el de facetas, pero para el filtro de productos bundle_only: si la
+// colección todavía no tiene el campo (deploy del backend sin re-sync), la
+// búsqueda entera devolvía 400. Se degrada una vez por proceso y se sigue.
+let droppedBundleOnlyFilter = false;
+
 // El storefront es solo-search en Typesense (la search-only key no puede leer el
 // schema). Por eso NO introspeccionamos: las funciones de gating reciben un Set
 // vacío (modo conservador para los filtros) y las facetas se piden de forma
 // optimista. Si una faceta opcional no existe en la colección, Typesense devuelve
 // un 404 "facet field not found" y reintentamos con las facetas CORE.
 const EMPTY_SCHEMA: Set<string> = new Set<string>();
+
+/** Detecta el 400 de Typesense cuando el filtro pide un campo que no está en el schema. */
+function isMissingFilterField(error: unknown, field: string): boolean {
+  const e = error as { httpStatus?: number; message?: string };
+  const msg = e?.message || "";
+  return /filter field named/i.test(msg) && msg.includes(field);
+}
 
 /** Detecta el 404 de Typesense cuando una faceta pedida no existe en el schema. */
 function isFacetFieldNotFound(error: unknown): boolean {
@@ -198,11 +214,11 @@ export async function searchTypesenseProductsCore(
   // dejando afuera los filtros de usuario — así la barra lateral muestra valores
   // de otros filtros que el usuario podría combinar con su selección actual, pero
   // nunca surfacea productos ocultos/canal-incorrecto/precio-cero en esos conteos.
-  const baseFilterBy: string = buildBaseFilterBy(params);
+  let baseFilterBy: string = buildBaseFilterBy(params, {
+    omitBundleOnly: droppedBundleOnlyFilter,
+  });
   const userFilterBy: string = buildUserFilterBy(params, EMPTY_SCHEMA);
-  const filterBy: string = [baseFilterBy, userFilterBy]
-    .filter(Boolean)
-    .join(" && ");
+  let filterBy: string = [baseFilterBy, userFilterBy].filter(Boolean).join(" && ");
   const hasFilters: boolean = Boolean(userFilterBy);
 
   const sortBy = buildSortBy(params.sortBy);
@@ -273,6 +289,25 @@ export async function searchTypesenseProductsCore(
       degradedToCoreFacets = true;
       ({ filteredResponse, universeResponse } =
         await runSearches(CORE_FACET_FIELDS));
+    } else if (
+      // La condición mira el filtro que ESTA búsqueda mandó, no el flag: dos
+      // búsquedas en paralelo (listado y facetas de otra sección) fallan casi a
+      // la vez, y si la segunda se guiara por el flag que acaba de prender la
+      // primera se iría al `else` y tiraría el 400 igual. Mirando el filtro,
+      // reintentar es idempotente: después de rearmarlo el campo ya no está.
+      filterBy.includes(BUNDLE_ONLY_FILTER_FIELD) &&
+      isMissingFilterField(error, BUNDLE_ONLY_FILTER_FIELD)
+    ) {
+      // La colección es anterior al campo: se reintenta sin ese filtro en vez de
+      // dejar la tienda sin buscador. Lo que se pierde hasta el próximo sync es
+      // esconder los productos que sólo se venden en kit, no el catálogo.
+      console.debug(
+        "[TYPESENSE] La colección no tiene bundle_only_channels todavía; reintentando sin ese filtro.",
+      );
+      droppedBundleOnlyFilter = true;
+      baseFilterBy = buildBaseFilterBy(params, { omitBundleOnly: true });
+      filterBy = [baseFilterBy, userFilterBy].filter(Boolean).join(" && ");
+      ({ filteredResponse, universeResponse } = await runSearches(primaryFacets));
     } else {
       console.error("[TYPESENSE ERROR] Search failed:", error);
       console.error("[TYPESENSE ERROR] Params:", {

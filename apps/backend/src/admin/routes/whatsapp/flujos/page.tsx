@@ -1,5 +1,5 @@
 import { defineRouteConfig } from '@medusajs/admin-sdk';
-import { EllipsisHorizontal, PencilSquare, Plus, Trash } from '@medusajs/icons';
+import { EllipsisHorizontal, Pencil, PencilSquare, Plus, Trash } from '@medusajs/icons';
 import {
   Badge,
   Button,
@@ -17,13 +17,16 @@ import { useNavigate } from 'react-router-dom';
 
 import { ExtensionVersion } from '../../../components/common/extension-version';
 import { HelpDrawer } from '../../../components/common/help-drawer';
+import { SiteScopeBar } from '../../../components/common/site-scope-bar';
 import {
   useDeleteWhatsappFlowDraft,
+  useRenameWhatsappFlow,
   useSaveWhatsappFlow,
   useSeedWhatsappFlow,
   useWhatsappFlows,
   type FlowListRow,
 } from '../../../hooks/api/whatsapp-flows';
+import { NameDrawer } from './panels/name-drawer';
 import { whatsappLabel } from '../../../translations/whatsapp';
 
 /**
@@ -47,30 +50,45 @@ const FlowListRoute = (): ReactElement => {
   const crearMut = useSaveWhatsappFlow();
   const ejemploMut = useSeedWhatsappFlow();
   const borrarMut = useDeleteWhatsappFlowDraft();
+  const renombrarMut = useRenameWhatsappFlow();
 
   /** Qué recorrido se está por borrar. Ningún borrado pasa sin preguntar. */
   const [porBorrar, setPorBorrar] = useState<FlowListRow | null>(null);
 
-  const ocupado = crearMut.isPending || ejemploMut.isPending || borrarMut.isPending;
+  /**
+   * El nombre se pide ANTES de crear, no después.
+   *
+   * Crear y caer en el canvas con "Recorrido sin nombre" deja el trabajo de nombrarlo
+   * para un momento que no llega nunca: con tres filas iguales en la tabla, elegir
+   * cuál publicar es abrirlas una por una.
+   */
+  const [pidiendoNombre, setPidiendoNombre] = useState<
+    { modo: 'crear'; template: 'blanco' | 'base' | 'compra'; sugerido: string } | { modo: 'renombrar'; row: FlowListRow } | null
+  >(null);
 
-  const crearEnBlanco = async () => {
+  const ocupado =
+    crearMut.isPending || ejemploMut.isPending || borrarMut.isPending || renombrarMut.isPending;
+
+  const crear = async (template: 'blanco' | 'base' | 'compra', name: string) => {
     try {
-      const { draft } = await crearMut.mutateAsync({
-        name: 'Recorrido sin nombre',
-        graph: { nodes: [], edges: [] },
-      });
+      const { draft } =
+        template === 'blanco'
+          ? await crearMut.mutateAsync({ name, graph: { nodes: [], edges: [] } })
+          : await ejemploMut.mutateAsync({ template, name });
+      setPidiendoNombre(null);
       navigate(`/whatsapp/flujos/${draft.id}`);
     } catch (error) {
       toast.error(`No se pudo crear: ${(error as Error).message}`);
     }
   };
 
-  const crearDesdeEjemplo = async () => {
+  const renombrar = async (id: string, name: string) => {
     try {
-      const { draft } = await ejemploMut.mutateAsync();
-      navigate(`/whatsapp/flujos/${draft.id}`);
+      await renombrarMut.mutateAsync({ id, name });
+      setPidiendoNombre(null);
+      toast.success('Nombre cambiado.');
     } catch (error) {
-      toast.error(`No se pudo crear: ${(error as Error).message}`);
+      toast.error(`No se pudo cambiar el nombre: ${(error as Error).message}`);
     }
   };
 
@@ -101,10 +119,8 @@ const FlowListRoute = (): ReactElement => {
         <div>
           <Heading level="h2">{whatsappLabel('NAV_FLOWS')}</Heading>
           <Text size="small" className="text-ui-fg-subtle">
-            {/* De qué tienda son estos recorridos. Alguien puede estar por editar el de
-                TODAS las tiendas creyendo que toca el de una. */}
             {data?.site_id
-              ? 'Los recorridos de esta tienda.'
+              ? 'Los de esta tienda y los generales, que son los que la atienden si no tiene uno propio.'
               : 'Recorridos generales: los usa toda tienda que no tenga uno propio.'}
           </Text>
         </div>
@@ -119,16 +135,43 @@ const FlowListRoute = (): ReactElement => {
               </Button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end">
-              <DropdownMenu.Item onClick={crearEnBlanco}>En blanco</DropdownMenu.Item>
-              {/* Arrancar de quince pasos que ya funcionan es casi siempre más rápido
-                  que armarlos, sobre todo la primera vez. */}
-              <DropdownMenu.Item onClick={crearDesdeEjemplo}>
+              <DropdownMenu.Item
+                onClick={() => setPidiendoNombre({ modo: 'crear', template: 'blanco', sugerido: '' })}
+              >
+                En blanco
+              </DropdownMenu.Item>
+              {/* La compra guiada va PRIMERA: es a dónde se quiere llegar. La otra es
+                  lo que el bot atiende hoy, que sirve para comparar y para editar
+                  sobre algo reconocible. */}
+              <DropdownMenu.Item
+                onClick={() =>
+                  setPidiendoNombre({ modo: 'crear', template: 'compra', sugerido: 'Compra guiada' })
+                }
+              >
+                Compra guiada (flujo de referencia)
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() =>
+                  setPidiendoNombre({ modo: 'crear', template: 'base', sugerido: 'Recorrido base' })
+                }
+              >
                 Desde el recorrido que atiende hoy
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu>
         </div>
       </div>
+
+      {/**
+        * DE QUÉ TIENDA SON ESTOS RECORRIDOS, y cómo cambiar.
+        *
+        * Sin selector, la lista dependía de la tienda activa sin decirlo: un recorrido
+        * armado sin tienda desaparecía en cuanto alguien elegía una, y no había forma
+        * de volver a verlo. `allowInstance` es lo que da acceso a la capa general —
+        * que acá no es "sin filtro" sino un recorrido de verdad, el que atiende a toda
+        * tienda sin uno propio.
+        */}
+      <SiteScopeBar screen="whatsapp-flujos" allowInstance instanceLabel="Recorrido general" />
 
       {isLoading && (
         <div className="px-6 py-8">
@@ -147,8 +190,15 @@ const FlowListRoute = (): ReactElement => {
             Un recorrido es la conversación que el bot sabe llevar: qué contesta, qué
             pregunta y a dónde va según lo que elija el cliente.
           </Text>
-          <Button size="small" variant="secondary" className="mt-2" onClick={crearDesdeEjemplo}>
-            Empezar desde el que atiende hoy
+          <Button
+            size="small"
+            variant="secondary"
+            className="mt-2"
+            onClick={() =>
+              setPidiendoNombre({ modo: 'crear', template: 'compra', sugerido: 'Compra guiada' })
+            }
+          >
+            Empezar con la compra guiada
           </Button>
         </div>
       )}
@@ -179,13 +229,38 @@ const FlowListRoute = (): ReactElement => {
               <Fila
                 key={row.id}
                 row={row}
+                /**
+                 * Parado en una tienda, los generales se marcan. Sin la marca, editar
+                 * uno de ellos creyendo que es de esta tienda cambia el recorrido de
+                 * TODAS las que no tienen uno propio.
+                 */
+                general={Boolean(data?.site_id) && !row.site_id}
                 onOpen={() => navigate(`/whatsapp/flujos/${row.id}`)}
+                onRename={() => setPidiendoNombre({ modo: 'renombrar', row })}
                 onDelete={() => setPorBorrar(row)}
               />
             ))}
           </Table.Body>
         </Table>
       )}
+
+      <NameDrawer
+        open={pidiendoNombre !== null}
+        title={pidiendoNombre?.modo === 'renombrar' ? 'Cambiar el nombre' : 'Nombre del recorrido'}
+        action={pidiendoNombre?.modo === 'renombrar' ? 'Guardar' : 'Crear'}
+        initial={
+          pidiendoNombre?.modo === 'renombrar'
+            ? nombreDe(pidiendoNombre.row)
+            : pidiendoNombre?.sugerido ?? ''
+        }
+        busy={ocupado}
+        onOpenChange={(abierto) => !abierto && setPidiendoNombre(null)}
+        onSubmit={(name) => {
+          if (!pidiendoNombre) return;
+          if (pidiendoNombre.modo === 'renombrar') void renombrar(pidiendoNombre.row.id, name);
+          else void crear(pidiendoNombre.template, name);
+        }}
+      />
 
       {/* Borrar un recorrido no se deshace: se pregunta, y se dice qué se lleva. */}
       <Prompt open={porBorrar !== null} onOpenChange={(open) => !open && setPorBorrar(null)}>
@@ -213,11 +288,16 @@ const nombreDe = (row: { name?: string | null; version?: number } | null): strin
 
 function Fila({
   row,
+  general = false,
   onOpen,
+  onRename,
   onDelete,
 }: {
   row: FlowListRow | (FlowListRow & { graph?: unknown });
+  /** Es el recorrido general y se está mirando desde una tienda. */
+  general?: boolean;
   onOpen: () => void;
+  onRename?: () => void;
   onDelete?: () => void;
 }): ReactElement {
   const publicado = row.status === 'active';
@@ -239,6 +319,11 @@ function Fila({
           <Badge size="2xsmall" color={publicado ? 'green' : 'grey'}>
             {publicado ? 'Publicado' : 'Borrador'}
           </Badge>
+          {general && (
+            <Badge size="2xsmall" color="blue">
+              General
+            </Badge>
+          )}
           {/* Sólo en los borradores: el publicado ya pasó por la validación, y un
               recuento de problemas al lado de "Publicado" se lee como una alarma. */}
           {!publicado && row.problems > 0 && (
@@ -270,6 +355,14 @@ function Fila({
               <PencilSquare className="text-ui-fg-subtle" />
               {publicado ? 'Ver' : 'Editar'}
             </DropdownMenu.Item>
+            {/* Renombrar vale también para el publicado: el nombre es una etiqueta
+                para el operador y no cambia nada de lo que atiende a los clientes. */}
+            {onRename && (
+              <DropdownMenu.Item onClick={onRename}>
+                <Pencil className="text-ui-fg-subtle" />
+                Cambiar el nombre
+              </DropdownMenu.Item>
+            )}
             {/* El publicado no se borra: está atendiendo clientes. Se reemplaza
                 publicando otro, que además deja el historial derecho. */}
             {onDelete && (

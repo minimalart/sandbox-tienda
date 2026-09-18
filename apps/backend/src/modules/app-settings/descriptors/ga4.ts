@@ -34,6 +34,16 @@ export default defineSettings({
    */
   defaultScope: 'site',
   settings: [
+    {
+      key: 'STOREFRONT_CONFIG', env: [], type: 'json', tier: 'runtime', group: 'Storefront',
+      label: 'Browser analytics / Analítica del navegador',
+      refine: (value) => {
+        const v = value as { enabled?: boolean; measurementId?: string; consentCategory?: string };
+        return v && typeof v.enabled === 'boolean' && typeof v.measurementId === 'string' &&
+          (!v.enabled && v.measurementId === '' || /^G-[A-Za-z0-9]{1,30}$/.test(v.measurementId)) &&
+          v.consentCategory === 'analytics' ? null : 'Invalid GA4 configuration / Configuración GA4 inválida';
+      },
+    },
     // ─── Medición ────────────────────────────────────────────────────────────
     {
       key: 'GA_MEASUREMENT_ID',

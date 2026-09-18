@@ -35,7 +35,13 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
    * historial derecho.
    */
   const pedido = typeof body.version_id === 'string' ? body.version_id : null;
-  const borradores = await service.listDrafts(flowKey, siteId);
+  /**
+   * Los generales entran porque son publicables desde una tienda: son el recorrido
+   * que la atiende. Lo que NO se puede es publicarlos en el ámbito equivocado, así
+   * que el swap se hace con el `site_id` de la FILA y no con el de la request —
+   * publicar el general lo deja activo como general, para todas.
+   */
+  const borradores = await service.listDrafts(flowKey, siteId, { includeGlobal: true });
   const draft = pedido ? borradores.find((d) => d.id === pedido) ?? null : borradores[0] ?? null;
 
   if (!draft) {
@@ -81,7 +87,12 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
   const result = await publishFlowVersion(req.scope, {
     version_id: draft.id,
     flow_key: flowKey,
-    site_id: siteId,
+    /**
+     * El ámbito de la FILA, no el de la request. Publicar el borrador general desde
+     * una tienda lo deja activo como general —que es lo que es— en vez de dejar dos
+     * activos, uno por ámbito, y que `getActiveVersion` elija en silencio.
+     */
+    site_id: draft.site_id ?? null,
     published_by: req.auth_context?.actor_id ?? null,
   });
 

@@ -38,6 +38,10 @@
     {
       "source": "payload/apps/storefront/src/app/api/store/newsletter",
       "target": "apps/storefront/src/app/api/store/newsletter"
+    },
+    {
+      "source": "payload/apps/backend/src/admin/routes/marketing-privacy/newsletter",
+      "target": "apps/backend/src/admin/routes/marketing-privacy/newsletter"
     }
   ],
   "migrations": [
@@ -49,12 +53,16 @@
       "sha256": "122ca92db11900389d5669d83181307cd837e3c803db59e6deb1063664b0c197"
     },
     {
+      "path": "apps/backend/src/admin/routes/marketing-privacy/newsletter/page.tsx",
+      "sha256": "6d1f08675862e96f616771dbda935787fdbfb378e425033faf4bc9848486d73e"
+    },
+    {
       "path": "apps/backend/src/admin/routes/newsletter-subscriptions/credenciales/page.tsx",
-      "sha256": "5ab1050dff53794af3b8fcb3766a93d445a24262104ce45e056c1182da0a9995"
+      "sha256": "c5ce5141fa23dad0400864c7bed8a189e4638b17225e309374824e6bfdb6ad05"
     },
     {
       "path": "apps/backend/src/admin/routes/newsletter-subscriptions/page.tsx",
-      "sha256": "3ada23d069347e415ed95e044cd64a8c1d29a7afb3650c5f10383ae2692d460f"
+      "sha256": "de3aa1561559a28b8b791fac017c1d813a4c45d0868bf30084c9004eb4dce7a9"
     },
     {
       "path": "apps/backend/src/api/admin/newsletter-subscriptions/[id]/retry/route.ts",

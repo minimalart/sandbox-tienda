@@ -1,3 +1,4 @@
+import { ConsentPreferencesLink } from '@lib/consent/context'
 import type { ComponentProps } from 'react'
 import { COMPANY_LINKS, DEFAULT_LEGAL_LINKS } from '@lib/data/navigation-links'
 import { getActiveTenant } from '@lib/site-config/active-tenant'
@@ -433,6 +434,7 @@ export default async function Footer() {
         </div>
         <div className='mt-16 border-gray-900/10 border-t pt-8 pb-[140px] sm:pb-0 sm:mt-20 lg:mt-6 dark:border-white/10'>
           <div className='flex flex-col gap-3 text-gray-600 text-sm/6 md:flex-row md:items-center md:justify-between dark:text-gray-400'>
+            <ConsentPreferencesLink />
             {/* El copyright editable gana; si no hay, queda el de siempre. */}
             <span>
               {copyright ?? (

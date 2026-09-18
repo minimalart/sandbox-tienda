@@ -13,6 +13,7 @@ import {
 } from '../lib/event-bus-health';
 import {
   describeSupervisor,
+  getLiveEventBusWorkerSupervisor,
   requestSupervisorRestart,
   type EventBusWorkerSupervisorLike,
 } from '../lib/event-bus-worker-supervisor';
@@ -178,10 +179,25 @@ function resolveQueue(
   const worker =
     bullWorker && typeof bullWorker.isRunning === 'function' ? bullWorker : null;
 
-  const supervisor =
+  /**
+   * El servicio PRIMERO, el registro del proceso como red.
+   *
+   * Leerlo sólo del servicio resuelto venía dando `null` en producción con el
+   * supervisor corriendo en el mismo proceso: el 2026-09-17 el monitor mandó el
+   * mail diciendo "módulo de Medusa sin envolver" un segundo después de que el
+   * supervisor reconstruyera el worker y justo antes de que lo diera por
+   * RECUPERADO. `queue_` y `bullWorker_` sí se leen porque son propiedades que
+   * setea el constructor de la clase core; `workerSupervisor` es un getter del
+   * prototipo de la subclase y no sobrevive el camino hasta acá.
+   *
+   * El fallback no tapa nada: si el módulo envuelto no está instalado, nadie
+   * publicó nada y sigue dando `null`, que es el diagnóstico correcto.
+   */
+  const fromService =
     service.workerSupervisor && typeof service.workerSupervisor.restartNow === 'function'
       ? service.workerSupervisor
       : null;
+  const supervisor = fromService ?? getLiveEventBusWorkerSupervisor();
 
   return { ok: true, queue, worker, supervisor };
 }

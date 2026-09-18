@@ -380,8 +380,12 @@
       "sha256": "ba2afbf6d953ad7bd37d53e2f7a3e099eb32a897255346bc98c8ebdfa7ca6036"
     },
     {
+      "path": "apps/backend/src/modules/company/dashboard-dataset.ts",
+      "sha256": "8a85083e3dc95d323d2a3a4b326582005c4126d01837f10461764260a63f90fb"
+    },
+    {
       "path": "apps/backend/src/modules/company/index.ts",
-      "sha256": "015f74639764d6394dd08ef20c1457d98c78ced6df801b52cb205b892ec70723"
+      "sha256": "b4c2e5dc2c11771ccc4760bc33a07e517d44e83dfc2ef38df4b5cc0d3dbd5570"
     },
     {
       "path": "apps/backend/src/modules/company/migrations/Migration20260614150000.ts",
@@ -581,7 +585,7 @@
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/portal/app-sidebar.tsx",
-      "sha256": "f41b589e988f411b412ce9c2f4cc29181d6d52c31f11bb156dc739ad19684e65"
+      "sha256": "bec1c3450d78d0fbbebbbebea30d866b192db018873a9ac2f01158cf71695ca5"
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/portal/page-header.tsx",
@@ -597,7 +601,7 @@
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/portal/theme.tsx",
-      "sha256": "2ed5971d190551835f0f87ce2fde989e8b2aeda73d8f6ddb333865fafe556156"
+      "sha256": "b012c26007a42ab2dc6ff5a50f3f9653d27a94f9672fadae54d87696d3c5c5b8"
     },
     {
       "path": "apps/storefront/src/modules/b2b/components/register-form.tsx",

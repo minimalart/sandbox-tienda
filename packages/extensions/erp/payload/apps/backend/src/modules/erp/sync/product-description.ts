@@ -211,6 +211,25 @@ export function isRawErpDescription(text: string | null | undefined): boolean {
   return upper / letters.length > RAW_UPPERCASE_RATIO;
 }
 
+/**
+ * Colapsa espacios/tabs y whitespace lateral por línea, pero PRESERVA los
+ * `\n\n` como separadores de bloque. Se usa cuando D01 detecta contenido
+ * editorial (redactado por un catalogador o generado por `htmlToMarkdown` a
+ * partir del HTML rico de un ERP con eCommerce). `collapse` los aplastaba a un
+ * solo espacio y destruía Markdown válido.
+ *
+ * Para descripciones que llegan en una sola línea el resultado es idéntico al
+ * de `collapse`, así que este helper es backwards-compatible con ERPs que no
+ * mandan contenido multi-línea (Zeus, Contabilium, Bsale).
+ */
+function preserveBlockLayout(input: string): string {
+  return input
+    .split(/\n{2,}/)
+    .map((block) => block.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').trim())
+    .filter((block) => block.length > 0)
+    .join('\n\n');
+}
+
 export type DescriptionDiscardReason = 'solo_codigo' | 'repite_el_titulo' | 'fragmento';
 
 export type NormalizedDescription = {
@@ -247,9 +266,12 @@ export function normalizeProductDescription(
   if (!original) return { description: null, applied: [], discarded: null };
 
   // D01. La guardia va primero y sin excepciones: si el texto no es el volcado
-  // crudo, este módulo no tiene nada que opinar.
+  // crudo, este módulo no tiene nada que opinar. Usamos `preserveBlockLayout`
+  // en vez de `original` (que ya vino colapsado por `collapse`) para no
+  // destruir estructura de bloques del contenido editorial —caso Markdown que
+  // llega desde `htmlToMarkdown` en adapters con eCommerce integrado (Odoo).
   if (!isRawErpDescription(original)) {
-    return { description: original, applied: [], discarded: null };
+    return { description: preserveBlockLayout(trimmed), applied: [], discarded: null };
   }
 
   const applied: string[] = [];

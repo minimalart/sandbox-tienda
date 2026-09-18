@@ -1,0 +1,134 @@
+# Build completo de una actualización de Brick, sobre el runner propio.
+#
+# QUÉ VALIDA QUE `quality.yml` NO. Dos cosas, las dos por la misma razón —
+# necesitan un entorno real, no un runner efímero público:
+#
+#   build del storefront — `apps/storefront/check-env-variables.js` hace
+#                   `process.exit(1)` sin NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY /
+#                   COUNTRY_CODE / SALES_CHANNEL_ID. En el runner propio esas
+#                   variables son secrets de organización y no salen de ahí.
+#
+#   migraciones     — `medusa db:migrate` necesita una config de Medusa
+#                   booteable contra un postgres. Es LA validación que importa
+#                   cuando una actualización trae migraciones nuevas: es el
+#                   único paso de un update que no se puede revertir con un
+#                   `git revert`.
+#
+# POR QUÉ NO CORRE EN CADA ACTUALIZACIÓN. Un build completo tarda del orden de
+# 10 minutos y el runner es uno solo; correrlo en las 23 tiendas de un lote lo
+# convertiría en el cuello de botella. La etiqueta `brick:full-validation` es el
+# disparador, y el checker la pone sola cuando el cambio toca algo de
+# `validation.full_build_triggers` en `.brick/policy.json` (deps, toolchain,
+# migraciones, workflows, patches). Con `validation.mode: "always"` se pone
+# siempre.
+#
+# POR QUÉ LA ETIQUETA Y NO UN `workflow_dispatch`. La GitHub App "Brick" tiene
+# Pull requests RW pero NO Actions RW: no puede despachar workflows, a propósito
+# — es el permiso que convertiría al checker en ejecutor arbitrario de código en
+# cada tienda. Etiquetar un PR sí puede. El resultado vuelve como check run
+# `brick-validate`, que es lo que `awaitChecks` espera, y el
+# `workflow_run.completed` despierta al worker sin esperar al poll de 60 s.
+#
+# ESTE WORKFLOW ES *MANAGED*: vive en Brick y se replica a cada tienda.
+#
+# EL RUNNER: droplet de DigitalOcean con `actions-runner` a nivel organización,
+# labels `self-hosted, brick`, runner group restringido a los repos gestionados
+# por Brick. Node 24.19.0 / pnpm por corepack, store de pnpm persistente entre
+# runs (que es lo que hace que el install tarde segundos y no minutos).
+
+name: Brick validate
+
+on:
+  pull_request:
+    types: [opened, synchronize, labeled]
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: brick-validate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: >-
+      startsWith(github.head_ref, 'brick/') &&
+      contains(github.event.pull_request.labels.*.name, 'brick:full-validation')
+    runs-on: [self-hosted, brick]
+    timeout-minutes: 40
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: brick-validate-ci-only
+          POSTGRES_DB: brick_validate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d brick_validate"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # El runner es persistente, así que un `node_modules` o un `.next` de un
+      # run anterior sobreviviría y podría tapar un error real. Se limpia lo
+      # generado, nunca el store de pnpm (que es justamente lo que se reusa).
+      - name: Limpiar restos del run anterior
+        run: |
+          git clean -xdf -e node_modules -e '**/node_modules'
+          rm -rf apps/storefront/.next apps/backend/dist apps/backend/.medusa
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+      - run: corepack enable
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+
+      # --frozen-lockfile: si falla acá, es que `brick-locks.yml` todavía no
+      # commiteó los locks. El run vuelve a validar solo cuando lo haga, porque
+      # ese push emite un `synchronize`.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        env:
+          GITHUB_TOKEN: ${{ secrets.MERCATTO_BOT_TOKEN || github.token }}
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Backend build
+        run: pnpm turbo run build --filter=@repo/backend
+
+      - name: Storefront build
+        env:
+          # Los tres nombres salen de `requiredEnvs` en
+          # apps/storefront/check-env-variables.js. Son valores de una tienda de
+          # prueba, no de producción: el build sólo los necesita presentes.
+          NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${{ secrets.BRICK_VALIDATE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_COUNTRY_CODE: ${{ secrets.BRICK_VALIDATE_COUNTRY_CODE }}
+          NEXT_PUBLIC_SALES_CHANNEL_ID: ${{ secrets.BRICK_VALIDATE_SALES_CHANNEL_ID }}
+          NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${{ secrets.BRICK_VALIDATE_MEDUSA_BACKEND_URL }}
+        run: pnpm turbo run build --filter=@repo/storefront
+
+      # Contra una base vacía y descartable: lo que se prueba es que el set de
+      # migraciones de ESTA tienda (con SU set de plugins) aplica de punta a
+      # punta, no que la data de producción sobreviva.
+      - name: Migraciones
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgres://postgres:brick-validate-ci-only@127.0.0.1:5432/brick_validate
+          NODE_ENV: production
+          # `medusa db:migrate` bootea la config, y medusa-config.ts lee estas
+          # dos aunque la migración no las use.
+          JWT_SECRET: brick-validate-ci-only
+          COOKIE_SECRET: brick-validate-ci-only
+        run: npx medusa db:migrate
+
+      - name: Test
+        run: pnpm test

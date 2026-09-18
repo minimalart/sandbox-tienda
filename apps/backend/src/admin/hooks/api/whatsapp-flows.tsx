@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-query';
 
 import { sdk } from '../../lib/client';
+import { getActiveSiteId, siteHeader, siteScopedKey } from '../../lib/active-site';
 
 export type FlowIssue = { nodeId?: string; edgeId?: string; message: string };
 
@@ -48,6 +49,7 @@ export type WhatsappFlowsResponse = {
 export type SaveFlowInput = {
   /** Cuál borrador se guarda. Sin id se CREA uno nuevo. */
   version_id?: string | null;
+  /** Al crear: el nombre que puso el operador. */
   graph: { nodes: unknown[]; edges: unknown[] };
   name?: string;
   notes?: string;
@@ -63,7 +65,15 @@ export type PublishFlowInput = {
 };
 
 export const whatsappFlowsQueryKey = {
-  all: ['whatsapp-flows'] as const,
+  /**
+   * LA TIENDA VA EN LA KEY, y el `x-site-id` por llamada.
+   *
+   * El header viaja fuera del cache, así que con una key constante react-query sirve
+   * la lista de la tienda A estando parado en la B. En esta pantalla eso se lee como
+   * que un recorrido DESAPARECIÓ —o como que aparece uno que no es de acá—, que es
+   * exactamente el síntoma reportado.
+   */
+  all: siteScopedKey(['whatsapp-flows'], getActiveSiteId()),
 };
 
 export const useWhatsappFlows = (
@@ -71,7 +81,11 @@ export const useWhatsappFlows = (
 ) =>
   useQuery({
     queryKey: whatsappFlowsQueryKey.all,
-    queryFn: () => sdk.client.fetch<WhatsappFlowsResponse>('/admin/whatsapp-flows', { method: 'GET' }),
+    queryFn: () =>
+      sdk.client.fetch<WhatsappFlowsResponse>('/admin/whatsapp-flows', {
+        method: 'GET',
+        headers: siteHeader(),
+      }),
     ...options,
   });
 
@@ -83,6 +97,7 @@ export const useSaveWhatsappFlow = (
     mutationFn: (body: SaveFlowInput) =>
       sdk.client.fetch<{ draft: FlowVersion; issues: FlowIssue[] }>('/admin/whatsapp-flows', {
         method: 'POST',
+        headers: siteHeader(),
         body,
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
@@ -102,7 +117,7 @@ export const usePublishWhatsappFlow = (
     mutationFn: (body: PublishFlowInput) =>
       sdk.client.fetch<{ activated_version_id: string; active: FlowVersion | null }>(
         '/admin/whatsapp-flows/publish',
-        { method: 'POST', body },
+        { method: 'POST', headers: siteHeader(), body },
       ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
     ...options,
@@ -115,15 +130,40 @@ export const usePublishWhatsappFlow = (
  * Es una de las dos formas de empezar desde la tabla; la otra es en blanco. Crea SIEMPRE
  * uno nuevo: desde que pueden convivir varios borradores, no pisa nada.
  */
+export type SeedFlowInput = { template?: 'base' | 'compra'; name?: string };
+
 export const useSeedWhatsappFlow = (
-  options?: UseMutationOptions<{ draft: FlowVersion; issues: FlowIssue[] }, FetchError, void>,
+  options?: UseMutationOptions<{ draft: FlowVersion; issues: FlowIssue[] }, FetchError, SeedFlowInput>,
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () =>
+    mutationFn: (input: SeedFlowInput) =>
       sdk.client.fetch<{ draft: FlowVersion; issues: FlowIssue[] }>('/admin/whatsapp-flows/seed', {
         method: 'POST',
-        body: {},
+        headers: siteHeader(),
+        body: { template: input.template ?? 'base', ...(input.name ? { name: input.name } : {}) },
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
+    ...options,
+  });
+};
+
+/**
+ * Le cambia el nombre a un recorrido.
+ *
+ * Ruta propia y NO el guardado normal: `saveDraft` escribe el grafo siempre, así que
+ * renombrar desde la tabla —donde nadie tiene el grafo a mano— lo habría dejado vacío.
+ */
+export const useRenameWhatsappFlow = (
+  options?: UseMutationOptions<{ id: string; name: string }, FetchError, { id: string; name: string }>,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      sdk.client.fetch<{ id: string; name: string }>(`/admin/whatsapp-flows/versions/${id}`, {
+        method: 'POST',
+        headers: siteHeader(),
+        body: { name },
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
     ...options,
@@ -145,6 +185,7 @@ export const useDeleteWhatsappFlowDraft = (
     mutationFn: (id: string) =>
       sdk.client.fetch<{ id: string; deleted: boolean }>(`/admin/whatsapp-flows/versions/${id}`, {
         method: 'DELETE',
+        headers: siteHeader(),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
     ...options,
@@ -177,6 +218,7 @@ export const useWhatsappFlowVersion = (
     queryFn: () =>
       sdk.client.fetch<{ version: FlowVersionDetail }>(`/admin/whatsapp-flows/versions/${id}`, {
         method: 'GET',
+        headers: siteHeader(),
       }),
     enabled: Boolean(id),
     ...options,
@@ -194,7 +236,7 @@ export const useRestoreWhatsappFlowVersion = (
     mutationFn: ({ id }: { id: string }) =>
       sdk.client.fetch<{ draft: FlowVersion; issues: FlowIssue[] }>(
         `/admin/whatsapp-flows/versions/${id}/restore`,
-        { method: 'POST', body: {} },
+        { method: 'POST', headers: siteHeader(), body: {} },
       ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
     ...options,
@@ -229,6 +271,7 @@ export const useWhatsappFlowAnalytics = (
     queryFn: () =>
       sdk.client.fetch<FlowAnalyticsResponse>(`/admin/whatsapp-flows/analytics?days=${days}`, {
         method: 'GET',
+        headers: siteHeader(),
       }),
     enabled,
     ...options,

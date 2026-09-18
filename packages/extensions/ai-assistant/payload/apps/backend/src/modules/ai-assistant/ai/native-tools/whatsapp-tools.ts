@@ -8,7 +8,14 @@ import {
   getWaVariantDetail,
   listWaProductPresentations,
   listWaPinnedProducts,
+  listWaFilteredProducts,
+  resolveWaVariantId,
 } from '../../../../lib/whatsapp/search-products';
+import { groupHitsByProduct } from '../../../../lib/whatsapp/group-hits';
+import {
+  isEmptyCatalogFilter,
+  type WaCatalogFilter,
+} from '../../../../lib/whatsapp/flow/catalog-filter';
 import {
   resolveWaOrderContext,
   resolveOrderSalesChannel,
@@ -94,6 +101,11 @@ export const WHATSAPP_TOOL_DEFS: NativeToolDef[] = [
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Texto a buscar (ej. "yerba", "vino malbec").' },
+        save_as: {
+          type: 'string',
+          description:
+            'SÓLO para recorridos dibujados: publica los resultados en `vars.<clave>` y NO le manda nada al cliente. No lo uses vos.',
+        },
       },
       required: ['query'],
       additionalProperties: false,
@@ -262,6 +274,19 @@ export const WHATSAPP_TOOL_DEFS: NativeToolDef[] = [
     },
   },
   {
+    name: NATIVE_TOOL.waListFiltered,
+    description:
+      'Publica los productos que cumplen un FILTRO del catálogo (categoría, precio, promoción), para que la pregunta siguiente los ofrezca como lista. NO le manda nada al cliente. Es para los recorridos dibujados, no para vos: el filtro lo arma el editor.',
+    parameters: {
+      type: 'object',
+      properties: {
+        filter: { type: 'object', description: 'El filtro declarativo que armó el editor.' },
+        save_as: { type: 'string', description: 'Clave de `vars` donde se publican. Por defecto "filtrados".' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
     name: NATIVE_TOOL.waClearCart,
     description:
       'Vacía TODO el pedido en armado (borra todos los ítems). Usalo cuando el cliente quiere "empezar de nuevo", "arrancar un pedido nuevo", "vaciar el carrito" o descartar lo que había. Confirmá brevemente después.',
@@ -296,6 +321,42 @@ export const WHATSAPP_TOOL_DEFS: NativeToolDef[] = [
 async function runSearch(args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
   const query = str(args.query);
   if (!query) return 'Error: falta el texto de búsqueda.';
+
+  /**
+   * CON `save_as`, LA BÚSQUEDA NO HABLA: publica los resultados y el recorrido los
+   * dibuja.
+   *
+   * Sin esto, buscar mandaba su propio carrusel y se terminaba el turno ahí. Alcanza
+   * cuando el recorrido es "buscá y mostrá", y no alcanza para lo que pide el flujo
+   * de referencia: una lista que además de los productos ofrezca "Hacer otra
+   * búsqueda", "Necesito ayuda" y "Finalizar" — filas que el carrusel no puede
+   * llevar, porque son del RECORRIDO y no del catálogo.
+   *
+   * Publicando en `vars`, esa lista la dibuja un `ask_list` con `optionsFrom`, que ya
+   * sabe mezclar las opciones en vivo con las de emergencia. Y el recorrido puede
+   * preguntar si hubo resultados —una bifurcación sobre la variable vacía— que es lo
+   * que hace falta para el tramo "no encontré nada".
+   */
+  const saveAs = str(args.save_as);
+  if (saveAs) {
+    if (!ctx.waFlowVars) return 'Publicar la búsqueda en una variable sólo sirve dentro de un recorrido dibujado.';
+    const { hits: crudos, ctx: oc } = await searchWaProducts(ctx.container, { query, limit: 30 });
+    const opciones = groupHitsByProduct(crudos)
+      .slice(0, 10)
+      .map((h) => ({
+        value: h.variant_id,
+        label: `${h.title} · ${money(h.unit_price, oc.currency_code)}`,
+        ...(h.in_stock ? {} : { description: 'Sin stock' }),
+      }));
+    ctx.waFlowVars[saveAs] = opciones;
+    track(ctx, 'search', { query, count: opciones.length, mode: 'vars' });
+    if (opciones.length === 0) {
+      track(ctx, 'no_results', { query });
+      return `No encontré productos para "${query}". Quedó "${saveAs}" vacío: el recorrido tiene que ofrecer otra salida.`;
+    }
+    return `Publiqué ${opciones.length} producto/s en vars.${saveAs}.`;
+  }
+
   // Red de seguridad: un solo mensaje al cliente por turno. Si ya se envió algo
   // (otra lista/botones), NO mandes otra lista.
   if (ctx.sentUserMessage) {
@@ -304,9 +365,16 @@ async function runSearch(args: Record<string, unknown>, ctx: NativeToolContext):
   // Marca el turno como exploratorio: wa_add_to_cart NO agrega tras una búsqueda
   // (el cliente todavía no eligió una fila). Ver runAdd.
   ctx.didSearch = true;
-  // Traemos el máximo que permite una lista interactiva de WhatsApp (10 filas).
-  const { hits, ctx: oc } = await searchWaProducts(ctx.container, { query, limit: 10 });
-  track(ctx, 'search', { query, count: hits.length });
+  /**
+   * Se piden más de las 10 que entran porque después se AGRUPAN por producto: la
+   * búsqueda devuelve una fila por variante, así que un producto con cuatro
+   * presentaciones se comía cuatro lugares del carrusel y el cliente veía el mismo
+   * balde repetido. Pidiendo 30 y agrupando, las 10 tarjetas son 10 productos
+   * distintos; la presentación se elige en el paso siguiente.
+   */
+  const { hits: crudos, ctx: oc } = await searchWaProducts(ctx.container, { query, limit: 30 });
+  const hits = groupHitsByProduct(crudos).slice(0, 10);
+  track(ctx, 'search', { query, count: hits.length, variants: crudos.length });
   if (hits.length === 0) {
     track(ctx, 'no_results', { query });
     return `No encontré productos para "${query}". Pedile al cliente que lo nombre de otra forma o preguntá qué está buscando.`;
@@ -387,7 +455,9 @@ async function runProductDetail(args: Record<string, unknown>, ctx: NativeToolCo
   if (ctx.sentUserMessage) {
     return 'Ya le enviaste un mensaje al cliente en este turno: NO mandes también la foto. Terminá el turno.';
   }
-  const variantId = str(args.variant_id);
+  // El editor guarda un PRODUCTO; el cliente, al tocar el carrusel, manda una
+  // variante. Los dos entran por acá y salen como variante.
+  const variantId = await resolveWaVariantId(ctx.container, str(args.variant_id)).catch(() => null);
   if (!variantId) return 'Error: falta variant_id.';
   const detail = await getWaVariantDetail(ctx.container, variantId);
   if (!detail) return 'No encontré ese producto. Pedile al cliente que elija de la lista.';
@@ -447,7 +517,9 @@ async function runAskButtons(args: Record<string, unknown>, ctx: NativeToolConte
 async function runAdd(args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
   const phone = str(ctx.waPhone);
   if (!phone) return 'Error: no hay conversación de WhatsApp asociada.';
-  const variantId = str(args.variant_id);
+  // Un paso del recorrido puede traer un PRODUCTO fijo; el tap del cliente trae una
+  // variante. Los dos salen de acá como variante.
+  const variantId = await resolveWaVariantId(ctx.container, str(args.variant_id)).catch(() => null);
   if (!variantId) return 'Error: falta variant_id.';
   // Guardrail duro: SOLO se agrega cuando el cliente acaba de TOCAR un producto de
   // la lista (turno de selección). En un botón de control (Cerrar compra, Confirmar,
@@ -670,6 +742,33 @@ async function runListPinned(args: Record<string, unknown>, ctx: NativeToolConte
   return `Publiqué ${options.length} producto/s en vars.${key}.`;
 }
 
+/**
+ * Los productos de un filtro, publicados para la pregunta que sigue.
+ *
+ * Gemelo de `runListPinned` y por las mismas razones: no le habla al cliente, deja el
+ * resultado en `vars` y el paso siguiente lo ofrece. La diferencia es de dónde salen
+ * los productos — de una lista escrita a mano o de una condición— y por eso se
+ * mantienen vivos los dos: un recorrido quiere "estos cinco que elegí" tanto como
+ * "las ofertas de hoy", y lo segundo cambia solo cuando cambia el catálogo.
+ */
+async function runListFiltered(args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
+  const key = str(args.save_as) || 'filtrados';
+  if (!ctx.waFlowVars) return 'Esta acción sólo sirve dentro de un recorrido dibujado.';
+
+  const filter = (args.filter && typeof args.filter === 'object' ? args.filter : {}) as WaCatalogFilter;
+  if (isEmptyCatalogFilter(filter)) {
+    ctx.waFlowVars[key] = [];
+    return `El filtro está vacío: traería el catálogo entero, así que no se publicó nada en "${key}". Configuralo en el paso.`;
+  }
+
+  const options = await listWaFilteredProducts(ctx.container, filter).catch(() => []);
+  ctx.waFlowVars[key] = options;
+  if (options.length === 0) {
+    return `Ningún producto cumple el filtro (o ninguno está en el canal de venta del bot). Quedó "${key}" vacío.`;
+  }
+  return `Publiqué ${options.length} producto/s en vars.${key}.`;
+}
+
 async function runClearCart(_args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
   const phone = str(ctx.waPhone);
   if (!phone) return 'Error: no hay conversación de WhatsApp asociada.';
@@ -682,7 +781,7 @@ async function runClearCart(_args: Record<string, unknown>, ctx: NativeToolConte
 async function runSetQuantity(args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
   const phone = str(ctx.waPhone);
   if (!phone) return 'Error: no hay conversación de WhatsApp asociada.';
-  const variantId = str(args.variant_id);
+  const variantId = await resolveWaVariantId(ctx.container, str(args.variant_id)).catch(() => null);
   if (!variantId) return 'Error: falta variant_id.';
   const qty = Math.max(0, Math.floor(Number(args.quantity)));
   if (!Number.isFinite(qty)) return 'Error: cantidad inválida.';
@@ -712,7 +811,7 @@ async function runSetQuantity(args: Record<string, unknown>, ctx: NativeToolCont
   return `OK: ${name} quedó en ${qty}. Confirmale al cliente y preguntá si quiere *algo más* o *cerrar la compra*. NO enumeres opciones en texto.`;
 }
 
-async function runCheckoutLink(_args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
+async function runCheckoutLink(args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
   const phone = str(ctx.waPhone);
   if (!phone) return 'Error: no hay conversación de WhatsApp asociada.';
   const service = svc(ctx);
@@ -761,6 +860,25 @@ async function runCheckoutLink(_args: Record<string, unknown>, ctx: NativeToolCo
     units: draft.reduce((a, d) => a + d.quantity, 0),
   });
   const url = checkoutUrl(link.token, country);
+
+  /**
+   * CON `save_as`, EL LINK QUEDA EN UNA VARIABLE y lo escribe el recorrido.
+   *
+   * Esta tool devuelve el link como texto PARA EL MODELO y no manda nada. En el
+   * agente eso alcanza —el modelo lo lee y lo escribe—, pero en un recorrido
+   * dibujado no hay modelo: el paso quedaba mudo y el cliente nunca recibía el link
+   * de pago, que es el final del embudo.
+   *
+   * Publicándolo, el mensaje siguiente lo arma el recorrido con sus propias palabras
+   * (`{{vars.<clave>}}`), que además es lo que pide el flujo de referencia: el texto
+   * del cierre es copy del negocio, no de la tool.
+   */
+  const saveAs = str(args.save_as);
+  if (saveAs && ctx.waFlowVars) {
+    ctx.waFlowVars[saveAs] = url;
+    return `Publiqué el link de pago en vars.${saveAs}.`;
+  }
+
   return `Listo. Este es el link para completar el pago (se abre en el navegador):\n${url}`;
 }
 
@@ -1004,6 +1122,8 @@ export async function runWhatsappNativeTool(
       return runListPresentations(args, ctx);
     case NATIVE_TOOL.waListPinned:
       return runListPinned(args, ctx);
+    case NATIVE_TOOL.waListFiltered:
+      return runListFiltered(args, ctx);
     case NATIVE_TOOL.waGuidedStart:
       return runGuidedStart(args, ctx);
     default:

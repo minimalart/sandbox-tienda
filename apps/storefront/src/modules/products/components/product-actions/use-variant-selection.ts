@@ -98,7 +98,9 @@ export function useProductVariantSelection(
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
 
   useEffect(() => {
-    const defaultVariant = findDefaultVariant(product.variants)
+    const requested = new URLSearchParams(window.location.search).get('variant')
+    const linkedVariant = product.variants?.find(v => v.id === requested && isIndividualVariant(v))
+    const defaultVariant = linkedVariant ?? findDefaultVariant(product.variants)
     if (!defaultVariant) return
     const variantOptions = optionsAsKeymap(defaultVariant.options)
     if (variantOptions) {

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "id": "google-merchant",
+  "name": "Google Merchant Center",
+  "version": "1.0.0",
+  "kind": "extension",
+  "status": "ready",
+  "dependencies": [],
+  "incompatibilities": [],
+  "settings_namespace": "extension:google-merchant",
+  "environment": [],
+  "files": [
+    {
+      "source": "payload/apps/backend/src/api/admin/marketing-privacy/merchant",
+      "target": "apps/backend/src/api/admin/marketing-privacy/merchant"
+    },
+    {
+      "source": "payload/apps/backend/src/api/feeds/google-merchant",
+      "target": "apps/backend/src/api/feeds/google-merchant"
+    },
+    {
+      "source": "payload/apps/backend/src/lib/google-merchant-feed.ts",
+      "target": "apps/backend/src/lib/google-merchant-feed.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/lib/google-merchant-report.ts",
+      "target": "apps/backend/src/lib/google-merchant-report.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/lib/marketing-providers.test.ts",
+      "target": "apps/backend/src/lib/marketing-providers.test.ts"
+    }
+  ],
+  "migrations": [],
+  "managed_files": [
+    {
+      "path": "apps/backend/src/api/admin/marketing-privacy/merchant/route.ts",
+      "sha256": "8496de6d8626b37a62c99692071ef9b33cd6ad05117bf03e0ac04ed831bd35ed"
+    },
+    {
+      "path": "apps/backend/src/api/feeds/google-merchant/[site]/route.ts",
+      "sha256": "1ed31d55b6f6f0358e34199dbd7f1de34de429cfe12906f416fec470f13fef79"
+    },
+    {
+      "path": "apps/backend/src/lib/google-merchant-feed.ts",
+      "sha256": "523dfcb7f1ec1598ef3a482a1bd96ab7c42b8e0ec45ef1ab9f97f9aaed667cee"
+    },
+    {
+      "path": "apps/backend/src/lib/google-merchant-report.ts",
+      "sha256": "93c79dca4584a517e4b89d4ab626990fdd65821685018a0dbeae492cf994f30d"
+    },
+    {
+      "path": "apps/backend/src/lib/marketing-providers.test.ts",
+      "sha256": "fde66e1d52718bfa4b4d30e21dd0abb3abd632b5745853482307db1efa507567"
+    }
+  ],
+  "integrations": {
+    "middlewares": [],
+    "admin_hooks": [],
+    "admin_translation": null
+  }
+}

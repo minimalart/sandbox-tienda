@@ -442,6 +442,10 @@
       "sha256": "8f712194ac236984f5104b8c056cc394ff3ef150f88a6cf101fbfa213f9cdec8"
     },
     {
+      "path": "apps/backend/src/modules/recurring-order/dashboard-dataset.ts",
+      "sha256": "1055a60917656835b92eb2706086b05124a22f2817924b83365a3fd189bff9df"
+    },
+    {
       "path": "apps/backend/src/modules/recurring-order/eligibility.test.ts",
       "sha256": "00380d639fca857e1c37c926c7e70de87dc0de910d84d8a60aec20ab44de282a"
     },
@@ -459,7 +463,7 @@
     },
     {
       "path": "apps/backend/src/modules/recurring-order/index.ts",
-      "sha256": "f629cd9e445b9a4ce89b1c770839f94b5d20c7c6d065c6d2cb61941dc4f3a3a6"
+      "sha256": "7b99cdc0590392f7526c586c7383c1b5d7b8f27978e83f2393234d69c5ba65a4"
     },
     {
       "path": "apps/backend/src/modules/recurring-order/inventory-reservations.ts",

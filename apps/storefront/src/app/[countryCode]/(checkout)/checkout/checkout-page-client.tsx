@@ -434,6 +434,7 @@ export default function CheckoutPageClient({
                 >
                   <CheckoutFormClient
                     checkout={checkout.state}
+                    checkoutLoading={checkout.loading}
                     onCheckoutUpdate={checkout.setState}
                     cart={cart}
                     customer={initialCustomer}

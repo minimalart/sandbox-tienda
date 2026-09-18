@@ -1,0 +1,227 @@
+# Corta una release de Brick: bumpea `.brick/config.json`, taggea, y publica.
+#
+# QUÉ ES UNA RELEASE ACÁ. No se publica ningún paquete: Brick no es una
+# dependencia, es el código del que se clonan las tiendas. Una release es
+# simplemente "este commit de `main` es un punto al que una tienda puede
+# actualizarse", con un nombre estable (`v1.2.0`) y notas. El Brick Update
+# Manager del checker lee los tags, no las ramas.
+#
+# POR QUÉ SON DOS DISPARADORES Y NO UNO.
+#
+#   workflow_dispatch  — la parte que escribe. Bumpea `.brick/config.json` en
+#                        `main` y crea el tag. La corre una persona.
+#   push: tags v*      — la parte que valida y publica. Corre el CI completo
+#                        CONTRA EL TAG y recién ahí crea el release de GitHub.
+#
+# Separarlos es lo que hace que un tag verde signifique algo. Si el dispatch
+# creara el release de una, el release existiría antes de que nada se compilara,
+# y el checker ya lo estaría ofreciendo a 23 tiendas. Con el corte en dos, un
+# tag que no compila queda como tag sin release — y `brick-release-scan` sólo
+# mira releases.
+#
+# SI EL TAG FALLA: se borra el tag (`git push --delete origin v1.2.0`), se
+# arregla `main`, y se vuelve a despachar. No hay release que retractar.
+#
+# PARA PUBLICAR UNA MALA RELEASE QUE YA SALIÓ: no se borra. Se usa
+# `release.yank` desde el checker (super_admin), que la esconde de
+# `latest_version` sin romper a las tiendas que ya la instalaron.
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión exacta, sin la v (por ejemplo 1.2.0)'
+        required: true
+        type: string
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: brick-release
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Bump + tag (sólo workflow_dispatch)
+  # ---------------------------------------------------------------------------
+  tag:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          # Igual que en refresh-backend-locks.yml: un push hecho con el
+          # `GITHUB_TOKEN` por defecto NO dispara workflows. Sin el PAT el tag
+          # se crearía y el job de validación de abajo nunca correría, con lo
+          # cual nunca habría release.
+          token: ${{ secrets.MERCATTO_BOT_TOKEN || github.token }}
+          persist-credentials: true
+
+      - name: Validar la versión
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error title=Versión inválida::'$VERSION' no es semver. Se espera 1.2.0 o 1.2.0-rc.1, sin la v."
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "::error title=Tag ya existe::v$VERSION ya está creado. Elegí otra versión."
+            exit 1
+          fi
+
+      - name: Bumpear .brick/config.json
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("fs");
+            const p = ".brick/config.json";
+            const cfg = JSON.parse(fs.readFileSync(p, "utf8"));
+            if (cfg.role !== "brick") {
+              console.error(`::error title=config.json inesperado::role es "${cfg.role}", se esperaba "brick".`);
+              process.exit(1);
+            }
+            cfg.version = process.env.VERSION;
+            // Reescrito con 2 espacios y newline final, que es como está en el
+            // repo: el engine compara este archivo byte a byte contra el de
+            // cada tienda, así que el formato es parte del contrato.
+            fs.writeFileSync(p, JSON.stringify(cfg, null, 2) + "\n");
+          '
+          git --no-pager diff -- .brick/config.json
+
+      - name: Commitear y taggear
+        env:
+          VERSION: ${{ inputs.version }}
+          HAS_BOT_TOKEN: ${{ secrets.MERCATTO_BOT_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          git config user.name "mercatto-bot"
+          git config user.email "bot@minimalart.co"
+
+          # Si la versión ya era la pedida (por ejemplo al re-taggear un commit
+          # que ya la declara) no hay nada que commitear, pero el tag sí falta.
+          if git diff --quiet -- .brick/config.json; then
+            echo ".brick/config.json ya declara $VERSION — sólo se crea el tag."
+          else
+            git add .brick/config.json
+            git commit -m "chore(brick): release v$VERSION"
+            git push origin HEAD:main
+          fi
+
+          git tag -a "v$VERSION" -m "Brick v$VERSION"
+          git push origin "v$VERSION"
+
+          if [ "$HAS_BOT_TOKEN" != "true" ]; then
+            echo "::warning title=La validación no va a correr sola::El tag se pusheó con el GITHUB_TOKEN por defecto, que no dispara workflows. Corré 'Release' a mano sobre el tag, o volvé a pushearlo con un PAT, o no va a haber release."
+          fi
+
+  # ---------------------------------------------------------------------------
+  # 2. Validar el tag (sólo push de tag)
+  # ---------------------------------------------------------------------------
+  validate:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # El único invariante que no puede fallar: el tag y lo que el tag dice de
+      # sí mismo tienen que coincidir. Una tienda que adopta v1.2.0 escribe
+      # `upstream.version: "1.2.0"` leyéndolo de acá; si divergen, el checker
+      # compara versiones que no existen.
+      - name: El tag coincide con .brick/config.json
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          DECLARED="$(node -p 'require("./.brick/config.json").version')"
+          echo "tag=$TAG declarada=$DECLARED"
+          if [ "$TAG" != "$DECLARED" ]; then
+            echo "::error title=Versión desalineada::El tag dice $TAG y .brick/config.json dice $DECLARED."
+            exit 1
+          fi
+
+      - name: La política parsea
+        run: |
+          set -euo pipefail
+          node -e '
+            const p = require("./.brick/policy.json");
+            if (p.schema_version !== 1) throw new Error("schema_version inesperado: " + p.schema_version);
+            for (const c of ["ignored", "generated", "config", "custom", "managed"]) {
+              if (!Array.isArray(p.classes?.[c])) throw new Error("falta la clase " + c);
+            }
+            if (!p.classes.managed.includes("**")) throw new Error("managed tiene que incluir ** como catch-all");
+            if (!Array.isArray(p.validation?.required_checks)) throw new Error("falta validation.required_checks");
+            console.log("policy.json ok:", Object.entries(p.classes).map(([k, v]) => `${k}=${v.length}`).join(" "));
+          '
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+
+      # --frozen-lockfile a propósito: si el lock no describe exactamente estos
+      # package.json, la release no es reproducible y ninguna tienda debería
+      # actualizarse a ella.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        env:
+          GITHUB_TOKEN: ${{ secrets.MERCATTO_BOT_TOKEN || github.token }}
+
+      - name: Backend lock regression
+        run: node --test scripts/verify-backend-lock.test.cjs
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      # El build del backend es lo que este job agrega sobre `quality.yml`, que
+      # corre en cada PR pero deliberadamente NO buildea (ver su comentario).
+      - name: Backend build
+        run: pnpm turbo run build --filter=@repo/backend
+
+      # LO QUE ESTE JOB NO CORRE, Y POR QUÉ:
+      #
+      #   build del storefront — aborta sin las env vars reales
+      #                   (`check-env-variables.js` hace exit 1 sin
+      #                   NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY / COUNTRY_CODE /
+      #                   SALES_CHANNEL_ID). Meterlas sería filtrar config de
+      #                   producción a un runner público.
+      #
+      #   migraciones     — `medusa db:migrate` necesita una config de Medusa
+      #                   booteable, no sólo un postgres. Hoy ningún workflow
+      #                   del repo la corre, así que ponerla acá sería un gate
+      #                   sin medir: fallaría por entorno, no por código, y
+      #                   bloquearía releases sanas.
+      #
+      # Las dos viven en `brick-validate.yml`, sobre el runner propio, donde sí
+      # hay entorno. Ahí corren contra el PR de cada tienda — que es donde
+      # importan, porque cada tienda tiene su propio set de plugins.
+
+      - name: Crear el release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Una prerelease (-rc.N) se marca como tal: el checker la ofrece sólo
+          # a los proyectos en canal `candidate`, nunca a los de `stable`.
+          PRERELEASE=""
+          case "$GITHUB_REF_NAME" in
+            *-*) PRERELEASE="--prerelease" ;;
+          esac
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Brick $GITHUB_REF_NAME" \
+            --generate-notes \
+            $PRERELEASE

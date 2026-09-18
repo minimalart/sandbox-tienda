@@ -38,6 +38,8 @@ export type RouteScopeState =
 /** Clave: la ruta relativa a `src/api`, sin `route.ts`. Ej: `admin/banners/[id]`. */
 export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   'admin/sites/slug-availability': { state: 'not-applicable', reason: 'disponibilidad global del subdominio en el registro; no devuelve datos de tiendas' },
+  'admin/marketing-privacy/clarity': { state: 'scoped' },
+  'admin/marketing-privacy/merchant': { state: 'scoped' },
   'admin/catalog-imports': { state: 'scoped' },
   'admin/sites/[id]/checkout': { state: 'scoped' },
   'admin/sites/checkout-context': {
@@ -263,6 +265,25 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   // ── checkout-links ──────────────────────────────────────────────
   'admin/checkout-links': { state: 'scoped' },
   'admin/checkout-links/[id]': { state: 'scoped' },
+
+  // ── bundles ─────────────────────────────────────────────────────
+  // Un Bundle puede estar linkeado a VARIAS Stores a la vez (many-to-many con
+  // demo_store, ver src/links/bundle-demo-store.ts). Por eso el listado no
+  // filtra por site: el operador ve todos los bundles y usa el filtro opcional
+  // ?store_id= para acotar. La disponibilidad efectiva por Store se enforcea
+  // en las rutas /store/bundles y en el confirmBundleWorkflow.
+  'admin/bundles': {
+    state: 'not-applicable',
+    reason:
+      'un bundle puede estar linkeado a muchas demo_store a la vez (m2m); el listado ' +
+      'no filtra por site — el scoping vive en /store/bundles y en el workflow de confirm',
+  },
+  'admin/bundles/[id]': {
+    state: 'not-applicable',
+    reason:
+      'detalle/update de un bundle; sus stores linkeadas se expanden en la respuesta ' +
+      'para el editor, y las mutaciones de composición se validan al publicar',
+  },
 
   // comments — routes moved to @minimalart/mercatto-plugin-comments.
 
@@ -578,6 +599,13 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
 
   // pdf-catalogs — routes moved to @minimalart/mercatto-plugin-pdf-catalog.
 
+  // ── product-sales-modes ─────────────────────────────────────────
+  // El modo de venta de un producto es POR TIENDA: la ruta resuelve la tienda
+  // con `siteFromRequest` y acepta un `site_id` explícito (el widget del
+  // producto recorre todas). Sin tienda resuelta no devuelve nada: 400.
+  // Ver PRD Bundles V2 §5-§11.
+  'admin/product-sales-modes': { state: 'scoped' },
+
   // ── platform ────────────────────────────────────────────────────
   'admin/platform/catalog': {
     state: 'not-applicable',
@@ -841,6 +869,7 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   'admin/whatsapp-flows/publish': { state: 'scoped' },
   'admin/whatsapp-flows/seed': { state: 'scoped' },
   'admin/whatsapp-flows/analytics': { state: 'scoped' },
+  'admin/whatsapp-flows/preview-action': { state: 'scoped' },
   'admin/whatsapp-flows/versions/[id]': { state: 'scoped' },
   'admin/whatsapp-sessions': { state: 'scoped' },
 

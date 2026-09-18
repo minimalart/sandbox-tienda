@@ -1,0 +1,150 @@
+# Regenera los lockfiles dentro de un PR de actualización de Brick.
+#
+# POR QUÉ EXISTE. El update engine del checker corre en una Edge Function de
+# Deno y arma el commit con la Git Data API: no tiene filesystem, no tiene node
+# y no puede correr `pnpm`. Entonces cuando una actualización cambia algún
+# `package.json`, el PR llega con las deps nuevas y los locks viejos, y
+# `quality.yml` lo rechaza en `pnpm install --frozen-lockfile`. Este job es la
+# otra mitad: resuelve los locks y los commitea a la misma rama.
+#
+# POR QUÉ NO ES `refresh-backend-locks.yml`. Ese workflow hace lo mismo pero
+# además MERGEA las PRs de `plugin-upgrade`, y dispara sólo cuando el PR toca
+# `apps/backend/package.json`. Una actualización de Brick puede tocar
+# `apps/storefront/package.json`, `pnpm-workspace.yaml` o un `package.json` de
+# `packages/`, y sobre todo **no se tiene que mergear sola**: la aprueba una
+# persona desde el checker, después de ver las validaciones. Mezclarlos habría
+# significado que las dos condiciones de merge convivan en el mismo `if`, y que
+# los dos jobs se pisen empujando locks al mismo commit. `refresh-backend-locks`
+# ahora se saltea explícitamente las ramas `brick/*`.
+#
+# ESTE WORKFLOW ES *MANAGED*: vive en Brick y se replica a cada tienda como
+# cualquier otro archivo. No lo edites en una tienda — el próximo update lo pisa.
+#
+# EL PAT ES LOAD-BEARING, por la misma razón que en `refresh-backend-locks.yml`:
+# un push con el `GITHUB_TOKEN` por defecto no dispara workflows, así que
+# `quality.yml` seguiría mostrando el resultado del commit sin locks y el run
+# quedaría esperando un check que nunca se rehace.
+
+name: Brick locks
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+  packages: read
+
+concurrency:
+  group: brick-locks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  locks:
+    # El prefijo de rama es el contrato, fijado por `branchName()` en el engine:
+    # `brick/update-1.2.0`, `brick/adopt`, `brick/config-custom`.
+    if: startsWith(github.head_ref, 'brick/')
+    runs-on: ubuntu-latest
+    env:
+      HAS_BOT_TOKEN: ${{ secrets.MERCATTO_BOT_TOKEN != '' }}
+    steps:
+      # `pull_request` deja un merge commit en detached HEAD, que no se puede
+      # pushear. Hay que sacar la rama head por nombre.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.MERCATTO_BOT_TOKEN || github.token }}
+          persist-credentials: true
+
+      # Toolchain pineada a lo que declara el repo (`packageManager` en el root
+      # package.json, node 24 como en quality.yml). Resolver con otra pnpm
+      # genera un lock que después `--frozen-lockfile` rechaza.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+
+      # PREFERIR EL PAT. El token por-run (`ghs_`) sólo lee un paquete de GitHub
+      # Packages si la lista "Manage Actions access" del paquete nombra a este
+      # repo, y un plugin recién publicado no recibe ese permiso solo. Un PAT de
+      # usuario lee los paquetes de la org por el acceso del usuario, así que
+      # cubre cualquier plugin futuro sin tocar nada. El token de Actions queda
+      # de fallback.
+      - name: Resolver lockfiles
+        env:
+          BOT_TOKEN: ${{ secrets.MERCATTO_BOT_TOKEN }}
+          ACTIONS_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+
+          resolve () {
+            pnpm install --lockfile-only --ignore-scripts || return 1
+            # Sólo si la tienda mantiene el lock de npm del backend. `vital` y
+            # `educabot` lo tienen; una tienda futura podría no tenerlo.
+            if [ -f apps/backend/package-lock.json ]; then
+              npm install --prefix apps/backend --package-lock-only --ignore-scripts --no-audit --no-fund || return 1
+            fi
+          }
+
+          if [ -n "${BOT_TOKEN}" ]; then
+            echo "::group::Resolviendo con MERCATTO_BOT_TOKEN"
+            if GITHUB_TOKEN="${BOT_TOKEN}" resolve; then
+              echo "::endgroup::"
+              echo "Resuelto con el PAT."
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "::warning title=Falló la resolución con el PAT::MERCATTO_BOT_TOKEN no pudo resolver el scope @minimalart; se prueba con el token por-run. Si es un PAT fine-grained, el registry npm de GitHub Packages puede requerir uno clásico con read:packages."
+            git checkout -- pnpm-lock.yaml apps/backend/package-lock.json 2>/dev/null || true
+          else
+            echo "MERCATTO_BOT_TOKEN vacío — se usa el token por-run."
+          fi
+
+          echo "::group::Resolviendo con el token por-run"
+          GITHUB_TOKEN="${ACTIONS_TOKEN}" resolve
+          echo "::endgroup::"
+
+      - name: Verificar el lock del backend
+        run: node scripts/verify-backend-lock.js
+
+      - name: ¿Cambió algo?
+        id: diff
+        run: |
+          if git diff --quiet -- pnpm-lock.yaml apps/backend/package-lock.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Los locks ya coinciden con los package.json — nada que commitear."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat -- pnpm-lock.yaml apps/backend/package-lock.json
+          fi
+
+      # El engine tolera este commit: cuando `pr.head.sha` cambia mientras el run
+      # está en `validating`, vuelve a leer el árbol y exige que difiera del
+      # deseado SÓLO en paths de clase `generated`. Un commit que toque
+      # cualquier otra cosa marca el run como `needs_rebase`. Por eso este job
+      # agrega exactamente estos dos archivos y nada más.
+      - name: Commitear los locks al PR
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          git config user.name "mercatto-bot"
+          git config user.email "bot@minimalart.co"
+          git add pnpm-lock.yaml apps/backend/package-lock.json
+          git commit -m "chore(locks): regenerar lockfiles para la actualización de Brick"
+          git push origin "HEAD:refs/heads/${HEAD_REF}"
+          if [ "$HAS_BOT_TOKEN" != "true" ]; then
+            echo "::warning title=Los checks no se van a rehacer::Los locks se pushearon con el GITHUB_TOKEN por defecto, que no dispara workflows. quality.yml sigue reflejando el commit sin locks, así que la actualización se va a quedar en 'Validando' hasta el timeout. Agregá un secret de organización MERCATTO_BOT_TOKEN (PAT fine-grained, contents: write)."
+          fi
+
+      # Fallback para cuando no hay PAT y alguien tiene que traer los locks a mano.
+      - uses: actions/upload-artifact@v4
+        if: steps.diff.outputs.changed == 'true'
+        with:
+          name: brick-locks
+          path: |
+            pnpm-lock.yaml
+            apps/backend/package-lock.json
+          retention-days: 3

@@ -197,6 +197,13 @@ export function FlowCanvas(props: FlowCanvasProps): ReactElement {
          * Seleccionar de a varios pasa a pedir Shift, que es la tecla que ya sumaba de
          * a uno: una sola tecla para las dos formas de elegir varios.
          */
+        /**
+         * Hasta el 10%. El default de React Flow es 50%, que alcanza para un diagrama
+         * de diez pasos y no para uno de cuarenta: ahí el 50% ya no entra en pantalla y
+         * no hay forma de ver el recorrido entero de una — que es lo único que el
+         * minimapa no reemplaza, porque en el minimapa no se lee nada.
+         */
+        minZoom={0.1}
         selectionMode={SelectionMode.Partial}
         panOnDrag={PAN_BUTTONS}
         selectionKeyCode="Shift"

@@ -273,6 +273,15 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
       return {};
     }
 
+    if (/^cart-abandoned-[123]$/.test(String(notification.template)) && typeof data.cart_abandoned_template_name === 'string') {
+      if (!this.pgConnection) throw new Error('WhatsApp store settings require a database connection');
+      const { abandonedCartDelivery } = await import('./abandoned-cart-delivery.js');
+      const delivery = await abandonedCartDelivery(this.pgConnection, data);
+      const client = new KapsoClient({ apiKey: delivery.apiKey, baseUrl: delivery.baseUrl });
+      const { id } = await client.sendMessage(delivery.phoneNumberId, { messaging_product: 'whatsapp', to, type: 'template', template: delivery.template });
+      return { id };
+    }
+
     // La configuración efectiva del envío. Va ANTES de resolver el template
     // porque las dos cosas —qué plantilla y con qué credenciales— salen de acá.
     const settings = await loadKapsoSettingsViaPg(this.pgConnection);

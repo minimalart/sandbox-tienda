@@ -1,3 +1,4 @@
+import AbandonedCartSettings from './abandoned-cart-settings';
 import { Badge, Button, Container, Heading, Text, toast } from '@medusajs/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { registerExtensionSettingsCard } from '@minimalart/mercatto-plugin-runtime/admin';
@@ -65,7 +66,7 @@ export type ExtensionSettingsCardProps = {
   onSaved?: () => void;
 };
 
-export const ExtensionSettingsCard = ({
+const DefaultExtensionSettingsCard = ({
   namespace,
   siteId,
   credentials = false,
@@ -409,6 +410,13 @@ export const ExtensionSettingsCard = ({
     </Container>
   );
 };
+
+// The recovery editor shares this slot with the central settings drawer and
+// the optional plugin route. It uses the same scoped API as the generic card.
+export const ExtensionSettingsCard = (props: ExtensionSettingsCardProps) =>
+  props.namespace === 'extension:abandoned-cart'
+    ? <AbandonedCartSettings siteId={props.siteId} hideSiteContext={props.hideSiteContext} hideHeader={props.hideHeader} />
+    : <DefaultExtensionSettingsCard {...props} />;
 
 // Registrar en el runtime contract para que los plugins publicados
 // (@minimalart/mercatto-plugin-runtime/admin) rendericen la MISMA card vía el

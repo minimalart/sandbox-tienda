@@ -569,6 +569,12 @@ export type TenantAssets = {
      */
     categories?: boolean
     /**
+     * Bundled Products: habilita el bloque Puck `BundlesGrid` en el home y —
+     * a futuro — el índice `/bundles`. Ausente/false = deshabilitado por
+     * defecto (feature opt-in per tenant, plan §5.4).
+     */
+    bundles?: boolean
+    /**
      * Etiquetas de variantes en las cards del catálogo: el formato/medida abajo
      * a la izquierda y los colores (círculo SVG) arriba a la izquierda.
      * Ausente/true = visibles; igual no se pintan si el producto no tiene

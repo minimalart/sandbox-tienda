@@ -16,6 +16,8 @@ export function SettingsDrawer({
   open,
   onOpenChange,
   siteId,
+  name,
+  onNameChange,
   activeVersion,
   publishedAt,
   exclusive,
@@ -26,6 +28,8 @@ export function SettingsDrawer({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   siteId: string | null;
+  name: string;
+  onNameChange: (value: string) => void;
   activeVersion: number | null;
   publishedAt: string | null;
   exclusive: boolean;
@@ -42,6 +46,8 @@ export function SettingsDrawer({
         <Drawer.Body className="overflow-y-auto">
           <FlowSettings
             siteId={siteId}
+            name={name}
+            onNameChange={onNameChange}
             activeVersion={activeVersion}
             publishedAt={publishedAt}
             exclusive={exclusive}

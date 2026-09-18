@@ -45,6 +45,9 @@ export const MULTISTORE_CAPABILITY_COPY: Record<
 };
 
 export const EXTENSION_MULTISTORE: Record<string, readonly MultistoreCapability[]> = {
+  clarity: ['config'],
+  'google-merchant': ['config'],
+  'consent-management': ['config'],
   banners: ['data'],
   blog: ['data'],
   brands: ['data'],
@@ -76,7 +79,7 @@ export const EXTENSION_MULTISTORE: Record<string, readonly MultistoreCapability[
   'store-config': ['config'],
   'store-locations': ['data'],
   videos: ['data'],
-  whatsapp: ['credentials'],
+  whatsapp: ['credentials', 'config'],
 };
 
 export type MultistoreScope = {
