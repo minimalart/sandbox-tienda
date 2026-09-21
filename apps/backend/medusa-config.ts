@@ -849,6 +849,7 @@ const config = defineConfig({
     // extensión que lo resuelve fallaría después, en runtime y de a una. Así
     // falla al arrancar, que es donde se puede diagnosticar.
     appSettings: { resolve: './src/modules/app-settings' },
+    marketingReport: { resolve: './src/modules/marketing-report' },
 
     // RBAC (roles y permisos del admin). NO es un módulo default de Medusa: sin
     // esta línea las tablas rbac_* no existen y `/admin/rbac/*` no responde. El
@@ -1045,6 +1046,13 @@ const config = defineConfig({
     // región / stock location y se publica en mercatto.studio/demo/{slug}.
     ...optionalModule('demo_store', 'demo-store'),
     ...optionalModule('catalog_import', 'store-importer'),
+
+    // Bundled Products — sell configurable sets of existing Medusa Products
+    // through an admin CRUD and a storefront wizard. Client-agnostic capacity
+    // scoped per Store via the `bundle_demo_store` link. See
+    // docs/bundled-products/plan.md. Optional: projects that don't opt in
+    // simply don't select the folder and everything else keeps working.
+    ...optionalModule('bundle', 'bundle'),
 
     // GA4: migrated to @minimalart/mercatto-plugin-ga4.
     // The plugin registers the `ga4` module by itself.

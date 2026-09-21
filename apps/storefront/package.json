@@ -14,7 +14,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "test:privacy:browser": "node tests/privacy/browser.cjs"
   },
   "dependencies": {
     "@repo/shared": "workspace:*",
@@ -68,7 +69,8 @@
     "typesense": "^2.1.0",
     "zod": "^4.2.0",
     "zustand": "^5.0.8",
-    "three": "0.185.1"
+    "three": "0.185.1",
+    "vanilla-cookieconsent": "3.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.17.5",
@@ -88,6 +90,7 @@
     "tailwindcss": "^3.0.23",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.3.2",
-    "@types/three": "0.185.3"
+    "@types/three": "0.185.3",
+    "esbuild": "0.28.1"
   }
 }
