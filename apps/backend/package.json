@@ -172,7 +172,8 @@
     "typescript": "^5.6.3",
     "typesense": "1.8.2",
     "unpdf": "^1.6.2",
-    "zod": "4.2.0"
+    "zod": "4.2.0",
+    "@minimalart/mercatto-analytics-contract": "^1.0.0"
   },
   "devDependencies": {
     "@medusajs/admin-sdk": "2.18.0",
