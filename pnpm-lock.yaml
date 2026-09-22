@@ -180,6 +180,9 @@ importers:
       '@minimalart/mercatto-plugin-media-library':
         specifier: ^1.1.5
         version: 1.1.5(vgh72wgcojtavbh5rdtorgpzhm)
+      '@minimalart/mercatto-plugin-multistore-contract':
+        specifier: 0.2.0
+        version: 0.2.0
       '@minimalart/mercatto-plugin-payment-benefits':
         specifier: ^1.0.2
         version: 1.0.2(jf23goyn2teua6fsibthr2p6ni)

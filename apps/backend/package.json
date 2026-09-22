@@ -91,6 +91,7 @@
     "@mikro-orm/migrations": "6.6.14",
     "@mikro-orm/postgresql": "6.6.14",
     "@minimalart/mercatto-multistore-contract": "^0.1.0",
+    "@minimalart/mercatto-plugin-multistore-contract": "0.2.0",
     "@minimalart/mercatto-plugin-abandoned-cart": "^1.7.0",
     "@minimalart/mercatto-plugin-banners": "^1.0.5",
     "@minimalart/mercatto-plugin-blog": "^1.0.3",
