@@ -98,7 +98,7 @@
     "@minimalart/mercatto-plugin-brands": "^1.0.3",
     "@minimalart/mercatto-plugin-catalogador": "^1.1.1",
     "@minimalart/mercatto-plugin-checkout-links": "^1.1.2",
-    "@minimalart/mercatto-plugin-commerce-dashboard": "^1.3.1",
+    "@minimalart/mercatto-plugin-commerce-dashboard": "^1.16.1",
     "@minimalart/mercatto-plugin-comments": "^1.4.4",
     "@minimalart/mercatto-plugin-contact": "1.4.1",
     "@minimalart/mercatto-plugin-database-explorer": "^1.1.1",
