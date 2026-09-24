@@ -93,7 +93,7 @@
     "@minimalart/mercatto-multistore-contract": "^0.1.0",
     "@minimalart/mercatto-plugin-multistore-contract": "0.2.0",
     "@minimalart/mercatto-plugin-abandoned-cart": "^1.7.0",
-    "@minimalart/mercatto-plugin-banners": "^1.0.5",
+    "@minimalart/mercatto-plugin-banners": "^1.1.0",
     "@minimalart/mercatto-plugin-blog": "^1.0.3",
     "@minimalart/mercatto-plugin-brands": "^1.0.3",
     "@minimalart/mercatto-plugin-catalogador": "^1.1.1",
