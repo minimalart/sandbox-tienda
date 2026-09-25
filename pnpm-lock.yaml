@@ -130,8 +130,8 @@ importers:
         specifier: ^1.7.0
         version: 1.7.0(uhjxmqytp2pqylr6ouk2od46he)
       '@minimalart/mercatto-plugin-banners':
-        specifier: ^1.0.5
-        version: 1.0.5(jf23goyn2teua6fsibthr2p6ni)
+        specifier: ^1.1.0
+        version: 1.1.2(jf23goyn2teua6fsibthr2p6ni)
       '@minimalart/mercatto-plugin-blog':
         specifier: ^1.0.3
         version: 1.0.3(yjxifdaivaastxnlvbwrbdnaiu)
@@ -148,8 +148,8 @@ importers:
         specifier: ^1.4.4
         version: 1.4.4(vces6vcbi6lgdobz2j2kgrto44)
       '@minimalart/mercatto-plugin-commerce-dashboard':
-        specifier: ^1.3.1
-        version: 1.3.1(xfhd5edqa6ron4pcszdzkz7sqm)
+        specifier: ^1.16.1
+        version: 1.16.1(sfs3zpeqgesz6zeeedw3ftirqy)
       '@minimalart/mercatto-plugin-contact':
         specifier: 1.4.1
         version: 1.4.1(mvzvilzre6opodbb6nrxnisgua)
@@ -166,8 +166,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2(qd6d7mesufoe7s5noyxdtignrm)
       '@minimalart/mercatto-plugin-gift-cards':
-        specifier: ^1.0.4
-        version: 1.0.4(5jryzdhkg2o2efnsjv56zcibwq)
+        specifier: ^1.1.1
+        version: 1.1.3(5jryzdhkg2o2efnsjv56zcibwq)
       '@minimalart/mercatto-plugin-landing-pages':
         specifier: ^1.1.2
         version: 1.1.2(vg3gvqfzjrp7inzwatclkfa6di)
@@ -476,11 +476,11 @@ importers:
         specifier: ^1.1.0
         version: 1.1.0(p5l2xrfouaszvgmabjvgen4fby)
       '@minimalart/mercatto-plugin-storefront-recommendations':
-        specifier: ^0.1.0
-        version: 0.1.0(@medusajs/js-sdk@2.18.0)(@medusajs/types@2.18.0(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0)))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@minimalart/mercatto-storefront-shared@packages+contracts+storefront-shared)(@types/react@19.2.16)(next@16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
-      '@minimalart/mercatto-storefront-shared':
+        specifier: ^0.2.0
+        version: 0.2.0(@medusajs/js-sdk@2.18.0)(@medusajs/types@2.18.0(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0)))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@minimalart/mercatto-plugin-storefront-shared@packages+plugins+plugin-storefront-shared)(@types/react@19.2.16)(next@16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
+      '@minimalart/mercatto-plugin-storefront-shared':
         specifier: workspace:^
-        version: link:../../packages/contracts/storefront-shared
+        version: link:../../packages/plugins/plugin-storefront-shared
       '@radix-ui/react-accordion':
         specifier: ^1.2.1
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -849,6 +849,43 @@ importers:
   packages/extensions/typesense: {}
 
   packages/extensions/whatsapp: {}
+
+  packages/plugins/plugin-storefront-shared:
+    dependencies:
+      '@heroicons/react':
+        specifier: ^2.1.5
+        version: 2.2.0(react@19.2.7)
+      '@medusajs/js-sdk':
+        specifier: 2.18.0
+        version: 2.18.0
+      '@medusajs/types':
+        specifier: 2.18.0
+        version: 2.18.0(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))
+      '@medusajs/ui':
+        specifier: ^4
+        version: 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
+      zustand:
+        specifier: ^5.0.8
+        version: 5.0.14(@types/react@19.2.16)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.6
+        version: 19.2.16
+      '@types/react-dom':
+        specifier: ^19.0.2
+        version: 19.2.3(@types/react@19.2.16)
+      next:
+        specifier: ^16
+        version: 16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
 
   packages/project-catalog: {}
 
@@ -2684,6 +2721,9 @@ packages:
   '@minimalart/mercatto-analytics-contract@1.2.0':
     resolution: {integrity: sha512-DqqZA/Qtn8V/DqMKox9I66+pCPfn9xRrlffM2j/SJEUMbEJ0S+SiYQwH+GODc1e3cFVPmonIF1KzxWkO4SPZ4Q==, tarball: https://npm.pkg.github.com/download/@minimalart/mercatto-analytics-contract/1.2.0/2424b443d18eb6447bfdf6e25ddd49e5fb7c8125}
 
+  '@minimalart/mercatto-analytics-contract@1.7.1':
+    resolution: {integrity: sha512-HxN98ITvjebLYE8ZnuW9kYyRJT6HzC8zoqcLmka3p3Du+hX+x0nksqpQb5enW4IvxgPoI6cy2vtahogPQnmZZg==, tarball: https://npm.pkg.github.com/download/@minimalart/mercatto-analytics-contract/1.7.1/1fe550ac7d83c0948bc64d30ce2bd1520a75d697}
+
   '@minimalart/mercatto-multistore-contract@0.1.0':
     resolution: {integrity: sha512-s+jciUL5phqylLEJfM0nsVfRIht59d5J/cfQfmSK6zKuzlsSrR9zAvhwq2QILTAR3Etyw9FqxNPkue5VnDw+Mg==, tarball: https://npm.pkg.github.com/download/@minimalart/mercatto-multistore-contract/0.1.0/dd911b398368854151ebd95d24ec33fe9b193f3b}
     engines: {node: '>=22.19.0'}
@@ -2710,8 +2750,8 @@ packages:
       react: ^18.3.1
       react-dom: ^18.3.1
 
-  '@minimalart/mercatto-plugin-banners@1.0.5':
-    resolution: {integrity: sha512-mUzE9ZFjwLR0VIThZWqniasrxHG1d0ewT3I2Tds569aaD08CXqqZjLk0Itx8q2bw/dfklCSoseRXY357QARS/w==, tarball: https://npm.pkg.github.com/download/@minimalart/mercatto-plugin-banners/1.0.5/d254dc1ebf23051d4f98b252adecc97eea8f7d18}
+  '@minimalart/mercatto-plugin-banners@1.1.2':
+    resolution: {integrity: sha512-LhVAjZJZYquv8ovLFy2Sm3GVXP7iSHz0PdQ1VY2S04bjeMycGaTZACRdc+3PaDDouK7PRXcPDYDY5p+RJoOVAQ==, tarball: https://npm.pkg.github.com/download/@minimalart/mercatto-plugin-banners/1.1.2/d843b86a3329904f8a8a3b1ed7641f058a3a2e56}
     engines: {node: '>=22.19.0'}
     peerDependencies:
       '@medusajs/admin-sdk': 2.18.0
@@ -2832,8 +2872,8 @@ packages:
       react: ^18.3.1
       react-dom: ^18.3.1
 
-  '@minimalart/mercatto-plugin-commerce-dashboard@1.3.1':
-    resolution: {integrity: sha512-Mhk10crnhOZXY6BcMVKj1wjFXUIk4kPXQngTsgHrkUa0zC3nUxU2+oOx0t4JgUxzFdN+ZhZyJpl/eB/vcmjQzA==, tarball: https://npm.pkg.github.com/download/@minimalart/mercatto-plugin-commerce-dashboard/1.3.1/7370e954c2665c4a6b56e6b7d5602537ce737939}
+  '@minimalart/mercatto-plugin-commerce-dashboard@1.16.1':
+    resolution: {integrity: sha512-w7kXl+V4Ec6g8Drg4FFr+vAq/Jnnh7BpYHoZ6pLEKBVMx6iOuNMbJZ7yFuH9dakjO073Bs5G+E8f5+GCGEgnXA==, tarball: https://npm.pkg.github.com/download/@minimalart/mercatto-plugin-commerce-dashboard/1.16.1/693932bbf13f97c36d5c1e8e716deaec5bdf4966}
     engines: {node: '>=22.19.0'}
     peerDependencies:
       '@medusajs/admin-sdk': 2.18.0
@@ -2848,10 +2888,12 @@ packages:
       '@mikro-orm/knex': 6.4.13
       '@mikro-orm/migrations': 6.4.13
       '@mikro-orm/postgresql': 6.4.13
-      '@minimalart/mercatto-multistore-contract': 0.1.0
+      '@minimalart/mercatto-plugin-multistore-contract': 0.2.0
       '@tanstack/react-query': ^5.62.0
       react: ^18.3.1
       react-dom: ^18.3.1
+      react-i18next: 13.5.0
+      react-router-dom: ^6.30.0
       recharts: ^2.12.0
 
   '@minimalart/mercatto-plugin-contact@1.4.1':
@@ -2999,8 +3041,8 @@ packages:
       react-i18next: 13.5.0
       react-router-dom: ^6.0.0
 
-  '@minimalart/mercatto-plugin-gift-cards@1.0.4':
-    resolution: {integrity: sha512-PJYIx8c9ppxX/q1vKyqqg9Hd0tgWmobfNCUp2NCJVQjXp/gBHBLkucXOzAe9raYaJmbpauCkVCJ6yECs2GEZ6g==, tarball: https://npm.pkg.github.com/download/@minimalart/mercatto-plugin-gift-cards/1.0.4/a43e585227a1656054e85477f7c8dea8f35b486a}
+  '@minimalart/mercatto-plugin-gift-cards@1.1.3':
+    resolution: {integrity: sha512-T+n3PhNxdtzKDdMjZZmW+nKehLRNe/V6rFXKESCO2mv2WCGXM7E0rRKZYMIG5940a46bH3BQ/Yn+PvK/ABV5XA==, tarball: https://npm.pkg.github.com/download/@minimalart/mercatto-plugin-gift-cards/1.1.3/63147654fd1acc467f40d7392ad7d1ffebfb36bb}
     engines: {node: '>=22.19.0'}
     peerDependencies:
       '@medusajs/admin-sdk': 2.18.0
@@ -3240,14 +3282,14 @@ packages:
       react-dom: ^18.3.1
       react-router-dom: ^6.0.0
 
-  '@minimalart/mercatto-plugin-storefront-recommendations@0.1.0':
-    resolution: {integrity: sha512-onRgC7M0+KModxZvyV+ZgO+oh3wkbY4TARY05eSO4cIp2gB5qpb34bzHHs9Occ9GNX6s8Y5jkKFWVwEnLaBmGg==, tarball: https://npm.pkg.github.com/download/@minimalart/mercatto-plugin-storefront-recommendations/0.1.0/29cf7e41c0630b3b04289a7ec654a844996937c0}
+  '@minimalart/mercatto-plugin-storefront-recommendations@0.2.0':
+    resolution: {integrity: sha512-ehddnANv5wJS3Z29/FfzyD6kcNS6RJGrItb4CLTAaunoZQIVDk6iq4WHJBQlFc/XcOBsEUYKpg709lpNlPv4sw==, tarball: https://npm.pkg.github.com/download/@minimalart/mercatto-plugin-storefront-recommendations/0.2.0/da482f1e41f322c9109f9689abd598efe754c3a7}
     engines: {node: '>=22.19.0'}
     peerDependencies:
       '@medusajs/js-sdk': 2.18.0
       '@medusajs/types': 2.18.0
       '@medusajs/ui': ^4
-      '@minimalart/mercatto-storefront-shared': ^0.1.0
+      '@minimalart/mercatto-plugin-storefront-shared': ^0.2.0
       next: ^15 || ^16
       react: ^18 || ^19
       react-dom: ^18 || ^19
@@ -8176,6 +8218,9 @@ packages:
   graphql@16.14.1:
     resolution: {integrity: sha512-cQOsSMS/IrDz82PVyRDvf/Q1F/bRbBVjJlh+xYOkI1qw2bWRvWGiWc+m2O0d6l4Bt1fyY+8kzJ8JFWGJqNeDBg==}
     engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
+
+  gridstack@13.3.0:
+    resolution: {integrity: sha512-1tqFd3/hb3CSOJWFG8aFleCGWT6Gqx/hnjRT78ocnixp0XPk5Aa6Uxkm0qn9VHFwLrEdOFb+ZXtQZT+a/IdS3g==}
 
   handlebars@4.7.9:
     resolution: {integrity: sha512-4E71E0rpOaQuJR2A3xDZ+GM1HyWYv1clR58tC8emQNeQe3RH7MAzSbat+V0wG78LQBo6m6bzSG/L4pBuCsgnUQ==}
@@ -14960,6 +15005,8 @@ snapshots:
 
   '@minimalart/mercatto-analytics-contract@1.2.0': {}
 
+  '@minimalart/mercatto-analytics-contract@1.7.1': {}
+
   '@minimalart/mercatto-multistore-contract@0.1.0': {}
 
   '@minimalart/mercatto-plugin-abandoned-cart@1.7.0(uhjxmqytp2pqylr6ouk2od46he)':
@@ -14984,7 +15031,7 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-banners@1.0.5(jf23goyn2teua6fsibthr2p6ni)':
+  '@minimalart/mercatto-plugin-banners@1.1.2(jf23goyn2teua6fsibthr2p6ni)':
     dependencies:
       '@dnd-kit/core': 6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@dnd-kit/sortable': 8.0.0(@dnd-kit/core@6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -15132,7 +15179,7 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-commerce-dashboard@1.3.1(xfhd5edqa6ron4pcszdzkz7sqm)':
+  '@minimalart/mercatto-plugin-commerce-dashboard@1.16.1(sfs3zpeqgesz6zeeedw3ftirqy)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
@@ -15146,10 +15193,15 @@ snapshots:
       '@mikro-orm/knex': 6.6.14(@mikro-orm/core@6.6.14)(pg@8.21.0)
       '@mikro-orm/migrations': 6.6.14(@mikro-orm/core@6.6.14)(@types/node@20.19.41)(pg@8.21.0)
       '@mikro-orm/postgresql': 6.6.14(@mikro-orm/core@6.6.14)
-      '@minimalart/mercatto-multistore-contract': 0.1.0
+      '@minimalart/mercatto-analytics-contract': 1.7.1
+      '@minimalart/mercatto-plugin-multistore-contract': 0.2.0
+      '@minimalart/mercatto-plugin-runtime': 0.6.1(@medusajs/icons@2.18.0(react@18.3.1))(react@18.3.1)
       '@tanstack/react-query': 5.64.2(react@18.3.1)
+      gridstack: 13.3.0
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+      react-i18next: 13.5.0(i18next@23.7.11)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react-router-dom: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       recharts: 2.15.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
   '@minimalart/mercatto-plugin-contact@1.4.1(mvzvilzre6opodbb6nrxnisgua)':
@@ -15296,7 +15348,7 @@ snapshots:
       react-router-dom: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-gift-cards@1.0.4(5jryzdhkg2o2efnsjv56zcibwq)':
+  '@minimalart/mercatto-plugin-gift-cards@1.1.3(5jryzdhkg2o2efnsjv56zcibwq)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
@@ -15311,6 +15363,7 @@ snapshots:
       '@mikro-orm/knex': 6.6.14(@mikro-orm/core@6.6.14)(pg@8.21.0)
       '@mikro-orm/migrations': 6.6.14(@mikro-orm/core@6.6.14)(@types/node@20.19.41)(pg@8.21.0)
       '@mikro-orm/postgresql': 6.6.14(@mikro-orm/core@6.6.14)
+      '@minimalart/mercatto-analytics-contract': 1.7.1
       '@minimalart/mercatto-plugin-runtime': 0.6.1(@medusajs/icons@2.18.0(react@18.3.1))(react@18.3.1)
       '@tanstack/react-query': 5.64.2(react@18.3.1)
       react: 18.3.1
@@ -15541,12 +15594,12 @@ snapshots:
       react-router-dom: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-storefront-recommendations@0.1.0(@medusajs/js-sdk@2.18.0)(@medusajs/types@2.18.0(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0)))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@minimalart/mercatto-storefront-shared@packages+contracts+storefront-shared)(@types/react@19.2.16)(next@16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))':
+  '@minimalart/mercatto-plugin-storefront-recommendations@0.2.0(@medusajs/js-sdk@2.18.0)(@medusajs/types@2.18.0(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0)))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@minimalart/mercatto-plugin-storefront-shared@packages+plugins+plugin-storefront-shared)(@types/react@19.2.16)(next@16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))':
     dependencies:
       '@medusajs/js-sdk': 2.18.0
       '@medusajs/types': 2.18.0(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
-      '@minimalart/mercatto-storefront-shared': link:packages/contracts/storefront-shared
+      '@minimalart/mercatto-plugin-storefront-shared': link:packages/plugins/plugin-storefront-shared
       next: 16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
@@ -21635,6 +21688,8 @@ snapshots:
       tslib: 2.8.1
 
   graphql@16.14.1: {}
+
+  gridstack@13.3.0: {}
 
   handlebars@4.7.9:
     dependencies:
