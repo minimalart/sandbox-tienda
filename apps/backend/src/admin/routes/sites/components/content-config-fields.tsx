@@ -58,6 +58,22 @@ export const ContentConfigFields = ({ value, onChange, templateCode }: Props) =>
 
       <div className="flex flex-col gap-y-4">
         <Text size="small" weight="plus">
+          {t('CONTENT_CART_TITLE')}
+        </Text>
+        <div className="flex items-center justify-between gap-4">
+          <Label>{t('CONTENT_CART_RECOMMENDATIONS_TOGGLE')}</Label>
+          <Switch
+            className="shrink-0"
+            checked={value.cartRecommendationsCarousel}
+            onCheckedChange={(checked) =>
+              onChange({ ...value, cartRecommendationsCarousel: checked })
+            }
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-y-4">
+        <Text size="small" weight="plus">
           {t('CONTENT_SECTIONS_TITLE')}
         </Text>
         {toggleRows.map((row) => (

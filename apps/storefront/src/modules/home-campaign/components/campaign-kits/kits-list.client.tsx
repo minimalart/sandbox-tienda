@@ -3,7 +3,7 @@
 import type { TypesenseProductDocument } from "@lib/typesense";
 import InfiniteScrollSentinel from "@modules/store/components/infinite-scroll-sentinel";
 import TypesenseProductCard from "@modules/store/templates/typesense-product-card";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { loadMoreCampaignKits } from "./actions";
 
 type KitsListProps = {
@@ -15,6 +15,8 @@ type KitsListProps = {
     collectionId?: string;
     tag?: string;
   };
+  /** Celdas que abren la grilla (los kits de la tienda), ya renderizadas. */
+  leading?: ReactNode;
 };
 
 /**
@@ -39,6 +41,7 @@ export function CampaignKitsList({
   pageSize,
   countryCode,
   filters,
+  leading,
 }: KitsListProps) {
   const [products, setProducts] = useState(initialProducts);
   const [page, setPage] = useState(1);
@@ -64,6 +67,7 @@ export function CampaignKitsList({
   return (
     <>
       <ul className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+        {leading}
         {products.map((p) => (
           <li key={p.id} className="min-w-0">
             <TypesenseProductCard

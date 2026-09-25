@@ -1,5 +1,12 @@
-import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
-import type { MedusaContainer } from '@medusajs/framework/types';
+import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
+import type { IInventoryService, MedusaContainer } from '@medusajs/framework/types';
+import {
+  inventoryItemIdsOf,
+  netAvailableForVariant,
+  variantTracksStock,
+  type ReservationForStock,
+  type VariantForStock,
+} from './stock-availability';
 
 /**
  * pickup-context — los datos de "retiro en tienda" que necesitan los mails.
@@ -184,6 +191,8 @@ type OrderLike = {
   metadata?: UnknownRecord | null;
   shipping_methods?: UnknownRecord[];
   items?: Array<{
+    /** Requerido para sumar de vuelta la reserva PROPIA de esta línea (ver `resolveLineAvailability`). */
+    id?: string | null;
     title?: string | null;
     variant_title?: string | null;
     variant_id?: string | null;
@@ -196,56 +205,113 @@ type QueryGraph = {
   graph: (input: unknown) => Promise<{ data: unknown[] }>;
 };
 
-/** Mapa variant_id → unidades disponibles en `stockLocationId`. */
-async function availabilityByVariant(
+type LineForAvailability = { id: string; variant_id: string | null };
+
+/**
+ * Disponibilidad por LÍNEA (no por variante) en `stockLocationId`. `'not_tracked'`
+ * para una variante que no gestiona inventario o acepta backorder — el llamador
+ * la trata como "disponible", nunca como "Sin stock" (ver `classifyStock`). Una
+ * línea AUSENTE del mapa es "no se pudo determinar" y cae al mismo lugar que
+ * hoy: `available: null` → `classifyStock` la clasifica `insufficient`.
+ *
+ * Por LÍNEA y no por variante porque la reserva que hay que sumar de vuelta
+ * (`netAvailableForVariant`) es de la línea: dos líneas de la misma orden con la
+ * misma variante tienen reservas propias DISTINTAS.
+ *
+ * Corrige el bug de DESDEELSUR-80 (pedido #80, retiro en Elordi, SKU V16 stocked
+ * 3 / reserved 0 salió "Sin stock"): antes se pedía
+ * `inventory_items.inventory.location_levels.available_quantity` por `query.graph`,
+ * que es un campo COMPUTADO (`model.bigNumber().computed()` en
+ * `@medusajs/inventory` 2.18) que sólo se llena si además se piden
+ * `stocked_quantity`/`reserved_quantity` — sin ellos llega `undefined` y
+ * `Number(undefined) || 0` da 0 siempre. Ahora se lee del SERVICIO de inventario
+ * (`retrieveAvailableQuantity`, contra el repositorio), que no tiene ese problema,
+ * y se le suma de vuelta la reserva que esta misma orden ya hizo en esa
+ * ubicación (el detalle completo está en `stock-availability.ts`).
+ */
+async function resolveLineAvailability(
   query: QueryGraph,
-  variantIds: string[],
+  inventoryService: IInventoryService,
+  lines: LineForAvailability[],
   stockLocationId: string,
-): Promise<Map<string, number>> {
-  const result = new Map<string, number>();
+): Promise<Map<string, number | 'not_tracked'>> {
+  const result = new Map<string, number | 'not_tracked'>();
+  const variantIds = [...new Set(lines.map((l) => l.variant_id).filter((v): v is string => Boolean(v)))];
   if (!variantIds.length) return result;
 
   const { data: variants } = (await query.graph({
     entity: 'variant',
     fields: [
       'id',
-      'sku',
-      // Misma selección que usa el indexador de Typesense (`modules/typesense/
-      // reindex.ts`) y el hidratador de recomendaciones: variante → inventory
-      // item → niveles por ubicación. `location_levels` trae UNA fila por stock
-      // location, así que hay que filtrar por la de la sucursal a mano.
-      'inventory_items.inventory.location_levels.location_id',
-      'inventory_items.inventory.location_levels.available_quantity',
+      'manage_inventory',
+      'allow_backorder',
+      'inventory_items.inventory_item_id',
+      'inventory_items.required_quantity',
     ],
     filters: { id: variantIds },
   })) as { data: UnknownRecord[] };
 
+  const variantById = new Map<string, VariantForStock>();
   for (const variant of variants ?? []) {
     const id = getString(variant, 'id');
     if (!id) continue;
-    const inventoryItems = Array.isArray(variant.inventory_items)
-      ? (variant.inventory_items as UnknownRecord[])
-      : [];
+    const links = Array.isArray(variant.inventory_items) ? (variant.inventory_items as UnknownRecord[]) : [];
+    variantById.set(id, {
+      manage_inventory: (variant.manage_inventory as boolean | null | undefined) ?? null,
+      allow_backorder: (variant.allow_backorder as boolean | null | undefined) ?? null,
+      inventory_items: links.map((link) => ({
+        inventory_item_id: getString(link, 'inventory_item_id') ?? null,
+        required_quantity:
+          typeof link.required_quantity === 'number' ? link.required_quantity : Number(link.required_quantity) || null,
+      })),
+    });
+  }
 
-    /**
-     * Una variante con VARIOS inventory items (un kit) está disponible tantas
-     * veces como su componente más escaso: es un mínimo, no una suma. Sumar daría
-     * "hay 12" cuando de uno de los dos componentes hay 1.
-     */
-    let minimum: number | null = null;
-    for (const item of inventoryItems) {
-      const inventory = isRecord(item.inventory) ? item.inventory : undefined;
-      const levels = Array.isArray(inventory?.location_levels)
-        ? (inventory!.location_levels as UnknownRecord[])
-        : [];
-      const level = levels.find((l) => getString(l, 'location_id') === stockLocationId);
-      // Sin fila de nivel para esa ubicación, Medusa considera 0: el item existe
-      // pero esa sucursal no lo stockea.
-      const qty = level ? Number(level.available_quantity) || 0 : 0;
-      minimum = minimum === null ? qty : Math.min(minimum, qty);
+  const itemIds = inventoryItemIdsOf([...variantById.values()]);
+  const rawAvailableByItem = new Map<string, number>();
+  for (const itemId of itemIds) {
+    try {
+      const available = await inventoryService.retrieveAvailableQuantity(itemId, [stockLocationId]);
+      rawAvailableByItem.set(itemId, Number(available) || 0);
+    } catch {
+      // Este item puntual no se pudo leer: se deja SIN entrada en el mapa. Las
+      // líneas que dependen de él quedan sin entrada en `result` — "no pudimos
+      // consultar" (insufficient), nunca "Sin stock".
     }
+  }
 
-    if (minimum !== null) result.set(id, minimum);
+  let reservations: ReservationForStock[] = [];
+  try {
+    reservations = (await inventoryService.listReservationItems({
+      line_item_id: lines.map((l) => l.id),
+    })) as ReservationForStock[];
+  } catch {
+    // Pesimista: sin reserva propia que sumar de vuelta puede mostrar
+    // "insuficiente" de más, nunca al revés. El mail sale igual.
+    reservations = [];
+  }
+
+  for (const line of lines) {
+    const variant = line.variant_id ? variantById.get(line.variant_id) : undefined;
+    if (!variant) continue;
+    if (!variantTracksStock(variant)) {
+      result.set(line.id, 'not_tracked');
+      continue;
+    }
+    const links = variant.inventory_items ?? [];
+    const anyUnresolved = links.some(
+      (link) => link.inventory_item_id && !rawAvailableByItem.has(link.inventory_item_id),
+    );
+    if (anyUnresolved) continue;
+
+    const available = netAvailableForVariant({
+      variant,
+      lineItemId: line.id,
+      locationId: stockLocationId,
+      rawAvailableByItem,
+      reservations,
+    });
+    if (available !== null) result.set(line.id, available);
   }
 
   return result;
@@ -314,13 +380,14 @@ export async function buildPickupContext(
   const items = Array.isArray(order.items) ? order.items : [];
   const stockLocationId = getString(location, 'stock_location_id');
 
-  let availability = new Map<string, number>();
+  let availability = new Map<string, number | 'not_tracked'>();
   if (opts.withStock && stockLocationId) {
-    const variantIds = items
-      .map((i) => (typeof i.variant_id === 'string' ? i.variant_id : null))
-      .filter((v): v is string => Boolean(v));
+    const lines = items
+      .filter((i): i is typeof i & { id: string } => typeof i.id === 'string')
+      .map((i) => ({ id: i.id, variant_id: typeof i.variant_id === 'string' ? i.variant_id : null }));
     try {
-      availability = await availabilityByVariant(query, [...new Set(variantIds)], stockLocationId);
+      const inventoryService = container.resolve<IInventoryService>(Modules.INVENTORY);
+      availability = await resolveLineAvailability(query, inventoryService, lines, stockLocationId);
     } catch {
       // Se sigue con el mapa vacío: cada línea queda en `available: null` y se
       // clasifica como 'insufficient' (ver classifyStock). El mail sale.
@@ -331,10 +398,27 @@ export async function buildPickupContext(
   const pickupItems: PickupItemStock[] = opts.withStock
     ? items.map((item) => {
         const quantity = Number(item.quantity ?? item.detail?.quantity ?? undefined) || 0;
-        const variantId = typeof item.variant_id === 'string' ? item.variant_id : null;
-        const available = variantId && availability.has(variantId)
-          ? (availability.get(variantId) as number)
-          : null;
+        const raw = typeof item.id === 'string' ? availability.get(item.id) : undefined;
+
+        // No trackeada (no gestiona inventario, o acepta backorder): no hay un
+        // número que mostrar sin mentir, así que se pinta "disponible" en vez de
+        // forzarla por `classifyStock` — que sólo conoce null/número. Ver
+        // `stock-availability.ts` para el porqué de esta variante.
+        if (raw === 'not_tracked') {
+          const presentation = STATUS_PRESENTATION.available;
+          return {
+            title: item.title ?? '',
+            variant_title: item.variant_title ?? undefined,
+            quantity,
+            available: null,
+            available_label: '—',
+            status: 'available',
+            status_label: presentation.label,
+            status_color: presentation.color,
+          };
+        }
+
+        const available = typeof raw === 'number' ? raw : null;
         const status = classifyStock(quantity, available);
         const presentation = STATUS_PRESENTATION[status];
         return {

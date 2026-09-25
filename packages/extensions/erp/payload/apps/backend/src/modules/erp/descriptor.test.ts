@@ -13,7 +13,7 @@ import descriptors from '../app-settings/descriptors/erp.ts';
  *
  * ─── ESTE TEST CUSTODIA UNA DECISIÓN, NO UNA LISTA ───────────────────────────
  *
- * Las 9 quedaron en `envOnly` y el namespace no tiene NI UN ajuste editable. Eso se
+ * Las 10 quedaron en `envOnly` y el namespace no tiene NI UN ajuste editable. Eso se
  * ve raro, así que lo primero que va a hacer alguien que pase por acá es "arreglarlo"
  * dándole una card a `STOCK_LOCATION` y a `SHIPPING_PROFILE`, que parecen las
  * candidatas obvias. No lo son, y el motivo no es que no se puedan migrar: es que ya
@@ -35,6 +35,7 @@ const ENV_ONLY_KEYS = [
   'APPLY',
   'DEFAULT_CURRENCY_CODE',
   'ERP_CATALOG_SYNC_CRON',
+  'ERP_ODOO_WEBHOOK_TOKEN',
   'ERP_OUTBOX_CRON',
   'ERP_STOCK_SYNC_CRON',
   'NEXT_PUBLIC_BASE_URL',
@@ -43,7 +44,7 @@ const ENV_ONLY_KEYS = [
   'STOCK_LOCATION',
 ];
 
-test('las 9 variables están declaradas y ninguna es editable', () => {
+test('las 10 variables están declaradas y ninguna es editable', () => {
   assert.deepEqual((descriptors.envOnly ?? []).map((e) => e.key).sort(), [...ENV_ONLY_KEYS].sort());
   assert.deepEqual(
     descriptors.settings,

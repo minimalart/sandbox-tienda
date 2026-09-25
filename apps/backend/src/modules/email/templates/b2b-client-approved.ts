@@ -1,3 +1,4 @@
+import { storeDisplayName, subjectWithStore } from './email-helpers';
 import type { EmailTemplateFunction, EmailTemplateResult } from './types';
 
 export type B2BClientApprovedData = {
@@ -9,7 +10,7 @@ export type B2BClientApprovedData = {
   sales_channel_name?: string;
   /** URL absoluta del logo del CDE */
   logo_url?: string;
-  /** Nombre del CDE para fallback en texto (ej. "Mercatto") */
+  /** Nombre visible de la tienda. Sin este dato el mail no nombra ninguna marca. */
   cde_display_name?: string;
   /** Subdomain de la organización para links */
   organization_subdomain?: string;
@@ -33,13 +34,20 @@ export const b2bClientApprovedTemplate: EmailTemplateFunction<B2BClientApprovedD
   const email = fmt(data.email);
   const companyName = fmt(data.company_name) || 'su empresa';
   const logoUrl = data.logo_url || '';
-  const cdeDisplayName = (data.cde_display_name || data.organization_name || 'Mercatto').trim();
-  const channelName = data.sales_channel_name || '';
+  const cdeDisplayName = storeDisplayName(data);
   const orgSubdomain = data.organization_subdomain || 'mercatto-b2b';
   const loginUrl = `https://${orgSubdomain}.mercatto.app/sign-in`;
   void loginUrl;
 
   const subject = '¡Tu registro fue aprobado!';
+
+  // Sin logo y sin nombre de tienda, la cabecera se omite: un título de 24px
+  // vacío deja un hueco, pero inventar una marca manda la de otro cliente.
+  const brandHeader = logoUrl
+    ? `<div style="margin-bottom:24px;"><img src="${logoUrl}" alt="${cdeDisplayName}" style="max-height:48px; width:auto;" /></div>`
+    : cdeDisplayName
+      ? `<div style="margin-bottom:24px; font-size:24px; font-weight:700; color:#111;">${cdeDisplayName}</div>`
+      : '';
 
   const html = `
 <!DOCTYPE html>
@@ -51,16 +59,12 @@ export const b2bClientApprovedTemplate: EmailTemplateFunction<B2BClientApprovedD
 </head>
 <body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background:#f5f5f5;">
   <div style="max-width:600px; margin:0 auto; background:#fff; padding:32px;">
-    ${logoUrl ? `<div style="margin-bottom:24px;"><img src="${logoUrl}" alt="${cdeDisplayName}" style="max-height:48px; width:auto;" /></div>` : `<div style="margin-bottom:24px; font-size:24px; font-weight:700; color:#111;">${cdeDisplayName}</div>`}
+    ${brandHeader}
 
     <h1 style="margin:0 0 8px; font-size:24px; font-weight:700; color:#111;">¡Registro Aprobado${name !== 'Cliente' ? `, ${name}` : ''}!</h1>
 
     <p style="margin:0 0 16px; font-size:16px; color:#333;">
       Nos complace informarte que tu solicitud de registro para <strong>${companyName}</strong> ha sido <span style="color:#10b981; font-weight:600;">aprobada exitosamente</span>.
-    </p>
-
-    <p style="margin:24px 0 0; padding-top:16px; border-top:1px solid #e5e7eb; font-size:13px; color:#6b7280;">
-      ¿Necesitás ayuda? Contactanos en <a href="mailto:soporte@mercatto.com" style="color:#2563eb; text-decoration:none;">soporte@mercatto.com</a>
     </p>
   </div>
 
@@ -74,7 +78,7 @@ export const b2bClientApprovedTemplate: EmailTemplateFunction<B2BClientApprovedD
 </html>`.trim();
 
   return {
-    subject: channelName ? `[${channelName}] ${subject}` : `[${cdeDisplayName}] ${subject}`,
+    subject: subjectWithStore(subject, data),
     html,
   };
 };

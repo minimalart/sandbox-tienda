@@ -265,8 +265,19 @@ type ZeusFacturadoResponse = {
   comprobanteResultado?: ZeusFacturadoResponse[] | null;
 };
 
-/** Marca interna del request helper para el 409 idempotente de /pedidos. */
-const DUPLICATE = Symbol('zeus-duplicate');
+/**
+ * Marca interna del request helper para el 409 de `/pedidos`.
+ *
+ * Lleva el CUERPO de la respuesta a propósito. Zeus usa 409 para dos cosas muy
+ * distintas —"este pedido ya lo tengo" y "este pedido lo rechazo porque algún
+ * dato no me cierra"— y el único lugar donde se distinguen es el cuerpo. Antes
+ * esto era un símbolo pelado: el `raw` ya estaba leído y se descartaba, así que
+ * un rechazo quedaba archivado como duplicado y se veía como venta resuelta.
+ * Ver DESDEELSUR-61: 20 de 22 ventas "resueltas" sin `idtransac`.
+ */
+class ZeusConflict {
+  constructor(readonly raw: string) {}
+}
 
 /**
  * Marcador del `codigo_cliente` en una vista previa que no pudo resolverlo sin
@@ -661,7 +672,7 @@ export class ZeusErpAdapter implements ErpAdapter {
   /**
    * Request autenticado con mapeo de errores a la taxonomía del módulo.
    * `allow404: true` devuelve null en vez de lanzar (lookups).
-   * `duplicateOn409: true` devuelve el símbolo DUPLICATE (idempotencia de /pedidos).
+   * `duplicateOn409: true` devuelve un `ZeusConflict` con el cuerpo del 409.
    */
   private async request<T>(
     ctx: AdapterContext,
@@ -674,7 +685,7 @@ export class ZeusErpAdapter implements ErpAdapter {
       duplicateOn409?: boolean;
       timeoutMs?: number;
     } = {}
-  ): Promise<T | typeof DUPLICATE | null> {
+  ): Promise<T | ZeusConflict | null> {
     const url = new URL(`${this.baseUrl(ctx)}${path}`);
     for (const [key, value] of Object.entries(opts.query ?? {})) {
       if (value !== undefined) url.searchParams.set(key, String(value));
@@ -711,7 +722,7 @@ export class ZeusErpAdapter implements ErpAdapter {
     }
 
     if (response.status === 404 && opts.allow404) return null;
-    if (response.status === 409 && opts.duplicateOn409) return DUPLICATE;
+    if (response.status === 409 && opts.duplicateOn409) return new ZeusConflict(raw);
     const detail = raw ? ` — ${raw.slice(0, 300)}` : '';
     if (response.status === 401 || response.status === 403) {
       throw new ErpAuthError(
@@ -1138,10 +1149,14 @@ export class ZeusErpAdapter implements ErpAdapter {
         total: round4(unitNet * item.quantity),
         // Spread condicional: las líneas sin entonar quedan byte-idénticas a lo
         // que se venía mandando.
+        // La fórmula se normaliza igual que en `getTintingPrice`: la metadata la
+        // guarda como la muestra Gestión (`30YR 08/236`) y con el espacio Zeus
+        // rechaza el pedido entero con 409 "Código de base y/o código de fórmula
+        // no válido/s." (orden #79 de desdeelsur, 2026-09-21).
         ...(tint
           ? {
               codigo_base: sanitizeSku(tint.cod_base),
-              codigo_formula: tint.cod_formula,
+              codigo_formula: normalizeFormulaCode(tint.cod_formula),
             }
           : {}),
       };
@@ -1307,12 +1322,17 @@ export class ZeusErpAdapter implements ErpAdapter {
       duplicateOn409: true,
     });
 
-    if (result === DUPLICATE) {
-      // 409 = "conflicto por datos ya existentes": el pedido con este
-      // id_ecommerce ya está en Zeus (reintento de un envío que sí entró).
+    if (result instanceof ZeusConflict) {
+      // 409. El adapter NO decide acá si esto es un duplicado de verdad: sólo
+      // reporta el hecho y entrega el cuerpo. Quién sabe si hubo un envío
+      // previo es el outbox, que lleva el contador de intentos — ver
+      // `process-outbox.ts`. Zeus contesta 409 tanto para "ya lo tengo" como
+      // para rechazar por validación, y en el primer envío de una venta que
+      // nunca salió sólo la segunda lectura puede ser cierta.
+      //
       // El documento se devuelve igual: es exactamente lo que se le mandó, y en
-      // un duplicado es la única forma de ver con qué parámetros salió.
-      return { status: 'duplicate', request: [comprobante] };
+      // un conflicto es la única forma de ver con qué parámetros salió.
+      return { status: 'duplicate', request: [comprobante], conflict_body: result.raw || null };
     }
 
     const first = Array.isArray(result) ? result[0] : null;
@@ -1387,8 +1407,8 @@ export class ZeusErpAdapter implements ErpAdapter {
       '/pedidos/pedidoFacturado',
       { query: { id_Transaccion: idtransac, Sucursal: sucursal }, allow404: true }
     );
-    if (!result || result === DUPLICATE || !Array.isArray(result) || result.length === 0) {
-      return { invoiced: false, sucursal, raw: result === DUPLICATE ? null : result };
+    if (!result || result instanceof ZeusConflict || !Array.isArray(result) || result.length === 0) {
+      return { invoiced: false, sucursal, raw: result instanceof ZeusConflict ? null : result };
     }
 
     const candidates: ZeusFacturadoResponse[] = [];
@@ -1483,7 +1503,7 @@ export class ZeusErpAdapter implements ErpAdapter {
           allow404: true,
           timeoutMs: LOOKUP_TIMEOUT_MS,
         });
-        // `request` devuelve el símbolo DUPLICATE sólo en POST con
+        // `request` devuelve un `ZeusConflict` sólo en POST con
         // `duplicateOn409`; acá cualquier cosa que no sea array es "sin datos".
         const inspected = inspectLookupRows(rows);
         options[kind] = inspected.options;

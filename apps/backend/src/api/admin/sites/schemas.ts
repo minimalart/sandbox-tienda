@@ -219,6 +219,16 @@ export const ContentConfigSchema = z
     // Qué checkout de MercadoPago muestra el demo (api | express | both).
     // Sin esto, validateAndTransformBody (Zod) descartaba la clave al guardar.
     mercadopagoCheckoutMode: z.enum(['api', 'express', 'both']).optional(),
+    // Cart drawer feature toggles. Sub-schema mirror del resto: como todo lo
+    // demás en `ContentConfigSchema`, cualquier clave no declarada acá Zod la
+    // STRIPPEA al guardar en silencio (misma trampa que documenta este archivo
+    // en `sections`, `campaign`, `footer`, etc).
+    cart: z
+      .object({
+        recommendationsCarousel: z.boolean().optional(),
+      })
+      .partial()
+      .optional(),
     /**
      * Content SITE-LEVEL del template Campaña (landing institucional).
      *
@@ -247,6 +257,8 @@ export const ContentConfigSchema = z
             subtitle: z.string().optional(),
             poweredByLabel: z.string().optional(),
             poweredByHref: z.string().optional(),
+            // URL de logo del pill "Powered by" del header. Sin esto, Zod la strippea.
+            poweredByImage: z.string().optional(),
             backgroundColor: z.string().optional(),
           })
           .partial()
@@ -254,7 +266,13 @@ export const ContentConfigSchema = z
         footer: z
           .object({
             poweredBy: z
-              .object({ label: z.string(), href: z.string() })
+              .object({
+                label: z.string().optional(),
+                href: z.string().optional(),
+                // URL de logo del "Powered by" del footer. Cargado = reemplaza al label.
+                image: z.string().optional(),
+              })
+              .partial()
               .optional(),
             backgroundColor: z.string().optional(),
           })

@@ -48,6 +48,7 @@ export const NATIVE_TOOL = {
   waListPresentations: 'wa_list_presentations',
   waListPinned: 'wa_list_pinned',
   waListFiltered: 'wa_list_filtered',
+  waLookupOrder: 'wa_lookup_order',
 } as const;
 
 export const NATIVE_TOOL_NAMES: ReadonlySet<string> = new Set(Object.values(NATIVE_TOOL));

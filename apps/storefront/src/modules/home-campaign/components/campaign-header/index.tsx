@@ -5,6 +5,7 @@ import { useTenant } from "@lib/site-config/context";
 import { selectTotalItems, useCartStore } from "@lib/stores/cart.store";
 import { pickContrastText } from "@lib/util/contrast";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
+import HomeTopbar from "@modules/home/components/topbar";
 import { ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useCallback } from "react";
@@ -19,14 +20,14 @@ type CampaignHeaderProps = {
 /**
  * Header del template Campaña (landing institucional).
  *
- * Minimalista: header sticky con logo + subtítulo institucional, pill
- * "Powered by" (opcional) y botón de carrito. Campaign tiene chrome propio y
- * deliberadamente no monta la topbar global.
+ * Minimalista: topbar unificada arriba (opcional, se edita desde el plugin
+ * `banners` en admin con placement `top_bar`), header sticky con logo +
+ * subtítulo institucional, pill "Powered by" (opcional) y botón de carrito.
  *
- * `chrome.backgroundColor` (opcional) pisa el fondo; sin config el preset
- * default es blanco. El resto de los tokens (subtitle color, borders, badge
- * del cart count) se derivan por contraste automático del fondo — el operador
- * pisa un solo valor y el resto se ajusta.
+ * `chrome.backgroundColor` (opcional) pisa el fondo del header; sin config el
+ * preset default es blanco. El resto de los tokens (subtitle color, borders,
+ * badge del cart count) se derivan por contraste automático del fondo — el
+ * operador pisa un solo valor y el resto se ajusta.
  */
 export default function CampaignHeader({
   initialCartCount = 0,
@@ -76,6 +77,12 @@ export default function CampaignHeader({
     : { backgroundColor: "#ffffff", color: "var(--campaign-bg, #0f1114)" };
 
   return (
+    <>
+      {/* Topbar unificada con el resto de templates: se edita desde el plugin
+          `banners` en admin (`/app/banners`) con placement `top_bar`. Sin
+          banners published para el sales channel activo el componente no
+          renderiza nada. */}
+      <HomeTopbar />
       <header
         className={
           bg
@@ -122,24 +129,49 @@ export default function CampaignHeader({
                 Diseñá tu espacio
               </LocalizedClientLink>
             )}
-            {chrome?.poweredByLabel ? (
-              chrome.poweredByHref ? (
+            {(() => {
+              // Iteración visual: cuando hay imagen configurada la firma se
+              // muestra en el pill flotante (bottom-right) y suprimimos la
+              // versión inline del header para no duplicarla. Sin imagen queda
+              // el label-only inline como fallback.
+              const floatingImage =
+                chrome?.poweredByImage?.trim() ||
+                campaign?.footer?.poweredBy?.image?.trim();
+              if (floatingImage) return null;
+              // XOR: image gana sobre label; sin image ni label, se oculta.
+              const poweredByImage = chrome?.poweredByImage?.trim() || undefined;
+              const poweredByLabel = chrome?.poweredByLabel?.trim() || undefined;
+              const poweredByHref = chrome?.poweredByHref?.trim() || undefined;
+              const hasPoweredBy = !!poweredByImage || !!poweredByLabel;
+              if (!hasPoweredBy) return null;
+              const pillClass = `hidden rounded-full border px-3 py-1.5 text-xs transition sm:inline-flex ${borderClass} ${pillTextClass} ${pillHoverClass}`;
+              const pillStaticClass = `hidden rounded-full border px-3 py-1.5 text-xs sm:inline-flex ${borderClass} ${pillTextClass}`;
+              const imageClass = "hidden items-center transition hover:opacity-80 sm:inline-flex";
+              const imageStaticClass = "hidden items-center sm:inline-flex";
+              const inner = poweredByImage ? (
+                <img
+                  src={poweredByImage}
+                  alt={poweredByLabel || tenant.name}
+                  className="max-h-7 w-auto object-contain sm:max-h-9"
+                />
+              ) : (
+                poweredByLabel
+              );
+              return poweredByHref ? (
                 <a
-                  href={chrome.poweredByHref}
+                  href={poweredByHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`hidden rounded-full border px-3 py-1.5 text-xs transition sm:inline-flex ${borderClass} ${pillTextClass} ${pillHoverClass}`}
+                  className={poweredByImage ? imageClass : pillClass}
                 >
-                  {chrome.poweredByLabel}
+                  {inner}
                 </a>
               ) : (
-                <span
-                  className={`hidden rounded-full border px-3 py-1.5 text-xs sm:inline-flex ${borderClass} ${pillTextClass}`}
-                >
-                  {chrome.poweredByLabel}
+                <span className={poweredByImage ? imageStaticClass : pillStaticClass}>
+                  {inner}
                 </span>
-              )
-            ) : null}
+              );
+            })()}
             <button
               ref={cartBtnRef}
               type="button"
@@ -174,5 +206,6 @@ export default function CampaignHeader({
           </nav>
         )}
       </header>
+    </>
   );
 }

@@ -14,18 +14,28 @@ export async function abandonedCartDelivery(pg: Pg, data: Record<string, unknown
     throw new Error('Cannot resolve the WhatsApp store');
   if (site.status === 'singleSite') site = { status: 'site', site: site.site };
   const settings = await readSettingsViaPg('extension:whatsapp', pg, site);
-  const credentials = await readSiteCredentialsViaSql<{ apiKey?: string; baseUrl?: string }>(
-    pg,
-    'kapso',
-    site
-  );
+  const credentials = await readSiteCredentialsViaSql<{
+    apiKey?: string;
+    baseUrl?: string;
+    phoneNumberId?: string;
+  }>(pg, 'kapso', site);
   if (credentials.status === 'missing' && credentials.reason === 'undecryptable')
     throw new Error('Cannot decrypt WhatsApp credentials');
-  const apiKey =
-    credentials.status === 'found' && credentials.source === 'site'
-      ? credentials.value.apiKey
-      : settings?.KAPSO_API_KEY;
-  const phoneNumberId = settings?.KAPSO_PHONE_NUMBER_ID;
+  /**
+   * The API key and the sender are ONE credential: a Kapso key only grants access
+   * to ITS own WhatsApp configuration. Taking the store key with the instance
+   * sender returns 401 `Invalid credentials for WhatsApp configuration` and the
+   * message is silently never delivered. So the pair is taken whole, or not used.
+   */
+  const ownPair =
+    credentials.status === 'found' &&
+    credentials.source === 'site' &&
+    credentials.value.apiKey &&
+    credentials.value.phoneNumberId
+      ? credentials.value
+      : null;
+  const apiKey = ownPair ? ownPair.apiKey : settings?.KAPSO_API_KEY;
+  const phoneNumberId = ownPair ? ownPair.phoneNumberId : settings?.KAPSO_PHONE_NUMBER_ID;
   const language = settings?.KAPSO_TEMPLATE_LANG;
   if (
     typeof apiKey !== 'string' ||
@@ -39,12 +49,11 @@ export async function abandonedCartDelivery(pg: Pg, data: Record<string, unknown
   return {
     apiKey,
     phoneNumberId,
-    baseUrl:
-      credentials.status === 'found' && credentials.source === 'site' && credentials.value.baseUrl
-        ? credentials.value.baseUrl
-        : typeof settings?.KAPSO_BASE_URL === 'string'
-          ? settings.KAPSO_BASE_URL
-          : 'https://api.kapso.ai',
+    baseUrl: ownPair?.baseUrl
+      ? ownPair.baseUrl
+      : typeof settings?.KAPSO_BASE_URL === 'string'
+        ? settings.KAPSO_BASE_URL
+        : 'https://api.kapso.ai',
     template: {
       name: String(data.cart_abandoned_template_name),
       language: { code: language },

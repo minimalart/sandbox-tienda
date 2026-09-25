@@ -37,6 +37,8 @@ La clave y el remitente son opciones de arranque del provider: se leen antes de 
 
 El destinatario de las notificaciones internas —pedidos nuevos, alertas— se resuelve en dos pasos. Primero, el email de notificación cargado en la configuración de emails, que es POR TIENDA. Si no hay ninguno, el email de avisos de esta pantalla, que es el respaldo de toda la instalación.
 
+Los dos campos aceptan VARIAS casillas separadas por coma, y el aviso sale una sola vez con todas en el destinatario. Pero las capas no se suman: si la tienda cargó su propia lista, la de esta pantalla no se usa. Es a propósito —una tienda que eligió sus buzones no tiene que volver a recibir en el genérico de la instalación—, así que si querés que alguien reciba los avisos de TODAS las tiendas, tiene que estar en la lista de cada una.
+
 Vacío en los dos lugares significa que no se manda ningún aviso interno. No hay error: los mails al cliente siguen saliendo normalmente y los internos simplemente no existen.
 
 ## Los IDs de plantilla de SendGrid son otra cosa

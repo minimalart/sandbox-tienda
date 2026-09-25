@@ -524,12 +524,26 @@ export default function TypesenseProductCard({
               </div>
 
               <h3 className="mb-1 line-clamp-2 min-h-[2.6em] font-semibold text-[#111827] text-[14px] md:text-[16px] leading-tight">
-                <LocalizedClientLink
-                  href={`/products/${product.handle}`}
-                  className="outline-none hover:underline"
-                >
-                  {product.title}
-                </LocalizedClientLink>
+                {quickViewOnly ? (
+                  // Campaign no monta PDP (TEMPLATES_WITHOUT_STORE_PAGE), así que el link
+                  // a /products/{handle} caía en 404. El título abre el mismo quick view
+                  // que ya dispara el overlay de la imagen.
+                  <button
+                    type="button"
+                    onClick={openModal}
+                    aria-label={`Vista rápida de ${product.title}`}
+                    className="text-left outline-none hover:underline focus-visible:underline"
+                  >
+                    {product.title}
+                  </button>
+                ) : (
+                  <LocalizedClientLink
+                    href={`/products/${product.handle}`}
+                    className="outline-none hover:underline"
+                  >
+                    {product.title}
+                  </LocalizedClientLink>
+                )}
               </h3>
             </>
           )}

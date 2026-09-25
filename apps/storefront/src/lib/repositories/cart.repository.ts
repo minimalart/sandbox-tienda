@@ -18,6 +18,7 @@ import {
 } from '@lib/data/cookies'
 import { getActiveSitePrefix } from '@lib/site-config/active-tenant'
 import { getRegion } from '@lib/data/regions'
+import { removeBundleInstanceFromCart } from '@lib/data/bundles'
 import { revalidateTag } from 'next/cache'
 import {
   buildB2CCartMetadata,
@@ -910,6 +911,40 @@ export async function removeCartLineItem(lineId: string): Promise<CartResult> {
       success: false,
       cart: null,
       error: error.message || 'Error removing line item',
+    }
+  }
+}
+
+/**
+ * Saca un kit (todas las líneas que comparten `bundle_instance_id`) del
+ * carrito con UNA llamada al backend. Antes se borraba línea por línea con el
+ * DELETE de Medusa: N requests y N recálculos de totales por kit.
+ */
+export async function removeCartBundleInstance(
+  bundleInstanceId: string,
+): Promise<CartResult> {
+  const cartId = await getCartId()
+
+  if (!cartId) {
+    return { success: false, cart: null, error: 'No cart found' }
+  }
+
+  try {
+    await removeBundleInstanceFromCart({
+      cart_id: cartId,
+      bundle_instance_id: bundleInstanceId,
+    })
+
+    const cartCacheTag = await getCacheTag('carts')
+    revalidateTag(cartCacheTag, 'max')
+
+    const updatedCart = await retrieveCart(cartId)
+    return { success: true, cart: updatedCart }
+  } catch (error: any) {
+    return {
+      success: false,
+      cart: null,
+      error: error.message || 'Error removing bundle',
     }
   }
 }

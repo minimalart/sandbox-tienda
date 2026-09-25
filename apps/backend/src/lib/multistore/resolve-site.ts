@@ -20,6 +20,8 @@ type SiteRow = {
   b2b_sales_channel_id: string | null;
   region_id: string | null;
   stock_location_id: string | null;
+  /** Fuera de `SiteRef` a propósito: el filtrado no lo usa. Ver `listSiteBrands`. */
+  theme?: Record<string, unknown> | null;
 };
 
 /** Postgres: `relation "..." does not exist`. La tabla puede no existir todavía. */
@@ -200,6 +202,43 @@ export async function listSites(
     return options.includeMain === false ? refs.filter((site) => !site.is_main) : refs;
   } catch (error) {
     if (isUndefinedTable(error)) return [];
+    throw error;
+  }
+}
+
+/** Colores de marca de una tienda, tal como los guarda su `theme`. */
+export type SiteBrandColors = {
+  primary_color: string | null;
+  secondary_color: string | null;
+  accent_color: string | null;
+};
+
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+const brandColor = (theme: Record<string, unknown> | null | undefined, key: string): string | null => {
+  const value = theme?.[key];
+  return typeof value === 'string' && HEX_COLOR.test(value.trim()) ? value.trim().toLowerCase() : null;
+};
+
+export const toSiteBrandColors = (theme: Record<string, unknown> | null | undefined): SiteBrandColors => ({
+  primary_color: brandColor(theme, 'primary_color'),
+  secondary_color: brandColor(theme, 'secondary_color'),
+  accent_color: brandColor(theme, 'accent_color'),
+});
+
+/**
+ * Colores de marca por id de tienda. Van aparte de `listSites` porque `SiteRef` es
+ * lo que consume el filtrado (y lo espeja `resolve-site-sql.ts`); los colores sólo
+ * los quiere el admin para ofrecer la paleta de la tienda en sus formularios.
+ */
+export async function listSiteBrands(container: MedusaContainer): Promise<Record<string, SiteBrandColors>> {
+  const service = resolveService(container);
+  if (!service) return {};
+  try {
+    const rows = (await service.listDemoStores({}, {})) ?? [];
+    return Object.fromEntries(rows.map((row) => [row.id, toSiteBrandColors(row.theme)]));
+  } catch (error) {
+    if (isUndefinedTable(error)) return {};
     throw error;
   }
 }

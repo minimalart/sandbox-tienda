@@ -1,12 +1,16 @@
+import { fetchJson } from '../../../../lib/http';
 import { Puck, usePuck, type Data } from '@measured/puck';
 import '@measured/puck/puck.css';
 import { Button, Heading, Text, Toaster, toast, usePrompt } from '@medusajs/ui';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { registerDemoStoresTranslations } from '../../../../translations/demo-stores';
+import { StorefrontPreviewProvider, withStorefrontPreview } from '../../../../lib/puck/storefront-preview';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDemoStore, useUpdateDemoStore } from '../../../../hooks/api/demo-stores';
 import { useStorefrontOrigins } from '../../../../hooks/use-storefront-base';
 import { buildPublicUrlFrom, formatPublicUrlFrom } from '../../lib';
-import { DEFAULT_HOME_LAYOUT, homeConfig } from '../../../../lib/puck/home-config';
+import { defaultHomeForStore, homeConfigForTemplate } from '../../../../lib/puck/home-config';
 
 const EMPTY_DATA = { content: [], root: { props: {} } } as unknown as Data;
 
@@ -28,17 +32,24 @@ const hasContent = (data: unknown): data is Data =>
  */
 const DemoHomeEditor = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation('demo-stores');
+  registerDemoStoresTranslations(i18n);
+  const liveData = useRef<Data | null>(null);
   const prompt = usePrompt();
   const { id = '' } = useParams();
+  const previewRequest = useMemo(() => <T,>(url: string, init?: RequestInit) => fetchJson<T>(url, { ...init, headers: { ...init?.headers, 'x-site-id': id } }), [id]);
 
   const { data, isLoading } = useDemoStore(id);
   const demo = data?.demo_store;
+  const previewConfig = useMemo(() => withStorefrontPreview(homeConfigForTemplate(demo?.template_code, i18n.language)), [demo?.template_code, i18n.language]);
   const updateMut = useUpdateDemoStore(id);
+  const seeded = useMemo(() => (demo ? defaultHomeForStore(demo) : undefined) ?? EMPTY_DATA, [demo]);
 
   // Puck recibe `data` solo al montar; para reflejar un "restablecer" forzamos
   // remount cambiando `puckKey` y guardamos la data aplicada en estado.
   const [editorData, setEditorData] = useState<Data | null>(null);
   const [puckKey, setPuckKey] = useState(0);
+  useEffect(() => { setEditorData(null); liveData.current = null; setPuckKey(k => k + 1); }, [id]);
 
   /**
    * LA BASE DE LA INSTANCIA, NO LA URL DE LA TIENDA ACTIVA.
@@ -80,12 +91,15 @@ const DemoHomeEditor = () => {
 
   // Data inicial: la guardada si tiene contenido; si no, el layout real del
   // template del demo (secciones reales, editables) para abrir mostrando su home.
-  const seeded = (DEFAULT_HOME_LAYOUT[demo.template_code] ?? EMPTY_DATA) as unknown as Data;
+
   const currentData =
     editorData ?? (hasContent(demo.home_puck_data) ? (demo.home_puck_data as Data) : seeded);
 
+  if (!liveData.current) liveData.current = currentData;
+
   const applyToEditor = (puckData: unknown) => {
     setEditorData(puckData as Data);
+    liveData.current = puckData as Data;
     setPuckKey((k) => k + 1);
   };
 
@@ -148,22 +162,26 @@ const DemoHomeEditor = () => {
             rel="noreferrer"
             className="text-sm text-ui-fg-interactive"
           >
-            Vista previa ↗
+            {t('HOME_PUBLIC_PAGE')} ↗
           </a>
         </div>
       </div>
 
+      <StorefrontPreviewProvider request={previewRequest} key={id} endpoint={`/admin/sites/${encodeURIComponent(id)}/home-preview`} previewPath="/_puck/home" storefront={storefrontBase} language={i18n.language} t={t} liveData={liveData}>
       <div className="min-h-0 flex-1">
         {/* `key` fuerza remount al restablecer. onPublish guarda home_puck_data. */}
         <Puck
           key={puckKey}
-          config={homeConfig}
+          config={previewConfig}
+          onChange={(data) => { liveData.current = data; }}
+          viewports={[{ width: 390, height: 'auto', label: 'Mobile', icon: 'Smartphone' }, { width: 768, height: 'auto', label: 'Tablet', icon: 'Tablet' }, { width: 1440, height: 'auto', label: 'Desktop', icon: 'Monitor' }]}
           data={currentData}
           onPublish={handleSave}
           overrides={{ headerActions: () => <PuckSaveButton /> }}
         />
       </div>
 
+      </StorefrontPreviewProvider>
       <Toaster />
     </div>
   );

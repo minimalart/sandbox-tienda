@@ -246,6 +246,18 @@ export type DemoContentConfig = {
    */
   mercadopagoCheckoutMode?: 'api' | 'express' | 'both';
   /**
+   * Cart drawer feature toggles. Ausente = defaults del storefront (opt-out:
+   * ninguna tienda derivada cambia hasta que decida apagar algo desde el admin).
+   */
+  cart?: {
+    /**
+     * Carrusel de productos recomendados dentro del minicart. Ausente/`true` =
+     * visible en los dos puntos donde aparece (carrito con items + carrito
+     * vacío). Sólo `false` explícito lo esconde.
+     */
+    recommendationsCarousel?: boolean;
+  };
+  /**
    * Content SITE-LEVEL del template Campaña (landing institucional). Sólo se lee
    * cuando `template_code === 'campaign'`. Cubre lo que aparece en TODAS las
    * pantallas del sitio (barra de anuncio, chrome del header, footer
@@ -266,11 +278,17 @@ export type DemoContentConfig = {
       subtitle?: string;
       poweredByLabel?: string;
       poweredByHref?: string;
+      /** URL de logo del pill "Powered by" del header. Cargado = reemplaza al label. */
+      poweredByImage?: string;
       /** Hex. Ausente = default del template (blanco). */
       backgroundColor?: string;
     };
     footer?: {
-      poweredBy?: { label: string; href: string };
+      /**
+       * Crédito "Powered by" del footer. `image` (si viene) reemplaza al `label`;
+       * `href` (opcional) envuelve la imagen o el label en un `<a>`.
+       */
+      poweredBy?: { label?: string; href?: string; image?: string };
       /** Hex. Ausente = default del template (blanco en campaign). */
       backgroundColor?: string;
     };

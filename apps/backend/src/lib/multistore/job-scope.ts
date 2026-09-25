@@ -191,6 +191,15 @@ export const JOB_SCOPE: Record<string, JobScopeState> = {
   'subscribers/andreani-ticket-tracking-whatsapp': { state: 'scoped' },
   'subscribers/correo-order': { state: 'scoped' },
   'subscribers/correo-ticket-tracking-whatsapp': { state: 'scoped' },
+  // Los dos de mail son POR FILA, igual que sus hermanos de WhatsApp: mandan UN
+  // aviso por orden y `buildOrderTrackingData` pone el `sales_channel_id` de ESA
+  // orden en la `data` de la notificación —`ORDER_TRACKING_FIELDS` lo pide
+  // explícitamente—, que es lo que el provider usa para resolver la tienda y su
+  // branding. No hay copia al admin, así que tampoco existe acá la media
+  // migración que la cabecera de este archivo advierte: el mail del cliente es
+  // el único que sale.
+  'subscribers/andreani-ticket-tracking-email': { state: 'scoped' },
+  'subscribers/correo-ticket-tracking-email': { state: 'scoped' },
 
   // ── company / corporate (B2B) ───────────────────────────────────────────────
   'subscribers/company-credit-order-placed': { state: 'not-applicable', reason: 'resuelve la empresa por `getMembershipByCustomer`, que devuelve `rows[0]` — y es inequivoco porque un cliente pertenece a lo sumo a UNA empresa en toda la instalacion: `create-company.ts:58` y `accept-company-invitation.ts:29` rechazan la segunda con NOT_ALLOWED. La cuenta corriente cuelga de esa empresa, que ya lleva su `sales_channel_id`' },
@@ -261,6 +270,8 @@ export const JOB_SCOPE: Record<string, JobScopeState> = {
   // externo que multiplicar: lo que cambia es CUALES ordenes lo generan.
   'subscribers/own-fleet-order': { state: 'scoped' },
   'subscribers/own-fleet-delivery-whatsapp': { state: 'scoped' },
+  // Mismo evento y mismo eje que el de WhatsApp, por el canal `email`.
+  'subscribers/own-fleet-delivery-email': { state: 'scoped' },
 
   // ── dynamic-groups ──────────────────────────────────────────────────────────
   // Dynamic groups — subscriber moved to @minimalart/mercatto-plugin-dynamic-groups.
@@ -269,6 +280,7 @@ export const JOB_SCOPE: Record<string, JobScopeState> = {
   'subscribers/erp-catalog-typesense-sync': { state: 'not-applicable', reason: 'encola un reindex de los productos que el catalog sync del ERP unico toco; el destino es el cluster unico de Typesense y el evento llega con los ids ya resueltos' },
   'subscribers/erp-fulfillment-created': { state: 'not-applicable', reason: 'mismo outbox y mismo ERP unico que los otros dos triggers de venta; el eje es la orden y su marca de deposito facturador, no la tienda' },
   'subscribers/erp-invoice-ready-email': { state: 'not-applicable', reason: 'avisa el comprobante al email de la orden; el branding del mail lo resuelve el provider de notificacion por `sales_channel_id`, no este subscriber' },
+  'subscribers/erp-order-billing-deposito': { state: 'not-applicable', reason: 'sella en la orden el deposito facturador que sale de su sucursal de retiro; el eje es la orden y el mapeo deposito → stock location del ERP unico, no la tienda' },
   'subscribers/erp-order-placed-reconcile': { state: 'not-applicable', reason: 'encola la venta en el outbox del ERP unico con clave idempotente por orden; `erp_config` es una sola fila activa por instalacion y el destinatario es uno solo' },
   'subscribers/erp-payment-captured': { state: 'not-applicable', reason: 'mismo outbox y mismo ERP unico: resuelve payment → payment_collection → order y encola. No hay credencial de ERP por tienda (`admin/erp/config` ya es not-applicable por eso)' },
 
@@ -357,6 +369,17 @@ export const JOB_SCOPE: Record<string, JobScopeState> = {
   // en la `data` de la notificación, que es lo que el provider usa para resolver
   // la tienda y su branding. Mismo eje y mismo helper que `order-placed-email`.
   'subscribers/store-pickup-ready-email': { state: 'scoped' },
+  // El aviso de "entregado". Su evento (`delivery.created`) trae el id del
+  // FULFILLMENT, no el de la orden, así que primero resuelve `order.id` y recién
+  // después arma la notificación con el `sales_channel_id` de esa orden. El eje
+  // termina siendo el mismo de `store-pickup-ready-email`: el de la fila.
+  'subscribers/order-delivered-email': { state: 'scoped' },
+  // El link para vincular un pedido de invitado. Su evento
+  // (`order.transfer_requested`) trae `{ id, order_change_id }` y ningun eje, pero
+  // la orden si: el subscriber la consulta igual para el `display_id` y de ahi sale
+  // el `sales_channel_id` que va en la `data` de la notificacion. Mismo eje que el
+  // resto de los mails de orden; no hay fan-out posible — es UN pedido.
+  'subscribers/order-transfer-requested-email': { state: 'scoped' },
   'subscribers/order-placed-whatsapp': { state: 'scoped' },
   'subscribers/return-requested-notify': { state: 'scoped' },
 

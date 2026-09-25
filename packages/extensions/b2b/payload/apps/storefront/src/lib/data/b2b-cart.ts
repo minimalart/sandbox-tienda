@@ -11,6 +11,7 @@ import type { HttpTypes } from "@medusajs/types";
 import {
   getAuthHeaders,
   getB2BCartId,
+  getLoggedInCustomerId,
   removeB2BCartId,
   setB2BCartId,
 } from "./cookies";
@@ -65,11 +66,17 @@ export async function getOrSetB2BCart(countryCode: string): Promise<HttpTypes.St
   // Self-healing: cart guest con customer logueado → re-asociar (transfer).
   // "Guest" es también el cart que YA tiene customer_id de un INVITADO:
   // setB2BCartAddress guarda el email y Medusa crea ahí mismo un customer
-  // `has_account: false` y lo ata al cart. Ver @lib/util/cart-customer-transfer.
+  // `has_account: false` y lo ata al cart. El id del logueado se compara
+  // contra `cart.customer_id` para no reintentar un transfer que el core ya
+  // resuelve como no-op cuando el cart es del mismo customer.
+  // Ver @lib/util/cart-customer-transfer.
+  const loggedInCustomerId = headers.authorization
+    ? await getLoggedInCustomerId()
+    : undefined;
   if (
     cart &&
     !!headers.authorization &&
-    shouldTransferCartToCustomer(cart)
+    shouldTransferCartToCustomer(cart, loggedInCustomerId)
   ) {
     try {
       await sdk.store.cart.transferCart(cart.id, {}, headers);
@@ -156,66 +163,92 @@ export async function syncB2BCartLines(
   company?: { id?: string; name?: string; placed_by_id?: string; placed_by_email?: string },
 ): Promise<{ ok: true; cartId: string } | { ok: false; error: string }> {
   try {
-    const base = await getOrSetB2BCart(countryCode);
-    const headers = { ...(await getAuthHeaders()) };
-
-    const desired = new Map<string, number>();
     for (const l of lines) {
       if (!Number.isSafeInteger(l.quantity) || l.quantity < 1) throw new Error("Ingresá una cantidad entera positiva.");
-      desired.set(l.variant_id, l.quantity);
     }
+    const base = await getOrSetB2BCart(countryCode);
+    const headers = { ...(await getAuthHeaders()) };
+    const metadata = b2bCartMetadata(company);
 
-    // Ítems actuales (getOrSetB2BCart puede devolver un carrito recién creado sin
-    // items expandidos → releer con los CART_FIELDS).
-    const current = await retrieveB2BCart();
-    const existing = new Map<string, { id: string; quantity: number }>();
-    for (const it of (current?.items ?? []) as Array<{ id: string; variant_id?: string | null; quantity: number }>) {
-      if (it.variant_id) existing.set(it.variant_id, { id: it.id, quantity: it.quantity });
+    // Una sola request: el backend agrupa altas y bajas en un workflow cada una.
+    // Línea por línea (abajo) eran ~65 s con 8 SKUs. El fallback cubre el
+    // storefront desplegado antes que un backend que todavía no tiene la ruta.
+    try {
+      await sdk.client.fetch(`/store/b2b/carts/${base.id}/sync`, {
+        method: "POST",
+        headers,
+        body: { lines, metadata },
+      });
+      return { ok: true, cartId: base.id };
+    } catch (e) {
+      if ((e as { status?: number })?.status !== 404) throw e;
     }
-
-    // Crear / actualizar.
-    for (const [variant_id, quantity] of Array.from(desired.entries())) {
-      const ex = existing.get(variant_id);
-      const presentationMode = lines.find(l => l.variant_id === variant_id)?.presentation_mode;
-      if (presentationMode) {
-        await sdk.client.fetch(`/store/b2b/carts/${base.id}/presentations`, { method: "POST", headers, body: { variant_id, quantity, mode: presentationMode, replace: true } });
-        continue;
-      }
-      if (ex) {
-        if (ex.quantity !== quantity) {
-          // eslint-disable-next-line no-await-in-loop
-          await sdk.store.cart.updateLineItem(base.id, ex.id, { quantity }, {}, headers);
-        }
-      } else {
-        // eslint-disable-next-line no-await-in-loop
-        await sdk.store.cart.createLineItem(base.id, { variant_id, quantity }, {}, headers);
-      }
-    }
-    // Borrar las que ya no están.
-    for (const [variant_id, ex] of Array.from(existing.entries())) {
-      if (!desired.has(variant_id)) {
-        // eslint-disable-next-line no-await-in-loop
-        await sdk.store.cart.deleteLineItem(base.id, ex.id, {}, headers);
-      }
-    }
-
-    await sdk.store.cart.update(
-      base.id,
-      {
-        metadata: {
-          context: "b2b",
-          ...(company?.id ? { company_id: company.id } : {}),
-          ...(company?.name ? { company_name: company.name } : {}),
-          ...(company?.placed_by_id ? { placed_by_customer_id: company.placed_by_id } : {}),
-          ...(company?.placed_by_email ? { placed_by_email: company.placed_by_email } : {}),
-        },
-      },
-      {},
-      headers,
-    );
+    await syncB2BCartLinesOneByOne(base, lines, metadata, headers);
     return { ok: true, cartId: base.id };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Error" };
+  }
+}
+
+function b2bCartMetadata(
+  company?: { id?: string; name?: string; placed_by_id?: string; placed_by_email?: string },
+): Record<string, string> {
+  return {
+    context: "b2b",
+    ...(company?.id ? { company_id: company.id } : {}),
+    ...(company?.name ? { company_name: company.name } : {}),
+    ...(company?.placed_by_id ? { placed_by_customer_id: company.placed_by_id } : {}),
+    ...(company?.placed_by_email ? { placed_by_email: company.placed_by_email } : {}),
+  };
+}
+
+async function syncB2BCartLinesOneByOne(
+  base: HttpTypes.StoreCart,
+  lines: Array<{ variant_id: string; quantity: number; presentation_mode?: "unit" | "package" }>,
+  metadata: Record<string, string>,
+  headers: Awaited<ReturnType<typeof getAuthHeaders>>,
+): Promise<void> {
+  const desired = new Map<string, number>();
+  for (const l of lines) desired.set(l.variant_id, l.quantity);
+
+  // Ítems actuales (getOrSetB2BCart puede devolver un carrito recién creado sin
+  // items expandidos → releer con los CART_FIELDS).
+  const current = await retrieveB2BCart();
+  const existing = new Map<string, { id: string; quantity: number }>();
+  for (const it of (current?.items ?? []) as Array<{ id: string; variant_id?: string | null; quantity: number }>) {
+    if (it.variant_id) existing.set(it.variant_id, { id: it.id, quantity: it.quantity });
+  }
+
+  // Crear / actualizar.
+  for (const [variant_id, quantity] of Array.from(desired.entries())) {
+    const ex = existing.get(variant_id);
+    const presentationMode = lines.find(l => l.variant_id === variant_id)?.presentation_mode;
+    if (presentationMode) {
+      await sdk.client.fetch(`/store/b2b/carts/${base.id}/presentations`, { method: "POST", headers, body: { variant_id, quantity, mode: presentationMode, replace: true } });
+      continue;
+    }
+    if (ex) {
+      if (ex.quantity !== quantity) {
+        // eslint-disable-next-line no-await-in-loop
+        await sdk.store.cart.updateLineItem(base.id, ex.id, { quantity }, {}, headers);
+      }
+    } else {
+      // eslint-disable-next-line no-await-in-loop
+      await sdk.store.cart.createLineItem(base.id, { variant_id, quantity }, {}, headers);
+    }
+  }
+  // Borrar las que ya no están.
+  for (const [variant_id, ex] of Array.from(existing.entries())) {
+    if (!desired.has(variant_id)) {
+      // eslint-disable-next-line no-await-in-loop
+      await sdk.store.cart.deleteLineItem(base.id, ex.id, {}, headers);
+    }
+  }
+
+  // Cada update corre el workflow entero del carrito: saltearlo si no cambió.
+  const stored = (base.metadata ?? {}) as Record<string, unknown>;
+  if (Object.entries(metadata).some(([k, v]) => stored[k] !== v)) {
+    await sdk.store.cart.update(base.id, { metadata }, {}, headers);
   }
 }
 

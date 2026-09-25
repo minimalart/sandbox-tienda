@@ -155,13 +155,6 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<v
 
   const demo = await service.retrieveDemoStore(id);
 
-  // Preserve checkout snapshots and the site/channel identity of active orders.
-  const checkoutDb: any = req.scope.resolve(ContainerRegistrationKeys.PG_CONNECTION);
-  if (await checkoutDb('site_checkout_session').where({ site_id: id }).first()) {
-    res.status(409).json({ message: 'Esta tienda tiene checkouts o pedidos con datos protegidos. Archivala sin eliminar sus recursos.' });
-    return;
-  }
-
   // La tienda principal NO se borra. El teardown de abajo no tiene otra entrada, y
   // sobre la fila principal se llevaría por delante el canal de ventas por defecto,
   // el stock location y —si alguien le hubiera prendido B2B— la company real.
@@ -173,113 +166,169 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse): Promise<v
     return;
   }
 
-  // Origen `sales_channel`: el catálogo NO es de la demo, son productos que ya
-  // existían en otro canal de esta instancia (la demo los comparte, no los clona).
-  // Borrarlos al borrar la demo se llevaría el catálogo real por delante. Y si el
-  // canal además es el ADOPTADO (la demo usa el canal de origen tal cual), tampoco
-  // se borra el canal: es preexistente.
-  const sharesSourceCatalog = demo.source_type === 'sales_channel';
-  const adoptedSalesChannel = sharesSourceCatalog && demo.source_url === demo.sales_channel_id;
+  // El 409 sólo mira órdenes ACTIVAS (no las sessions sin orden ni las canceladas):
+  // una sesión sin orden es un carrito abandonado y no bloquea la baja, y una orden
+  // cancelada ya no requiere intervención del operador. Si NO hay órdenes activas
+  // pero SÍ existe historial de checkout (site_checkout_session), el teardown físico
+  // se saltea para preservar las referencias que las órdenes canceladas y las
+  // propias filas de site_checkout_session todavía consultan; el soft-delete de la
+  // fila demo_store alcanza para sacarla del panel sin romper esas referencias.
+  const checkoutDb: any = req.scope.resolve(ContainerRegistrationKeys.PG_CONNECTION);
+  const sessions = await checkoutDb('site_checkout_session').where({ site_id: id }).select('cart_id');
+  const cartIds = (sessions as any[]).map((s) => s.cart_id).filter(Boolean);
+  const hasCheckoutHistory = cartIds.length > 0;
 
-  // Best-effort teardown of the demo's provisioned resources. Products first
-  // (a sales channel with products can't be deleted), then SC/region/stock.
-  if (demo.sales_channel_id && !sharesSourceCatalog) {
-    try {
-      // query.graph can't filter products by sales_channels nor traverse
-      // sales_channel.products; select sales_channels.id and filter in JS.
-      const { data: products } = await query.graph({
-        entity: 'product',
-        fields: ['id', 'sales_channels.id'],
-        pagination: { take: 100000, skip: 0 },
+  if (hasCheckoutHistory) {
+    const { data: links } = await query.graph({
+      entity: 'order_cart',
+      fields: ['order_id'],
+      filters: { cart_id: cartIds },
+    });
+    const orderIds = ((links ?? []) as any[]).map((l) => l.order_id).filter(Boolean);
+    if (orderIds.length > 0) {
+      const { data: orders } = await query.graph({
+        entity: 'order',
+        fields: ['id', 'display_id', 'status', 'canceled_at'],
+        filters: { id: orderIds },
       });
-      const productIds = ((products ?? []) as any[])
-        .filter(
-          (p) =>
-            Array.isArray(p.sales_channels) &&
-            p.sales_channels.some((sc: any) => sc?.id === demo.sales_channel_id)
-        )
-        .map((p) => p.id as string);
-      if (productIds.length > 0) {
-        await deleteProductsWorkflow(req.scope).run({ input: { ids: productIds } });
+      const active = ((orders ?? []) as any[]).filter(
+        (o) => o.status !== 'canceled' && !o.canceled_at
+      );
+      if (active.length > 0) {
+        const labels = active.map((o) => `#${o.display_id ?? o.id}`);
+        const list = labels.join(', ');
+        const message =
+          labels.length === 1
+            ? `No se puede eliminar: cancelá primero la orden ${list} y volvé a intentar.`
+            : `No se puede eliminar: cancelá primero las órdenes ${list} y volvé a intentar.`;
+        res.status(409).json({ message });
+        return;
       }
-    } catch (err) {
-      logger.warn(`[demo-store] Product cleanup failed: ${(err as Error).message}`);
     }
   }
 
-  // El canal adoptado se deja intacto (existía antes de la demo y puede seguir en
-  // uso). Borrar el canal desvincula sus productos por los remote links, sin
-  // borrarlos: para una demo con catálogo compartido eso es exactamente lo que hay
-  // que hacer.
-  if (demo.sales_channel_id && !adoptedSalesChannel) {
-    try {
-      await deleteSalesChannelsWorkflow(req.scope).run({ input: { ids: [demo.sales_channel_id] } });
-    } catch (err) {
-      logger.warn(`[demo-store] Sales channel cleanup failed: ${(err as Error).message}`);
+  if (!hasCheckoutHistory) {
+    // Origen `sales_channel`: el catálogo NO es de la demo, son productos que ya
+    // existían en otro canal de esta instancia (la demo los comparte, no los clona).
+    // Borrarlos al borrar la demo se llevaría el catálogo real por delante. Y si el
+    // canal además es el ADOPTADO (la demo usa el canal de origen tal cual), tampoco
+    // se borra el canal: es preexistente.
+    const sharesSourceCatalog = demo.source_type === 'sales_channel';
+    const adoptedSalesChannel = sharesSourceCatalog && demo.source_url === demo.sales_channel_id;
+
+    // Best-effort teardown of the demo's provisioned resources. Products first
+    // (a sales channel with products can't be deleted), then SC/region/stock.
+    if (demo.sales_channel_id && !sharesSourceCatalog) {
+      try {
+        // query.graph can't filter products by sales_channels nor traverse
+        // sales_channel.products; select sales_channels.id and filter in JS.
+        const { data: products } = await query.graph({
+          entity: 'product',
+          fields: ['id', 'sales_channels.id'],
+          pagination: { take: 100000, skip: 0 },
+        });
+        const productIds = ((products ?? []) as any[])
+          .filter(
+            (p) =>
+              Array.isArray(p.sales_channels) &&
+              p.sales_channels.some((sc: any) => sc?.id === demo.sales_channel_id)
+          )
+          .map((p) => p.id as string);
+        if (productIds.length > 0) {
+          await deleteProductsWorkflow(req.scope).run({ input: { ids: productIds } });
+        }
+      } catch (err) {
+        logger.warn(`[demo-store] Product cleanup failed: ${(err as Error).message}`);
+      }
     }
+
+    // El canal adoptado se deja intacto (existía antes de la demo y puede seguir en
+    // uso). Borrar el canal desvincula sus productos por los remote links, sin
+    // borrarlos: para una demo con catálogo compartido eso es exactamente lo que hay
+    // que hacer.
+    if (demo.sales_channel_id && !adoptedSalesChannel) {
+      try {
+        await deleteSalesChannelsWorkflow(req.scope).run({ input: { ids: [demo.sales_channel_id] } });
+      } catch (err) {
+        logger.warn(`[demo-store] Sales channel cleanup failed: ${(err as Error).message}`);
+      }
+    }
+
+    // ── B2B teardown (best-effort) ─────────────────────────────────────────────
+    // Automatically provisioned wholesale resources are owned by the site;
+    // manually selected resources are retained. Deleting a channel only unlinks its products, it doesn't
+    // delete them. The test buyer + auth identity are intentionally LEFT:
+    // provisioning reuses them by email on recreate, which keeps a same-slug recreate
+    // working (deleting only the customer would orphan its auth identity and break
+    // re-provisioning).
+    if (demo.b2b_company_id) {
+      try {
+        const companyService: any = req.scope.resolve('company');
+        const members = await companyService.listCompanyMembers({ company_id: demo.b2b_company_id });
+        const memberIds = (members as any[]).map((m) => m.id);
+        if (memberIds.length) await companyService.deleteCompanyMembers(memberIds);
+        await companyService.deleteCompanies([demo.b2b_company_id]);
+      } catch (err) {
+        logger.warn(`[demo-store] B2B company cleanup failed: ${(err as Error).message}`);
+      }
+    }
+    if (demo.b2b_price_list_id && demo.b2b_price_list_owned !== false) {
+      try {
+        const pricing: any = req.scope.resolve(Modules.PRICING);
+        await pricing.deletePriceLists([demo.b2b_price_list_id]);
+      } catch (err) {
+        logger.warn(`[demo-store] B2B price list cleanup failed: ${(err as Error).message}`);
+      }
+    }
+    if (demo.b2b_customer_group_id) {
+      try {
+        const customerService: any = req.scope.resolve(Modules.CUSTOMER);
+        await customerService.deleteCustomerGroups([demo.b2b_customer_group_id]);
+      } catch (err) {
+        logger.warn(`[demo-store] B2B customer group cleanup failed: ${(err as Error).message}`);
+      }
+    }
+    if (demo.b2b_sales_channel_id && demo.b2b_sales_channel_owned !== false) {
+      try {
+        await deleteSalesChannelsWorkflow(req.scope).run({
+          input: { ids: [demo.b2b_sales_channel_id] },
+        });
+      } catch (err) {
+        logger.warn(`[demo-store] B2B sales channel cleanup failed: ${(err as Error).message}`);
+      }
+    }
+
+    if (demo.stock_location_id) {
+      try {
+        await deleteStockLocationsWorkflow(req.scope).run({
+          input: { ids: [demo.stock_location_id] },
+        });
+      } catch (err) {
+        logger.warn(`[demo-store] Stock location cleanup failed: ${(err as Error).message}`);
+      }
+    }
+    // IMPORTANT: do NOT delete the region. Provisioning REUSES the existing region
+    // for the demo's country (a country can belong to only one region in Medusa),
+    // so the region is almost always SHARED with the main store / other demos.
+    // Deleting it once removed the store's Argentina region and broke pricing for
+    // the entire catalog. Regions are cheap to leave; never delete on teardown.
   }
 
-  // ── B2B teardown (best-effort) ─────────────────────────────────────────────
-  // Automatically provisioned wholesale resources are owned by the site;
-  // manually selected resources are retained. Deleting a channel only unlinks its products, it doesn't
-  // delete them. The test buyer + auth identity are intentionally LEFT:
-  // provisioning reuses them by email on recreate, which keeps a same-slug recreate
-  // working (deleting only the customer would orphan its auth identity and break
-  // re-provisioning).
-  if (demo.b2b_company_id) {
-    try {
-      const companyService: any = req.scope.resolve('company');
-      const members = await companyService.listCompanyMembers({ company_id: demo.b2b_company_id });
-      const memberIds = (members as any[]).map((m) => m.id);
-      if (memberIds.length) await companyService.deleteCompanyMembers(memberIds);
-      await companyService.deleteCompanies([demo.b2b_company_id]);
-    } catch (err) {
-      logger.warn(`[demo-store] B2B company cleanup failed: ${(err as Error).message}`);
-    }
-  }
-  if (demo.b2b_price_list_id && demo.b2b_price_list_owned !== false) {
-    try {
-      const pricing: any = req.scope.resolve(Modules.PRICING);
-      await pricing.deletePriceLists([demo.b2b_price_list_id]);
-    } catch (err) {
-      logger.warn(`[demo-store] B2B price list cleanup failed: ${(err as Error).message}`);
-    }
-  }
-  if (demo.b2b_customer_group_id) {
-    try {
-      const customerService: any = req.scope.resolve(Modules.CUSTOMER);
-      await customerService.deleteCustomerGroups([demo.b2b_customer_group_id]);
-    } catch (err) {
-      logger.warn(`[demo-store] B2B customer group cleanup failed: ${(err as Error).message}`);
-    }
-  }
-  if (demo.b2b_sales_channel_id && demo.b2b_sales_channel_owned !== false) {
-    try {
-      await deleteSalesChannelsWorkflow(req.scope).run({
-        input: { ids: [demo.b2b_sales_channel_id] },
-      });
-    } catch (err) {
-      logger.warn(`[demo-store] B2B sales channel cleanup failed: ${(err as Error).message}`);
-    }
-  }
+  // Soft-delete siempre: la fila demo_store tiene `deleted_at` con índices parciales
+  // (where deleted_at is null), así que sale del panel sin romper referencias.
+  //
+  // OJO: `deleteDemoStores` de MedusaService es HARD delete y el FK
+  // `demo_import_job_demo_store_id_foreign` NO es ON DELETE CASCADE
+  // (Mikro-ORM `hasMany` no lo agrega por default). Con hard delete Postgres
+  // rechaza con 23503 y el `db-error-mapper` de Medusa lo convierte en un
+  // 404 confuso ("You tried to set relationship id: ..., but such entity
+  // does not exist"). Por eso se usa `softDeleteXxx`: es un UPDATE de
+  // `deleted_at`, no toca FKs, y funciona tanto para el path con historial
+  // de checkout (preserva las FK de site_checkout_session/snapshot/cart_context)
+  // como para el path sin historial. Los import_jobs se soft-deletean antes
+  // para no dejar filas apuntando a un padre invisible.
+  await service.softDeleteImportJobs({ demo_store_id: id });
+  await service.softDeleteDemoStores(id);
 
-  if (demo.stock_location_id) {
-    try {
-      await deleteStockLocationsWorkflow(req.scope).run({
-        input: { ids: [demo.stock_location_id] },
-      });
-    } catch (err) {
-      logger.warn(`[demo-store] Stock location cleanup failed: ${(err as Error).message}`);
-    }
-  }
-  // IMPORTANT: do NOT delete the region. Provisioning REUSES the existing region
-  // for the demo's country (a country can belong to only one region in Medusa),
-  // so the region is almost always SHARED with the main store / other demos.
-  // Deleting it once removed the store's Argentina region and broke pricing for
-  // the entire catalog. Regions are cheap to leave; never delete on teardown.
-
-  // Cascade-deletes the demo's import jobs via the FK.
-  await service.deleteDemoStores(id);
-
-  res.status(200).json({ id, object: 'demo_store', deleted: true });
+  res.status(200).json({ id, object: 'demo_store', deleted: true, soft_deleted: hasCheckoutHistory });
 }

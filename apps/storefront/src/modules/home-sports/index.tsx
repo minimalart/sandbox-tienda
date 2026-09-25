@@ -27,8 +27,10 @@ import SportsReveal from "./components/sports-reveal";
  */
 export default async function SportsHome({
   countryCode,
+  section,
 }: {
   countryCode?: string;
+  section?: string;
 }) {
   const tenant = await getActiveTenant();
   const sports = tenant.assets.sports;
@@ -42,29 +44,29 @@ export default async function SportsHome({
   return (
     <main className="sports-home bg-[--sp-paper]">
       {/* Hero: carrusel de campaña animado */}
-      <SportsHero slides={heroSlides} />
+      {(!section || section === '1') && (<SportsHero slides={heroSlides} />)}
 
-      <Suspense fallback={null}>
+      {(!section || section === '2') && (<Suspense fallback={null}>
         <ShopByLookSlot slot="top" countryCode={countryCode ?? ""} titleClassName="sp-section-title" />
-      </Suspense>
+      </Suspense>)}
 
       {/* Tira de logos de marcas (fondo negro, marquee automático) */}
-      <Suspense fallback={null}>
+      {(!section || section === '3') && (<Suspense fallback={null}>
         <SportsBrandStrip />
-      </Suspense>
+      </Suspense>)}
 
       {/* A partir del hero, cada sección entra con un scroll-reveal (fade +
           desplazamiento) para que la home deje de sentirse estática. */}
 
       {/* Deportes (bloque principal) */}
-      <SportsReveal>
+      {(!section || section === '4') && (<SportsReveal>
         <SportCategoryGrid config={sports?.sports} />
-      </SportsReveal>
+      </SportsReveal>)}
 
       {/* Fila de productos: Calzado — intercalada entre banners (producto →
           banner → producto → banner …). Cada fila usa una búsqueda distinta
           para que NO traiga los mismos productos. */}
-      <SportsReveal>
+      {(!section || section === '5') && (<SportsReveal>
         <Suspense fallback={null}>
           <SportsFeaturedProducts
             title="Lo más nuevo en calzado"
@@ -76,23 +78,23 @@ export default async function SportsHome({
             }}
           />
         </Suspense>
-      </SportsReveal>
+      </SportsReveal>)}
 
-      <Suspense fallback={null}>
+      {(!section || section === '6') && (<Suspense fallback={null}>
         <ShopByLookSlot slot="after_featured" countryCode={countryCode ?? ""} titleClassName="sp-section-title" />
-      </Suspense>
+      </Suspense>)}
 
       {/* Colecciones */}
-      <SportsReveal>
+      {(!section || section === '7') && (<SportsReveal>
         <SportsCollections config={sports?.collections} />
-      </SportsReveal>
+      </SportsReveal>)}
 
-      <Suspense fallback={null}>
+      {(!section || section === '8') && (<Suspense fallback={null}>
         <ShopByLookSlot slot="after_collections" countryCode={countryCode ?? ""} titleClassName="sp-section-title" />
-      </Suspense>
+      </Suspense>)}
 
       {/* Fila de productos: Indumentaria */}
-      <SportsReveal>
+      {(!section || section === '9') && (<SportsReveal>
         <Suspense fallback={null}>
           <SportsFeaturedProducts
             title="Indumentaria"
@@ -100,20 +102,20 @@ export default async function SportsHome({
             filter={{ limit: 12, sortBy: "relevance", searchQuery: "buzo" }}
           />
         </Suspense>
-      </SportsReveal>
+      </SportsReveal>)}
 
       {/* Categorías (Calzado / Indumentaria / Accesorios) */}
-      <SportsReveal>
+      {(!section || section === '10') && (<SportsReveal>
         <SportsCategories config={sports?.categories} />
-      </SportsReveal>
+      </SportsReveal>)}
 
       {/* Campaña (muy visual) */}
-      <SportsReveal>
+      {(!section || section === '11') && (<SportsReveal>
         <CampaignBanner config={sports?.campaign} />
-      </SportsReveal>
+      </SportsReveal>)}
 
       {/* Fila de productos: Remeras */}
-      <SportsReveal>
+      {(!section || section === '12') && (<SportsReveal>
         <Suspense fallback={null}>
           <SportsFeaturedProducts
             title="Remeras deportivas"
@@ -121,11 +123,11 @@ export default async function SportsHome({
             filter={{ limit: 12, sortBy: "relevance", searchQuery: "remera" }}
           />
         </Suspense>
-      </SportsReveal>
+      </SportsReveal>)}
 
       {/* Lookbook deportivo — el CTA de cierre se renderiza DENTRO del mosaico,
           rellenando el hueco libre (alineado a la izquierda en desktop). */}
-      <SportsReveal>
+      {(!section || section === '13') && (<SportsReveal>
         <SportsLookbook
           config={sports?.lookbook}
           cta={{
@@ -137,11 +139,11 @@ export default async function SportsHome({
             ctaHref: "/store",
           }}
         />
-      </SportsReveal>
+      </SportsReveal>)}
 
-      <Suspense fallback={null}>
+      {(!section || section === '14') && (<Suspense fallback={null}>
         <ShopByLookSlot slot="before_footer" countryCode={countryCode ?? ""} titleClassName="sp-section-title" />
-      </Suspense>
+      </Suspense>)}
     </main>
   );
 }

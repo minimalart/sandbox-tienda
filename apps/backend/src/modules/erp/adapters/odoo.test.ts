@@ -649,6 +649,8 @@ describe('OdooErpAdapter — notifySale', () => {
         // Partner: no aparece ni por vat ni por email → se crea.
         'res.partner.search_read': () => [],
         'res.partner.create': () => 501,
+        // Pricelist del partner recién creado: many2one vacío (`false`).
+        'res.partner.read': () => [{ id: 501, property_product_pricelist: false }],
         // Productos: los dos SKUs existen.
         'product.product.search_read': () => [
           { id: 11, default_code: 'SKU-A' },
@@ -719,6 +721,7 @@ describe('OdooErpAdapter — notifySale', () => {
           if (field === 'vat') return [{ id: 300, name: 'Juan', vat: '20123456789' }];
           throw new Error('should not search by email when vat matched');
         },
+        'res.partner.read': () => [{ id: 300, property_product_pricelist: false }],
         'product.product.search_read': () => [
           { id: 11, default_code: 'SKU-A' },
           { id: 22, default_code: 'SKU-B' },
@@ -757,6 +760,7 @@ describe('OdooErpAdapter — notifySale', () => {
           if (field === 'email') return [{ id: 401, name: 'Juan', email: 'juan@example.com' }];
           throw new Error(`unexpected search by ${String(field)}`);
         },
+        'res.partner.read': () => [{ id: 401, property_product_pricelist: false }],
         'product.product.search_read': () => [
           { id: 11, default_code: 'SKU-A' },
           { id: 22, default_code: 'SKU-B' },
@@ -797,6 +801,7 @@ describe('OdooErpAdapter — notifySale', () => {
           if (field === 'vat') return [{ id: 300, name: 'Juan', vat: '20123456789' }];
           return [];
         },
+        'res.partner.read': () => [{ id: 300, property_product_pricelist: false }],
         'product.product.search_read': (call) => {
           const domain = (call.args as unknown[])[0] as unknown[][];
           const op = (domain[0] as unknown[])[1];
@@ -849,6 +854,7 @@ describe('OdooErpAdapter — notifySale', () => {
           if (field === 'vat') return [{ id: 300, name: 'Juan', vat: '20123456789' }];
           return [];
         },
+        'res.partner.read': () => [{ id: 300, property_product_pricelist: false }],
         'product.product.search_read': () => [
           { id: 11, default_code: 'SKU-A' },
           { id: 22, default_code: 'SKU-B' },
@@ -951,6 +957,7 @@ describe('OdooErpAdapter — notifySale', () => {
           if (field === 'vat') return [{ id: 300 }];
           return [];
         },
+        'res.partner.read': () => [{ id: 300, property_product_pricelist: false }],
         'product.product.search_read': () => [
           { id: 11, default_code: 'SKU-A' },
           { id: 22, default_code: 'SKU-B' },
@@ -986,6 +993,330 @@ describe('OdooErpAdapter — notifySale', () => {
       }
     );
     assert.equal(calls.length, 0);
+  });
+
+  it('settings.pricelist_id seteado → viaja en orderPayload y NO se consulta al partner', async () => {
+    const settings: ErpOdooSettings = { ...DEFAULT_SETTINGS, pricelist_id: 31 };
+    const { factory, calls } = fakeClient(
+      withSequence({
+        'sale.order.search_read': () => [],
+        'res.partner.search_read': (call) => {
+          const domain = (call.args as unknown[])[0] as unknown[][];
+          const field = (domain[0] as unknown[])[0];
+          if (field === 'vat') return [{ id: 300 }];
+          return [];
+        },
+        'product.product.search_read': () => [
+          { id: 11, default_code: 'SKU-A' },
+          { id: 22, default_code: 'SKU-B' },
+        ],
+        'sale.order.create': () => 555,
+        'sale.order.action_confirm': () => true,
+      })
+    );
+    const adapter = new OdooErpAdapter(factory);
+    const result = await adapter.notifySale(basePayload, ctx(settings));
+    assert.equal(result.status, 'sent');
+    const orderCreate = calls.find((c) => c.model === 'sale.order' && c.method === 'create');
+    const orderBody = orderCreate?.args[0] as Record<string, unknown>;
+    assert.equal(orderBody.pricelist_id, 31);
+    // Setting explícito → cortocircuito: no debería haber llamado a res.partner.read.
+    assert.equal(
+      calls.find((c) => c.model === 'res.partner' && c.method === 'read'),
+      undefined
+    );
+  });
+
+  it('sin settings.pricelist_id → lee del partner y usa property_product_pricelist', async () => {
+    const { factory, calls } = fakeClient(
+      withSequence({
+        'sale.order.search_read': () => [],
+        'res.partner.search_read': (call) => {
+          const domain = (call.args as unknown[])[0] as unknown[][];
+          const field = (domain[0] as unknown[])[0];
+          if (field === 'vat') return [{ id: 300 }];
+          return [];
+        },
+        'res.partner.read': () => [
+          { id: 300, property_product_pricelist: [31, 'Lista de Precios ST (ARS)'] },
+        ],
+        'product.product.search_read': () => [
+          { id: 11, default_code: 'SKU-A' },
+          { id: 22, default_code: 'SKU-B' },
+        ],
+        'sale.order.create': () => 556,
+        'sale.order.action_confirm': () => true,
+      })
+    );
+    const adapter = new OdooErpAdapter(factory);
+    const result = await adapter.notifySale(basePayload, ctx());
+    assert.equal(result.status, 'sent');
+    const partnerRead = calls.find((c) => c.model === 'res.partner' && c.method === 'read');
+    assert.deepEqual(partnerRead?.args, [[300]]);
+    assert.deepEqual(partnerRead?.kwargs.fields, ['property_product_pricelist']);
+    const orderCreate = calls.find((c) => c.model === 'sale.order' && c.method === 'create');
+    const orderBody = orderCreate?.args[0] as Record<string, unknown>;
+    assert.equal(orderBody.pricelist_id, 31);
+  });
+
+  /**
+   * tax_behavior: 3 modos + shipping. Comportamiento default = 0 cambios sobre
+   * la line (rollback trivial). override_tax_ids agrega el comando m2m
+   * `[[6, 0, ids]]`. backcalc_from_gross recalcula `price_unit` desde el bruto
+   * usando la tabla de rates con match por country_code (prioridad) o
+   * currency_code, y cae a `default` si ninguna rate matchea (con warn).
+   */
+  describe('tax_behavior', () => {
+    const successResponders = {
+      'sale.order.search_read': () => [],
+      'res.partner.search_read': (call: CallRecord) => {
+        const domain = (call.args as unknown[])[0] as unknown[][];
+        const field = (domain[0] as unknown[])[0];
+        if (field === 'vat') return [{ id: 300 }];
+        return [];
+      },
+      'res.partner.read': () => [{ id: 300, property_product_pricelist: false }],
+      'product.product.search_read': (call: CallRecord) => {
+        const domain = (call.args as unknown[])[0] as unknown[][];
+        const op = (domain[0] as unknown[])[1];
+        const value = (domain[0] as unknown[])[2];
+        if (op === 'in') {
+          return [
+            { id: 11, default_code: 'SKU-A' },
+            { id: 22, default_code: 'SKU-B' },
+          ];
+        }
+        if (op === '=' && value === 'SHIP-01') {
+          return [{ id: 55, default_code: 'SHIP-01' }];
+        }
+        return [];
+      },
+      'sale.order.create': () => 999,
+      'sale.order.action_confirm': () => true,
+    };
+
+    function firstLine(calls: CallRecord[]): Record<string, unknown> {
+      const orderCreate = calls.find(
+        (c) => c.model === 'sale.order' && c.method === 'create'
+      );
+      const body = orderCreate?.args[0] as Record<string, unknown>;
+      const lines = body.order_line as Array<[number, number, Record<string, unknown>]>;
+      return lines[0]![2]!;
+    }
+
+    it('default (o ausente) → orderLine.tax_id NO viaja y price_unit inalterado', async () => {
+      const { factory, calls } = fakeClient(withSequence(successResponders));
+      const adapter = new OdooErpAdapter(factory);
+      await adapter.notifySale(basePayload, ctx());
+      const line = firstLine(calls);
+      assert.equal('tax_id' in line, false);
+      assert.equal(line.price_unit, 100.5);
+    });
+
+    it("mode='default' explícito → tampoco toca la line", async () => {
+      const settings: ErpOdooSettings = {
+        ...DEFAULT_SETTINGS,
+        tax_behavior: { mode: 'default' },
+      };
+      const { factory, calls } = fakeClient(withSequence(successResponders));
+      const adapter = new OdooErpAdapter(factory);
+      await adapter.notifySale(basePayload, ctx(settings));
+      const line = firstLine(calls);
+      assert.equal('tax_id' in line, false);
+      assert.equal(line.price_unit, 100.5);
+    });
+
+    it("override_tax_ids con tax_ids=[] → tax_id = [[6, 0, []]]", async () => {
+      const settings: ErpOdooSettings = {
+        ...DEFAULT_SETTINGS,
+        tax_behavior: { mode: 'override_tax_ids', tax_ids: [] },
+      };
+      const { factory, calls } = fakeClient(withSequence(successResponders));
+      const adapter = new OdooErpAdapter(factory);
+      await adapter.notifySale(basePayload, ctx(settings));
+      const line = firstLine(calls);
+      assert.deepEqual(line.tax_id, [[6, 0, []]]);
+      assert.equal(line.price_unit, 100.5);
+    });
+
+    it("override_tax_ids con tax_ids=[88] → tax_id = [[6, 0, [88]]]", async () => {
+      const settings: ErpOdooSettings = {
+        ...DEFAULT_SETTINGS,
+        tax_behavior: { mode: 'override_tax_ids', tax_ids: [88] },
+      };
+      const { factory, calls } = fakeClient(withSequence(successResponders));
+      const adapter = new OdooErpAdapter(factory);
+      await adapter.notifySale(basePayload, ctx(settings));
+      const line = firstLine(calls);
+      assert.deepEqual(line.tax_id, [[6, 0, [88]]]);
+    });
+
+    it("backcalc_from_gross match por country_code → price_unit = round(gross / 1.21, 2)", async () => {
+      const settings: ErpOdooSettings = {
+        ...DEFAULT_SETTINGS,
+        tax_behavior: {
+          mode: 'backcalc_from_gross',
+          rates: [{ match: { country_code: 'AR' }, rate_percent: 21 }],
+        },
+      };
+      const { factory, calls } = fakeClient(withSequence(successResponders));
+      const adapter = new OdooErpAdapter(factory);
+      await adapter.notifySale(basePayload, ctx(settings));
+      const line = firstLine(calls);
+      // 100.5 / 1.21 = 83.0578… → 83.06
+      assert.equal(line.price_unit, 83.06);
+      assert.equal('tax_id' in line, false);
+    });
+
+    it("backcalc_from_gross match por currency_code cuando no hay country_code en la rate", async () => {
+      const settings: ErpOdooSettings = {
+        ...DEFAULT_SETTINGS,
+        tax_behavior: {
+          mode: 'backcalc_from_gross',
+          rates: [{ match: { currency_code: 'ARS' }, rate_percent: 21 }],
+        },
+      };
+      const { factory, calls } = fakeClient(withSequence(successResponders));
+      const adapter = new OdooErpAdapter(factory);
+      await adapter.notifySale(basePayload, ctx(settings));
+      const line = firstLine(calls);
+      assert.equal(line.price_unit, 83.06);
+    });
+
+    it("backcalc_from_gross country prioridad: rate con country que coincide gana sobre otra rate con solo currency que coincidiría", async () => {
+      const settings: ErpOdooSettings = {
+        ...DEFAULT_SETTINGS,
+        tax_behavior: {
+          mode: 'backcalc_from_gross',
+          rates: [
+            // Este NO matchea (country distinto) aunque su currency coincida
+            { match: { country_code: 'CL', currency_code: 'ARS' }, rate_percent: 19 },
+            // Este matchea por country
+            { match: { country_code: 'AR' }, rate_percent: 21 },
+            // Este también matchearía por currency pero llega segundo
+            { match: { currency_code: 'ARS' }, rate_percent: 10.5 },
+          ],
+        },
+      };
+      const { factory, calls } = fakeClient(withSequence(successResponders));
+      const adapter = new OdooErpAdapter(factory);
+      await adapter.notifySale(basePayload, ctx(settings));
+      const line = firstLine(calls);
+      // Debería usar 21% (100.5 / 1.21 = 83.06), no 19% ni 10.5%
+      assert.equal(line.price_unit, 83.06);
+    });
+
+    it("backcalc_from_gross sin match → price_unit inalterado y console.warn con el mensaje esperado", async () => {
+      const settings: ErpOdooSettings = {
+        ...DEFAULT_SETTINGS,
+        tax_behavior: {
+          mode: 'backcalc_from_gross',
+          rates: [{ match: { country_code: 'CL' }, rate_percent: 19 }],
+        },
+      };
+      const originalWarn = console.warn;
+      const warnCalls: string[] = [];
+      console.warn = (msg: unknown) => {
+        warnCalls.push(String(msg));
+      };
+      try {
+        const { factory, calls } = fakeClient(withSequence(successResponders));
+        const adapter = new OdooErpAdapter(factory);
+        await adapter.notifySale(basePayload, ctx(settings));
+        const line = firstLine(calls);
+        assert.equal(line.price_unit, 100.5);
+        assert.equal('tax_id' in line, false);
+        assert.ok(
+          warnCalls.some((m) => /backcalc: no rate match/.test(m)),
+          `expected warn about no rate match, got: ${warnCalls.join(' | ')}`
+        );
+        assert.ok(
+          warnCalls.some((m) => /country=AR/.test(m) && /currency=ARS/.test(m)),
+          `expected warn to include country and currency, got: ${warnCalls.join(' | ')}`
+        );
+      } finally {
+        console.warn = originalWarn;
+      }
+    });
+
+    it("backcalc_from_gross también se aplica a la line de shipping", async () => {
+      const settings: ErpOdooSettings = {
+        ...DEFAULT_SETTINGS,
+        shipping_item_code: 'SHIP-01',
+        tax_behavior: {
+          mode: 'backcalc_from_gross',
+          rates: [{ match: { country_code: 'AR' }, rate_percent: 21 }],
+        },
+      };
+      const payload: ErpSalePayload = {
+        ...basePayload,
+        totals: { ...basePayload.totals, shipping: 121, total: 372 },
+      };
+      const { factory, calls } = fakeClient(withSequence(successResponders));
+      const adapter = new OdooErpAdapter(factory);
+      await adapter.notifySale(payload, ctx(settings));
+      const orderCreate = calls.find(
+        (c) => c.model === 'sale.order' && c.method === 'create'
+      );
+      const body = orderCreate?.args[0] as Record<string, unknown>;
+      const lines = body.order_line as Array<[number, number, Record<string, unknown>]>;
+      // 2 item lines + 1 shipping
+      assert.equal(lines.length, 3);
+      const shippingLine = lines[2]![2]!;
+      // 121 / 1.21 = 100.00
+      assert.equal(shippingLine.price_unit, 100);
+    });
+
+    it("override_tax_ids también se aplica a la line de shipping", async () => {
+      const settings: ErpOdooSettings = {
+        ...DEFAULT_SETTINGS,
+        shipping_item_code: 'SHIP-01',
+        tax_behavior: { mode: 'override_tax_ids', tax_ids: [88] },
+      };
+      const payload: ErpSalePayload = {
+        ...basePayload,
+        totals: { ...basePayload.totals, shipping: 15.5, total: 266.5 },
+      };
+      const { factory, calls } = fakeClient(withSequence(successResponders));
+      const adapter = new OdooErpAdapter(factory);
+      await adapter.notifySale(payload, ctx(settings));
+      const orderCreate = calls.find(
+        (c) => c.model === 'sale.order' && c.method === 'create'
+      );
+      const body = orderCreate?.args[0] as Record<string, unknown>;
+      const lines = body.order_line as Array<[number, number, Record<string, unknown>]>;
+      const shippingLine = lines[2]![2]!;
+      assert.deepEqual(shippingLine.tax_id, [[6, 0, [88]]]);
+      assert.equal(shippingLine.price_unit, 15.5);
+    });
+  });
+
+  it('sin settings ni pricelist en el partner → NO agrega pricelist_id al orderPayload', async () => {
+    const { factory, calls } = fakeClient(
+      withSequence({
+        'sale.order.search_read': () => [],
+        'res.partner.search_read': (call) => {
+          const domain = (call.args as unknown[])[0] as unknown[][];
+          const field = (domain[0] as unknown[])[0];
+          if (field === 'vat') return [{ id: 300 }];
+          return [];
+        },
+        // Odoo many2one vacío se serializa como `false`.
+        'res.partner.read': () => [{ id: 300, property_product_pricelist: false }],
+        'product.product.search_read': () => [
+          { id: 11, default_code: 'SKU-A' },
+          { id: 22, default_code: 'SKU-B' },
+        ],
+        'sale.order.create': () => 557,
+        'sale.order.action_confirm': () => true,
+      })
+    );
+    const adapter = new OdooErpAdapter(factory);
+    const result = await adapter.notifySale(basePayload, ctx());
+    assert.equal(result.status, 'sent');
+    const orderCreate = calls.find((c) => c.model === 'sale.order' && c.method === 'create');
+    const orderBody = orderCreate?.args[0] as Record<string, unknown>;
+    assert.equal('pricelist_id' in orderBody, false);
   });
 });
 
@@ -1044,6 +1375,7 @@ describe('OdooErpAdapter — notifySale con custom fields opcionales (Alumnos)',
     'sale.order.search_read': () => [],
     'res.partner.search_read': () => [],
     'res.partner.create': () => 501,
+    'res.partner.read': () => [{ id: 501, property_product_pricelist: false }],
     'product.product.search_read': () => [{ id: 11, default_code: 'EDU-KIT-4' }],
     'sale.order.create': () => 999,
     'sale.order.action_confirm': () => true,
@@ -1135,6 +1467,430 @@ describe('OdooErpAdapter — notifySale con custom fields opcionales (Alumnos)',
     await adapter.notifySale(mainStorePayload, ctx());
     const probes = calls.filter((c) => c.model === 'sale.order' && c.method === 'fields_get');
     assert.equal(probes.length, 0, 'sin data extra, saltear la sonda ahorra un round-trip');
+  });
+});
+
+/**
+ * Fiscal AR: sonda `l10n_ar.afip.responsibility.type` +
+ * `l10n_latam.identification.type` + `res.country` (por código AFIP/ISO),
+ * cachea por instancia, y aplica los IDs resueltos al partner al momento del
+ * create y del patch conservador por email.
+ */
+describe('OdooErpAdapter — notifySale AR fiscal (Educabot bug)', () => {
+  /**
+   * Handler compuesto: además de responder a las llamadas típicas del flujo
+   * (idempotencia, partner, productos, sale.order), simula la sonda de los 3
+   * modelos AFIP con IDs fijos y devuelve `fields_get: {}` para omitir custom
+   * fields opcionales (Alumnos) que no son foco de estos specs.
+   */
+  const AR_IDS = {
+    consumerFinal: 601,
+    responsableInscripto: 602,
+    monotributo: 603,
+    exento: 604,
+    cuit: 701,
+    dni: 702,
+    cuil: 703,
+    countryAr: 41,
+  };
+
+  const arProbeResponders: Record<string, (call: CallRecord) => unknown> = {
+    'l10n_ar.afip.responsibility.type.search_read': () => [
+      { id: AR_IDS.consumerFinal, code: '5' },
+      { id: AR_IDS.responsableInscripto, code: '1' },
+      { id: AR_IDS.monotributo, code: '6' },
+      { id: AR_IDS.exento, code: '4' },
+    ],
+    'l10n_latam.identification.type.search_read': () => [
+      { id: AR_IDS.cuit, l10n_ar_afip_code: '80' },
+      { id: AR_IDS.dni, l10n_ar_afip_code: '96' },
+      { id: AR_IDS.cuil, l10n_ar_afip_code: '86' },
+    ],
+    'res.country.search_read': () => [{ id: AR_IDS.countryAr, code: 'AR' }],
+    'sale.order.fields_get': () => ({}),
+  };
+
+  function baseArPayload(overrides: Partial<ErpSalePayload> = {}): ErpSalePayload {
+    return {
+      event_key: 'order.placed:ar_1',
+      order_id: 'ar_1',
+      display_id: 1,
+      created_at: '2026-09-20T12:00:00Z',
+      country_code: 'AR',
+      currency_code: 'ars',
+      customer: {
+        id: 'cus_ar_1',
+        email: 'ana@example.com',
+        first_name: 'Ana',
+        last_name: 'García',
+        phone: '+541155555555',
+        document: { type: 'CUIT', number: '20-12345678-6' },
+        legal_name: null,
+        fiscal_condition: 'responsable_inscripto',
+      },
+      items: [{ sku: 'SKU-A', title: 'Producto', quantity: 1, unit_price: 100, total: 100 }],
+      totals: { subtotal: 100, discount: 0, shipping: 0, tax: 0, total: 100 },
+      payment: { provider_id: 'pp', captured_amount: 100, currency_code: 'ars' },
+      shipping: {
+        method: 'Standard',
+        address: {
+          street: 'Av. Corrientes 1234',
+          city: 'CABA',
+          province: 'CABA',
+          postal_code: 'C1043',
+          country_code: 'AR',
+        },
+      },
+      ...overrides,
+    };
+  }
+
+  function makeResponders(overrides: Record<string, (call: CallRecord) => unknown> = {}) {
+    return {
+      ...arProbeResponders,
+      'sale.order.search_read': () => [],
+      'res.partner.search_read': () => [],
+      'res.partner.create': () => 501,
+      'res.partner.read': () => [{ id: 501, property_product_pricelist: false }],
+      'product.product.search_read': () => [{ id: 11, default_code: 'SKU-A' }],
+      'sale.order.create': () => 999,
+      'sale.order.action_confirm': () => true,
+      ...overrides,
+    };
+  }
+
+  function withResponders(
+    responders: Record<string, (call: CallRecord) => unknown>
+  ): (call: CallRecord) => unknown {
+    return (call) => {
+      const key = `${call.model}.${call.method}`;
+      const responder = responders[key];
+      if (!responder) throw new Error(`Unexpected call: ${key} — args=${JSON.stringify(call.args)}`);
+      return responder(call);
+    };
+  }
+
+  it('resolveArFiscalIds cachea por instancia (dos envíos → 1 sondeo)', async () => {
+    const { factory, calls } = fakeClient(withResponders(makeResponders()));
+    const adapter = new OdooErpAdapter(factory);
+    await adapter.notifySale(baseArPayload(), ctx());
+    await adapter.notifySale(baseArPayload({ order_id: 'ar_2', event_key: 'order.placed:ar_2' }), ctx());
+    const respProbes = calls.filter(
+      (c) => c.model === 'l10n_ar.afip.responsibility.type' && c.method === 'search_read'
+    );
+    const identProbes = calls.filter(
+      (c) => c.model === 'l10n_latam.identification.type' && c.method === 'search_read'
+    );
+    const countryProbes = calls.filter((c) => c.model === 'res.country' && c.method === 'search_read');
+    assert.equal(respProbes.length, 1, 'responsibility.type se sondea una vez y se cachea');
+    assert.equal(identProbes.length, 1, 'identification.type se sondea una vez y se cachea');
+    assert.equal(countryProbes.length, 1, 'res.country se sondea una vez y se cachea');
+  });
+
+  it('multi-tenant: bases distintas → sondeos independientes', async () => {
+    const { factory, calls } = fakeClient(withResponders(makeResponders()));
+    const adapter = new OdooErpAdapter(factory);
+    await adapter.notifySale(
+      baseArPayload(),
+      ctx({ ...DEFAULT_SETTINGS, base_url: 'http://tenant-a:8069' })
+    );
+    await adapter.notifySale(
+      baseArPayload({ order_id: 'ar_2', event_key: 'e2' }),
+      ctx({ ...DEFAULT_SETTINGS, base_url: 'http://tenant-b:8069' })
+    );
+    const respProbes = calls.filter(
+      (c) => c.model === 'l10n_ar.afip.responsibility.type' && c.method === 'search_read'
+    );
+    assert.equal(respProbes.length, 2, 'cada tenant Odoo sondea independiente');
+  });
+
+  it('resolveArFiscalIds → null y warn si el sondeo falla: cae al comportamiento legacy sin fiscal data', async () => {
+    const originalWarn = console.warn;
+    const warns: string[] = [];
+    console.warn = (msg: unknown) => {
+      warns.push(String(msg));
+    };
+    try {
+      const { factory, calls } = fakeClient(
+        withResponders(
+          makeResponders({
+            'l10n_ar.afip.responsibility.type.search_read': () =>
+              new Error('Model l10n_ar.afip.responsibility.type does not exist'),
+          })
+        )
+      );
+      const adapter = new OdooErpAdapter(factory);
+      const result = await adapter.notifySale(baseArPayload(), ctx());
+      assert.equal(result.status, 'sent');
+      // Partner se crea SIN fiscal ids (compat legacy).
+      const partnerCreate = calls.find((c) => c.model === 'res.partner' && c.method === 'create');
+      const body = partnerCreate?.args[0] as Record<string, unknown>;
+      assert.equal('l10n_ar_afip_responsibility_type_id' in body, false);
+      assert.equal('l10n_latam_identification_type_id' in body, false);
+      assert.equal('country_id' in body, false);
+      assert.ok(warns.some((m) => /sondeo AR .* falló/.test(m)));
+    } finally {
+      console.warn = originalWarn;
+    }
+  });
+
+  it('AR create responsable_inscripto: manda vat + country_id + responsibility + identification + name=legal_name', async () => {
+    const payload = baseArPayload({
+      customer: {
+        id: 'cus_ar_1',
+        email: 'ana@example.com',
+        first_name: 'Ana',
+        last_name: 'García',
+        phone: '+541155555555',
+        document: { type: 'CUIT', number: '20-12345678-6' },
+        legal_name: 'Razón Social SRL',
+        fiscal_condition: 'responsable_inscripto',
+      },
+    });
+    const { factory, calls } = fakeClient(withResponders(makeResponders()));
+    const adapter = new OdooErpAdapter(factory);
+    await adapter.notifySale(payload, ctx());
+    const partnerCreate = calls.find((c) => c.model === 'res.partner' && c.method === 'create');
+    const body = partnerCreate?.args[0] as Record<string, unknown>;
+    // El adapter preserva guiones/formato del VAT (Odoo AR l10n valida el shape
+    // según l10n_latam_identification_type_id, no exige digits pelados).
+    assert.equal(body.vat, '20-12345678-6');
+    assert.equal(body.country_id, AR_IDS.countryAr);
+    assert.equal(body.l10n_ar_afip_responsibility_type_id, AR_IDS.responsableInscripto);
+    assert.equal(body.l10n_latam_identification_type_id, AR_IDS.cuit);
+    // Razón social gana sobre first_name+last_name.
+    assert.equal(body.name, 'Razón Social SRL');
+  });
+
+  it('AR create exento: manda name=legal_name igual que responsable inscripto', async () => {
+    const payload = baseArPayload({
+      customer: {
+        id: 'cus_ar_1',
+        email: 'ana@example.com',
+        first_name: 'Ana',
+        last_name: 'García',
+        phone: '+541155555555',
+        document: { type: 'CUIT', number: '20-12345678-6' },
+        legal_name: 'Fundación X',
+        fiscal_condition: 'exento',
+      },
+    });
+    const { factory, calls } = fakeClient(withResponders(makeResponders()));
+    await new OdooErpAdapter(factory).notifySale(payload, ctx());
+    const body = calls.find((c) => c.model === 'res.partner' && c.method === 'create')
+      ?.args[0] as Record<string, unknown>;
+    assert.equal(body.name, 'Fundación X');
+    assert.equal(body.l10n_ar_afip_responsibility_type_id, AR_IDS.exento);
+  });
+
+  it('AR create consumer_final con DNI: name = first+last, identification = DNI, vat = número DNI', async () => {
+    const payload = baseArPayload({
+      customer: {
+        id: 'cus_ar_1',
+        email: 'ana@example.com',
+        first_name: 'Ana',
+        last_name: 'García',
+        phone: '+541155555555',
+        document: { type: 'DNI', number: '20304050' },
+        legal_name: null,
+        fiscal_condition: 'consumer_final',
+      },
+    });
+    const { factory, calls } = fakeClient(withResponders(makeResponders()));
+    await new OdooErpAdapter(factory).notifySale(payload, ctx());
+    const body = calls.find((c) => c.model === 'res.partner' && c.method === 'create')
+      ?.args[0] as Record<string, unknown>;
+    // Consumer final NO usa legal_name como nombre.
+    assert.equal(body.name, 'Ana García');
+    assert.equal(body.l10n_ar_afip_responsibility_type_id, AR_IDS.consumerFinal);
+    assert.equal(body.l10n_latam_identification_type_id, AR_IDS.dni);
+    assert.equal(body.vat, '20304050');
+    assert.equal(body.country_id, AR_IDS.countryAr);
+  });
+
+  it('AR create consumer_final sin documento: sin vat/identification pero SÍ responsibility=Consumidor Final + country_id', async () => {
+    const payload = baseArPayload({
+      customer: {
+        id: 'cus_ar_1',
+        email: 'ana@example.com',
+        first_name: 'Ana',
+        last_name: 'García',
+        phone: '+541155555555',
+        document: { type: null, number: null },
+        legal_name: null,
+        fiscal_condition: 'consumer_final',
+      },
+    });
+    const { factory, calls } = fakeClient(withResponders(makeResponders()));
+    await new OdooErpAdapter(factory).notifySale(payload, ctx());
+    const body = calls.find((c) => c.model === 'res.partner' && c.method === 'create')
+      ?.args[0] as Record<string, unknown>;
+    assert.equal('vat' in body, false);
+    assert.equal('l10n_latam_identification_type_id' in body, false);
+    assert.equal(body.l10n_ar_afip_responsibility_type_id, AR_IDS.consumerFinal);
+    assert.equal(body.country_id, AR_IDS.countryAr);
+  });
+
+  it('AR match por email + patch conservador: solo escribe campos vacíos en Odoo', async () => {
+    const payload = baseArPayload({
+      customer: {
+        id: 'cus_ar_1',
+        email: 'ana@example.com',
+        first_name: 'Ana',
+        last_name: 'García',
+        phone: '+541155555555',
+        document: { type: 'CUIT', number: '20-12345678-6' },
+        legal_name: 'Razón Social SRL',
+        fiscal_condition: 'responsable_inscripto',
+      },
+    });
+    const { factory, calls } = fakeClient(
+      withResponders(
+        makeResponders({
+          'res.partner.search_read': (call) => {
+            const domain = (call.args as unknown[])[0] as unknown[][];
+            const field = (domain[0] as unknown[])[0];
+            // Sin vat → primero busca por VAT (no matchea), después por email (matchea).
+            if (field === 'vat') return [];
+            if (field === 'email') return [{ id: 700, email: 'ana@example.com', vat: null }];
+            return [];
+          },
+          'res.partner.read': (call) => {
+            // El adapter puede pedir dos veces "read": una para fiscal fields, otra
+            // para pricelist. Distinguimos por el `fields` kwarg.
+            const fields = call.kwargs.fields as string[] | undefined;
+            if (fields?.includes('l10n_ar_afip_responsibility_type_id')) {
+              // Partner con country_id ya seteado (no debe pisarse), resto vacío.
+              return [
+                {
+                  id: 700,
+                  vat: false,
+                  country_id: [41, 'Argentina'],
+                  l10n_ar_afip_responsibility_type_id: false,
+                  l10n_latam_identification_type_id: false,
+                },
+              ];
+            }
+            return [{ id: 700, property_product_pricelist: false }];
+          },
+          'res.partner.write': () => true,
+        })
+      )
+    );
+    await new OdooErpAdapter(factory).notifySale(payload, ctx());
+    const writes = calls.filter((c) => c.model === 'res.partner' && c.method === 'write');
+    assert.equal(writes.length, 1, 'un solo write con el patch');
+    const [ids, patch] = writes[0]!.args as [number[], Record<string, unknown>];
+    assert.deepEqual(ids, [700]);
+    // country_id ya estaba seteado → NO se toca.
+    assert.equal('country_id' in patch, false);
+    // vat, responsibility e identification estaban vacíos → se completan.
+    assert.equal(patch.vat, '20-12345678-6');
+    assert.equal(patch.l10n_ar_afip_responsibility_type_id, AR_IDS.responsableInscripto);
+    assert.equal(patch.l10n_latam_identification_type_id, AR_IDS.cuit);
+    // `name` NO se parcha aunque sea invoice A: patch es conservador y no
+    // arriesga cambiar la denominación de un partner histórico.
+    assert.equal('name' in patch, false);
+  });
+
+  it('AR match por email + partner ya fiscal-completo → NO llama write', async () => {
+    const payload = baseArPayload();
+    const { factory, calls } = fakeClient(
+      withResponders(
+        makeResponders({
+          'res.partner.search_read': (call) => {
+            const domain = (call.args as unknown[])[0] as unknown[][];
+            const field = (domain[0] as unknown[])[0];
+            if (field === 'vat') return [];
+            if (field === 'email') return [{ id: 700, email: 'ana@example.com' }];
+            return [];
+          },
+          'res.partner.read': (call) => {
+            const fields = call.kwargs.fields as string[] | undefined;
+            if (fields?.includes('l10n_ar_afip_responsibility_type_id')) {
+              return [
+                {
+                  id: 700,
+                  vat: '20123456786',
+                  country_id: [41, 'Argentina'],
+                  l10n_ar_afip_responsibility_type_id: [AR_IDS.responsableInscripto, 'Resp. Insc.'],
+                  l10n_latam_identification_type_id: [AR_IDS.cuit, 'CUIT'],
+                },
+              ];
+            }
+            return [{ id: 700, property_product_pricelist: false }];
+          },
+        })
+      )
+    );
+    await new OdooErpAdapter(factory).notifySale(payload, ctx());
+    const writes = calls.filter((c) => c.model === 'res.partner' && c.method === 'write');
+    assert.equal(writes.length, 0, 'partner completo → sin write');
+  });
+
+  it('AR match por VAT → NO llama a read fiscal ni write extra (partner ya se asume completo)', async () => {
+    const payload = baseArPayload();
+    const { factory, calls } = fakeClient(
+      withResponders(
+        makeResponders({
+          'res.partner.search_read': (call) => {
+            const domain = (call.args as unknown[])[0] as unknown[][];
+            const field = (domain[0] as unknown[])[0];
+            if (field === 'vat') return [{ id: 700, vat: '20123456786' }];
+            throw new Error('should not search by email when vat matched');
+          },
+          // Solo la read del pricelist debe correr.
+          'res.partner.read': (call) => {
+            const fields = call.kwargs.fields as string[] | undefined;
+            if (fields?.includes('l10n_ar_afip_responsibility_type_id')) {
+              throw new Error('should not read fiscal fields on VAT match');
+            }
+            return [{ id: 700, property_product_pricelist: false }];
+          },
+        })
+      )
+    );
+    await new OdooErpAdapter(factory).notifySale(payload, ctx());
+    const writes = calls.filter((c) => c.model === 'res.partner' && c.method === 'write');
+    assert.equal(writes.length, 0);
+  });
+
+  it('country_code != AR → NO sondea fiscal ids ni patchea', async () => {
+    const payload = baseArPayload({
+      country_code: 'ES',
+      customer: {
+        id: 'cus_es',
+        email: 'ana@example.com',
+        first_name: 'Ana',
+        last_name: 'García',
+        phone: '+34611000000',
+        document: { type: null, number: null },
+        legal_name: null,
+        fiscal_condition: null,
+      },
+    });
+    const { factory, calls } = fakeClient(
+      withResponders(
+        makeResponders({
+          // No debería llegar a estos endpoints AR.
+          'l10n_ar.afip.responsibility.type.search_read': () => {
+            throw new Error('should not probe AR fiscal ids for non-AR');
+          },
+          'l10n_latam.identification.type.search_read': () => {
+            throw new Error('should not probe AR fiscal ids for non-AR');
+          },
+          'res.country.search_read': () => {
+            throw new Error('should not probe AR country for non-AR');
+          },
+        })
+      )
+    );
+    const result = await new OdooErpAdapter(factory).notifySale(payload, ctx());
+    assert.equal(result.status, 'sent');
+    const partnerCreate = calls.find((c) => c.model === 'res.partner' && c.method === 'create');
+    const body = partnerCreate?.args[0] as Record<string, unknown>;
+    assert.equal('country_id' in body, false);
+    assert.equal('l10n_ar_afip_responsibility_type_id' in body, false);
   });
 });
 

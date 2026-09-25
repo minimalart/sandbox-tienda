@@ -1,8 +1,12 @@
 name: Validate catalog
 
-# Uno de los dos checks bloqueantes de PR (el otro es `quality.yml`, que corre
-# typecheck + tests). Este corre los validadores del catálogo de extensiones, que dan
-# el mismo resultado en cualquier checkout:
+# Corre SÓLO a mano (`workflow_dispatch`), igual que `quality.yml`. Ningún check
+# automático gatea hoy un PR: ni el CÓDIGO (typecheck + tests) ni el catálogo. Hay que
+# dispararlo desde la pestaña Actions antes de mergear algo que toque el catálogo o
+# los payloads de extensiones.
+#
+# Este corre los validadores del catálogo de extensiones, que dan el mismo resultado en
+# cualquier checkout:
 #
 #   site:catalog:validate   catálogo bien formado + espejo commiteado en
 #                           apps/backend/src/lib/platform/catalog.json al día.
@@ -29,10 +33,7 @@ name: Validate catalog
 # `node packages/project-catalog/src/validate.js` y
 # `node packages/project-composer/src/verify-components.js`.
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read

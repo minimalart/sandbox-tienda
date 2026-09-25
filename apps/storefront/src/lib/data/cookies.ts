@@ -19,6 +19,33 @@ export async function getAuthToken(): Promise<string | undefined> {
   } catch { return undefined; }
 }
 
+/**
+ * Customer id del JWT de sesión (claim `actor_id`), sin verificar la firma:
+ * alcanza con leer el payload porque el backend ya validó el token al aceptar
+ * el Authorization header en el mismo request — esto no autoriza nada, sólo lo
+ * consume `shouldTransferCartToCustomer` (`cart-customer-transfer.ts`) para
+ * comparar contra `cart.customer_id`. Mismo patrón que `decodeJwtPayload` en
+ * `app/api/store/auth/route.ts` (que lo usa para detectar altas de Google);
+ * no se comparte esa función porque vive en una route, acá hace falta desde
+ * server actions (`lib/data/cart.ts`, `lib/data/b2b-cart.ts`).
+ *
+ * `undefined` significa "no lo sabemos" (sin token o sin el claim), nunca
+ * "invitado": el llamador debe preservar el comportamiento actual en ese caso.
+ */
+export async function getLoggedInCustomerId(): Promise<string | undefined> {
+  const token = await getAuthToken();
+  if (!token) return undefined;
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return undefined;
+    const json = Buffer.from(payload, "base64url").toString("utf8");
+    const decoded = JSON.parse(json) as { actor_id?: string };
+    return decoded.actor_id || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export const getAuthHeaders = async (): Promise<{ authorization?: string; 'x-checkout-access'?: string }> => {
   const token = await getAuthToken();
   let checkoutToken: string | undefined;

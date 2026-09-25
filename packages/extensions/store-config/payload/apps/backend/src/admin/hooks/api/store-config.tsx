@@ -75,6 +75,7 @@ export const useCreateMinimumPurchase = (
   const queryClient = useQueryClient();
 
   return useMutation({
+    ...options,
     mutationFn: (data: AdminCreateMinimumPurchase) =>
       sdk.client.fetch<AdminMinimumPurchaseResponse>('/admin/store-config/minimum-purchase', {
         method: 'POST',
@@ -89,7 +90,6 @@ export const useCreateMinimumPurchase = (
       });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -109,6 +109,7 @@ export const useUpdateMinimumPurchase = (
   const queryClient = useQueryClient();
 
   return useMutation({
+    ...options,
     mutationFn: ({ id, ...data }: AdminUpdateMinimumPurchase) =>
       sdk.client.fetch<AdminMinimumPurchaseResponse>(
         `/admin/store-config/minimum-purchase/${encodeURIComponent(id)}`,
@@ -122,7 +123,6 @@ export const useUpdateMinimumPurchase = (
       queryClient.invalidateQueries({ queryKey: minimumPurchaseQueryKey.lists() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -138,6 +138,7 @@ export const useDeleteMinimumPurchase = (
   const queryClient = useQueryClient();
 
   return useMutation({
+    ...options,
     mutationFn: (id: string) =>
       sdk.client.fetch<AdminDeleteMinimumPurchaseResponse>(
         `/admin/store-config/minimum-purchase/${encodeURIComponent(id)}`,
@@ -147,7 +148,6 @@ export const useDeleteMinimumPurchase = (
       queryClient.invalidateQueries({ queryKey: minimumPurchaseQueryKey.lists() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -186,6 +186,7 @@ export const useUpdateStoreSettings = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (data: Partial<StoreSettings>) =>
       sdk.client.fetch<AdminStoreSettingsResponse>('/admin/store-config/settings', {
         method: 'POST',
@@ -196,7 +197,6 @@ export const useUpdateStoreSettings = (
       queryClient.invalidateQueries({ queryKey: storeSettingsQueryKey });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -247,6 +247,7 @@ export const useUpdateSiteGate = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (data: UpdateSiteGateInput) =>
       sdk.client.fetch<AdminSiteGateResponse>('/admin/store-config/site-gate', {
         method: 'POST',
@@ -257,7 +258,6 @@ export const useUpdateSiteGate = (
       queryClient.invalidateQueries({ queryKey: siteGatesQueryKey });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -304,6 +304,7 @@ export const useUpdateAiConfig = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (data: Partial<AiConfig>) =>
       sdk.client.fetch<AdminAiConfigResponse>('/admin/store-config/ai-config', {
         method: 'POST',
@@ -314,7 +315,6 @@ export const useUpdateAiConfig = (
       queryClient.invalidateQueries({ queryKey: aiConfigQueryKey });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 

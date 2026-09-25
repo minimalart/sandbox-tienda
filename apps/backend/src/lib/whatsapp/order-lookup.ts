@@ -114,3 +114,56 @@ export async function lookupOrderByDisplayIdAndEmail(
   if (!match) return null;
   return getWaOrderStatus(container, match.id as string);
 }
+
+/**
+ * El mismo texto que manda el router cuando no coinciden. Vive acá para que la
+ * acción de los recorridos (`wa_lookup_order`) y la prueba del editor digan
+ * EXACTAMENTE lo mismo que el camino viejo.
+ */
+export const ORDER_NOT_FOUND_MESSAGE =
+  'No encontré un pedido con ese número y ese email. Revisalo y probá de nuevo, o decime *hablar con alguien* y te ayuda una persona del equipo.';
+
+export type OrderLookupAnswer =
+  | { outcome: 'found'; text: string; displayId: number }
+  /** Número o email ilegibles: no se llegó a consultar nada. */
+  | { outcome: 'invalid'; text: string; field: 'order_number' | 'email' }
+  /** No existe O el email no coincide: indistinguibles a propósito (§28). */
+  | { outcome: 'not_found'; text: string };
+
+/**
+ * Consulta de pedido a partir de lo que el cliente ESCRIBIÓ, lista para mandarle.
+ *
+ * Recibe el texto crudo de las dos preguntas abiertas del recorrido y no valores ya
+ * limpios: en un recorrido dibujado no hay modelo que extraiga "el 1234" de "mi
+ * pedido es el #1234", y un número ilegible tiene que decir QUÉ corregir en vez de
+ * responder "no encontré tu pedido" — que es mentira: no se buscó.
+ *
+ * La verificación es la de siempre (`lookupOrderByDisplayIdAndEmail`): no se
+ * muestra NINGÚN dato del pedido hasta que número y email correspondan a la misma
+ * orden. La acción del recorrido y la vista previa del editor pasan las dos por acá.
+ */
+export async function answerOrderLookup(
+  container: MedusaContainer,
+  rawOrderNumber: unknown,
+  rawEmail: unknown,
+): Promise<OrderLookupAnswer> {
+  const displayId = parseOrderDisplayId(typeof rawOrderNumber === 'string' ? rawOrderNumber : String(rawOrderNumber ?? ''));
+  if (displayId == null) {
+    return {
+      outcome: 'invalid',
+      field: 'order_number',
+      text: 'No pude leer el número de pedido. Mandame sólo los números (por ejemplo 1234).',
+    };
+  }
+  const email = parseEmail(typeof rawEmail === 'string' ? rawEmail : '');
+  if (!email) {
+    return {
+      outcome: 'invalid',
+      field: 'email',
+      text: 'Eso no parece un email. Mandámelo completo (por ejemplo nombre@mail.com).',
+    };
+  }
+  const status = await lookupOrderByDisplayIdAndEmail(container, displayId, email);
+  if (!status) return { outcome: 'not_found', text: ORDER_NOT_FOUND_MESSAGE };
+  return { outcome: 'found', text: formatOrderStatusForCustomer(status), displayId };
+}

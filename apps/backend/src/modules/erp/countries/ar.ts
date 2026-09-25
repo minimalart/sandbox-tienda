@@ -1,4 +1,4 @@
-import type { ErpFiscalDocument } from '../types';
+import type { ErpFiscalCondition, ErpFiscalDocument } from '../types';
 import type { CountryLayer } from './types';
 
 /**
@@ -30,6 +30,8 @@ export function isValidDni(raw: string): boolean {
 type BillingSnapshotLike = {
   document_type?: unknown;
   document_number?: unknown;
+  tax_condition?: unknown;
+  legal_name?: unknown;
 };
 
 function validateArDocument(type: string, number: string): boolean {
@@ -63,6 +65,66 @@ export const argentinaLayer: CountryLayer = {
   },
 
   validateDocument: validateArDocument,
+
+  /**
+   * Deriva condición fiscal AR desde `order.metadata.invoice_type` +
+   * `billing_snapshot.tax_condition` / `legal_name`. Cuatro combinaciones:
+   *
+   * - Sin `invoice_type` (o distinto de `invoice_a`)  → consumidor final.
+   *   `legal_name` va `null` (la persona factura como consumidor y el ERP arma
+   *   el name con first_name + last_name).
+   * - `invoice_type === 'invoice_a'` + `tax_condition ∈ {responsable_inscripto,
+   *   exento}` + `legal_name` presente → esa condición, con razón social.
+   *
+   * Fail-safe: `invoice_a` sin `tax_condition` o sin `legal_name` cae a
+   * consumidor final con `console.warn` — evita mandar al ERP un partner
+   * "responsable" mutilado que después no puede facturar. El checkout ya
+   * valida en su UI, este guard es cinturón.
+   */
+  inferFiscalCondition(order): { condition: ErpFiscalCondition | null; legal_name: string | null } {
+    const metadata = order.metadata ?? null;
+    const snapshot = (metadata?.billing_snapshot ?? null) as BillingSnapshotLike | null;
+    const invoiceType =
+      typeof metadata?.invoice_type === 'string' ? metadata.invoice_type.trim().toLowerCase() : null;
+    const rawTaxCondition =
+      typeof snapshot?.tax_condition === 'string' ? snapshot.tax_condition.trim().toLowerCase() : null;
+    const rawLegalName =
+      typeof snapshot?.legal_name === 'string' ? snapshot.legal_name.trim() : null;
+    const legalName = rawLegalName && rawLegalName.length > 0 ? rawLegalName : null;
+
+    if (invoiceType !== 'invoice_a') {
+      return { condition: 'consumer_final', legal_name: null };
+    }
+
+    if (!rawTaxCondition) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[erp:ar] invoice_type=invoice_a sin billing_snapshot.tax_condition — se cae a consumer_final.`
+      );
+      return { condition: 'consumer_final', legal_name: null };
+    }
+    if (!legalName) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[erp:ar] invoice_type=invoice_a sin billing_snapshot.legal_name — se cae a consumer_final.`
+      );
+      return { condition: 'consumer_final', legal_name: null };
+    }
+    if (rawTaxCondition === 'responsable_inscripto') {
+      return { condition: 'responsable_inscripto', legal_name: legalName };
+    }
+    if (rawTaxCondition === 'exento') {
+      return { condition: 'exento', legal_name: legalName };
+    }
+    if (rawTaxCondition === 'monotributo') {
+      return { condition: 'monotributo', legal_name: legalName };
+    }
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[erp:ar] tax_condition desconocida '${rawTaxCondition}' — se cae a consumer_final.`
+    );
+    return { condition: 'consumer_final', legal_name: null };
+  },
 
   normalizePhone(phone): string | null {
     if (!phone) return null;

@@ -404,6 +404,11 @@ export async function buildSalePayload(
   if (!order) return null;
 
   const document = opts.country.inferDocument({ metadata: order.metadata ?? null });
+  // La capa país arma la condición fiscal SEMÁNTICA (cross-país) y la razón
+  // social. El adapter destino resuelve los IDs específicos (ej. AFIP en Odoo AR).
+  // Ausente cuando la capa no lo implementa → payload sin esos campos, adapter
+  // legacy sin cambios.
+  const fiscal = opts.country.inferFiscalCondition?.({ metadata: order.metadata ?? null });
   const payments = (order.payment_collections ?? []).flatMap((pc) => pc.payments ?? []);
   // Monto notificado = total de la orden; del pago se toma la primera captura
   // como referencia (capturas parciales/múltiples colapsan en un solo evento).
@@ -426,6 +431,9 @@ export async function buildSalePayload(
       last_name: order.customer?.last_name ?? null,
       phone: opts.country.normalizePhone(order.customer?.phone),
       document,
+      ...(fiscal
+        ? { legal_name: fiscal.legal_name, fiscal_condition: fiscal.condition }
+        : {}),
     },
     items: (order.items ?? []).map((item) => {
       const tint = tintFromLine(item.metadata);

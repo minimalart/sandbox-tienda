@@ -7,6 +7,7 @@ import { ErpNonRetryableError } from '../adapters/types';
 import { truncateError } from '../sanitize';
 import { DEFAULT_INVOICE_FETCH_SETTINGS, type ErpRetryBudget, type ErpSalePayload } from '../types';
 import { computeNextRetry } from './backoff';
+import { decideSaleConflict } from './conflict-decision';
 import {
   INVOICE_FETCH_EVENT_TYPE,
   invoiceFetchEventKey,
@@ -123,6 +124,17 @@ export async function processOutboxBatch(container: MedusaContainer): Promise<{ 
         }
 
         const result = await adapter.notifySale(event.payload as ErpSalePayload, adapterCtx);
+
+        // Un conflicto del ERP no es automáticamente un duplicado: ver
+        // `decideSaleConflict`. Va como no-reintentable a propósito —
+        // reintentar no cambia un dato que el ERP rechaza — así que queda en
+        // dead_letter con el motivo a la vista, para corregir la causa y
+        // reenviar a mano.
+        if (result.status === 'duplicate') {
+          const decision = decideSaleConflict(event.attempts, result.conflict_body);
+          if (decision.kind === 'rejected') throw new ErpNonRetryableError(decision.message);
+        }
+
         await service.markOutboxSent(event.id, {
           external_ref: result.external_ref ?? null,
           response: result.response,

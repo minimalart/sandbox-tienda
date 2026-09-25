@@ -1,3 +1,4 @@
+import { copyrightLine, storeDisplayName } from './email-helpers';
 import type { EmailTemplateFunction, EmailTemplateResult } from './types';
 
 export type OrderInvoiceData = {
@@ -34,6 +35,15 @@ export const orderInvoiceTemplate: EmailTemplateFunction<OrderInvoiceData> = (
   const primary = (data.primary_color as string | undefined) || '#2e7d32';
   const logo = data.logo_url || '';
   const year = new Date().getFullYear();
+  const storeName = storeDisplayName(data);
+
+  // La marca estaba escrita a mano acá: sin logo, el mail encabezaba con el
+  // nombre de otra empresa. Sin tienda conocida la cabecera se OMITE.
+  const brandHeader = logo
+    ? `<img src="${logo}" alt="${storeName}" width="180" style="display:block;margin:0 auto;border:0;">`
+    : storeName
+      ? `<div style="font-size:22px;font-weight:700;color:${primary};">${storeName}</div>`
+      : '';
 
   const html = `
 <!DOCTYPE html>
@@ -43,7 +53,7 @@ export const orderInvoiceTemplate: EmailTemplateFunction<OrderInvoiceData> = (
     <tr><td style="padding:24px 0;">
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="600" style="margin:auto;background-color:#ffffff;max-width:600px;border-radius:8px;overflow:hidden;">
         <tr><td style="padding:32px 32px 8px 32px;text-align:center;">
-          ${logo ? `<img src="${logo}" alt="" width="180" style="display:block;margin:0 auto;border:0;">` : `<div style="font-size:22px;font-weight:700;color:${primary};">Mercatto</div>`}
+          ${brandHeader}
         </td></tr>
         <tr><td style="padding:8px 32px;text-align:center;">
           <h1 style="margin:0;font-size:22px;color:#333;">Tu comprobante ya está disponible</h1>
@@ -63,7 +73,7 @@ export const orderInvoiceTemplate: EmailTemplateFunction<OrderInvoiceData> = (
           <p style="margin:0;">Lo podés descargar desde Mi cuenta → Pedidos.</p>
         </td></tr>`
         }
-        <tr><td style="padding:16px 32px;background-color:${primary};text-align:center;color:#fff;font-size:12px;">© ${year} Mercatto</td></tr>
+        <tr><td style="padding:16px 32px;background-color:${primary};text-align:center;color:#fff;font-size:12px;">${copyrightLine(year, storeName)}</td></tr>
       </table>
     </td></tr>
   </table>

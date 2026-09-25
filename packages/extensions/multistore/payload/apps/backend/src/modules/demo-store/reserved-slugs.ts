@@ -41,6 +41,9 @@ const ROUTABLE_SEGMENTS = [
   'catalogo',
   'checkout',
   'splash',
+  // Internal Puck preview routes
+  'home-preview',
+  'puck-preview',
   // (main)
   'about',
   'account',

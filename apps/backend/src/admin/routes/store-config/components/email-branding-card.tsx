@@ -10,7 +10,7 @@ import { MediaLibraryPickerModal } from '@minimalart/mercatto-plugin-media-libra
 /**
  * Email branding card — lets the admin configure the visual identity used in
  * transactional emails: brand colors, logo, display name and the notification
- * recipient for admin emails.
+ * recipients for admin emails (one address, or several separated by commas).
  *
  * Consumes: GET/POST /admin/store-config/email-branding
  *
@@ -184,17 +184,26 @@ export function EmailBrandingCard({ embedded = false }: { embedded?: boolean }) 
         </Text>
       </div>
 
-      {/* Admin notification email */}
+      {/* Admin notification emails */}
       <div className="flex flex-col gap-1">
-        <Label size="xsmall">Email de notificaciones admin</Label>
+        <Label size="xsmall">Emails de notificaciones admin</Label>
+        {/*
+          `multiple` y no `type="text"`: es el atributo con el que el navegador
+          entiende que este campo lleva una LISTA separada por comas, y sin él
+          `type="email"` marca en rojo dos direcciones perfectamente válidas. El
+          backend valida igual, casilla por casilla — esto es sólo para que la
+          pantalla no discuta con lo que el servidor acepta.
+        */}
         <Input
           type="email"
+          multiple
           value={adminEmail}
           onChange={(e) => setAdminEmail(e.target.value)}
-          placeholder="admin@mitienda.com"
+          placeholder="admin@mitienda.com, ventas@mitienda.com"
         />
         <Text size="xsmall" className="text-ui-fg-subtle">
-          Destinatario por defecto para los emails de notificación al admin.
+          Destinatarios de los emails de notificación al admin. Podés poner varios
+          separados por coma.
         </Text>
       </div>
 

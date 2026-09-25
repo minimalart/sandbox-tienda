@@ -213,12 +213,46 @@ describe('offerableOptions', () => {
     assert.equal(offerableOptions(surface, {}).length, surface.options.length);
   });
 
+  /**
+   * La faceta PEDIDA Y VACÍA no es lo mismo que la ausente: significa que el
+   * índice no tiene el atributo, así que preguntar por él es un callejón sin
+   * salida garantizado. Es el caso de desdeelsur (DESDEELSUR-72, TC-011).
+   */
+  test('faceta pedida y VACÍA no ofrece ninguna opción que filtre', () => {
+    const surface = dimensionByKey('surface')!;
+    const offered = offerableOptions(surface, { advisor_surface: {} });
+    assert.deepEqual(offered.filter((o) => o.expand.length > 0), []);
+  });
+
   test('las opciones que no filtran se ofrecen siempre', () => {
     const environment = dimensionByKey('environment')!;
     const values = offerableOptions(environment, { advisor_environment: { interior: 5 } }).map(
       (o) => o.value,
     );
     assert.ok(values.includes('any'));
+  });
+});
+
+describe('el índice sin atributos del asesor', () => {
+  /**
+   * 2.263 productos, las cinco facetas en cero: el caso medido en desdeelsur. Antes
+   * se preguntaba igual y CUALQUIER respuesta devolvía "no encontré productos".
+   */
+  const EMPTY_FACETS: FacetCounts = {
+    advisor_surface: {},
+    advisor_product_type: {},
+    advisor_environment: {},
+    advisor_special_use: {},
+    advisor_base: {},
+  };
+
+  test('no pregunta nada: muestra los productos que hay', () => {
+    const step = nextStep({}, 2263, EMPTY_FACETS, CONFIG);
+    assert.equal(step.kind, 'show');
+  });
+
+  test('tampoco asume respuestas implícitas', () => {
+    assert.deepEqual(impliedAnswers({}, EMPTY_FACETS), {});
   });
 });
 

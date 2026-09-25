@@ -3,15 +3,24 @@ import { resolveSite } from '../../lib/multistore/resolve-site';
 import type { SiteHint } from '../../lib/multistore/types';
 import { STORE_CONFIG_MODULE } from '../store-config';
 import type StoreConfigModuleService from '../store-config/service';
+import { joinRecipientList, parseRecipientList } from '../../lib/recipient-list';
 import { getEmailTemplateSettings } from './settings';
 
 /**
- * Resolves the email address that should receive admin notifications.
+ * Resolves the email addresses that should receive admin notifications.
  *
  * Priority:
  *   1. The `admin_notification_email` configured in the email branding settings.
  *   2. `ADMIN_EMAIL` resolved through `app-settings` (DB row > env > default).
- *   3. `null` (no recipient configured).
+ *   3. `[]` (no recipient configured).
+ *
+ * ── LAS DOS CAPAS SIGUEN SIENDO CAPAS, NO SE SUMAN ───────────────────────────
+ *
+ * Cada una puede llevar VARIAS casillas, pero la de la tienda REEMPLAZA a la de
+ * instancia, igual que cuando eran una sola. Sumarlas parece generoso y es lo
+ * contrario: una tienda que configuró su propio buzón para NO recibir en el
+ * casillero genérico se lo volvería a comer, y no habría forma de sacarlo desde
+ * la pantalla de esa tienda.
  *
  * Any failure resolving the store-config module (e.g. module unavailable) falls
  * back to `ADMIN_EMAIL` — a misconfigured branding row must never break sends.
@@ -35,7 +44,8 @@ import { getEmailTemplateSettings } from './settings';
  * —matchea las DOS columnas de canal—, que un `WHERE sales_channel_id = ?` a
  * mano se pierde. El caso sin pista lo cubre `siteOfNotification`, abajo.
  */
-const fallbackRecipient = (): string | null => getEmailTemplateSettings().adminEmail || null;
+const fallbackRecipients = (): string[] =>
+  parseRecipientList(getEmailTemplateSettings().adminEmail);
 
 /**
  * La tienda del aviso, o `null` para la fila GLOBAL.
@@ -107,16 +117,42 @@ async function siteOfNotification(
   }
 }
 
-export async function getAdminNotificationEmail(
+export async function getAdminNotificationEmails(
   container: MedusaContainer,
   hint?: SiteHint,
-): Promise<string | null> {
+): Promise<string[]> {
   try {
     const service: StoreConfigModuleService = container.resolve(STORE_CONFIG_MODULE);
     const siteId = await siteOfNotification(container, hint);
     const { admin_notification_email } = await service.getEmailBranding(siteId);
-    return admin_notification_email || fallbackRecipient();
+    const configured = parseRecipientList(admin_notification_email);
+    return configured.length ? configured : fallbackRecipients();
   } catch {
-    return fallbackRecipient();
+    return fallbackRecipients();
   }
+}
+
+/**
+ * Lo mismo que `getAdminNotificationEmails`, ya armado para el campo `to` de
+ * `createNotifications`.
+ *
+ * ── POR QUÉ VARIAS CASILLAS VIAJAN EN UN SOLO STRING ─────────────────────────
+ *
+ * `to` es un `string` en el DTO de notificaciones de Medusa y es la columna que
+ * queda en la tabla: no hay un `string[]` donde meterlas. La alternativa era
+ * emitir N notificaciones, una por casilla, y eso cambia lo que el aviso ES —de
+ * "un pedido nuevo" a "un pedido nuevo, cuatro veces"— en la campana del admin y
+ * en cualquier reintento. Acá el aviso sigue siendo UNO; lo que se ensancha es su
+ * destinatario, y el provider (`email/service.ts`) parte esta misma cadena con
+ * `parseRecipientList` antes de dársela a SendGrid.
+ *
+ * Devuelve `null` —y no `''`— sin ninguna casilla configurada, porque los cinco
+ * emisores preguntan `if (adminEmail)` antes de mandar y un string vacío pasaría
+ * ese chequeo si algún día alguien lo cambia por `!= null`.
+ */
+export async function getAdminNotificationEmail(
+  container: MedusaContainer,
+  hint?: SiteHint,
+): Promise<string | null> {
+  return joinRecipientList(await getAdminNotificationEmails(container, hint)) || null;
 }

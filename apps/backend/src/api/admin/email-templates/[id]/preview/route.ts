@@ -5,6 +5,7 @@ import { renderEmailTemplate } from '../../../../../modules/email-template/rende
 import { renderPuckEmailHtml } from '../../../../../modules/email-template/render-email';
 import { PostAdminPreviewEmailTemplate } from '../../validators';
 import { withBrandingDefaults } from '../../../../../modules/email-template/branding-defaults';
+import { withCatalogSampleData } from '../../../../../modules/email-template/catalog-sample-data';
 
 import { siteFromRequest } from '../../../../../lib/multistore/request';
 import { assertIdInSite } from '../../../../../lib/multistore/scope';
@@ -56,16 +57,27 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     }
 
     /**
+     * `sample_data` es el mismo para TODAS las instalaciones (lo escribió una
+     * sola vez `scripts/seed-email-templates.ts`, con productos de ejemplo del
+     * boilerplate). Los productos que sigan iguales a los guardados se cambian
+     * por productos reales de la tienda activa — también cuando llega `data`,
+     * porque el editor del admin lo manda SIEMPRE con el `sample_data` cargado.
+     * Ver `../../catalog-sample-data.ts`.
+     */
+    const sampleData = await withCatalogSampleData(
+      req,
+      resolution,
+      body.data,
+      stored.sample_data as Record<string, unknown> | null,
+    );
+
+    /**
      * El branding va como DEFAULTS para que la vista previa se parezca a lo que
      * recibe el cliente. Vive en `../../branding-defaults.ts` y no acá porque el
      * "Enviar prueba" necesita EXACTAMENTE lo mismo y no lo tenía: la misma
      * plantilla se veía bien en pantalla y llegaba sin estilos al buzón.
      */
-    const data = await withBrandingDefaults(
-      req,
-      resolution,
-      { ...(body.data ?? (stored.sample_data as Record<string, unknown>) ?? {}) },
-    );
+    const data = await withBrandingDefaults(req, resolution, { ...(sampleData ?? {}) });
 
     const rendered = renderEmailTemplate({ subject, html, data });
     return res.status(200).json(rendered);

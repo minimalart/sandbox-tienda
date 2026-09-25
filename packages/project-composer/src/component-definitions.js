@@ -219,6 +219,7 @@ module.exports = {
     'apps/storefront/src/app/api/pdf-catalog',
   ],
   'landing-pages': [
+    'apps/storefront/src/app/[countryCode]/(puck)/puck-preview',
     'apps/backend/src/modules/landing-page', 'apps/backend/src/api/admin/landing-pages', 'apps/backend/src/api/store/landing-pages',
     'apps/backend/src/admin/routes/landing-pages', 'apps/backend/src/admin/hooks/api/landing-pages.tsx', 'apps/backend/src/admin/translations/landing-pages',
     'apps/storefront/src/modules/landing-page', 'apps/storefront/src/lib/data/landing-pages.ts',
@@ -506,6 +507,10 @@ module.exports = {
    * admin del cliente no tenía multitienda. Ahora se instala.
    */
   multistore: [
+    'apps/backend/src/lib/home-preview.ts',
+    'apps/backend/src/lib/home-preview.test.ts',
+    'apps/backend/src/api/store/home-previews',
+    'apps/storefront/src/app/[countryCode]/(puck)/home-preview',
     'apps/storefront/src/app/[countryCode]/(directory)/tiendas',
     'apps/storefront/src/app/api/sites-directory',
     'apps/backend/src/admin/lib/puck/directory-config.tsx',

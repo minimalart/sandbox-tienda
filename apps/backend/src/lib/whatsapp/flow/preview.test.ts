@@ -51,6 +51,43 @@ describe('qué se puede correr de verdad en una prueba', () => {
     assert.match((plan as { reason: string }).reason, /productos elegidos/);
   });
 
+  it('las presentaciones se corren: son el paso que más se traba', () => {
+    // Es la acción que dejaba la pregunta siguiente vacía y obligaba a escribir el
+    // JSON de las opciones a mano, con los ids de variante adentro.
+    assert.deepEqual(previewPlan('wa_list_presentations', { variant_id: 'variant_1' }), {
+      kind: 'presentations',
+      variantId: 'variant_1',
+      productId: '',
+    });
+  });
+
+  it('las presentaciones sin producto elegido dicen qué falta', () => {
+    const plan = previewPlan('wa_list_presentations', {});
+    assert.equal(plan.kind, 'unsupported');
+    assert.match((plan as { reason: string }).reason, /tocá uno/i);
+  });
+
+  it('la ficha de un producto se lee del catálogo', () => {
+    assert.deepEqual(previewPlan('wa_product_detail', { variant_id: 'variant_9' }), {
+      kind: 'detail',
+      variantId: 'variant_9',
+    });
+  });
+
+  it('ver el carrito dice POR QUÉ no se puede, no "todavía no"', () => {
+    // La diferencia entre entender que falta una conversación y creer que el editor
+    // está incompleto.
+    const plan = previewPlan('wa_view_cart', {});
+    assert.equal(plan.kind, 'unsupported');
+    assert.match((plan as { reason: string }).reason, /carrito/i);
+  });
+
+  it('el asesor guiado explica que lleva su propia conversación', () => {
+    const plan = previewPlan('wa_guided_start', {});
+    assert.equal(plan.kind, 'unsupported');
+    assert.match((plan as { reason: string }).reason, /asesor/i);
+  });
+
   it('un paso sin acción elegida no rompe nada', () => {
     assert.equal(previewPlan(undefined, {}).kind, 'unsupported');
   });
@@ -60,5 +97,20 @@ describe('qué se puede correr de verdad en una prueba', () => {
       kind: 'pinned',
       productIds: ['prod_1'],
     });
+  });
+});
+
+describe('la consulta de pedido se prueba de verdad', () => {
+  it('con las dos respuestas, se corre', () => {
+    assert.deepEqual(previewPlan('wa_lookup_order', { order_number: '1234', email: 'ana@mail.com', save_as: 'x' }), {
+      kind: 'order',
+      orderNumber: '1234',
+      email: 'ana@mail.com',
+    });
+  });
+
+  it('si falta una (pregunta sin contestar o paso mal atado), se explica en vez de buscar', () => {
+    const plan = previewPlan('wa_lookup_order', { order_number: '1234', email: '' });
+    assert.equal(plan.kind, 'unsupported');
   });
 });

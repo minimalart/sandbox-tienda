@@ -59,6 +59,28 @@ test('site account fields are removed from extension settings, including non-sec
   assert.equal(credentialIntegrationId('extension:loyalty-engine'), 'loyalty');
 });
 
+test('provider-blocked integrations with instance-scoped descriptors are global', () => {
+  // MercadoPago is `reader: null` in the site-credentials catalog (sync
+  // `getAccount` on the charge path can't reach the DB), and its descriptors
+  // are `defaultScope: 'instance'`. The drawer must open on the "Todas" scope,
+  // otherwise operators are forced to save under a site row that
+  // `resolveSettingSync` ignores — the webhook then falls back to a stale env
+  // and HMAC verification fails.
+  //
+  // Both `GLOBAL_INTEGRATION_IDS` (which decides the button is enabled on
+  // "Todas") AND `isGlobalCredential` (which decides the account fields show up
+  // in the drawer body) must include the integration. Dropping either one
+  // makes MercadoPago disappear from the UI entirely.
+  assert.equal(isGlobalIntegration('mercadopago'), true);
+  for (const key of ['MERCADOPAGO_ACCESS_TOKEN', 'MERCADOPAGO_WEBHOOK_SECRET']) {
+    const d = findDescriptor('extension:mercadopago', key);
+    assert.ok(d, key);
+    assert.equal(d.scope, 'instance', key);
+    assert.equal(isGlobalCredential(d), true, key);
+    assert.equal(isCredentialSetting(d), true, key);
+  }
+});
+
 test('the inbound webhook contract stays in the extension card and writes to the instance row', () => {
   for (const key of INBOUND_CONTRACT_KEYS) {
     const d = findDescriptor('extension:whatsapp', key);

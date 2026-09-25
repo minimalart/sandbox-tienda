@@ -1,5 +1,6 @@
 import { MedusaService } from '@medusajs/framework/utils';
 import { MinimumPurchase, StoreSetting } from './models';
+import { minimumPurchaseFilter, pickEffectiveMinimumPurchase } from './minimum-purchase';
 import {
   mergeLegalPages,
   normalizeStoredDoc,
@@ -318,6 +319,26 @@ class StoreConfigModuleService extends MedusaService({
   MinimumPurchase,
   StoreSetting,
 }) {
+  /**
+   * El mínimo de compra VIGENTE para una tienda, o `null` si no hay ninguno.
+   *
+   * La regla vive en `minimum-purchase.ts` —ventana de fechas en JS, `$or` para
+   * alcanzar la fila global y precedencia tienda → global, cada tramo con su
+   * porqué— porque este archivo no se puede importar en un test. Acá queda sólo
+   * la query.
+   *
+   * Lo comparten el storefront, el "Mínimo vigente" del admin y el checkout del
+   * bot de WhatsApp: antes la resolución estaba escrita únicamente en la ruta
+   * pública y el bot generaba el link de pago sin mirarla.
+   */
+  async getEffectiveMinimumPurchase(siteId?: string | null, at: Date = new Date()) {
+    const records = await this.listMinimumPurchases(minimumPurchaseFilter(siteId), {
+      order: { starts_at: 'DESC', created_at: 'DESC' },
+      take: 200,
+    });
+    return pickEffectiveMinimumPurchase(records, siteId, at);
+  }
+
   /** Reads a boolean setting by key (defaults to `fallback` when unset). */
   async getBooleanSetting(key: string, fallback = false, siteId?: string | null): Promise<boolean> {
     const row = await this.readSetting(key, siteId);

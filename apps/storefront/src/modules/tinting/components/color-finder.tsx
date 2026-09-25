@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Text } from '@medusajs/ui'
 import { ArrowLeft, Check } from 'lucide-react'
@@ -66,6 +66,22 @@ const STEPS = [
  * `lg:block`), así que el ancho es el de la pantalla entera.
  */
 const CARD_GRID = 'grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3'
+
+/**
+ * Salto de scroll SIN animación. `globals.css` declara
+ * `html { scroll-behavior: smooth }`, y con eso cualquier `scrollTo` se anima
+ * aunque no se lo pida: se veía la página recorrer la carta entera antes de
+ * cambiar de paso. Se apaga el smooth inline durante el salto y se devuelve en
+ * el frame siguiente.
+ */
+const jumpTo = (top: number) => {
+  const html = document.documentElement
+  html.style.scrollBehavior = 'auto'
+  window.scrollTo(0, top)
+  requestAnimationFrame(() => {
+    html.style.scrollBehavior = ''
+  })
+}
 
 /**
  * Los dos pasos, siempre visibles: en el paso 2 el cliente tiene que poder ver
@@ -168,6 +184,8 @@ const ColorFinder = ({ colors }: ColorFinderProps) => {
   const inFlight = useRef<AbortController | null>(null)
   /** Dónde estaba la carta cuando se eligió el color, para restaurarla al volver. */
   const catalogScroll = useRef(0)
+  /** Se eligió un color y el paso 2 todavía no se pintó: hay que subir al pintarlo. */
+  const pendingTop = useRef(false)
 
   const code = searchParams.get(COLOR_PARAM)
   const collection = searchParams.get(COLLECTION_PARAM)
@@ -193,10 +211,8 @@ const ColorFinder = ({ colors }: ColorFinderProps) => {
       const params = new URLSearchParams(searchParams.toString())
       params.set(COLOR_PARAM, color.code)
       params.set(COLLECTION_PARAM, color.collection)
+      pendingTop.current = true
       router.push(`${pathname}?${params.toString()}`, { scroll: false })
-      // El paso 2 arranca arriba: es una pantalla nueva, no la continuación de
-      // donde venía scrolleando la carta.
-      window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     [pathname, router, searchParams],
   )
@@ -209,6 +225,17 @@ const ColorFinder = ({ colors }: ColorFinderProps) => {
     router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
   }, [pathname, router, searchParams])
 
+  // El paso 2 arranca arriba: es una pantalla nueva, no la continuación de
+  // donde venía scrolleando la carta. Se sube DESPUÉS de que el paso 2 reemplazó
+  // a la carta y antes de que el navegador pinte (por eso layout effect): si se
+  // sube antes, con la carta todavía en pantalla, el cliente ve la página
+  // desplazarse hasta arriba y recién después abrirse el color (DESDEELSUR-74).
+  useLayoutEffect(() => {
+    if (step !== 2 || !pendingTop.current) return
+    pendingTop.current = false
+    jumpTo(0)
+  }, [step])
+
   // Volver al paso 1 después de haber bajado por cientos de swatches tiene que
   // devolver al mismo lugar de la carta; si no, hay que volver a buscar el color
   // que se estaba mirando.
@@ -217,7 +244,7 @@ const ColorFinder = ({ colors }: ColorFinderProps) => {
     const top = catalogScroll.current
     if (!top) return
     catalogScroll.current = 0
-    requestAnimationFrame(() => window.scrollTo({ top }))
+    requestAnimationFrame(() => jumpTo(top))
   }, [step])
 
   useEffect(() => {

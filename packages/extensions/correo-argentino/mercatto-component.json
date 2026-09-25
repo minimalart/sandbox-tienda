@@ -2,11 +2,12 @@
   "schema_version": 1,
   "id": "correo-argentino",
   "name": "Correo Argentino",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
-    "delivery"
+    "delivery",
+    "email-templates"
   ],
   "incompatibilities": [],
   "settings_namespace": "extension:correo-argentino",
@@ -126,6 +127,10 @@
     {
       "source": "payload/apps/backend/src/workflows/correo-generate-tickets.test.ts",
       "target": "apps/backend/src/workflows/correo-generate-tickets.test.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/correo-ticket-tracking-email.ts",
+      "target": "apps/backend/src/subscribers/correo-ticket-tracking-email.ts"
     }
   ],
   "migrations": [],
@@ -288,7 +293,7 @@
     },
     {
       "path": "apps/backend/src/jobs/sync-correo-tracking-status.ts",
-      "sha256": "c02619f8900e7f1a2ae9834232132c3e6e5868fdf25aeec597b2438b6a4acdc3"
+      "sha256": "61859278716ccb813a0071d247a8d6aa96cc34ddce0c0d6c1b28959524fd4ecd"
     },
     {
       "path": "apps/backend/src/modules/correo-argentino-fulfillment/clients/micorreo-client.test.ts",
@@ -449,6 +454,10 @@
     {
       "path": "apps/backend/src/subscribers/correo-order.ts",
       "sha256": "dd7abaae6b9280a50eb7c5a28f19dc28b120e184ef4f8197f17edb54dfe3aa0c"
+    },
+    {
+      "path": "apps/backend/src/subscribers/correo-ticket-tracking-email.ts",
+      "sha256": "1a2faabd0dbeead14414ac4bcbe9d5fbe398c73f0693340d565655d628da603f"
     },
     {
       "path": "apps/backend/src/subscribers/correo-ticket-tracking-whatsapp.ts",

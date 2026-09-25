@@ -4,6 +4,11 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { triggerHaptic } from '@lib/util/haptics';
 import { clampToStock, getLineItemMaxQuantity } from '@lib/util/max-purchasable-quantity';
+import {
+  isOptimisticLineId,
+  keepPendingOptimisticLines,
+  OPTIMISTIC_LINE_PREFIX,
+} from './cart-pending-lines';
 
 // ============================================================================
 // TYPES
@@ -59,6 +64,11 @@ interface CartActions {
    */
   changeItemQuantity: (lineId: string, delta: number) => void;
   removeItem: (lineId: string) => Promise<boolean>;
+  /**
+   * Saca un kit entero (todas las líneas con ese `bundle_instance_id`) con
+   * UNA llamada al servidor, en vez de un `removeItem` por producto.
+   */
+  removeBundleInstance: (bundleInstanceId: string) => Promise<boolean>;
 
   // Helpers
   getItemByVariantId: (variantId: string) => HttpTypes.StoreCartLineItem | undefined;
@@ -90,10 +100,20 @@ type OptimisticLineOptions = {
   currencyCode?: string | null;
 };
 
-const OPTIMISTIC_LINE_PREFIX = 'optimistic-line';
+const isOptimisticLine = (item: HttpTypes.StoreCartLineItem) => isOptimisticLineId(item.id);
 
-const isOptimisticLine = (item: HttpTypes.StoreCartLineItem) =>
-  item.id.startsWith(OPTIMISTIC_LINE_PREFIX);
+// Variantes cuya línea OPTIMISTA el usuario sacó (tacho o cantidad 0) mientras
+// su "add" seguía en la cola. Es la única señal válida de "la sacó mientras se
+// agregaba": inferirlo porque la variante no está en el carrito local fallaba
+// cada vez que un snapshot del server pisaba las líneas optimistas, y cada add
+// encolado terminaba borrando la línea que acababa de crear.
+const removedWhilePendingVariantIds = new Set<string>();
+
+const markOptimisticLineRemoved = (line: HttpTypes.StoreCartLineItem | undefined) => {
+  if (line && isOptimisticLine(line) && line.variant_id) {
+    removedWhilePendingVariantIds.add(line.variant_id);
+  }
+};
 
 /**
  * Firma del entonado de una línea: `''` para una línea normal, o el color +
@@ -336,7 +356,11 @@ export const useCartStore = create<CartStore>()(
         if (cartOptimisticVersion !== version) {
           set({ isLoading: false, isHydrated: true });
         } else if (hasValidCart) {
-          set({ cart: incoming, isLoading: false, isHydrated: true });
+          set({
+            cart: keepPendingOptimisticLines(incoming, get().cart, get().pendingAdditions),
+            isLoading: false,
+            isHydrated: true,
+          });
         } else if (get().pendingAdditions.size > 0) {
           // Hay un "add" en vuelo: el carrito todavía no se persistió en el
           // server, así que un `{}` vacío NO significa "carrito vacío". Pisarlo
@@ -467,9 +491,14 @@ export const useCartStore = create<CartStore>()(
         //
         // Ahora que tenemos el id real, aplicamos la baja y la sacamos ya de la
         // UI para que no parpadee de vuelta.
+        //
+        // La baja tiene que estar REGISTRADA (ver removedWhilePendingVariantIds):
+        // que la variante no esté en el carrito local no alcanza como prueba.
+        // Si el usuario la volvió a agregar después de sacarla, está de nuevo en
+        // el carrito y no se borra.
         const removedWhileAdding =
-          !!localCartBeforeMerge &&
-          !localCartBeforeMerge.items?.some(
+          removedWhilePendingVariantIds.has(variantId) &&
+          !localCartBeforeMerge?.items?.some(
             (item) => item.variant_id === variantId
           );
         const serverLineForVariant = (
@@ -592,6 +621,7 @@ export const useCartStore = create<CartStore>()(
         });
         return false;
       } finally {
+        removedWhilePendingVariantIds.delete(variantId);
         // Remove from pending
         const currentPending = get().pendingAdditions;
         const updatedPending = new Set(currentPending);
@@ -681,6 +711,7 @@ export const useCartStore = create<CartStore>()(
       const line = cart.items?.find((item) => item.id === lineId);
       const target =
         quantity <= 0 ? quantity : clampToStock(quantity, getLineItemMaxQuantity(line));
+      if (target <= 0) markOptimisticLineRemoved(line);
 
       console.log('[CART] Updating quantity - lineId:', lineId, 'new quantity:', target);
 
@@ -779,7 +810,9 @@ export const useCartStore = create<CartStore>()(
         // pisaría la cantidad recién editada (el parpadeo a 1): la descartamos y
         // el sync del último cambio dejará el estado correcto.
         if (version === undefined || cartOptimisticVersion === version) {
-          set({ cart: data.cart });
+          set({
+            cart: keepPendingOptimisticLines(data.cart, get().cart, get().pendingAdditions),
+          });
         }
 
         if (typeof window !== 'undefined') {
@@ -837,6 +870,14 @@ export const useCartStore = create<CartStore>()(
       set({ cart: optimisticCart, error: null });
       const version = bumpCartOptimisticVersion();
 
+      // Una línea optimista todavía no existe en el server: mandar su id
+      // fallaba, y el rollback (`fetchCart`) pisaba el resto de las líneas en
+      // cola. Registramos la baja y la aplica `addItem` con el id REAL.
+      if (isOptimisticLineId(lineId)) {
+        markOptimisticLineRemoved(cart.items?.find((item) => item.id === lineId));
+        return true;
+      }
+
       return enqueueCartMutation(async () => {
       try {
         const response = await fetch('/api/store/cart', {
@@ -853,7 +894,9 @@ export const useCartStore = create<CartStore>()(
 
         // No pisar si hubo un cambio optimista más nuevo (evita el parpadeo).
         if (cartOptimisticVersion === version) {
-          set({ cart: data.cart });
+          set({
+            cart: keepPendingOptimisticLines(data.cart, get().cart, get().pendingAdditions),
+          });
         }
 
         if (typeof window !== 'undefined') {
@@ -869,6 +912,56 @@ export const useCartStore = create<CartStore>()(
         });
         return false;
       }
+      });
+    },
+
+    removeBundleInstance: async (bundleInstanceId) => {
+      const { cart, fetchCart } = get();
+      if (!cart) return false;
+
+      // Optimista: desaparecen todas las líneas del kit de una, igual que van
+      // a desaparecer en el servidor.
+      const optimisticCart = {
+        ...cart,
+        items: cart.items?.filter(
+          (item) =>
+            (item.metadata as Record<string, unknown> | null | undefined)
+              ?.bundle_instance_id !== bundleInstanceId,
+        ),
+      };
+      set({ cart: optimisticCart, error: null });
+      const version = bumpCartOptimisticVersion();
+
+      return enqueueCartMutation(async () => {
+        try {
+          const response = await fetch('/api/store/cart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'deleteBundle', bundleInstanceId }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to remove bundle');
+          }
+
+          if (cartOptimisticVersion === version) {
+            set({ cart: data.cart });
+          }
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('cart-updated'));
+          }
+
+          return true;
+        } catch (error) {
+          await fetchCart();
+          set({
+            error: error instanceof Error ? error.message : 'Error removing bundle',
+          });
+          return false;
+        }
       });
     },
 

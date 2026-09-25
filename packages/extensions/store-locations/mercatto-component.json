@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "store-locations",
   "name": "Sucursales",
-  "version": "1.13.0",
+  "version": "1.13.1",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -107,7 +107,7 @@
     },
     {
       "path": "apps/backend/src/admin/hooks/api/store-locations.tsx",
-      "sha256": "8c3fd9645512d776256c7f8e16448631c0fe49e194d0c1d6c02c84f23c81a708"
+      "sha256": "aa68783865f85872ffa76fc8783ca333d4f608a227230a710f41795661854532"
     },
     {
       "path": "apps/backend/src/admin/routes/store-locations/components/branch-config-section.tsx",

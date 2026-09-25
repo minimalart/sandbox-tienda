@@ -17,6 +17,11 @@
  * Run with:
  *   pnpm seed:email-templates
  *   or: dotenv -e .env -- medusa exec ./src/scripts/seed-email-templates.ts
+ *
+ * Los productos de ejemplo abajo (`order_items`, `items`…) son del boilerplate
+ * y quedan escritos en `sample_data` para siempre — este script no se re-corre
+ * en un deploy. `preview`/`test-send` los cambian en runtime por productos
+ * reales de la tienda activa: ver `modules/email-template/catalog-sample-data.ts`.
  */
 import type { ExecArgs, Logger } from '@medusajs/framework/types';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
@@ -1786,7 +1791,7 @@ const SEED: SeedEntry[] = [
       { name: 'customer_name', description: 'Nombre del cliente' },
       { name: 'customer_email', description: 'Email del cliente' },
       { name: 'customer_phone', description: 'Teléfono del cliente' },
-      { name: 'order_items', description: 'Array de items {title, quantity, unit_price_formatted, line_total_formatted, thumbnail}' },
+      { name: 'order_items', description: 'Array de items {title, quantity, unit_price_formatted, line_total_formatted, thumbnail, stock_status, stock_status_label, stock_status_color, stock_available_label}. Los campos stock_* sólo viajan acá, nunca al mail del cliente' },
       { name: 'subtotal_formatted', description: 'Subtotal formateado' },
       { name: 'discounts', description: 'Array de descuentos {label, amount_formatted, makes_free}' },
       { name: 'shipping_display', description: 'Costo de envío a mostrar ("Gratis" o "$ x")' },
@@ -1795,6 +1800,8 @@ const SEED: SeedEntry[] = [
       { name: 'shipping_method_name', description: 'Nombre del método de envío' },
       { name: 'payment_method_name', description: 'Nombre del método de pago' },
       { name: 'order_notes', description: 'Observaciones del pedido' },
+      { name: 'stock_location_name', description: 'Nombre de la sucursal/depósito cuyo stock se evaluó en order_items' },
+      { name: 'has_stock_issues', description: 'True si alguna línea de order_items quedó insufficient o none' },
       { name: 'year', description: 'Año actual para el footer' },
     ],
     sample_data: {
@@ -1814,6 +1821,10 @@ const SEED: SeedEntry[] = [
           unit_price_formatted: '3.500',
           line_total_formatted: '7.000',
           thumbnail: '',
+          stock_status: 'available',
+          stock_status_label: 'Stock disponible',
+          stock_status_color: '#15803d',
+          stock_available_label: '12',
         },
         {
           title: 'Termo Acero Inoxidable',
@@ -1821,6 +1832,10 @@ const SEED: SeedEntry[] = [
           unit_price_formatted: '12.500',
           line_total_formatted: '12.500',
           thumbnail: '',
+          stock_status: 'insufficient',
+          stock_status_label: 'Stock insuficiente',
+          stock_status_color: '#b45309',
+          stock_available_label: '0',
         },
       ],
       subtotal_formatted: '19.500',
@@ -1831,6 +1846,8 @@ const SEED: SeedEntry[] = [
       shipping_method_name: 'Envío a domicilio',
       payment_method_name: 'Tarjeta de crédito',
       order_notes: 'Entregar en horario de la tarde.',
+      stock_location_name: 'Depósito Central',
+      has_stock_issues: true,
       year: 2026,
     },
     status: 'draft',

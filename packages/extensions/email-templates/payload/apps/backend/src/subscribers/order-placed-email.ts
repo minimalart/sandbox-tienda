@@ -3,6 +3,7 @@ import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import type { INotificationModuleService, Logger } from '@medusajs/framework/types';
 import { getAdminNotificationEmail } from '../modules/email/admin-recipient';
 import { buildPickupContext } from '../modules/email/pickup-context';
+import { buildOrderStockContext, type OrderStockItemView } from '../modules/email/order-stock-context';
 
 type OrderAddress = {
   first_name?: string | null;
@@ -72,8 +73,17 @@ type OrderGraphResult = {
    * `data` viaja además del nombre porque ahí vive `store_id`: es el respaldo de
    * `metadata.store_id` para saber qué sucursal eligió el comprador cuando la
    * orden es de retiro en tienda. Ver `modules/email/pickup-context.ts`.
+   *
+   * `shipping_option_id` es el eje para resolver la ubicación de stock en una
+   * orden que NO es de retiro: `shipping_option → service_zone.fulfillment_set_id
+   * → location_fulfillment_set.stock_location_id`. Ver
+   * `modules/email/order-stock-context.ts`.
    */
-  shipping_methods?: { name?: string | null; data?: Record<string, unknown> | null }[];
+  shipping_methods?: {
+    name?: string | null;
+    data?: Record<string, unknown> | null;
+    shipping_option_id?: string | null;
+  }[];
 };
 
 /**
@@ -180,6 +190,32 @@ export function mapOrderItem(item: OrderItem) {
     // total legitimamente 0 (linea bonificada) no tiene que caer al respaldo.
     line_total_formatted: formatMoney(item.total ?? item.detail?.total ?? unitPrice * quantity),
     thumbnail: item.thumbnail ?? undefined,
+  };
+}
+
+/**
+ * Une un ítem del mail con su estado de stock, SÓLO para el mail admin.
+ *
+ * Es una función aparte (y no un campo más de `mapOrderItem`) porque
+ * `sharedData.order_items` viaja TAL CUAL al mail del CLIENTE: si el stock se
+ * agregara ahí, el comprador vería si hay o no mercadería de su propia compra.
+ * Ver el armado de `sharedData` y del payload del mail admin más abajo.
+ */
+type WithStockStatus<T> = T & {
+  stock_status?: OrderStockItemView['status'];
+  stock_status_label?: string;
+  stock_status_color?: string;
+  stock_available_label?: string;
+};
+
+export function withStockStatus<T>(item: T, stock: OrderStockItemView | undefined): WithStockStatus<T> {
+  if (!stock) return item as WithStockStatus<T>;
+  return {
+    ...item,
+    stock_status: stock.status,
+    stock_status_label: stock.status_label,
+    stock_status_color: stock.status_color,
+    stock_available_label: stock.available_label,
   };
 }
 
@@ -333,6 +369,20 @@ export default async function handleOrderPlacedEmail({
          * mapeo de `orderItems` lo usa si esta y si no multiplica precio por cantidad.
          */
         'items.detail.quantity',
+        /**
+         * SIN ESTO EL MAIL COBRA EL IVA DOS VECES. `getLineItemTotals`
+         * (`@medusajs/utils` → `totals/line-item`) decide si el `unit_price` YA
+         * incluye el impuesto con `item.is_tax_inclusive ?? context.includeTax`:
+         * sin pedir `items.is_tax_inclusive` explícitamente llega `undefined`,
+         * cae al default del contexto, y una línea con precio CON IVA se trata
+         * como si fuera SIN IVA — el 21% se suma una segunda vez sobre un monto
+         * que ya lo tenía adentro. Mismo mecanismo, mismo síntoma que
+         * `items.quantity` más arriba: una columna que no se pidió y ningún
+         * error que lo diga. Caso real (desdeelsur, orden #81): `unit_price` con
+         * IVA incluido, el mail mostró `subtotal_formatted` = `total` (el bug no
+         * le restaba el impuesto a NADA) y `total` = `subtotal` × 1,21 exacto.
+         */
+        'items.is_tax_inclusive',
         // Retiro en tienda. `items.variant_id` es el eje hacia el inventario y
         // `shipping_methods.data` el respaldo de `metadata.store_id`: el
         // storefront escribe la sucursal en la metadata del carrito, pero una
@@ -340,6 +390,18 @@ export default async function handleOrderPlacedEmail({
         'items.variant_id',
         'shipping_methods.name',
         'shipping_methods.data',
+        // Resolver la ubicación de stock en una orden que NO es de retiro (ver
+        // `modules/email/order-stock-context.ts`).
+        'shipping_methods.shipping_option_id',
+        /**
+         * Mismo mecanismo que `items.is_tax_inclusive`, pero del lado del envío:
+         * `getShippingMethodTotals` lee `shippingMethod.is_tax_inclusive` con el
+         * mismo fallback, Y ADEMÁS necesita `shippingMethod.amount` para la
+         * cuenta entera (`MathBN.convert(shippingMethod.amount)`) — sin pedirlo,
+         * el costo de envío se calcula sobre `undefined`.
+         */
+        'shipping_methods.is_tax_inclusive',
+        'shipping_methods.amount',
       ],
       filters: { id: orderId },
     })) as { data: OrderGraphResult[] };
@@ -426,6 +488,29 @@ export default async function handleOrderPlacedEmail({
     );
   }
 
+  /**
+   * Estado de stock por línea para CUALQUIER orden (no sólo retiro) — el mail
+   * admin lo pinta al lado de cada ítem del "Resumen del pedido". Generaliza a
+   * `pickup`, que sólo cubre retiro en tienda: la orden #81 (envío a domicilio)
+   * no mostraba nada de stock porque `buildPickupContext` devuelve `null` sin
+   * `store_id`. Es una consulta APARTE de la de `pickup` (para retiro, las dos
+   * resuelven la misma sucursal y pagan la lectura de inventario dos veces):
+   * separarlas evita tocar `pickup_items`, que la plantilla de desdeelsur ya
+   * consume tal cual desde su base.
+   *
+   * Nunca lanza (ver `order-stock-context.ts`): sin ubicación resoluble, cada
+   * línea queda "no determinada" y el mail sale igual.
+   */
+  const orderStock = await buildOrderStockContext(container, {
+    metadata: order.metadata,
+    shipping_methods: order.shipping_methods,
+    items: (order.items ?? []).map((item) => ({
+      line_item_id: item.id,
+      variant_id: item.variant_id ?? null,
+      quantity: quantityOf(item),
+    })),
+  });
+
   // Datos compartidos por ambas plantillas (usuario y admin).
   const sharedData = {
     /**
@@ -501,6 +586,19 @@ export default async function handleOrderPlacedEmail({
     salesChannelId: order.sales_channel_id ?? undefined,
   });
   if (adminEmail) {
+    /**
+     * `order_items` CON el estado de stock de cada línea, para el mail admin.
+     * Se arma acá y NO en `sharedData` para que no viaje al mail del cliente
+     * (`sharedData.order_items` sigue siendo el mismo array de siempre, sin
+     * estos campos): mostrarle a un comprador si su propia compra tiene o no
+     * stock sería contarle el inventario de la tienda.
+     */
+    const adminOrderItems = orderItems.map((item, index) => {
+      const lineItemId = order.items?.[index]?.id;
+      const stock = lineItemId ? orderStock.by_line_item_id.get(lineItemId) : undefined;
+      return withStockStatus(item, stock);
+    });
+
     try {
       await notificationService.createNotifications({
         to: adminEmail,
@@ -509,12 +607,21 @@ export default async function handleOrderPlacedEmail({
         data: {
           ...sharedData,
           recipient_type: 'creator',
+          order_items: adminOrderItems,
+          // De qué ubicación es el stock de arriba, y si alguna línea tiene un
+          // problema real (`insufficient`/`none`). Nunca por `not_tracked`
+          // (no corresponde mirarla) ni por `unknown` (no se pudo determinar).
+          stock_location_name: orderStock.stock_location_name,
+          has_stock_issues: orderStock.has_stock_issues,
           // SÓLO al buzón interno. Es la disponibilidad real de cada línea en la
           // sucursal elegida: le sirve al operador para saber si puede preparar
           // el pedido, y mandársela al comprador sería contarle el inventario.
           // Mismo criterio que arriba: valor real siempre. Array vacío y `false`
           // dicen "no hay retiro", que es una respuesta; ausentes dirían "falta
           // un dato", que es una alarma falsa en toda venta a domicilio.
+          //
+          // Se SIGUEN emitiendo por compatibilidad: la plantilla que desdeelsur
+          // ya tiene editada a mano en su base los consume tal cual.
           pickup_items: pickup?.pickup_items ?? [],
           pickup_has_stock_issues: Boolean(pickup?.pickup_has_stock_issues),
         },

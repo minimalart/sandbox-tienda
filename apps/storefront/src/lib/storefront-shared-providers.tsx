@@ -1,14 +1,14 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { StorefrontSharedProvider } from '@minimalart/mercatto-storefront-shared/provider';
+import { StorefrontSharedProvider } from '@minimalart/mercatto-plugin-storefront-shared/provider';
 import type {
   CartStorePort,
   CookiesPort,
   LinkPort,
   ProductLookupPort,
   SdkPort,
-} from '@minimalart/mercatto-storefront-shared/ports';
+} from '@minimalart/mercatto-plugin-storefront-shared/ports';
 import { sdk } from './config';
 import { useCartStore } from './stores/cart.store';
 import LocalizedClientLink from '../modules/common/components/localized-client-link';

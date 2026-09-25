@@ -26,8 +26,10 @@ import TechUseCases from "./components/tech-use-cases";
  */
 export default async function TechnologyHome({
   countryCode,
+  section,
 }: {
   countryCode: string;
+  section?: string;
 }) {
   const tenant = await getActiveTenant();
   const tech = tenant.assets.technology;
@@ -35,33 +37,33 @@ export default async function TechnologyHome({
   return (
     <main className="tech-home bg-white">
       {/* 2. Hero principal */}
-      <TechHero hero={tech?.hero} />
+      {(!section || section === '1') && (<TechHero hero={tech?.hero} />)}
 
       {/* 3. Categorías destacadas */}
-      <TechCategories config={tech?.featuredCategories} />
+      {(!section || section === '2') && (<TechCategories config={tech?.featuredCategories} />)}
 
       {/* 4. Marcas destacadas */}
-      <TechBrands config={tech?.featuredBrands} />
+      {(!section || section === '3') && (<TechBrands config={tech?.featuredBrands} />)}
 
       {/* 5. Productos destacados (catálogo dinámico) */}
-      <Suspense fallback={null}>
+      {(!section || section === '4') && (<Suspense fallback={null}>
         <TechFeaturedProducts countryCode={countryCode} />
-      </Suspense>
+      </Suspense>)}
 
       {/* 6. Financiación / promociones */}
-      <TechPromotions config={tech?.promotions} />
+      {(!section || section === '5') && (<TechPromotions config={tech?.promotions} />)}
 
       {/* 7. Compra por necesidad */}
-      <TechUseCases config={tech?.useCases} />
+      {(!section || section === '6') && (<TechUseCases config={tech?.useCases} />)}
 
       {/* 8. Banner secundario */}
-      <TechSecondaryBanner config={tech?.secondaryBanner} />
+      {(!section || section === '7') && (<TechSecondaryBanner config={tech?.secondaryBanner} />)}
 
       {/* 9. Beneficios de compra */}
-      <TechBenefits config={tech?.benefits} />
+      {(!section || section === '8') && (<TechBenefits config={tech?.benefits} />)}
 
       {/* 10. Newsletter / novedades */}
-      <TechNewsletter config={tech?.newsletter} />
+      {(!section || section === '9') && (<TechNewsletter config={tech?.newsletter} />)}
     </main>
   );
 }

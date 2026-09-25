@@ -1,6 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from '@medusajs/framework';
 import { ADMIN_ROUTE_SCOPE } from '../../../../lib/multistore/scoped-routes';
-import { listSites, SITE_ID_HEADER } from '../../../../lib/multistore';
+import { listSiteBrands, listSites, SITE_ID_HEADER, toSiteBrandColors } from '../../../../lib/multistore';
 
 /**
  * Qué sabe el backend sobre el scoping por tienda, para que el admin no prometa
@@ -14,7 +14,7 @@ import { listSites, SITE_ID_HEADER } from '../../../../lib/multistore';
  * módulo de tiendas, o hay una sola y no hay nada que elegir.
  */
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
-  const sites = await listSites(req.scope);
+  const [sites, brands] = await Promise.all([listSites(req.scope), listSiteBrands(req.scope)]);
 
   const counts = Object.values(ADMIN_ROUTE_SCOPE).reduce(
     (acc, entry) => ({ ...acc, [entry.state]: (acc[entry.state] ?? 0) + 1 }),
@@ -32,6 +32,9 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       name: site.name,
       is_main: site.is_main,
       channel_ids: site.channel_ids,
+      // La paleta de la tienda, para que los formularios del admin (banners) ofrezcan
+      // sus colores y no los de Mercatto. `null` = la tienda no fijó ese color.
+      brand: brands[site.id] ?? toSiteBrandColors(null),
     })),
     routes: ADMIN_ROUTE_SCOPE,
     counts,

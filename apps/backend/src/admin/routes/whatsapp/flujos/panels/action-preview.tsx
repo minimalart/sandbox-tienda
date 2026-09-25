@@ -1,6 +1,6 @@
 import { Text } from '@medusajs/ui';
 import { useQuery } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
+import { useEffect, type ReactElement } from 'react';
 
 import { sdk } from '../../../../lib/client';
 
@@ -30,9 +30,33 @@ type PreviewCard = {
   variant_count?: number;
 };
 
+/** Una opción tal cual la va a ofrecer el paso siguiente. */
+export type PreviewOption = { value: string; label: string; description?: string };
+
 type PreviewResponse =
-  | { kind: 'cards'; currency_code: string; cards: PreviewCard[] }
+  | {
+      kind: 'cards';
+      currency_code: string;
+      cards: PreviewCard[];
+      /** Lo que la acción habría publicado en `vars`. */
+      options?: PreviewOption[];
+      /** Bajo qué nombre lo habría publicado. `null` = le habla al cliente ella misma. */
+      save_as?: string | null;
+    }
+  /** Una acción que contesta con TEXTO (la consulta de pedido), no con productos. */
+  | {
+      kind: 'text';
+      text: string;
+      outcome?: 'found' | 'invalid' | 'not_found';
+      save_as?: string | null;
+    }
   | { kind: 'unsupported'; reason: string };
+
+/**
+ * Lo que la acción habría dejado en `vars`: las opciones de una búsqueda o el texto
+ * de una consulta. `saveAs: null` = la acción le habla al cliente ella misma.
+ */
+export type PreviewResult = { saveAs: string | null; value: PreviewOption[] | string };
 
 const plata = (valor: number | null, moneda: string): string => {
   if (valor === null || Number.isNaN(valor)) return '';
@@ -47,10 +71,17 @@ export function ActionPreview({
   tool,
   args,
   onTap,
+  onResult,
 }: {
   tool: string;
   args: Record<string, unknown>;
   onTap: (variantId: string, label?: string) => void;
+  /**
+   * Lo que la acción habría dejado en `vars`, para que el simulador lo escriba en la
+   * sesión y el paso siguiente pueda mostrarlo. Sin esto la vista previa era un
+   * cartel: se veían los productos acá y la pregunta de abajo salía igual de vacía.
+   */
+  onResult?: (result: PreviewResult) => void;
 }): ReactElement {
   const { data, isFetching } = useQuery({
     // Los args entran en la clave: cambiar lo que busca el paso tiene que volver a
@@ -65,6 +96,17 @@ export function ActionPreview({
     retry: false,
   });
 
+  const saveAs = data?.kind === 'cards' || data?.kind === 'text' ? (data.save_as ?? null) : null;
+  const value =
+    data?.kind === 'cards' ? (data.options ?? []) : data?.kind === 'text' ? data.text : null;
+
+  useEffect(() => {
+    if (!onResult || value === null) return;
+    onResult({ saveAs, value });
+    // `value` viene de la respuesta cacheada por react-query: es la misma referencia
+    // mientras no cambie la consulta, así que esto no se repite en cada render.
+  }, [onResult, saveAs, value]);
+
   if (isFetching && !data) {
     return (
       <Text size="xsmall" className="text-ui-fg-subtle">
@@ -78,6 +120,54 @@ export function ActionPreview({
       <Text size="xsmall" className="text-ui-fg-subtle">
         {data?.reason ?? 'No se pudo consultar el catálogo.'}
       </Text>
+    );
+  }
+
+  /**
+   * La consulta de pedido se corre de verdad y se muestra el texto tal cual lo recibe
+   * el cliente. Con `save_as` lo escribe el mensaje siguiente, que ya lo muestra solo.
+   */
+  if (data.kind === 'text') {
+    return (
+      <div className="flex flex-col gap-y-1">
+        <Text size="xsmall" className={data.outcome === 'found' ? 'text-ui-fg-subtle' : 'text-ui-fg-error'}>
+          {data.outcome === 'found'
+            ? 'El número y el email coinciden con el mismo pedido.'
+            : data.outcome === 'invalid'
+              ? 'No se llegó a buscar: uno de los dos datos no se pudo leer.'
+              : 'No coinciden (o el pedido no existe): el cliente no ve ningún dato.'}{' '}
+          {saveAs ? 'Lo muestra el paso siguiente.' : 'Esto es lo que recibe el cliente:'}
+        </Text>
+        {!saveAs && (
+          <div className="whitespace-pre-wrap rounded-md border bg-ui-bg-base px-2 py-1">
+            <Text size="xsmall">{data.text}</Text>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /**
+   * Las presentaciones de UN producto no son un carrusel: son la misma foto tres
+   * veces. Se dibujan como la lista que el cliente va a recibir.
+   */
+  if (data.cards.length === 0 && (data.options?.length ?? 0) > 0) {
+    return (
+      <div className="flex flex-col gap-y-1">
+        <Text size="xsmall" className="text-ui-fg-subtle">
+          La pregunta siguiente va a ofrecer esto:
+        </Text>
+        {data.options?.map((option) => (
+          <div key={option.value} className="rounded-md border bg-ui-bg-base px-2 py-1">
+            <Text size="xsmall">{option.label}</Text>
+            {option.description && (
+              <Text size="xsmall" className="text-ui-fg-subtle">
+                {option.description}
+              </Text>
+            )}
+          </div>
+        ))}
+      </div>
     );
   }
 
@@ -96,7 +186,11 @@ export function ActionPreview({
     <div className="flex flex-col gap-y-2">
       <Text size="xsmall" className="text-ui-fg-subtle">
         Así lo ve el cliente ({data.cards.length}
-        {data.cards.length === 1 ? ' producto' : ' productos'}). Tocá uno para seguir.
+        {data.cards.length === 1 ? ' producto' : ' productos'}).{' '}
+        {/* Con `save_as` la acción NO le habla al cliente: deja los productos en una
+            variable y los ofrece el paso siguiente. Tocar acá saltearía esa pregunta,
+            que es justo la que se quiere probar. */}
+        {saveAs ? 'Los ofrece el paso siguiente: dale Continuar.' : 'Tocá uno para seguir.'}
       </Text>
 
       {/* Carrusel horizontal, como el de WhatsApp: se ve una tarjeta y media, que es
@@ -134,13 +228,15 @@ export function ActionPreview({
                   {card.variant_count} presentaciones
                 </Text>
               )}
-              <button
-                type="button"
-                onClick={() => onTap(card.id, card.title)}
-                className="mt-auto rounded-md border py-1 text-center text-xs hover:bg-ui-bg-base-hover"
-              >
-                Agregar
-              </button>
+              {!saveAs && (
+                <button
+                  type="button"
+                  onClick={() => onTap(card.id, card.title)}
+                  className="mt-auto rounded-md border py-1 text-center text-xs hover:bg-ui-bg-base-hover"
+                >
+                  Agregar
+                </button>
+              )}
             </div>
           </div>
         ))}

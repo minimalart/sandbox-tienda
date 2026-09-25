@@ -50,6 +50,50 @@ test("un carrito que ya es de la cuenta NO se toca", () => {
   assert.equal(shouldTransferCartToCustomer(accountOwnedCart), false);
 });
 
+/**
+ * El otro extremo del mismo bug: el cart YA cuelga del customer logueado,
+ * pero `has_account` sigue en `false` (un invitado que se logueó sin que ese
+ * flag se actualizara). `transferCartCustomerWorkflow` compara ids y hace un
+ * no-op, así que insistir acá sólo dispara requests al pedo en cada lectura
+ * del carrito. Por eso el criterio recibe el id del logueado.
+ */
+test("un carrito de un invitado con el MISMO id que el logueado NO se transfiere", () => {
+  assert.equal(
+    shouldTransferCartToCustomer(guestOwnedCart, "cus_guest"),
+    false,
+  );
+});
+
+test("un carrito de un invitado con OTRO id sigue transfiriéndose", () => {
+  assert.equal(
+    shouldTransferCartToCustomer(guestOwnedCart, "cus_otro"),
+    true,
+  );
+});
+
+test("un carrito sin customer se transfiere aunque se conozca el id logueado", () => {
+  assert.equal(
+    shouldTransferCartToCustomer(anonymousCart, "cus_registrado"),
+    true,
+  );
+});
+
+test("sin id logueado conocido, el criterio no cambia (comportamiento previo)", () => {
+  // `loggedInCustomerId` es undefined cuando el llamador no lo pudo resolver
+  // (p.ej. JWT sin claim `actor_id`). No afirmar "mismo customer" en ese caso
+  // es más seguro que negarlo: un falso positivo dispara un transfer de más
+  // (no-op si de verdad eran el mismo), un falso negativo dejaría un cart de
+  // invitado sin transferir nunca.
+  assert.equal(
+    shouldTransferCartToCustomer(guestOwnedCart, undefined),
+    true,
+  );
+  assert.equal(
+    shouldTransferCartToCustomer(accountOwnedCart, undefined),
+    false,
+  );
+});
+
 test("sin el flag pedido no se afirma que sea invitado", () => {
   // `has_account` es boolean con default false en el módulo customer: nunca es
   // null en la base. Entonces `undefined` significa "no pedimos el campo", y

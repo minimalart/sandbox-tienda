@@ -78,3 +78,7 @@ export function recipientWording(text: string, template?: TenantTemplate): strin
       return word[0] === word[0].toUpperCase() ? value[0].toUpperCase() + value.slice(1) : value;
     });
 }
+
+export function templateWrapperClass(template?: TenantTemplate): string | undefined {
+  return ({ technology: 'tech-home', fashion: 'fashion-home', 'tech-retail': 'tech-retail-home', sports: 'sports-home', campaign: 'campaign-home' } as Record<string, string>)[template || ''];
+}

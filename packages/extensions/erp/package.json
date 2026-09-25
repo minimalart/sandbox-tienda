@@ -1,6 +1,6 @@
 {
   "name": "@repo/extension-erp",
-  "version": "2.29.1",
+  "version": "2.35.3",
   "private": true,
   "description": "ERP component source package",
   "dependencies": {}

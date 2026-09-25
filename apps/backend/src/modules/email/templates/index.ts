@@ -10,6 +10,7 @@ import { kitCdeNotificationTemplate } from './kit-cde-notification';
 import { orderTrackingTemplate } from './order-tracking';
 import { orderCancelledTemplate } from './order-cancelled';
 import { orderReadyForPickupTemplate } from './order-ready-for-pickup';
+import { orderTransferRequestTemplate } from './order-transfer-request';
 import { orderInvoiceTemplate } from './order-invoice';
 import { stockSyncReportTemplate } from './stock-sync-report';
 import { inviteTemplate } from './invite';
@@ -37,6 +38,7 @@ export const templates = {
   'order-tracking': orderTrackingTemplate,
   'order-cancelled': orderCancelledTemplate,
   'order-ready-for-pickup': orderReadyForPickupTemplate,
+  'order-transfer-request': orderTransferRequestTemplate,
   'order-invoice': orderInvoiceTemplate,
   'stock-sync-report': stockSyncReportTemplate,
   'admin-invite': inviteTemplate,

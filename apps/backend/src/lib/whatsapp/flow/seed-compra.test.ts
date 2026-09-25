@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { advance, emptyState, flowTapId, type FlowState } from './engine';
+import { advance, emptyState, flowTapId, renderText, type FlowState } from './engine';
 import { validateGraph } from './graph';
 import { COMPRA_GRAPH } from './seed-compra';
 
@@ -52,40 +52,39 @@ describe('el camino de compra, de punta a punta', () => {
     );
   });
 
-  it('ANTES de buscar pregunta sobre qué lo va a usar', () => {
-    /**
-     * Es LA regla del documento: "siempre que el cliente escriba una búsqueda, el bot
-     * realiza al menos una pregunta contextual antes de mostrar productos". Si esto
-     * se cae, el recorrido deja de ser el del documento y pasa a ser un buscador.
-     */
+  /**
+   * EL RECORRIDO YA NO PREGUNTA "¿QUÉ VAS A PINTAR?".
+   *
+   * El documento pide una pregunta de contexto antes de mostrar productos, y estaba
+   * dibujada. Pero las ocho superficies iban al MISMO nodo de búsqueda y la búsqueda
+   * corría con el texto del cliente: la respuesta se guardaba y no filtraba nada. QA
+   * midió el resultado — un fijador para cielorraso ofrecido a quien contestó
+   * "madera"— y además la pregunta salía aunque estuvieras comprando un rodillo.
+   *
+   * Una pregunta que promete "quiero confirmar que sea adecuado" y no filtra es peor
+   * que no preguntar. El camino que SÍ filtra por superficie es el asesor guiado, y
+   * el recorrido lo ofrece en "Ayudame a elegir".
+   */
+  it('lo que escribe el cliente va DERECHO a la búsqueda', () => {
     let s = escribir(emptyState('v1'), 'hola').state;
     s = tap(s, 'menu', 'comprar').state;
     s = tap(s, 'como_buscar', 'se_cual').state;
     const plan = escribir(s, 'albalatex 20 litros');
-    assert.equal(plan.steps[0]?.kind, 'ask_list');
-    assert.equal(plan.state.node_id, 'superficie');
-  });
-
-  it('la búsqueda usa lo que ESCRIBIÓ, no la superficie que acaba de tocar', () => {
-    // El último mensaje del cliente es el tap de la superficie. Buscar `{{text}}`
-    // buscaría "paredes".
-    let s = escribir(emptyState('v1'), 'hola').state;
-    s = tap(s, 'menu', 'comprar').state;
-    s = tap(s, 'como_buscar', 'se_cual').state;
-    s = escribir(s, 'albalatex 20 litros').state;
-    const plan = tap(s, 'superficie', 'paredes');
     const accion = plan.steps.find((x) => x.kind === 'run_tool');
     assert.equal((accion as { tool: string }).tool, 'wa_search_products');
     assert.equal((accion as { args: Record<string, unknown> }).args.query, 'albalatex 20 litros');
     assert.equal((accion as { args: Record<string, unknown> }).args.save_as, 'resultados');
   });
 
+  it('ya no queda ningún nodo que pregunte la superficie', () => {
+    assert.equal(COMPRA_GRAPH.nodes.find((n) => n.id === 'superficie'), undefined);
+  });
+
   it('la búsqueda es silenciosa: el recorrido sigue y dibuja él la lista', () => {
     let s = escribir(emptyState('v1'), 'hola').state;
     s = tap(s, 'menu', 'comprar').state;
     s = tap(s, 'como_buscar', 'se_cual').state;
-    s = escribir(s, 'rodillo').state;
-    const plan = tap(s, 'superficie', 'paredes');
+    const plan = escribir(s, 'rodillo');
     assert.equal((plan.steps[0] as { silent: boolean }).silent, true);
     // Y en el mismo turno llega a la pregunta: sin `silent` el cliente veía el
     // resultado de la tool y recién en el turno siguiente la lista.
@@ -98,8 +97,7 @@ describe('el camino de compra, de punta a punta', () => {
     let s = escribir(emptyState('v1'), 'hola').state;
     s = tap(s, 'menu', 'comprar').state;
     s = tap(s, 'como_buscar', 'se_cual').state;
-    s = escribir(s, 'rodillo').state;
-    s = conResultados(tap(s, 'superficie', 'paredes').state);
+    s = conResultados(escribir(s, 'rodillo').state);
     const plan = advance(COMPRA_GRAPH, { ...s, node_id: 'elegir_producto' }, { text: null, selectionId: null });
     // Se vuelve a resolver la lista con los vars ya publicados.
     const lista = advance(COMPRA_GRAPH, s, { text: null, selectionId: null });
@@ -150,8 +148,7 @@ describe('el camino de compra, de punta a punta', () => {
   });
 
   it('finalizar genera el link y lo escribe el recorrido', () => {
-    // La tool devuelve el link como texto para el modelo; acá lo publica en `vars` y
-    // el mensaje siguiente lo escribe con las palabras del documento.
+    // La tool no habla: publica en `vars` y el mensaje siguiente es el que sale.
     const plan = tap({ ...emptyState('v1'), node_id: 'agregado' }, 'agregado', 'cerrar');
     const accion = plan.steps.find((x) => x.kind === 'run_tool') as {
       tool: string;
@@ -159,8 +156,26 @@ describe('el camino de compra, de punta a punta', () => {
     };
     assert.equal(accion.tool, 'wa_checkout_link');
     assert.equal(accion.args.save_as, 'link_pago');
-    const mensaje = plan.steps.find((x) => x.kind === 'send_text') as { body: string };
-    assert.match(mensaje.body, /Tu compra está lista/);
+    /**
+     * Este assert decía `/Tu compra está lista/` y esa frase ERA el bug: la tool
+     * puede negarse —pedido por debajo del mínimo de compra— y entonces publica el
+     * MOTIVO en esa misma variable. El runtime corre todos los pasos del plan igual,
+     * así que el cierre sale siempre; con el texto viejo el cliente leía "tu compra
+     * está lista" y a continuación por qué no lo estaba. Lo reportó QA.
+     */
+    /**
+     * `body` sale VACÍO del plan y tiene que ser así: `wa_checkout_link` todavía no
+     * corrió. Lo que importa es que el paso se lleve el texto CRUDO, porque el
+     * runtime lo vuelve a resolver contra los `vars` ya escritos justo antes de
+     * mandarlo. Sin eso el cierre salía sin link — la venta moría en el último
+     * paso, con el carrito armado.
+     */
+    const mensaje = plan.steps.find((x) => x.kind === 'send_text') as {
+      body: string;
+      template?: string;
+    };
+    assert.equal(mensaje.body, '');
+    assert.equal(mensaje.template, '{{vars.link_pago}}');
   });
 });
 
@@ -208,5 +223,107 @@ describe('las salidas que no pueden faltar', () => {
     s = tap(s, 'menu', 'comprar').state;
     const plan = tap(s, 'como_buscar', 'ayuda_elegir');
     assert.equal((plan.steps[0] as { tool: string }).tool, 'wa_guided_start');
+  });
+});
+
+
+describe('el cierre no puede dar la compra por hecha', () => {
+  /**
+   * `wa_checkout_link` puede NEGARSE —hoy cuando el pedido no llega al mínimo de
+   * compra— y en ese caso publica el MOTIVO en la misma variable en vez del link.
+   * El runtime corre todos los pasos del plan igual, así que el cierre sale
+   * siempre: si su texto afirma que la compra está lista, el cliente lee una
+   * mentira seguida de la explicación de por qué no lo está. Lo reportó QA.
+   */
+  it('el mensaje de cierre es sólo la variable, sin texto que prometa nada', () => {
+    const cierre = COMPRA_GRAPH.nodes.find((n) => n.id === 'cerrar_compra');
+    assert.equal(cierre?.type, 'message');
+    assert.equal((cierre as { body?: string }).body, '{{vars.link_pago}}');
+  });
+
+  /**
+   * El cierre resuelto EN VIVO, que es el camino real: primero con el link (compra
+   * que pasa) y después con el aviso que publica la tool cuando el pedido no llega
+   * al mínimo. Los dos salen del mismo `{{vars.link_pago}}`, y por eso el texto del
+   * nodo no puede dar nada por hecho.
+   */
+  it('el mismo cierre sirve para el link y para el motivo del rechazo', () => {
+    const cierre = COMPRA_GRAPH.nodes.find((n) => n.id === 'cerrar_compra') as { body: string };
+    const conLink: FlowState = {
+      ...emptyState('v1'),
+      vars: { link_pago: 'https://tienda.test/ar/c/abc123' },
+    };
+    assert.equal(
+      renderText(cierre.body, conLink, { text: null, selectionId: null }),
+      'https://tienda.test/ar/c/abc123',
+    );
+
+    const bloqueado: FlowState = {
+      ...emptyState('v1'),
+      vars: { link_pago: 'Te faltan $145.660,35 para llegar al mínimo.' },
+    };
+    assert.equal(
+      renderText(cierre.body, bloqueado, { text: null, selectionId: null }),
+      'Te faltan $145.660,35 para llegar al mínimo.',
+    );
+  });
+});
+
+/**
+ * "MI PEDIDO" YA NO LE CEDE EL TURNO AL ROUTER (DESDEELSUR-81).
+ *
+ * Las dos preguntas son del recorrido y la acción recibe las RESPUESTAS: número y
+ * email. Nada del pedido sale hasta que la acción verifica que son de la misma orden.
+ */
+describe('Mi pedido: número, email y recién después el estado', () => {
+  const hastaElEmail = () => {
+    let state = escribir(emptyState('v1'), 'hola').state;
+    const pideNumero = tap(state, 'menu', 'pedido');
+    state = pideNumero.state;
+    const pideEmail = escribir(state, 'es el #1234');
+    return { pideNumero, pideEmail };
+  };
+
+  it('primero pide el número y después el email, sin consultar nada todavía', () => {
+    const { pideNumero, pideEmail } = hastaElEmail();
+    assert.equal(pideNumero.steps[0]?.kind, 'ask_text');
+    assert.match((pideNumero.steps[0] as { body: string }).body, /número de pedido/);
+    assert.equal(pideEmail.steps[0]?.kind, 'ask_text');
+    assert.match((pideEmail.steps[0] as { body: string }).body, /email/);
+    assert.ok(![...pideNumero.steps, ...pideEmail.steps].some((s) => s.kind === 'run_tool'));
+  });
+
+  it('con el email, corre la consulta con las DOS respuestas y muestra lo que publicó', () => {
+    const { pideEmail } = hastaElEmail();
+    const plan = escribir(pideEmail.state, 'ana@mail.com');
+    const [accion, mensaje, siguiente] = plan.steps;
+
+    assert.equal(accion?.kind, 'run_tool');
+    const tool = accion as { tool: string; args: Record<string, unknown>; silent?: boolean };
+    assert.equal(tool.tool, 'wa_lookup_order');
+    assert.deepEqual(tool.args, { order_number: 'es el #1234', email: 'ana@mail.com', save_as: 'estado_pedido' });
+    assert.equal(tool.silent, true);
+
+    // El mensaje se lleva el texto CRUDO: la variable la escribe la acción DESPUÉS de
+    // armarse el plan, y el runtime lo resuelve justo antes de mandar.
+    assert.equal(mensaje?.kind, 'send_text');
+    const template = (mensaje as { template?: string }).template ?? '';
+    assert.equal(template, '{{vars.estado_pedido}}');
+    const conRespuesta = { ...plan.state, vars: { ...plan.state.vars, estado_pedido: '*Pedido #1234*' } };
+    assert.equal(renderText(template, conRespuesta, { text: null, selectionId: null }), '*Pedido #1234*');
+
+    assert.equal(siguiente?.kind, 'ask_buttons');
+    assert.deepEqual(
+      (siguiente as { buttons: Array<{ label: string }> }).buttons.map((b) => b.label),
+      ['Consultar otro', 'Comprar productos', 'Necesito ayuda'],
+    );
+  });
+
+  it('"Consultar otro" vuelve a pedir el número (es también el reintento)', () => {
+    const { pideEmail } = hastaElEmail();
+    const despues = escribir(pideEmail.state, 'ana@mail.com').state;
+    const plan = tap(despues, 'despues_pedido', 'otro_pedido');
+    assert.equal(plan.steps[0]?.kind, 'ask_text');
+    assert.match((plan.steps[0] as { body: string }).body, /número de pedido/);
   });
 });

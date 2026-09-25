@@ -407,6 +407,69 @@ export default defineSettings({
       placeholder: 'https://cdn.tu-tienda.com/placeholder.jpg',
     },
 
+    /**
+     * LA PUERTA DE ENTRADA DEL BOT (DESDEELSUR-72, TC-000).
+     *
+     * El router resuelve saludos, taps y las intenciones que reconoce; todo lo
+     * demás cae al agente conversacional. Eso hace que el PRIMER mensaje del
+     * cliente decida en qué bot entra: "Hola" abre el menú documentado y
+     * "busco algo para pintar el techo" abre un asistente libre que no está en
+     * ningún árbol, con otro formato de opciones y sin las garantías del
+     * recorrido. QA lo midió como bifurcación no controlada, y los cinco
+     * hallazgos de esa rama son de ahí.
+     *
+     * Encendido, el texto libre de una sesión NUEVA abre el menú en lugar de
+     * caer al modelo. Una vez adentro del recorrido nada cambia: el agente
+     * sigue atendiendo lo que el router deliberadamente no resuelve
+     * (asesoramiento, devoluciones).
+     *
+     * Default `true` A PROPÓSITO, y es un cambio de comportamiento para toda
+     * tienda derivada: el §8/§23 del PRD ya pide que un saludo nunca caiga al
+     * modelo, y esta rama era el agujero de esa intención, no una capacidad.
+     * Una tienda que quiera la conversación abierta como entrada lo apaga acá.
+     */
+    {
+      key: 'WHATSAPP_GUIDED_ENTRY',
+      env: ['WHATSAPP_GUIDED_ENTRY'],
+      type: 'boolean',
+      tier: 'runtime',
+      group: 'Bot',
+      label: 'El primer mensaje abre el menú',
+      help: 'Encendido, un mensaje de texto libre que arranca la conversación abre el menú del recorrido en vez de ir al asistente conversacional. Apagado, ese primer mensaje lo atiende el modelo, que responde con su propio formato y fuera del árbol documentado.',
+      default: true,
+    },
+
+    /**
+     * QUÉ AGENTE ATIENDE EL BOT (DESDEELSUR-72).
+     *
+     * La key estaba HARDCODEADA en `api/webhooks/kapso/route.ts` y el resolver
+     * falla ABIERTO: si no existe una fila con esa key, `resolveAgentByKey`
+     * devuelve el `GENERAL_AGENT`, que tiene `instructions: ''` y
+     * `allowedTools: null`. O sea, el bot de cara al cliente atendiendo con el
+     * prompt VACÍO y viendo todas las tools de la instalación.
+     *
+     * No es hipotético: en desdeelsur el agente del bot se llama `wanda`, no
+     * `whatsapp`, así que TODO su prompt —formato de opciones, asesor guiado,
+     * reglas de honestidad— nunca se ejecutó. Los cinco hallazgos que QA
+     * atribuyó al "asistente libre" son eso.
+     *
+     * Renombrar o recrear el agente desde el admin es normal; que eso apague el
+     * prompt en silencio, no. Con esta clave la tienda apunta al suyo, y el
+     * webhook además corta el turno si no lo encuentra.
+     */
+    {
+      key: 'WHATSAPP_AGENT_KEY',
+      env: ['WHATSAPP_AGENT_KEY'],
+      type: 'string',
+      tier: 'runtime',
+      group: 'Bot',
+      label: 'Agente que atiende el bot',
+      help: 'La `key` del agente de IA (Asistente IA → Agentes) que responde los mensajes que el recorrido determinístico no resuelve. Si acá hay una key que no existe, el bot NO le habla al cliente con un agente improvisado: corta y le ofrece el menú.',
+      default: 'whatsapp',
+      placeholder: 'whatsapp',
+      maxLength: 64,
+    },
+
     // ─── Handoff ─────────────────────────────────────────────────────────────
     {
       key: 'WHATSAPP_HANDOFF_AUTO_RESUME_HOURS',

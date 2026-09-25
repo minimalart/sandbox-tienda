@@ -56,6 +56,10 @@ import {
   getCorreoSettings,
 } from '../modules/correo-argentino-fulfillment/settings';
 import transitionDeliveryExecutionWorkflow from '../workflows/transition-delivery-execution';
+import { loadLazyModule, sourceSpecifier } from '../lib/lazy-module';
+
+/** Sólo el tipo: `typeof import()` no emite nada, así que no acopla el arranque. */
+type DeliveryProviderRegistry = typeof import('../modules/delivery/providers/registry.js');
 
 /** Ejecuciones traídas por página. Mismo criterio de memoria que Andreani. */
 export const PAGE_SIZE = 200;
@@ -272,11 +276,14 @@ export default async function syncCorreoTrackingStatusJob(
   //    la lógica riesgosa: batcheo y drift de offset) queda testeable.
   //  - Medusa carga este módulo en el boot para leer `config`. Diferir el
   //    registry saca los clients de los carriers del arranque.
-  // (La extensión `.js` en un import dinámico relativo la exige
-  // `moduleResolution: nodenext`; es el mismo patrón que ya usan las native
-  // tools de `ai-assistant`.)
-  const { getDeliveryProvider } = await import(
-    '../modules/delivery/providers/registry.js'
+  // La carga va por `loadLazyModule` y NO por `await import('…/registry.js')`:
+  // ese `.js` compilaba pero NO RESOLVÍA en producción, y tiraba el job entero
+  // todas las horas (`Cannot find module '…/modules/delivery/providers/registry.js'`,
+  // 2026-09-18 13:00:00). El porqué está en `lib/lazy-module.ts`.
+  const { getDeliveryProvider } = await loadLazyModule<DeliveryProviderRegistry>(
+    'el registry de providers de delivery',
+    () => require('../modules/delivery/providers/registry'),
+    () => import(sourceSpecifier('../modules/delivery/providers/registry')),
   );
 
   // El adapter se resuelve por el registry (instancia cacheada por container).
