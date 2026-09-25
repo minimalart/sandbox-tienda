@@ -198,3 +198,25 @@ export const reconfigureBundle = async (input: {
     body: input,
   });
 };
+
+/**
+ * Saca un kit entero del carrito en UNA llamada. El backend resuelve las
+ * líneas de la instancia y las borra juntas con `deleteLineItemsWorkflow`
+ * (un lock y un recálculo de totales, en vez de uno por producto).
+ */
+export const removeBundleInstanceFromCart = async (input: {
+  cart_id: string;
+  bundle_instance_id: string;
+}): Promise<{
+  cart_id: string;
+  bundle_instance_id: string;
+  removed_line_item_ids: string[];
+}> => {
+  const sdk = await getMedusaSDK();
+  const headers = { ...(await getAuthHeaders()) };
+  return sdk.client.fetch("/store/bundles/remove", {
+    method: "POST",
+    headers,
+    body: input,
+  });
+};

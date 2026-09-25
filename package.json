@@ -51,6 +51,7 @@
       "@minimalart/mercatto-plugin-runtime": "0.6.1"
     },
     "patchedDependencies": {
+      "@medusajs/dashboard@2.18.0": "apps/backend/patches/@medusajs__dashboard@2.18.0.patch",
       "@medusajs/loyalty-plugin@2.18.0": "patches/@medusajs__loyalty-plugin@2.18.0.patch"
     }
   }

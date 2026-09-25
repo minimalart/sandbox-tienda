@@ -22,6 +22,16 @@ export const GLOBAL_INTEGRATION_IDS = [
   'videos',
   'typesense',
   'sendgrid',
+  // Provider-blocked in `site-credentials/catalog.ts` (`reader: null`) because
+  // `accounts.ts:getAccount` is sync on the charge path. Its descriptors are
+  // `defaultScope: 'instance'`, so the credentials drawer must open on the
+  // "Todas" scope; without this entry the button stays disabled globally AND
+  // enabled per-site, which lets operators save an orphan site_setting row
+  // that `resolveSettingSync` will never read. Must also be listed in
+  // `isGlobalCredential` below so its account fields actually surface in the
+  // "Todas" drawer — the two lists work together and dropping either one hides
+  // the integration from the UI entirely.
+  'mercadopago',
 ];
 export const isGlobalIntegration = (id: string): boolean => GLOBAL_INTEGRATION_IDS.includes(id);
 
@@ -31,7 +41,18 @@ const accountField = (d: SettingDescriptor): boolean =>
   d.type === 'secret' ||
   (d.type !== 'boolean' && /credenciales|proveedor de ia/i.test(d.group));
 
-/** Minimalart service accounts retain their namespaces and always use instance storage. */
+/**
+ * Account fields that live at instance scope and belong in the "Todas" drawer.
+ *
+ * Covers both Minimalart service accounts (arca/videos/typesense/sendgrid) and
+ * third-party providers whose credentials are declared `scope: 'instance'`
+ * because they can't be per-site — currently just MercadoPago, whose
+ * `getAccount` is sync on the charge path and reads from env / the global
+ * `site_setting` row.
+ *
+ * Keep the namespace list here in sync with `GLOBAL_INTEGRATION_IDS` above:
+ * both must include an integration or the drawer stops rendering it entirely.
+ */
 export const isGlobalCredential = (d: SettingDescriptor): boolean =>
   (d.namespace === 'extension:ai-assistant' && /^(OPENROUTER_|EMBEDDINGS_)/.test(d.key)) ||
   ([
@@ -39,6 +60,7 @@ export const isGlobalCredential = (d: SettingDescriptor): boolean =>
     'extension:videos',
     'extension:typesense',
     'extension:email-templates',
+    'extension:mercadopago',
   ].includes(d.namespace) &&
     accountField(d));
 

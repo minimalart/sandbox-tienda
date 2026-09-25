@@ -15,6 +15,12 @@ import {
   type KapsoSettings,
 } from './settings';
 import { whatsappTemplates, type WhatsappTemplatePayload } from './templates';
+import { loadLazyModule, sourceSpecifier } from '../../lib/lazy-module';
+
+/** Sólo tipos: `typeof import()` no emite y no entra al grafo de arranque. */
+type ResolveSiteSql = typeof import('../../lib/multistore/resolve-site-sql.js');
+type SiteCredentials = typeof import('../../lib/multistore/credentials.js');
+type AbandonedCartDelivery = typeof import('./abandoned-cart-delivery.js');
 
 export type KapsoProviderOptions = {
   api_key?: string;
@@ -151,26 +157,58 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
    * Igual que en los carriers: si la tienda declaró credenciales propias y no se
    * pueden descifrar, se corta en vez de mandar desde el número de otra tienda —
    * un WhatsApp sale una sola vez y no se puede deshacer.
+   *
+   * LA API KEY Y EL `phone_number_id` SON UNA SOLA CREDENCIAL, NO DOS CAMPOS.
+   *
+   * Cada API key de Kapso da acceso a UNA configuración de WhatsApp. Esto antes
+   * devolvía sólo el cliente y el `phone_number_id` se leía aparte de los ajustes
+   * de la INSTANCIA, así que una tienda con key propia mandaba `key de la tienda +
+   * número de la instancia`. Kapso contesta 401 `Invalid credentials for WhatsApp
+   * configuration` —la key es válida, pero no sobre ESE número— y la orden se
+   * confirma igual: el cliente nunca recibe la confirmación y el único rastro es
+   * una línea de error en el backend.
+   *
+   * Por eso devuelve el PAR. Media credencial de la tienda NO se completa con la
+   * otra mitad de la instancia: o van los dos de la tienda, o los dos de la
+   * instancia.
    */
-  private async clientForSite(
+  private async credentialsForSite(
     settings: KapsoSettings,
     siteId: string | undefined,
     salesChannelId?: string | undefined,
-  ): Promise<KapsoClient | undefined> {
-    if ((!siteId && !salesChannelId) || !this.pgConnection) return this.instanceClient(settings);
+  ): Promise<{ client: KapsoClient; phoneNumberId: string } | undefined> {
+    /** El par de la instancia, entero. Nunca una mitad. */
+    const instancePair = (): { client: KapsoClient; phoneNumberId: string } | undefined => {
+      const client = this.instanceClient(settings);
+      const phoneNumberId = this.phoneNumberId(settings);
+      return client && phoneNumberId ? { client, phoneNumberId } : undefined;
+    };
+
+    if ((!siteId && !salesChannelId) || !this.pgConnection) return instancePair();
 
     try {
-      const { resolveSiteViaSql } = await import('../../lib/multistore/resolve-site-sql.js');
-      const { readSiteCredentialsViaSql } = await import('../../lib/multistore/credentials.js');
+      // Diferidos con `loadLazyModule` y NO con `await import('….js')`: ese
+      // especificador no resuelve en producción (ver `lib/lazy-module.ts`), y acá
+      // el catch de abajo lo habría tapado como "no se pudo resolver la tienda".
+      const { resolveSiteViaSql } = await loadLazyModule<ResolveSiteSql>(
+        'el resolutor de tienda por SQL',
+        () => require('../../lib/multistore/resolve-site-sql'),
+        () => import(sourceSpecifier('../../lib/multistore/resolve-site-sql')),
+      );
+      const { readSiteCredentialsViaSql } = await loadLazyModule<SiteCredentials>(
+        'el lector de credenciales por tienda',
+        () => require('../../lib/multistore/credentials'),
+        () => import(sourceSpecifier('../../lib/multistore/credentials')),
+      );
 
       // `siteId` gana: es explícito. El canal es la derivación, y resuelve también
       // por el canal MAYORISTA de una tienda B2B.
       const site = await resolveSiteViaSql(this.pgConnection, { siteId, salesChannelId });
-      const creds = await readSiteCredentialsViaSql<{ apiKey?: string; baseUrl?: string }>(
-        this.pgConnection,
-        'kapso',
-        site,
-      );
+      const creds = await readSiteCredentialsViaSql<{
+        apiKey?: string;
+        baseUrl?: string;
+        phoneNumberId?: string;
+      }>(this.pgConnection, 'kapso', site);
 
       if (creds.status === 'missing' && creds.reason === 'undecryptable') {
         throw new Error(
@@ -179,13 +217,29 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
         );
       }
       if (creds.status !== 'found' || creds.source !== 'site' || !creds.value.apiKey) {
-        return this.instanceClient(settings);
+        return instancePair();
       }
 
-      return new KapsoClient({
-        apiKey: creds.value.apiKey,
-        baseUrl: creds.value.baseUrl ?? this.options.base_url,
-      });
+      // Key propia SIN número propio es una credencial a medias. Completarla con
+      // el número de la instancia es justo lo que produce el 401, así que se cae
+      // al par de la instancia ENTERO y se dice por qué.
+      if (!creds.value.phoneNumberId) {
+        this.logger.warn(
+          `[kapso-whatsapp] La tienda declaró API key propia pero no 'phoneNumberId'. ` +
+            `Mezclarla con el número de la instancia da 401 (Invalid credentials for WhatsApp ` +
+            `configuration), así que se usa el par completo de la instancia. Cargá el número en ` +
+            `Ajustes → Credenciales por tienda → Kapso.`,
+        );
+        return instancePair();
+      }
+
+      return {
+        client: new KapsoClient({
+          apiKey: creds.value.apiKey,
+          baseUrl: creds.value.baseUrl ?? this.options.base_url,
+        }),
+        phoneNumberId: creds.value.phoneNumberId,
+      };
     } catch (error) {
       if (error instanceof Error && error.message.includes('no se pueden descifrar')) throw error;
       this.logger.warn(
@@ -193,7 +247,7 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
           error instanceof Error ? error.message : String(error)
         }. Se usa el número de entorno.`,
       );
-      return this.instanceClient(settings);
+      return instancePair();
     }
   }
 
@@ -275,7 +329,11 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
 
     if (/^cart-abandoned-[123]$/.test(String(notification.template)) && typeof data.cart_abandoned_template_name === 'string') {
       if (!this.pgConnection) throw new Error('WhatsApp store settings require a database connection');
-      const { abandonedCartDelivery } = await import('./abandoned-cart-delivery.js');
+      const { abandonedCartDelivery } = await loadLazyModule<AbandonedCartDelivery>(
+        'el envío de carrito abandonado por WhatsApp',
+        () => require('./abandoned-cart-delivery'),
+        () => import(sourceSpecifier('./abandoned-cart-delivery')),
+      );
       const delivery = await abandonedCartDelivery(this.pgConnection, data);
       const client = new KapsoClient({ apiKey: delivery.apiKey, baseUrl: delivery.baseUrl });
       const { id } = await client.sendMessage(delivery.phoneNumberId, { messaging_product: 'whatsapp', to, type: 'template', template: delivery.template });
@@ -301,20 +359,23 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
       template,
     };
 
-    // El número de la tienda que origina el mensaje, si el emisor lo declaró.
-    const client = await this.clientForSite(
+    // La credencial de la tienda que origina el mensaje, si el emisor la declaró.
+    // Key y número vienen JUNTOS a propósito: ver `credentialsForSite`.
+    const delivery = await this.credentialsForSite(
       settings,
       typeof data.site_id === 'string' ? data.site_id : undefined,
       typeof data.sales_channel_id === 'string' ? data.sales_channel_id : undefined,
     );
-    const phoneNumberId = this.phoneNumberId(settings);
 
-    if (!client || !phoneNumberId) {
+    if (!delivery) {
       // El modo LOG es una degradación legítima (un backend de desarrollo sin
       // cuenta de Kapso), pero para una instalación configurada es un mensaje que
       // el cliente nunca recibió. Decir CUÁL de las dos mitades falta es la
       // diferencia entre diagnosticarlo en un minuto y perseguirlo por Meta.
-      const missing = [!client && 'API key', !phoneNumberId && 'phone_number_id']
+      const missing = [
+        !this.instanceClient(settings) && 'API key',
+        !this.phoneNumberId(settings) && 'phone_number_id',
+      ]
         .filter(Boolean)
         .join(' y ');
       this.logger.warn(
@@ -326,6 +387,8 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
       );
       return { id: `log-${Date.now()}` };
     }
+
+    const { client, phoneNumberId } = delivery;
 
     try {
       const { id } = await client.sendMessage(phoneNumberId, payload);

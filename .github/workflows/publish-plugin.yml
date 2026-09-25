@@ -47,7 +47,6 @@ jobs:
           fi
 
           PLUGIN_DIR="packages/plugins/plugin-$PLUGIN_ID"
-          if [ "$PLUGIN_ID" = "runtime" ]; then PLUGIN_DIR="packages/contracts/plugin-runtime"; fi
           if [ "$PLUGIN_ID" = "analytics" ]; then PLUGIN_DIR="packages/contracts/analytics"; fi
           PACKAGE_JSON="$PLUGIN_DIR/package.json"
           test -f "$PACKAGE_JSON"
@@ -86,9 +85,9 @@ jobs:
             exit 0
           fi
           if [ "$PLUGIN_ID" = "runtime" ]; then
-            npm install --prefix packages/contracts/plugin-runtime --ignore-scripts --legacy-peer-deps --package-lock=false
-            npm run build --prefix packages/contracts/plugin-runtime
-            npm test --prefix packages/contracts/plugin-runtime
+            npm install --prefix packages/plugins/plugin-runtime --ignore-scripts --legacy-peer-deps --package-lock=false
+            npm run build --prefix packages/plugins/plugin-runtime
+            npm test --prefix packages/plugins/plugin-runtime
             exit 0
           fi
           pnpm --filter "@minimalart/mercatto-plugin-${PLUGIN_ID}^..." build
@@ -101,7 +100,6 @@ jobs:
           NODE_AUTH_TOKEN: ${{ github.token }}
         run: |
           PLUGIN_DIR="packages/plugins/plugin-$PLUGIN_ID"
-          if [ "$PLUGIN_ID" = "runtime" ]; then PLUGIN_DIR="packages/contracts/plugin-runtime"; fi
           if [ "$PLUGIN_ID" = "analytics" ]; then
             PLUGIN_DIR="packages/contracts/analytics"
             npm pkg set 'repository.type=git' 'repository.url=git+https://github.com/minimalart/medusa-b2c-boilerplate.git' 'repository.directory=packages/contracts/analytics' --prefix "$PLUGIN_DIR"
@@ -120,7 +118,7 @@ jobs:
           PLUGIN_ID: ${{ inputs.plugin-id }}
         run: |
           mkdir -p "$RUNNER_TEMP/runtime-package"
-          pnpm --dir packages/contracts/plugin-runtime pack --pack-destination "$RUNNER_TEMP/runtime-package"
+          pnpm --dir packages/plugins/plugin-runtime pack --pack-destination "$RUNNER_TEMP/runtime-package"
           RUNTIME_TARBALL="$(find "$RUNNER_TEMP/runtime-package" -name '*.tgz' -print -quit)"
           node --experimental-transform-types --import ./apps/backend/test-register.mjs \
             scripts/test-plugin-central-settings.ts "$RUNTIME_TARBALL" "$PACKAGE_TARBALL" "$PLUGIN_ID"
@@ -154,7 +152,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p "$RUNNER_TEMP/registry-plugin" "$RUNNER_TEMP/registry-runtime"
-          RUNTIME_VERSION="$(node -p "require('./packages/contracts/plugin-runtime/package.json').version")"
+          RUNTIME_VERSION="$(node -p "require('./packages/plugins/plugin-runtime/package.json').version")"
           npm pack "@minimalart/mercatto-plugin-runtime@$RUNTIME_VERSION" --ignore-scripts --pack-destination "$RUNNER_TEMP/registry-runtime"
           npm pack "@minimalart/mercatto-plugin-$PLUGIN_ID@$EXPECTED_VERSION" --ignore-scripts --pack-destination "$RUNNER_TEMP/registry-plugin"
           RUNTIME_TARBALL="$(find "$RUNNER_TEMP/registry-runtime" -name '*.tgz' -print -quit)"

@@ -291,12 +291,16 @@ const HeaderSearchBar = ({
 
       {/* Quick suggestions - hidden on smaller screens */}
       <div className="hidden items-center gap-1 xl:flex">
-        <span className="whitespace-nowrap text-gray-500 text-xs">
+        <span className="whitespace-nowrap text-[color:var(--header-fg-muted,#6b7280)] text-xs">
           Explorar:
         </span>
         {quickSuggestions.map((suggestion) => (
           <button
-            className="whitespace-nowrap rounded-full px-1.5 py-0.5 font-medium text-[--primary-color] text-xs underline decoration-[--primary-color] underline-offset-2 transition-colors hover:text-[--accent-color] hover:decoration-[--accent-color]"
+            // Sobre un `header_background` configurado (típicamente oscuro) los
+            // chips en primario quedan ilegibles cuando primary == header bg
+            // (violeta / violeta). Caemos a `--header-fg` (blanco/negro por
+            // contraste WCAG) y sin config custom preservamos el primario.
+            className="whitespace-nowrap rounded-full px-1.5 py-0.5 font-medium text-[color:var(--header-fg,var(--primary-color))] text-xs underline decoration-[color:var(--header-fg,var(--primary-color))] underline-offset-2 transition-colors hover:text-[--accent-color] hover:decoration-[--accent-color]"
             // `label` y no `query`: con un atajo por categoría `query` es undefined,
             // y dos atajos sin query colapsarían en la misma key.
             key={suggestion.label}

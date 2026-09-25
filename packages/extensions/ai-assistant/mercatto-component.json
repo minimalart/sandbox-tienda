@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "ai-assistant",
   "name": "Asistente IA",
-  "version": "1.34.5",
+  "version": "1.34.12",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
@@ -449,7 +449,7 @@
     },
     {
       "path": "apps/backend/src/api/webhooks/kapso/route.ts",
-      "sha256": "ecb488e85c9b921396384120ac901bda0650ffeba0accf343d26504afcb9a7b4"
+      "sha256": "80d4fb9ef8d9c5a600d093267a1236eb81f1192269b8056c77b101af51c6911f"
     },
     {
       "path": "apps/backend/src/jobs/embed-pending-memories.ts",
@@ -493,11 +493,11 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/agents.test.ts",
-      "sha256": "1ab2882d3ef96c5862c0759b5de6f3e52dce9f2ecdfdf8f097d040f7ad9a1bd3"
+      "sha256": "096fb39dbd824f76cb6cf96241cca6eccb61625b0e3b2cb5ee347ce3bf49a747"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/agents.ts",
-      "sha256": "63192de40775ff251020aa20439a2999910cd32e66d6be878848309598f1ca9d"
+      "sha256": "53387281715be8af88fa23c7ef2b55140e27277a162739913ab1caedfff5d293"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/campaign-enrich.ts",
@@ -589,7 +589,7 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/artifact-tools.ts",
-      "sha256": "332d86a7d625c5d006f15edca18c52f4ca3974477f53797eec68f439f1a47cdd"
+      "sha256": "bfb3e60f1d7279d741f33e64319b0418ee89ae2140d51e79d06f67a3868ea34a"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/blog-content-quality.test.ts",
@@ -609,11 +609,11 @@
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/names.ts",
-      "sha256": "dab1ab8c64c7fd2c8c61f48eff619d330046ff0b064df9e2a208de13a2ef0f8e"
+      "sha256": "eb3f7cf13b5f4a0fd567fa6cb703706eae533f55fe06a47e4c319a2064410446"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/native-tools/whatsapp-tools.ts",
-      "sha256": "1d564a1e1beb24e52b25b40276cca9ff7e79d9e273b3d8eadc8529fccc40fe7a"
+      "sha256": "5beef206a397a956534b1b6271d641ea95b05da07db8e7e279e029cf83f1b02f"
     },
     {
       "path": "apps/backend/src/modules/ai-assistant/ai/policy.test.ts",

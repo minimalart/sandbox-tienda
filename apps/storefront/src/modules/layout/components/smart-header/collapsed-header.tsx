@@ -12,7 +12,9 @@ import {
   useDemoHref,
   useTenantBrand,
   useTenantSections,
+  useTenantTheme,
 } from "@lib/site-config/context";
+import { pickContrastText } from "@lib/util/contrast";
 import { useWishlist } from "@lib/hooks/use-wishlist";
 import { useCartStore, selectTotalItems } from "@lib/stores/cart.store";
 import { useWishlistDrawerStore } from "@lib/stores/wishlist-drawer.store";
@@ -76,6 +78,15 @@ export default function CollapsedHeader({
   // href ya prefijado para que el link activo se marque también ahí.
   const demoHref = useDemoHref();
   const { name: brandName, logos } = useTenantBrand();
+  const { colors } = useTenantTheme();
+  // Mismo criterio que `TenantLogo` del nav: sobre `header_background` oscuro
+  // caemos al logo negativo si el tenant lo cargó (el positivo suele venir en
+  // tinta oscura y se pierde contra el header custom).
+  const headerFg = pickContrastText(colors?.headerBackground);
+  const logoSrc =
+    (headerFg === "#ffffff" && logos?.mainNegative
+      ? logos.mainNegative
+      : logos?.main) || "/logos-mercatto/logocompleto-verde.svg";
   const {
     blogSectionName,
     isBlogVisible,
@@ -145,7 +156,7 @@ export default function CollapsedHeader({
               alt={brandName}
               className="w-auto"
               style={{ height: "1.75rem" }}
-              src={logos?.main || "/logos-mercatto/logocompleto-verde.svg"}
+              src={logoSrc}
             />
           </LocalizedClientLink>
 
@@ -175,7 +186,7 @@ export default function CollapsedHeader({
                   className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[14px] leading-4 transition-all duration-200 ease-in-out antialiased ${
                     isActive
                       ? "text-[--primary-color] font-semibold"
-                      : "text-[#374151] font-normal hover:bg-gray-100 hover:text-[--primary-color]"
+                      : "text-[color:var(--header-fg,#374151)] font-normal hover:bg-gray-100 hover:text-[--primary-color]"
                   }`}
                   href={page.href}
                   key={page.name}
@@ -216,7 +227,7 @@ export default function CollapsedHeader({
                   className={`flex items-center justify-center rounded-full p-2 transition-colors duration-200 ${
                     isActive
                       ? "text-[--primary-color]"
-                      : "text-gray-400 hover:text-[--primary-color]"
+                      : "text-[color:var(--header-fg-muted,#9ca3af)] hover:text-[--primary-color]"
                   }`}
                   href={href}
                   key={name}
@@ -230,7 +241,7 @@ export default function CollapsedHeader({
 
             {/* Wishlist */}
             <button
-              className="group relative flex items-center justify-center rounded-full p-2 text-gray-400 transition-colors duration-200 hover:text-[--primary-color]"
+              className="group relative flex items-center justify-center rounded-full p-2 text-[color:var(--header-fg-muted,#9ca3af)] transition-colors duration-200 hover:text-[--primary-color]"
               onClick={openWishlistDrawer}
               ref={(el) => registerWishlistIcon(el)}
               type="button"
@@ -255,14 +266,14 @@ export default function CollapsedHeader({
 
             {/* Cart */}
             <button
-              className="group relative flex items-center p-2 text-gray-400 transition-colors duration-200 hover:text-gray-600"
+              className="group relative flex items-center p-2 text-[color:var(--header-fg-muted,#9ca3af)] transition-colors duration-200 hover:text-[color:var(--header-fg,#4b5563)]"
               onClick={openCart}
               ref={(el) => registerCartIcon(el)}
               type="button"
             >
               <ShoppingCart
                 aria-hidden="true"
-                className={`size-5 shrink-0 transition-transform group-hover:text-gray-600 ${
+                className={`size-5 shrink-0 transition-transform group-hover:text-[color:var(--header-fg,#4b5563)] ${
                   cartBounce ? "animate-bounce" : ""
                 }`}
                 style={
@@ -277,7 +288,7 @@ export default function CollapsedHeader({
 
             {/* Account */}
             <LocalizedClientLink
-              className="group flex items-center rounded-full p-2 text-gray-400 transition-colors duration-200 hover:text-[--primary-color]"
+              className="group flex items-center rounded-full p-2 text-[color:var(--header-fg-muted,#9ca3af)] transition-colors duration-200 hover:text-[--primary-color]"
               href="/account"
             >
               {isLoggedIn ? (

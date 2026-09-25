@@ -209,6 +209,105 @@ export function isImageTooSmall(
 }
 
 /**
+ * Cuánto del lado del lienzo ocupa el producto en el catálogo. No es una
+ * elección de diseño de este módulo: es lo que miden las fotos que ya están
+ * publicadas, 2.599 de 2.599 entre 82% y 86% con mediana en 84,0%.
+ */
+const CATALOG_OCCUPANCY = 0.84;
+/** Cuánto se tiene que apartar del blanco un píxel para contar como contenido. */
+const CONTENT_THRESHOLD = 12;
+
+/**
+ * Rectángulo del contenido: deja afuera el borde casi blanco de la foto.
+ *
+ * Se compara LUMINANCIA y no canal por canal. Canal por canal es más sensible y
+ * en una foto con sombra suave detecta un contenido más grande del real: el
+ * lienzo sale acolchado de más y la ocupación termina en 78% en vez de 84%. El
+ * catálogo está medido en luminancia, así que ésta es la métrica que converge.
+ *
+ * No se usa `sharp.trim()`: sobre algunas imágenes no recorta nada en NINGÚN
+ * umbral y falla en silencio devolviendo el lienzo entero (medido sobre una foto
+ * de 1000×1000 con el producto en 712×752 y las cuatro esquinas en blanco puro).
+ */
+async function contentBox(content: Buffer) {
+  const { data, info } = await sharp(content)
+    .flatten({ background: '#ffffff' })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const { width, height, channels } = info;
+  let top = height;
+  let left = width;
+  let right = -1;
+  let bottom = -1;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * channels;
+      const r = data[i] ?? 255;
+      const g = data[i + 1] ?? 255;
+      const b = data[i + 2] ?? 255;
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      if (255 - lum > CONTENT_THRESHOLD) {
+        if (x < left) left = x;
+        if (x > right) right = x;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+      }
+    }
+  }
+  if (right < 0) return null;
+  return { left, top, width: right - left + 1, height: bottom - top + 1 };
+}
+
+/**
+ * Deja la foto con el formato del catálogo: lienzo CUADRADO, relleno BLANCO y el
+ * producto ocupando el 84% del lado.
+ *
+ * POR QUÉ ACÁ Y NO EN EL STOREFRONT. El PLP mete la imagen en una caja
+ * `aspect-square` con `object-contain` y `p-[10%]`. Con `contain` la foto ajusta
+ * por el lado largo, así que el CSS no puede corregir ni el aspecto ni el aire:
+ * una foto de 352×1200 ocupa el 29% del ancho que ocupa una cuadrada, y una
+ * cuadrada con mucho blanco alrededor se ve más chica que su vecina aunque las
+ * dos midan 1200 px. El contrato tiene una mitad en el CSS y la otra en el
+ * archivo, y esta es la mitad del archivo.
+ *
+ * Blanco y no transparente porque `.product-image-blend` usa
+ * `mix-blend-multiply`: sobre eso el blanco desaparece en cualquier fondo claro
+ * y la transparencia deja un recuadro.
+ *
+ * SIN UPSCALE: el lienzo se calcula a partir del contenido ya recortado, así que
+ * la resolución nunca se inventa — pero sí puede BAJAR respecto del original, y
+ * por eso el gate de resolución mira el resultado de esto y no la descarga cruda.
+ *
+ * Devuelve `null` si la imagen no se puede procesar (formato raro, lienzo
+ * completamente blanco). El llamador sigue con los bytes originales: normalizar
+ * es una mejora, no un requisito para publicar.
+ */
+export async function normalizeToCatalogFormat(
+  content: Buffer
+): Promise<{ content: Buffer; mimeType: string; extension: string } | null> {
+  try {
+    const box = await contentBox(content);
+    if (!box) return null;
+    const cropped = await sharp(content)
+      .flatten({ background: '#ffffff' })
+      .removeAlpha()
+      .extract(box)
+      .toBuffer();
+    const side = Math.round(Math.max(box.width, box.height) / CATALOG_OCCUPANCY);
+    const out = await sharp({
+      create: { width: side, height: side, channels: 3, background: '#ffffff' },
+    })
+      .composite([{ input: cropped, gravity: 'centre' }])
+      .webp({ quality: 90 })
+      .toBuffer();
+    return { content: out, mimeType: 'image/webp', extension: 'webp' };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Baja las imágenes del ERP y las deja en el producto. Nunca lanza: los fallos
  * vuelven en `errors` como warnings del sync.
  */
@@ -279,11 +378,26 @@ export async function applyProductImages(
           continue;
         }
 
+        // Se normaliza ANTES del gate a propósito. El gate existe para no
+        // publicar una foto que se va a ver rota, así que tiene que medir lo que
+        // se publica: normalizar recorta el aire y el resultado puede ser MÁS
+        // CHICO que la descarga (una foto de 1000×1000 con el producto en 300 px
+        // termina en 357×357). Medir la cruda dejaría pasar justo ésas.
+        //
+        // Si no se puede procesar, se sigue con los bytes originales: normalizar
+        // es una mejora, no un requisito para publicar.
+        const normalized = await normalizeToCatalogFormat(image.content);
+        const publish = normalized ?? {
+          content: image.content,
+          mimeType: image.mime_type,
+          extension: image.extension,
+        };
+
         // El gate va acá y no en el planner porque el veredicto necesita los
         // BYTES: hasta que la imagen no está bajada no hay alto ni ancho que
         // mirar. Se descarta antes de subirla para no dejar huérfanos en el
         // bucket.
-        if (isImageTooSmall(await readImageDimensions(image.content), minDimensionPx)) {
+        if (isImageTooSmall(await readImageDimensions(publish.content), minDimensionPx)) {
           result.too_small += 1;
           result.tooSmallCodes.push(item.code);
           // Se bajó igual: `bytes` mide TRANSFERENCIA, no imágenes guardadas.
@@ -291,7 +405,9 @@ export async function applyProductImages(
           if (result.errors.length < 10) {
             result.errors.push(
               `Imagen del artículo ${item.code}: descartada por resolución ` +
-                `(el lado menor no llega a ${minDimensionPx} px). Cargá una foto más grande en el ERP.`
+                `(una vez recortado el fondo, el lado menor no llega a ${minDimensionPx} px). ` +
+                `Cargá en el ERP una foto más grande o con el producto más cerca: ` +
+                `se mide el producto, no el lienzo.`
             );
           }
           // A propósito NO toca `consecutiveFailures`: ni lo sube (una tanda de
@@ -301,12 +417,12 @@ export async function applyProductImages(
           continue;
         }
 
-        const filename = imageFilename(item.code, image.extension);
+        const filename = imageFilename(item.code, publish.extension);
         const [file] = await fileModule.createFiles([
           {
             filename,
-            mimeType: image.mime_type,
-            content: image.content.toString('base64'),
+            mimeType: publish.mimeType,
+            content: publish.content.toString('base64'),
             access: 'public',
           },
         ]);

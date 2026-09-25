@@ -153,6 +153,7 @@ export const useUpdateAppSettings = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: async (data: UpdateAppSettingsInput) => {
       const res = await fetch('/admin/app-settings', {
         method: 'POST',
@@ -176,7 +177,6 @@ export const useUpdateAppSettings = (
       queryClient.invalidateQueries({ queryKey: ['admin-app-settings'] });
       options?.onSuccess?.(...args);
     },
-    ...options,
   });
 };
 

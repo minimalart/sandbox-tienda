@@ -364,6 +364,11 @@ export const defaultConfig: TenantConfig = {
       ],
     },
     favicon: "/favicon.ico",
+    // Minicart: default `true` para que tiendas derivadas conserven el
+    // comportamiento actual hasta que decidan optar por apagarlo desde el admin.
+    cart: {
+      recommendationsCarousel: true,
+    },
     // Contenido del template Tecnología (solo se usa si template === "technology").
     technology: technologyConfig,
     // Contenido del template Moda (solo se usa si template === "fashion").

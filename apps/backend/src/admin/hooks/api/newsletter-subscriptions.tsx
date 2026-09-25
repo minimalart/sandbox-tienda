@@ -81,6 +81,7 @@ export const useRetryNewsletterSubscription = (
   const queryClient = useQueryClient();
 
   return useMutation({
+    ...options,
     mutationFn: (id: string) =>
       sdk.client.fetch<AdminRetryNewsletterSubscriptionResponse>(
         `/admin/newsletter-subscriptions/${id}/retry`,
@@ -90,6 +91,5 @@ export const useRetryNewsletterSubscription = (
       queryClient.invalidateQueries({ queryKey: newsletterSubscriptionQueryKey.lists() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };

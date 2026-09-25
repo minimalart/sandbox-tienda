@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { COMPRA_GRAPH } from '../../../../../lib/whatsapp/flow/seed-compra';
 import { SEED_GRAPH } from '../../../../../lib/whatsapp/flow/seed';
 import type { FlowStep } from './graph-contract';
 import {
+  applyActionVars,
   choicesForStep,
   continueAfterAction,
   openers,
@@ -226,5 +228,120 @@ describe('arrancar la prueba', () => {
   it('un mensaje vacío no hace nada', () => {
     const s = startSession();
     assert.equal(sendText(SEED_GRAPH, s, '   '), s);
+  });
+});
+
+/**
+ * EL AGUJERO QUE DEJABA LA PRUEBA A MEDIO CAMINO.
+ *
+ * `buscar` publica sus resultados en `vars.resultados` y `elegir_producto` los ofrece
+ * con `optionsFrom`. Como la prueba no ejecuta la acción, esa variable quedaba vacía y
+ * la pregunta salía SÓLO con las salidas de emergencia: el operador veía "Hacer otra
+ * búsqueda / Necesito ayuda / Finalizar" y ningún producto.
+ *
+ * Y no había dónde arreglarlo a mano: `buscar` es `silent`, así que el motor lo corre
+ * y dibuja la lista EN EL MISMO TURNO. El recorrido nunca queda esperando en
+ * `waiting: 'action'`, o sea que el campo de "¿qué habría dejado la acción?" ni
+ * aparecía. La prueba del camino de compra —el que más plata mueve— terminaba ahí.
+ *
+ * Por eso las opciones se escriben con `applyActionVars`, que NO avanza el turno.
+ */
+describe('la búsqueda deja sus productos para la pregunta que ya está en pantalla', () => {
+  const hastaLaLista = (): SimSession => {
+    let s = sendText(COMPRA_GRAPH, startSession(), 'hola');
+    s = tap(COMPRA_GRAPH, s, 'flow:menu:comprar');
+    s = tap(COMPRA_GRAPH, s, 'flow:como_buscar:se_cual');
+    // Antes acá iba un tap en `flow:superficie:paredes`. Ese nodo preguntaba la
+    // superficie y no filtraba nada con la respuesta, así que se sacó del recorrido:
+    // lo que el cliente escribe va derecho a la búsqueda.
+    return sendText(COMPRA_GRAPH, s, 'latex');
+  };
+
+  const opcionesDeLaLista = (s: SimSession) => {
+    const ultimo = s.turns[s.turns.length - 1];
+    assert.equal(ultimo?.role, 'bot');
+    return choicesForStep(COMPRA_GRAPH, s, (ultimo as { step: FlowStep }).step);
+  };
+
+  it('la acción silenciosa NO deja el recorrido esperando: la lista ya está dibujada', () => {
+    // Es lo que hacía imposible el arreglo a mano, y por lo que la variable tiene que
+    // escribirse sola.
+    const s = hastaLaLista();
+    assert.equal(s.waiting, 'choice');
+  });
+
+  it('sin lo que dejó la acción, la lista sale sólo con las salidas de emergencia', () => {
+    const labels = opcionesDeLaLista(hastaLaLista()).map((o) => o.label);
+    assert.deepEqual(labels, ['Hacer otra búsqueda', 'Necesito ayuda', 'Finalizar conversación']);
+  });
+
+  it('con lo que dejó la acción, la misma lista muestra los productos de verdad', () => {
+    // La forma es la que devuelve `preview-action`: la misma que publica la tool.
+    const s = applyActionVars(hastaLaLista(), {
+      resultados: [
+        { value: 'variant_01ABC', label: 'Albalátex 20 L · $80.000,00 ARS' },
+        { value: 'variant_01DEF', label: 'Albalátex 4 L · $22.000,00 ARS', description: 'Sin stock' },
+      ],
+    });
+
+    // No avanzó el turno: es la MISMA pregunta, rellenada.
+    assert.equal(s.waiting, 'choice');
+    const opciones = opcionesDeLaLista(s);
+    assert.deepEqual(
+      opciones.map((o) => o.label),
+      [
+        'Albalátex 20 L · $80.000,00 ARS',
+        'Albalátex 4 L · $22.000,00 ARS',
+        'Hacer otra búsqueda',
+        'Necesito ayuda',
+        'Finalizar conversación',
+      ],
+    );
+    // El id que se toca lleva el `variant_id` adentro: es lo que después agrega al
+    // carrito, así que probar el camino de compra deja de necesitar saberlo de memoria.
+    assert.ok(opciones[0]?.id.endsWith('variant_01ABC'));
+  });
+});
+
+/**
+ * LA RESPUESTA DE UNA ACCIÓN QUE DEJA TEXTO, NO OPCIONES (DESDEELSUR-81).
+ *
+ * La consulta de pedido es silenciosa y el mensaje siguiente es sólo
+ * `{{vars.estado_pedido}}`. El plan lo resolvió antes de que la vista previa trajera
+ * la respuesta, así que en la prueba la burbuja salía vacía.
+ */
+describe('Mi pedido se puede probar hasta el final', () => {
+  const hastaLaConsulta = (): SimSession => {
+    let s = sendText(COMPRA_GRAPH, startSession(), 'hola');
+    s = tap(COMPRA_GRAPH, s, 'flow:menu:pedido');
+    s = sendText(COMPRA_GRAPH, s, '1234');
+    return sendText(COMPRA_GRAPH, s, 'ana@mail.com');
+  };
+
+  const burbujaDelEstado = (s: SimSession) =>
+    s.turns.find((t) => t.role === 'bot' && t.step.nodeId === 'estado_pedido') as { step: { body: string } } | undefined;
+
+  it('sin la respuesta de la acción, el mensaje sale vacío', () => {
+    assert.equal(burbujaDelEstado(hastaLaConsulta())?.step.body, '');
+  });
+
+  it('con la respuesta, el mismo mensaje la muestra sin avanzar el turno', () => {
+    const antes = hastaLaConsulta();
+    const s = applyActionVars(antes, { estado_pedido: '*Pedido #1234*\nPago: pagado' });
+    assert.equal(burbujaDelEstado(s)?.step.body, '*Pedido #1234*\nPago: pagado');
+    assert.equal(s.waiting, antes.waiting);
+    assert.equal(s.turns.length, antes.turns.length);
+  });
+
+  it('consultar otro pedido no reescribe la burbuja del primero', () => {
+    let s = applyActionVars(hastaLaConsulta(), { estado_pedido: 'PRIMERO' });
+    s = tap(COMPRA_GRAPH, s, 'flow:despues_pedido:otro_pedido');
+    s = sendText(COMPRA_GRAPH, s, '5678');
+    s = sendText(COMPRA_GRAPH, s, 'ana@mail.com');
+    s = applyActionVars(s, { estado_pedido: 'SEGUNDO' });
+    const cuerpos = s.turns
+      .filter((t) => t.role === 'bot' && t.step.nodeId === 'estado_pedido')
+      .map((t) => (t as { step: { body: string } }).step.body);
+    assert.deepEqual(cuerpos, ['PRIMERO', 'SEGUNDO']);
   });
 });

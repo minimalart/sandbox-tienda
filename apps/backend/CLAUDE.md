@@ -71,4 +71,40 @@ incógnito antes de abrir un ticket.
   el `bullmq` instalado y prueba la reconstrucción). Si Medusa renombra
   `bullWorker_`/`worker_`/`workerOptions_`/`eventBusRedisConnection_`, el segundo
   es el que avisa.
+- El monitor NO manda el mail en el primer tick cuando el supervisor está
+  reconstruyendo o el proceso recién arrancó: la DETECCIÓN va al log igual y el
+  correo espera UN tick. El 2026-09-18 el supervisor se curó en 1 segundo durante
+  un boot de 462 s y el mail salió lo mismo. La gracia posterga como máximo un tick
+  y una sola vez por `kind`, así que las caídas de horas siguen avisando (con 5
+  minutos de atraso). Ojo al cablear: el tick que posterga NO puede consumir el
+  slot del `AlertThrottle` (30 min por `kind`) o el aviso se pierde en vez de
+  demorarse. Perilla: `EVENT_BUS_MONITOR_BOOT_GRACE_MINUTES` (default 10).
+
+## `await import('../x.js')` NO resuelve: el backend corre el fuente
+
+`medusa start` entra por `@medusajs/cli/cli.js`, que hace
+`require('ts-node').register({})`: en producción se ejecutan los `.ts` de `src/`,
+no un `dist/`. Con `module: nodenext` y el paquete en CommonJS, TypeScript emite
+`require()` para los imports estáticos pero **preserva `import()`** para los
+dinámicos — o sea que un `import()` es ESM de verdad, y el resolver ESM no
+inventa extensiones. Con el archivo en disco como `.ts`, fallan las dos formas:
+`'../x.js'` y `'../x'`. Y `'../x.ts'` "anda" por strip de tipos, pero carga una
+SEGUNDA instancia del módulo y sus propios imports relativos vuelven a romper.
+
+Costo real: el job `sync-correo-tracking-status` estuvo caído todas las horas y
+el de carritos abandonados fallaba cada minuto para las 7 tiendas, los dos en
+silencio, hasta el 2026-09-18.
+
+**La forma correcta es `require('../x')` sin extensión** — resolución CJS, que
+prueba `.js` en el build y `.ts` bajo ts-node. Es lo que la propia Medusa usa
+(`@medusajs/utils` → `dynamicImport(path)` es literalmente `require(path)`). Se
+escribe con `loadLazyModule` de `src/lib/lazy-module.ts`, que agrega el
+`import()` sin extensión como segundo intento (en `node --test` los `.ts` se
+cargan como ESM y `require` no existe) y deja en el error el motivo de cada forma
+probada. El guard está en `src/lib/lazy-module.test.ts`.
+
+`typeof import('../x.js')` en posición de TIPO sí lleva `.js`: no emite nada y es
+lo que `nodenext` pide. Un especificador de PAQUETE que apunta a un build
+publicado (`@minimalart/…/.medusa/server/src/…js`) también queda con `.js`: ahí
+el archivo en disco SÍ es `.js`.
 

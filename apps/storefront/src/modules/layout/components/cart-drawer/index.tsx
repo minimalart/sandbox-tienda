@@ -21,7 +21,7 @@ import {
   CartRecommendations,
   FreeShippingBridge,
 } from "@lib/recommendations-cart-slot";
-import { useDemoHref } from "@lib/site-config/context";
+import { useDemoHref, useTenant } from "@lib/site-config/context";
 import { useCartStore } from "@lib/stores/cart.store";
 const cartHasKit = (_cart: import("@medusajs/types").HttpTypes.StoreCart): boolean => false;
 import { isLineItemInStock } from "@lib/util/is-line-item-in-stock";
@@ -608,17 +608,34 @@ function CartItemRow({
             <span className="text-gray-400 text-xs">Cant: {item.quantity}</span>
           )}
           <div className="flex items-baseline gap-2">
-            {hasDiscount && !isHidden && (
-              <span className="text-gray-400 text-[10px] line-through">
-                {fmtPrice(originalTotal)}
-              </span>
+            {/* Skeleton mientras la línea es optimista: `createOptimisticLine`
+                usa el `unitPrice` que le pasa la card (típicamente el
+                `calculated_price` base de Typesense), pero el server responde
+                con la price list del canal ya resuelta. Sin el skeleton se ve
+                el flicker de "base → canal" al abrir el drawer justo después
+                del add. `total == null` cubre además el caso raro de una línea
+                sin total confirmado. Los +/- tap no disparan skeleton porque
+                el optimistic update recomputa `total` en el momento. */}
+            {item.total == null || item.id.startsWith("optimistic-line") ? (
+              <span
+                aria-hidden="true"
+                className="inline-block h-4 w-16 animate-pulse rounded bg-gray-200"
+              />
+            ) : (
+              <>
+                {hasDiscount && !isHidden && (
+                  <span className="text-gray-400 text-[10px] line-through">
+                    {fmtPrice(originalTotal)}
+                  </span>
+                )}
+                <span
+                  className="font-semibold text-[15px]"
+                  style={{ color: "#101828" }}
+                >
+                  {fmtPrice(suppressAnyPromo ? originalTotal : itemTotal)}
+                </span>
+              </>
             )}
-            <span
-              className="font-semibold text-[15px]"
-              style={{ color: "#101828" }}
-            >
-              {fmtPrice(suppressAnyPromo ? originalTotal : itemTotal)}
-            </span>
           </div>
         </div>
       </div>
@@ -937,10 +954,20 @@ type SuggestedProduct = {
   }[];
 };
 
-function CartSuggestedProducts({ countryCode }: { countryCode: string }) {
+function CartSuggestedProducts({
+  countryCode,
+  salesChannelId,
+}: {
+  countryCode: string;
+  salesChannelId?: string;
+}) {
+  // Hard safety gate: without a sales channel, the Typesense filter is
+  // dropped and the search would leak products from every tenant.
+  if (!salesChannelId) return null;
   const { products, isLoading: loading } = useTypesenseProducts({
     limit: 12,
     sortBy: "created_at",
+    salesChannelId,
   });
   const [addingId, setAddingId] = useState<string | null>(null);
   // Quick view del producto tocado, igual que en el carrusel del checkout: el
@@ -1330,6 +1357,13 @@ type CartDrawerProps = {
    * re-tematizarlo por template (p.ej. "sports-cart") vía CSS global.
    */
   themeClassName?: string;
+  /**
+   * Canal activo del sitio, resuelto en el server layout. El drawer lo usa
+   * para scopear el carrusel de sugerencias del carrito vacío por canal — el
+   * (checkout) layout no envuelve el drawer con ChannelProvider, así que el
+   * fallback del hook al env global traía productos de otro sales channel.
+   */
+  salesChannelId?: string;
 };
 
 // Tracks which cart ids have already triggered the Mundial gift auto-add in
@@ -1352,15 +1386,23 @@ const freefixtureLastObservedHasGift = new Map<string, boolean>();
 // twice with a stale line id.
 const freefixtureAutoRemovedLineIds = new Set<string>();
 
-const CartDrawer = ({ open, onClose, themeClassName }: CartDrawerProps) => {
+const CartDrawer = ({ open, onClose, themeClassName, salesChannelId }: CartDrawerProps) => {
   const { countryCode } = useParams() as { countryCode: string };
   const router = useRouter();
   const demoHref = useDemoHref();
+  // Ausente/`true` = visible (opt-out): sólo un `false` explícito apaga el
+  // carrusel. `!== false` respeta ese contrato en tenants que aún no publican
+  // el flag y en el fallback del provider fuera de request scope.
+  const recommendationsEnabled =
+    useTenant().assets.cart?.recommendationsCarousel !== false;
 
   // Zustand store
   const cart = useCartStore((state) => state.cart);
   const changeItemQuantity = useCartStore((state) => state.changeItemQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
+  const removeBundleInstance = useCartStore(
+    (state) => state.removeBundleInstance,
+  );
   const resetCartState = useCartStore((state) => state.clearCart);
   const fetchCart = useCartStore((state) => state.fetchCart);
   const addItem = useCartStore((state) => state.addItem);
@@ -2002,10 +2044,12 @@ const CartDrawer = ({ open, onClose, themeClassName }: CartDrawerProps) => {
                                         bundle={row}
                                         currencyCode={cart?.currency_code ?? "ars"}
                                         onNavigate={onClose}
+                                        // Una sola llamada para todo el kit:
+                                        // el backend borra sus líneas juntas.
                                         onRemove={async () => {
-                                          for (const line of row.items) {
-                                            await handleRemoveItem(line.id);
-                                          }
+                                          await removeBundleInstance(
+                                            row.bundleInstanceId,
+                                          );
                                         }}
                                       />
                                     ) : (
@@ -2123,7 +2167,7 @@ const CartDrawer = ({ open, onClose, themeClassName }: CartDrawerProps) => {
                                 esto es adición pura. El slot devuelve null sin la
                                 extensión.
                               */}
-                              {cart?.region ? (
+                              {recommendationsEnabled && cart?.region ? (
                                 <div className="mt-6">
                                   <CartRecommendations
                                     countryCode={countryCode || "ar"}
@@ -2144,9 +2188,12 @@ const CartDrawer = ({ open, onClose, themeClassName }: CartDrawerProps) => {
                               <p className="text-gray-400 text-sm">
                                 Agregá algo para hacerlo feliz :)
                               </p>
-                              <CartSuggestedProducts
-                                countryCode={countryCode || "ar"}
-                              />
+                              {recommendationsEnabled && (
+                                <CartSuggestedProducts
+                                  countryCode={countryCode || "ar"}
+                                  salesChannelId={salesChannelId}
+                                />
+                              )}
                             </div>
                           )}
                         </div>

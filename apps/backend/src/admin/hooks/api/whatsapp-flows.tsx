@@ -94,14 +94,17 @@ export const useSaveWhatsappFlow = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: SaveFlowInput) =>
       sdk.client.fetch<{ draft: FlowVersion; issues: FlowIssue[] }>('/admin/whatsapp-flows', {
         method: 'POST',
         headers: siteHeader(),
         body,
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
-    ...options,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all });
+      options?.onSuccess?.(data, variables, context);
+    },
   });
 };
 
@@ -114,13 +117,54 @@ export const usePublishWhatsappFlow = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: PublishFlowInput) =>
       sdk.client.fetch<{ activated_version_id: string; active: FlowVersion | null }>(
         '/admin/whatsapp-flows/publish',
         { method: 'POST', headers: siteHeader(), body },
       ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all });
+      options?.onSuccess?.(data, variables, context);
+    },
+  });
+};
+
+/**
+ * DESPUBLICAR: el bot deja de atender con el recorrido.
+ *
+ * No es "borrar" ni "publicar otro": el número vuelve al camino de siempre. La
+ * respuesta trae `was_global` porque apagar el recorrido GENERAL parado en una tienda
+ * apaga el de TODAS las que no tienen uno propio, y eso hay que decirlo.
+ *
+ * `draft` es la copia que queda para seguir editando: la versión que atendió clientes
+ * se conserva intacta en el historial.
+ */
+export type UnpublishFlowInput = { flow_key?: string; version_id?: string };
+
+export type UnpublishFlowResult = {
+  unpublished_version_id: string | null;
+  was_global?: boolean;
+  already_off?: boolean;
+  draft: FlowVersion | null;
+};
+
+export const useUnpublishWhatsappFlow = (
+  options?: UseMutationOptions<UnpublishFlowResult, FetchError, UnpublishFlowInput>,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation({
     ...options,
+    mutationFn: (body: UnpublishFlowInput) =>
+      sdk.client.fetch<UnpublishFlowResult>('/admin/whatsapp-flows/unpublish', {
+        method: 'POST',
+        headers: siteHeader(),
+        body,
+      }),
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all });
+      options?.onSuccess?.(data, variables, context);
+    },
   });
 };
 
@@ -137,14 +181,17 @@ export const useSeedWhatsappFlow = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (input: SeedFlowInput) =>
       sdk.client.fetch<{ draft: FlowVersion; issues: FlowIssue[] }>('/admin/whatsapp-flows/seed', {
         method: 'POST',
         headers: siteHeader(),
         body: { template: input.template ?? 'base', ...(input.name ? { name: input.name } : {}) },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
-    ...options,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all });
+      options?.onSuccess?.(data, variables, context);
+    },
   });
 };
 
@@ -159,14 +206,17 @@ export const useRenameWhatsappFlow = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: ({ id, name }: { id: string; name: string }) =>
       sdk.client.fetch<{ id: string; name: string }>(`/admin/whatsapp-flows/versions/${id}`, {
         method: 'POST',
         headers: siteHeader(),
         body: { name },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
-    ...options,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all });
+      options?.onSuccess?.(data, variables, context);
+    },
   });
 };
 
@@ -182,13 +232,16 @@ export const useDeleteWhatsappFlowDraft = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (id: string) =>
       sdk.client.fetch<{ id: string; deleted: boolean }>(`/admin/whatsapp-flows/versions/${id}`, {
         method: 'DELETE',
         headers: siteHeader(),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
-    ...options,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all });
+      options?.onSuccess?.(data, variables, context);
+    },
   });
 };
 
@@ -233,13 +286,16 @@ export const useRestoreWhatsappFlowVersion = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: ({ id }: { id: string }) =>
       sdk.client.fetch<{ draft: FlowVersion; issues: FlowIssue[] }>(
         `/admin/whatsapp-flows/versions/${id}/restore`,
         { method: 'POST', headers: siteHeader(), body: {} },
       ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all }),
-    ...options,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: whatsappFlowsQueryKey.all });
+      options?.onSuccess?.(data, variables, context);
+    },
   });
 };
 

@@ -63,8 +63,12 @@ function fixture(
 
 test('recovery uses the selected template, sender, language and credentials of the cart store', async () => {
   const f = fixture(
-    { KAPSO_PHONE_NUMBER_ID: 'phone-b', KAPSO_TEMPLATE_LANG: 'es_AR', KAPSO_API_KEY: 'ignored' },
-    { status: 'found', source: 'site', value: { apiKey: 'key-b' } }
+    {
+      KAPSO_PHONE_NUMBER_ID: 'phone-instance',
+      KAPSO_TEMPLATE_LANG: 'es_AR',
+      KAPSO_API_KEY: 'ignored',
+    },
+    { status: 'found', source: 'site', value: { apiKey: 'key-b', phoneNumberId: 'phone-b' } }
   );
   const delivery = await f.run();
   assert.deepEqual(f.scopes, ['store-b', 'store-b']);
@@ -76,6 +80,27 @@ test('recovery uses the selected template, sender, language and credentials of t
     Array.from(delivery.template.components[0].parameters, (p: any) => p.text),
     ['Test', '10', 'https://b.test/cart']
   );
+});
+
+/**
+ * El 401 de desdeelsur (22/09): la tienda tenía API key propia y el número salía
+ * de los ajustes de la instancia. Kapso contesta `Invalid credentials for
+ * WhatsApp configuration` porque la key no tiene acceso a ESE número, y la orden
+ * se confirma igual — sin confirmación por WhatsApp y sin nada visible en el
+ * admin. La key y el número son una sola credencial: se toman los dos, o ninguno.
+ */
+test('a store key without its own sender uses the instance pair whole, never mixed', async () => {
+  const f = fixture(
+    {
+      KAPSO_API_KEY: 'key-instance',
+      KAPSO_PHONE_NUMBER_ID: 'phone-instance',
+      KAPSO_TEMPLATE_LANG: 'es',
+    },
+    { status: 'found', source: 'site', value: { apiKey: 'key-b' } }
+  );
+  const delivery = await f.run();
+  assert.equal(delivery.apiKey, 'key-instance');
+  assert.equal(delivery.phoneNumberId, 'phone-instance');
 });
 
 test('missing secondary credentials cannot use global sender options', async () => {

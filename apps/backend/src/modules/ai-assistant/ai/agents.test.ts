@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveActiveAgent, resolveAgentByKey, GENERAL_AGENT } from './agents.ts';
+import { agentIsFallback, resolveActiveAgent, resolveAgentByKey, GENERAL_AGENT } from './agents.ts';
 
 type Row = any;
 
@@ -78,4 +78,34 @@ test('resolveAgentByKey arma allow-list, handoffs y resuelve skills a texto', as
 test('resolveAgentByKey cae a GENERAL_AGENT si la key no existe', async () => {
   const a = await resolveAgentByKey(makeStore([]) as any, 'nope');
   assert.equal(a.key, GENERAL_AGENT.key);
+});
+
+
+/**
+ * EL FALLBACK NO PUEDE ATENDER A UN CLIENTE (DESDEELSUR-72).
+ *
+ * `resolveAgentByKey` falla abierto y devuelve el `GENERAL_AGENT` cuando la key no
+ * existe. En el backoffice está bien; en el bot de WhatsApp significa `instructions: ''`
+ * y `allowedTools: null` — un bot sin reglas y con todas las tools a la vista. Pasó en
+ * producción: el agente se llamaba `wanda` y la key pedida era `whatsapp`.
+ */
+test('agentIsFallback: la key que no existe se detecta', async () => {
+  const store = makeStore([VENTAS]);
+  const agent = await resolveAgentByKey(store as never, 'whatsapp');
+  assert.equal(agent.key, GENERAL_AGENT.key);
+  assert.equal(agentIsFallback(agent, 'whatsapp'), true);
+});
+
+test('agentIsFallback: el agente que SÍ existe pasa', async () => {
+  const store = makeStore([VENTAS]);
+  const agent = await resolveAgentByKey(store as never, 'ventas');
+  assert.equal(agentIsFallback(agent, 'ventas'), false);
+});
+
+/** Un agente sin instrucciones es el mismo agujero con otro nombre. */
+test('agentIsFallback: instrucciones vacías cuentan como fallback aunque la key coincida', () => {
+  assert.equal(
+    agentIsFallback({ ...GENERAL_AGENT, key: 'whatsapp', instructions: '   ' }, 'whatsapp'),
+    true,
+  );
 });

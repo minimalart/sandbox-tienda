@@ -397,6 +397,133 @@ export class AlertThrottle {
   }
 }
 
+/**
+ * Lo que el período de gracia necesita saber del supervisor, escrito de forma
+ * ESTRUCTURAL para no acoplar esta librería a
+ * `lib/event-bus-worker-supervisor.ts`: el snapshot real encaja tal cual.
+ */
+export type SupervisorPulse = {
+  state: string;
+  restarts: number;
+  consecutiveFailures: number;
+  nextRetryAt: number | null;
+};
+
+export type MailGraceInput = {
+  /** El `kind` del veredicto caído. La gracia es POR TIPO de falla, igual que el throttle. */
+  kind: string;
+  /** El snapshot del supervisor del worker, o `null` si no hay supervisor en este proceso. */
+  supervisor: SupervisorPulse | null;
+  /** `process.uptime() * 1000`. Se pasa como dato para poder testearlo. */
+  uptimeMs: number;
+  /** Cuánto dura la gracia por arranque reciente. */
+  bootGraceMs: number;
+};
+
+export type MailGraceVerdict = {
+  /** `true` = el MAIL espera al tick siguiente. El log sale igual. */
+  defer: boolean;
+  /** Por qué, en palabras del que lo lee en el log. */
+  reason: string;
+};
+
+/**
+ * EL PERÍODO DE GRACIA DEL MAIL.
+ *
+ * ── POR QUÉ EXISTE, con el log en la mano ───────────────────────────────────
+ *
+ * Boilerplate, 2026-09-18. El backend arrancó 12:20:06 y tardó 462 segundos en
+ * quedar listo (el Valkey rechazando conexiones durante el deploy):
+ *
+ *   12:28:03  Server is ready on port 9000
+ *   12:28:03  [event-bus-supervisor] murió tras 339 ms → se construye uno nuevo en 1000 ms
+ *   12:28:03  [event-bus-monitor] EL EVENT BUS NO ESTÁ CONSUMIENDO → 📧 mail
+ *   12:28:04  [event-bus-supervisor] RECUPERADO tras 1 falla y 1 reconstrucción
+ *   12:30:04  [event-bus-monitor] RECUPERADO: el bus vuelve a consumir
+ *
+ * El supervisor (PR #1122) hizo exactamente su trabajo: se curó en UN SEGUNDO. Lo
+ * que falló es el aviso: el primer tick del monitor cayó dentro de ese segundo y
+ * mandó el mail igual. Un mail de alerta por un parpadeo que se auto-cura es cómo
+ * una alerta deja de leerse — y esta alerta existe porque una vez nadie se enteró
+ * durante tres días.
+ *
+ * ── LA REGLA, Y POR QUÉ NO TAPA LA CAÍDA DE VERDAD ──────────────────────────
+ *
+ * Se posterga COMO MÁXIMO UN TICK, y una sola vez por `kind` hasta la próxima
+ * recuperación. Si en el tick siguiente el bus sigue caído, el mail sale. Las
+ * caídas reales (2026-08-31, 09-03, 09-09) duraron HORAS: pierden 5 minutos, no el
+ * aviso. El blip de un segundo, en cambio, ya se curó para el tick siguiente y el
+ * mail no sale nunca.
+ *
+ * Se posterga cuando pasa alguna de estas dos, que son las dos formas de "esto se
+ * está curando solo ahora mismo":
+ *
+ *   1. El supervisor está VIVO y a cargo: `waiting` (esperando el backoff para
+ *      reconstruir) o `running` con al menos una falla contada (acaba de
+ *      reconstruir y está conectando). Sin supervisor —una instalación que apunte
+ *      `event_bus` al paquete de Medusa pelado— NO hay nadie curando nada y el
+ *      aviso sale en el primer tick, como siempre.
+ *   2. El proceso arrancó hace poco. El boot de arriba tardó 462 s, así que el
+ *      primer tick del cron cae con el bus todavía acomodándose. La gracia por
+ *      arranque cubre ese caso aunque el supervisor ya figure sano.
+ *
+ * Lo que NO se demora es la DETECCIÓN: el `logger.error` con el reporte completo
+ * sale igual en el tick que posterga. Lo único que espera es el correo.
+ */
+export class MailGrace {
+  private readonly deferred = new Set<string>();
+
+  consider(input: MailGraceInput): MailGraceVerdict {
+    if (this.deferred.has(input.kind)) {
+      return {
+        defer: false,
+        reason:
+          'ya se había postergado un tick y el bus SIGUE caído: esto no es un parpadeo, ' +
+          'el aviso sale ahora.',
+      };
+    }
+
+    const supervisor = input.supervisor;
+    const rebuilding =
+      supervisor !== null &&
+      (supervisor.state === 'waiting' ||
+        (supervisor.state === 'running' && supervisor.consecutiveFailures > 0));
+    const booting = input.uptimeMs < input.bootGraceMs;
+
+    if (!rebuilding && !booting) {
+      return {
+        defer: false,
+        reason: supervisor
+          ? 'el supervisor no está reconstruyendo nada y el proceso no acaba de arrancar: ' +
+            'no hay nadie curándolo, el aviso sale ya.'
+          : 'no hay supervisor del worker en este proceso: nadie va a reconstruirlo solo, ' +
+            'el aviso sale ya.',
+      };
+    }
+
+    this.deferred.add(input.kind);
+    const because = rebuilding
+      ? `el supervisor del worker está en \`${supervisor!.state}\` con ` +
+        `${supervisor!.consecutiveFailures} falla(s) y ${supervisor!.restarts} ` +
+        'reconstrucción(es): se está curando solo'
+      : `el proceso arrancó hace ${Math.round(input.uptimeMs / 1000)} s ` +
+        `(gracia de arranque: ${Math.round(input.bootGraceMs / 1000)} s)`;
+
+    return {
+      defer: true,
+      reason: `${because}. El mail espera UN tick; si el bus sigue caído, sale.`,
+    };
+  }
+
+  /** `true` si había un aviso postergado. El que llama lo usa para no perder la
+   *  línea de RECUPERADO cuando el único rastro de la caída fue una postergación. */
+  reset(): boolean {
+    if (this.deferred.size === 0) return false;
+    this.deferred.clear();
+    return true;
+  }
+}
+
 /** Texto del aviso. Separado del job para poder testearlo y para que el mail y el
  *  log digan EXACTAMENTE lo mismo. */
 export function formatDownReport(

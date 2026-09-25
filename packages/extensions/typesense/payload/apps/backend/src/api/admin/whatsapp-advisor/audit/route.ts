@@ -5,7 +5,7 @@ import {
   classifyProduct,
   type AdvisorDimension,
 } from '../../../../modules/typesense/advisor';
-import { getAdvisorConfig } from '../../../../lib/whatsapp/advisor/config';
+import { getAdvisorConfig, readStoredAdvisorConfig } from '../../../../lib/whatsapp/advisor/config';
 import {
   TECHNICAL_DIMENSIONS,
   TECHNICAL_SCOPE_LABEL,
@@ -53,7 +53,26 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const channelId = q.sales_channel_id;
   const sampleLimit = Math.min(Math.max(Number(q.samples) || 3, 0), 20);
 
-  const { rules } = await getAdvisorConfig(req.scope, await siteOf(req));
+  const siteId = await siteOf(req);
+  const { rules } = await getAdvisorConfig(req.scope, siteId);
+  /**
+   * ── ESTA AUDITORÍA MENTÍA, Y HAY QUE SABER CUÁNDO ──────────────────────────
+   *
+   * `getAdvisorConfig` cae a `PAINT_ADVISOR_RULES` cuando no hay fila guardada, y
+   * el INDEXADO no: `readAdvisorRules` devuelve `null` sin fila, `classifyProduct`
+   * devuelve `null` y el documento sale SIN los campos `advisor_*`. O sea que sin
+   * seed esta ruta reportaba una cobertura preciosa de un índice que no tenía un
+   * solo atributo.
+   *
+   * Pasó en desdeelsur (DESDEELSUR-72, TC-011): el audit decía superficie
+   * conocida en 1.093 productos y la colección tenía las cinco facetas en
+   * `total_values: 0`. Se perdió medio día buscando el bug del filtro.
+   *
+   * `rules_source` es el desempate: `stored` = lo que mide esta ruta es lo que
+   * el índice va a llevar; `defaults` = simulación, el índice no lleva nada.
+   */
+  const stored = await readStoredAdvisorConfig(req.scope, siteId);
+  const rulesSource = stored ? 'stored' : 'defaults';
 
   const counts: Record<AdvisorDimension, Record<string, number>> = {
     surface: {}, product_type: {}, environment: {}, special_use: {}, base: {},
@@ -191,6 +210,21 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     total,
     sales_channel_id: channelId ?? null,
     rules_version: rules.version,
+    rules_source: rulesSource,
+    /**
+     * `false` = lo de abajo es una SIMULACIÓN. Sin fila guardada el indexado no
+     * escribe los campos del asesor, así que el filtrado guiado va a ofrecer
+     * preguntas que después no matchean ningún producto.
+     */
+    indexed: rulesSource === 'stored',
+    ...(rulesSource === 'stored'
+      ? {}
+      : {
+          warning:
+            'No hay reglas guardadas para esta tienda: el índice NO lleva los campos advisor_*. ' +
+            'Estos números son una simulación. Cargá las reglas con POST /admin/whatsapp-advisor/config {"seed":true} ' +
+            'y después corré una resincronización COMPLETA de Typesense.',
+        }),
     coverage,
     counts,
     unmapped_categories: byCount([...unmappedCategories.entries()], (v) => v.count).map(

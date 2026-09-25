@@ -39,6 +39,20 @@ El código de idioma tiene que ser el mismo que el de la plantilla aprobada, car
 
 Un idioma que no coincide es la segunda causa de mensajes que no llegan, después del nombre mal escrito, y desde el admin las dos se ven igual.
 
+## Apagar el bot, y despublicar el recorrido: son DOS palancas
+
+Son distintas, y confundirlas deja el número contestando cuando se lo creía apagado.
+
+**El bot contesta**, arriba de todo en Ajustes, apaga las RESPUESTAS del número: todo mensaje que entre se guarda y queda en la bandeja para que lo lleve una persona. No toca el recorrido publicado, que vuelve a atender en cuanto se prenda. Las notificaciones que dispara la tienda —confirmación de pedido, seguimiento, carrito abandonado— salen igual: ésas se apagan una por una en Plantillas.
+
+Tampoco despierta conversaciones. Un recorrido puede tener pasos con plazo, y cuando el plazo vence el bot vuelve a escribir sin que el cliente haya dicho nada. Con el interruptor apagado eso no pasa, y el plazo queda como está: los recorridos en curso quedan PAUSADOS donde estaban y siguen en cuanto se prenda, no se cancelan.
+
+**Despublicar el recorrido**, desde Recorridos o desde el editor, saca el grafo de encima del número pero NO apaga el bot: el turno vuelve al menú de siempre y al asistente, que siguen contestando. Sirve para volver al comportamiento anterior, no para conseguir silencio.
+
+Para probar un recorrido sin que ningún cliente lo vea está Probar, dentro del editor: corre el mismo motor que atiende en producción, en el navegador y contra el grafo del canvas —guardado o no—, y consulta el catálogo de verdad para mostrar las tarjetas que saldrían. No manda un solo mensaje.
+
+Despublicar deja una copia en borrador y conserva la versión en el historial. La que atendió clientes no se vuelve a editar nunca: la traza de esas conversaciones guarda su id, y pisarle el grafo la dejaría apuntando a un dibujo que nunca corrió.
+
 ## El catálogo que atiende el bot
 
 El bot ofrece productos de los canales de venta que se le habiliten. Con varios canales busca en todos, pero un pedido pertenece a UNO solo: se usa el primero que tenga todos los productos del carrito.

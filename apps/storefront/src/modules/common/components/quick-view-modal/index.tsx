@@ -292,10 +292,17 @@ const ProductQuickViewModal = ({
             <div className="flex min-h-full items-center justify-center p-3 text-center sm:p-6">
               <DialogPanel
                 as="div"
-                className="cursor-auto relative w-full max-w-[410px] transform max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-[14px] bg-white text-left shadow-2xl sm:my-8 sm:max-h-[calc(100dvh-4rem)] sm:max-w-[980px]"
+                className="cursor-auto w-full max-w-[410px] sm:my-8 sm:max-w-[980px]"
               >
+                {/* La animación va en la CAJA (la que tiene overflow-y-auto),
+                    no en un hijo suyo: si la caja aparece quieta y sólo su
+                    contenido se desplaza/escala, ese contenido desborda durante
+                    la transición, asoma una scrollbar interna que le roba ancho
+                    y todo se reacomoda dos veces (DESDEELSUR-75). El transform
+                    de la propia caja no altera su overflow. */}
                 <motion.div
                   animate={{ opacity: 1, scale: 1, y: 0 }}
+                  className="relative max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-[14px] bg-white text-left shadow-2xl sm:max-h-[calc(100dvh-4rem)]"
                   exit={{ opacity: 0, scale: 0.95, y: 20 }}
                   initial={{ opacity: 0, scale: 0.95, y: 20 }}
                   transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
@@ -460,10 +467,22 @@ const ProductQuickViewModal = ({
                         )}
 
                         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-                          <ProductPrice
-                            product={displayProduct as HttpTypes.StoreProduct}
-                            variant={variantSelection.selectedVariant}
-                          />
+                          {/* Ocultamos el precio mientras la hidratación del backend está en
+                              vuelo: el `product` de Typesense trae `calculated_price` con el
+                              precio base, y `/api/store/product?salesChannelId=...` lo
+                              devuelve ya resuelto contra la price list del canal. Mostrarlo
+                              durante ese lapso produce un flicker de "base → price list". */}
+                          {loading && !hydratedProduct ? (
+                            <div className="flex flex-col gap-2">
+                              <div className="h-8 w-32 animate-pulse rounded bg-gray-200" />
+                              <div className="h-4 w-24 animate-pulse rounded bg-gray-100" />
+                            </div>
+                          ) : (
+                            <ProductPrice
+                              product={displayProduct as HttpTypes.StoreProduct}
+                              variant={variantSelection.selectedVariant}
+                            />
+                          )}
                           {variantSelection.selectableOptions.length > 0 && (
                             <div className="flex shrink-0 flex-col gap-3">
                               {variantSelection.selectableOptions.map(

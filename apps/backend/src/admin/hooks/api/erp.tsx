@@ -369,6 +369,12 @@ export type ErpOutboxEvent = {
   external_ref: string | null;
   last_error: string | null;
   created_at: string;
+  /**
+   * Sólo lo que la pantalla lee: `sale_created` trae la venta canónica, con
+   * `display_id`; `invoice_fetch` no lo trae, pero sí el `external_ref` del
+   * pedido cuyo comprobante espera.
+   */
+  payload?: { display_id?: number | null; external_ref?: string | null } | null;
 };
 
 /**
@@ -533,7 +539,49 @@ export type ErpOrderStatus = {
   invoice: ErpOrderInvoice | null;
 };
 
+/**
+ * Desde qué sucursal se puede despachar el pedido.
+ *
+ * `covers_all` es la respuesta que importa: el gate exige cubrir la orden
+ * COMPLETA desde UNA ubicación, así que una sucursal que tiene "algo" no sirve.
+ */
+export type ErpOrderStockLine = {
+  item_id: string;
+  title: string;
+  sku: string | null;
+  pending: number;
+  available: Record<string, number>;
+};
+
+export type ErpOrderStockCoverage = {
+  stock_location_id: string;
+  stock_location_name: string | null;
+  deposito: string;
+  covers_all: boolean;
+  covered_lines: number;
+  gaps: Array<{ item_id: string; title: string; pending: number; available: number }>;
+};
+
+export type ErpOrderStockByLocation = {
+  enabled: boolean;
+  reason?: 'no_mappings';
+  lines: ErpOrderStockLine[];
+  coverage: ErpOrderStockCoverage[];
+};
+
 export const erpOrderQueryKey = (orderId: string) => ['erp', 'order', orderId] as const;
+
+export const erpOrderStockQueryKey = (orderId: string) =>
+  ['erp', 'order', orderId, 'stock-by-location'] as const;
+
+export function useErpOrderStockByLocation(orderId: string, opts?: QueryOpts) {
+  return useQuery({
+    queryKey: erpOrderStockQueryKey(orderId),
+    queryFn: () =>
+      fetchJson<ErpOrderStockByLocation>(`${BASE_URL}/orders/${orderId}/stock-by-location`),
+    ...opts,
+  });
+}
 
 export function useErpOrderStatus(orderId: string, opts?: QueryOpts) {
   return useQuery({

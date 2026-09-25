@@ -111,6 +111,18 @@ export type KapsoSettings = {
   countryCode: string | null;
   placeholderImageUrl: string | null;
   handoffAutoResumeHours: number;
+  /**
+   * `true` = el texto libre que ARRANCA una conversación abre el menú del
+   * recorrido en vez de caer al agente. Ver el recuadro del descriptor
+   * `WHATSAPP_GUIDED_ENTRY`: es la puerta de entrada del bot, no un ajuste del
+   * asesor.
+   */
+  guidedEntry: boolean;
+  /**
+   * `key` del agente de IA que atiende el bot. Ver el recuadro del descriptor
+   * `WHATSAPP_AGENT_KEY`: estaba hardcodeada y el resolver falla abierto.
+   */
+  agentKey: string;
 };
 
 /** De dónde sale la fila de DB de una key. Es lo único que cambia entre caminos. */
@@ -175,6 +187,8 @@ function buildSettings(lookup: RowLookup): KapsoSettings {
     countryCode: readOptional('WHATSAPP_COUNTRY_CODE'),
     placeholderImageUrl: readOptional('WHATSAPP_PLACEHOLDER_IMAGE_URL'),
     handoffAutoResumeHours: read('WHATSAPP_HANDOFF_AUTO_RESUME_HOURS', 6),
+    guidedEntry: read('WHATSAPP_GUIDED_ENTRY', true),
+    agentKey: readOptional('WHATSAPP_AGENT_KEY') ?? 'whatsapp',
   };
 }
 

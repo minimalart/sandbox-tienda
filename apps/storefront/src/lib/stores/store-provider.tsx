@@ -8,6 +8,7 @@ import { useCartStore } from "./cart.store";
 interface StoreProviderProps {
   children: React.ReactNode;
   cart?: HttpTypes.StoreCart | null;
+  disabled?: boolean;
 }
 
 /**
@@ -19,10 +20,11 @@ interface StoreProviderProps {
  * hidrata con el `cart` del server: los siguientes pueden recibir un carrito
  * viejo del Router Cache y no deben pisar el store (ver `cart-hydration.ts`).
  */
-export function StoreProvider({ children, cart }: StoreProviderProps) {
+export function StoreProvider({ children, cart, disabled = false }: StoreProviderProps) {
   const initialized = useRef(false);
 
   useEffect(() => {
+    if (disabled) return;
     // Solo hidratar una vez al montar
     if (initialized.current) return;
     initialized.current = true;
@@ -54,6 +56,7 @@ export function StoreProvider({ children, cart }: StoreProviderProps) {
 
   // Re-fetch cart when tab becomes visible to keep state in sync across tabs
   useEffect(() => {
+    if (disabled) return;
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         const { fetchCart, pendingAdditions, pendingQuantityUpdates } =

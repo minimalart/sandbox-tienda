@@ -102,6 +102,12 @@ export type ContentConfigForm = {
   brandsLayout: 'carousel' | 'marquee' | 'dots';
   /** MercadoPago: qué checkout ofrece el demo (api | express | both). */
   mercadopagoCheckoutMode: 'api' | 'express' | 'both';
+  /**
+   * Minicart "Recommended products carousel" toggle. Default `true` para
+   * preservar el comportamiento existente en tiendas derivadas que aún no
+   * optaron por apagarlo.
+   */
+  cartRecommendationsCarousel: boolean;
 
   // ─── Campaign template (site-level) ──────────────────────────────────────
   // Sólo campos que aparecen en TODAS las pantallas del sitio (announcement +
@@ -116,9 +122,13 @@ export type ContentConfigForm = {
   campaignChromeSubtitle: string;
   campaignChromePoweredByLabel: string;
   campaignChromePoweredByHref: string;
+  /** Logo del pill "Powered by" del header. Cargado = reemplaza al label. */
+  campaignChromePoweredByImage: string;
   campaignChromeBackgroundColor: string;
   campaignFooterPoweredByLabel: string;
   campaignFooterPoweredByHref: string;
+  /** Logo del crédito "Powered by" del footer. Cargado = reemplaza al label. */
+  campaignFooterPoweredByImage: string;
   campaignFooterBackgroundColor: string;
 };
 
@@ -235,6 +245,7 @@ export function emptyContentForm(): ContentConfigForm {
     searchHints: '',
     brandsLayout: 'carousel',
     mercadopagoCheckoutMode: 'express',
+    cartRecommendationsCarousel: true,
     // Campaign — todos vacíos; los defaults visuales viven en `campaignConfig`
     // del storefront y se aplican cuando cada campo se emite ausente.
     campaignAnnouncementText: '',
@@ -242,9 +253,11 @@ export function emptyContentForm(): ContentConfigForm {
     campaignChromeSubtitle: '',
     campaignChromePoweredByLabel: '',
     campaignChromePoweredByHref: '',
+    campaignChromePoweredByImage: '',
     campaignChromeBackgroundColor: '',
     campaignFooterPoweredByLabel: '',
     campaignFooterPoweredByHref: '',
+    campaignFooterPoweredByImage: '',
     campaignFooterBackgroundColor: '',
   };
 }
@@ -279,6 +292,7 @@ export function contentConfigToForm(cfg?: DemoContentConfig | null): ContentConf
     sucursalesShowCategoryFilters: cfg.sucursales?.showCategoryFilters ?? true,
     sucursalesLayout: cfg.sucursales?.layout ?? 'full',
     mercadopagoCheckoutMode: cfg.mercadopagoCheckoutMode ?? 'express',
+    cartRecommendationsCarousel: cfg.cart?.recommendationsCarousel ?? true,
     contactAddress: cfg.contact?.address ?? '',
     contactPhone: cfg.contact?.phone ?? '',
     contactEmail: cfg.contact?.email ?? '',
@@ -304,9 +318,11 @@ export function contentConfigToForm(cfg?: DemoContentConfig | null): ContentConf
     campaignChromeSubtitle: cfg.campaign?.chrome?.subtitle ?? '',
     campaignChromePoweredByLabel: cfg.campaign?.chrome?.poweredByLabel ?? '',
     campaignChromePoweredByHref: cfg.campaign?.chrome?.poweredByHref ?? '',
+    campaignChromePoweredByImage: cfg.campaign?.chrome?.poweredByImage ?? '',
     campaignChromeBackgroundColor: cfg.campaign?.chrome?.backgroundColor ?? '',
     campaignFooterPoweredByLabel: cfg.campaign?.footer?.poweredBy?.label ?? '',
     campaignFooterPoweredByHref: cfg.campaign?.footer?.poweredBy?.href ?? '',
+    campaignFooterPoweredByImage: cfg.campaign?.footer?.poweredBy?.image ?? '',
     campaignFooterBackgroundColor: cfg.campaign?.footer?.backgroundColor ?? '',
   };
 }
@@ -356,6 +372,12 @@ export function formToContentConfig(
   // Only persist a non-default mode ('express' is the storefront default).
   if (form.mercadopagoCheckoutMode && form.mercadopagoCheckoutMode !== 'express') {
     cfg.mercadopagoCheckoutMode = form.mercadopagoCheckoutMode;
+  }
+  // Sólo persistimos si el operador APAGÓ el carousel. Default = true en el
+  // storefront (opt-out), así que omitirlo cuando está en true evita
+  // ensuciar el payload y respeta el "ausente = storefront default".
+  if (form.cartRecommendationsCarousel === false) {
+    cfg.cart = { recommendationsCarousel: false };
   }
   const contact: NonNullable<DemoContentConfig['contact']> = {};
   if (form.contactAddress.trim()) contact.address = form.contactAddress.trim();
@@ -463,15 +485,18 @@ function buildCampaignPayload(
     subtitle?: string;
     poweredByLabel?: string;
     poweredByHref?: string;
+    poweredByImage?: string;
     backgroundColor?: string;
   } = {};
   const cs = nonEmpty(form.campaignChromeSubtitle);
   const cpl = nonEmpty(form.campaignChromePoweredByLabel);
   const cph = nonEmpty(form.campaignChromePoweredByHref);
+  const cpi = nonEmpty(form.campaignChromePoweredByImage);
   const cbg = nonEmpty(form.campaignChromeBackgroundColor);
   if (cs) chrome.subtitle = cs;
   if (cpl) chrome.poweredByLabel = cpl;
   if (cph) chrome.poweredByHref = cph;
+  if (cpi) chrome.poweredByImage = cpi;
   if (cbg) chrome.backgroundColor = cbg;
 
   const footer: NonNullable<
@@ -479,9 +504,17 @@ function buildCampaignPayload(
   > = {};
   const fpl = nonEmpty(form.campaignFooterPoweredByLabel);
   const fph = nonEmpty(form.campaignFooterPoweredByHref);
+  const fpi = nonEmpty(form.campaignFooterPoweredByImage);
   const fbg = nonEmpty(form.campaignFooterBackgroundColor);
-  // poweredBy necesita AMBOS label y href.
-  if (fpl && fph) footer.poweredBy = { label: fpl, href: fph };
+  // poweredBy se emite si hay AL MENOS uno entre {label, image}. `href` es
+  // opcional; sin él, el crédito se renderiza como span en vez de <a>.
+  if (fpl || fpi) {
+    const pb: { label?: string; href?: string; image?: string } = {};
+    if (fpl) pb.label = fpl;
+    if (fph) pb.href = fph;
+    if (fpi) pb.image = fpi;
+    footer.poweredBy = pb;
+  }
   if (fbg) footer.backgroundColor = fbg;
 
   const out: NonNullable<DemoContentConfig['campaign']> = {};

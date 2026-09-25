@@ -59,6 +59,7 @@ import {
 } from './lib/issues';
 import { nudgeFree, viewportCenterPosition, type XY } from './lib/placement';
 import {
+  applyActionVars as applyActionVarsIn,
   continueAfterAction as continueAfterActionIn,
   letTimeoutFire,
   sendText as sendTextIn,
@@ -750,6 +751,13 @@ export function useFlowEditor(versionId: string) {
       tap: (id: string, label?: string) => setSession((s) => tapIn(graph, s, id, label)),
       continueAfterAction: (vars?: Record<string, unknown>) =>
         setSession((s) => continueAfterActionIn(graph, s, vars)),
+      /**
+       * Lo que la acción habría dejado en `vars`, SIN avanzar el turno: una acción
+       * `silent` ya dibujó la pregunta siguiente en el mismo turno, así que la
+       * variable tiene que llegar a una lista que ya está en pantalla.
+       */
+      applyActionVars: (vars: Record<string, unknown>) =>
+        setSession((s) => applyActionVarsIn(s, vars)),
       timeout: () => setSession((s) => letTimeoutFire(graph, s)),
     }),
     [graph, session, simulatorOpen],

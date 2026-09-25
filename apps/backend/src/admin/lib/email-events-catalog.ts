@@ -205,17 +205,34 @@ export const EMAIL_EVENTS: EmailEvent[] = [
     wired: true,
     templates: [USER('password-reset', 'Restablecer contraseña')],
   },
-  // ── Conocidos pero sin wiring nuevo en esta entrega (seleccionables/seedables) ──
-  //
-  // `order-tracking` y `order-cancelled` quedan en `false` y NO es un olvido:
-  // tienen emisor vivo, pero por el canal `whatsapp`. Este catálogo es el de las
-  // plantillas de MAIL, y por mail no las manda nadie.
+  {
+    event: 'order-transfer-request',
+    label: 'Vincular pedido a una cuenta',
+    // Cableado desde el arranque: lo dispara
+    // `subscribers/order-transfer-requested-email.ts` sobre
+    // `order.transfer_requested`, el evento del flujo de transferencia del core.
+    // Nace en `true` justamente porque el bug que lo trae (DESDEELSUR-61) era el
+    // inverso: el flujo entero existía y el mail no lo mandaba nadie.
+    wired: true,
+    templates: [USER('order-transfer-request', 'Vincular pedido a una cuenta')],
+  },
   {
     event: 'order-tracking',
     label: 'Seguimiento de envío',
-    wired: false,
+    // SUBIÓ de la sección de abajo (2026-09-17). Estuvo en `false` porque era
+    // cierto: la plantilla existía completa y editable, y sus dos únicos emisores
+    // mandaban por `whatsapp`. El QA de DESDEELSUR-39 lo encontró desde el otro
+    // lado — todos los mails con subscriber llegaron, y los únicos dos que no
+    // llegaron fueron "en camino" y "entregado", que eran los únicos sin emisor.
+    //
+    // Ahora la emiten por mail `subscribers/order-delivered-email.ts` (entregado)
+    // y los tres de "en camino", uno por extensión de logística:
+    // `andreani-ticket-tracking-email.ts`, `correo-ticket-tracking-email.ts` y
+    // `own-fleet-delivery-email.ts`.
+    wired: true,
     templates: [USER('order-tracking', 'Seguimiento de envío')],
   },
+  // ── Conocidos pero sin wiring nuevo en esta entrega (seleccionables/seedables) ──
   {
     event: 'order-cancelled',
     label: 'Pedido cancelado',

@@ -2,6 +2,7 @@ import type { Logger, MedusaContainer } from '@medusajs/framework/types';
 import { ContainerRegistrationKeys, Modules } from '@medusajs/framework/utils';
 import {
   AlertThrottle,
+  MailGrace,
   assessEventBusHealth,
   formatDownReport,
   readEventBusSnapshot,
@@ -17,6 +18,7 @@ import {
   requestSupervisorRestart,
   type EventBusWorkerSupervisorLike,
 } from '../lib/event-bus-worker-supervisor';
+import { loadLazyModule, sourceSpecifier } from '../lib/lazy-module';
 
 /**
  * El único vigilante del event bus que sobrevive a que el event bus se muera.
@@ -91,6 +93,20 @@ const minutesToMs = (value: string | undefined, fallback: number): number => {
 const alertThrottle = new AlertThrottle(
   minutesToMs(process.env.EVENT_BUS_MONITOR_ALERT_TTL_MINUTES, 30),
 );
+
+/**
+ * El período de gracia del MAIL (el log no se demora nunca). El porqué y la regla
+ * están en `MailGrace`, en `lib/event-bus-health.ts`.
+ */
+const mailGrace = new MailGrace();
+
+/**
+ * Gracia por arranque reciente. 10 minutos porque está MEDIDO: el boot del
+ * 2026-09-18 tardó 462 segundos en llegar a `Server is ready`, y el primer tick del
+ * cron cayó justo ahí. Menos que eso no cubriría el caso que motivó la gracia.
+ */
+const bootGraceMs = (): number =>
+  minutesToMs(process.env.EVENT_BUS_MONITOR_BOOT_GRACE_MINUTES, 10);
 
 /**
  * El "no aplica" se dice UNA vez por proceso y no cada cinco minutos.
@@ -207,43 +223,29 @@ type AdminRecipientModule = {
 };
 
 /**
- * El helper del destinatario, probando LAS DOS formas del especificador.
+ * El helper del destinatario.
  *
- * `'../modules/email/admin-recipient.js'` a secas venía FALLANDO SIEMPRE en
- * producción, y con la extensión de email perfectamente instalada. Log de
- * desdeelsur del 2026-09-09, en cada tick de la caída:
+ * Acá vivió un doble intento propio —`'…admin-recipient.js'` y después el mismo
+ * especificador sin extensión— que SEGUÍA FALLANDO en producción con el fix
+ * instalado. Log del boilerplate del 2026-09-18 12:28:03, en plena caída:
  *
- *   Cannot find module '/workspace/apps/backend/src/modules/email/admin-recipient.js'
- *     imported from /workspace/apps/backend/src/jobs/event-bus-monitor.ts
+ *   [event-bus-monitor] no se pudo resolver el destinatario por el módulo de email
+ *   (Cannot find module '…/modules/email/admin-recipient.js' …). Se sigue con la env.
  *
- * Mirá los DOS paths: el job corre desde `src/` —no desde `dist/`—, así que el
- * `.js` resuelve al lado del `.ts` y ahí ese archivo no existe. El comentario
- * original decía que apuntaba al build; no apuntaba. Resultado: el monitor
- * detectó la caída en cada tick durante ~50 minutos y el aviso murió en el log
- * con "no hay destinatario configurado", teniendo `info@desdelsur.com.ar`
- * configurado todo el tiempo. Un `catch` vacío lo tapó hasta que se le puso un
- * log (PR #1001) y entonces la causa apareció en el primer tick.
+ * Las dos ramas eran `import()`, o sea el mismo mecanismo ESM, y el resolver ESM de
+ * Node no inventa extensiones: en producción el archivo en disco es `.ts`. La forma
+ * que SÍ resuelve —`require()` sin extensión, que es lo que la propia Medusa usa—
+ * y la medición que lo demuestra están en `lib/lazy-module.ts`.
  *
- * Se prueban las dos porque las dos son legítimas según cómo se ejecute: `.js`
- * cuando corre el build (`moduleResolution: nodenext` lo exige al compilar), sin
- * extensión cuando corre el fuente con strip de tipos. Un `catch` por rama y el
- * motivo de cada una viaja al llamador, que ahora lo loguea.
+ * Sigue siendo diferido: `modules/email/` lo posee la extensión `email-templates` y
+ * este job es infraestructura de base (ver la nota de `resolveRecipient`).
  */
 async function importAdminRecipient(): Promise<AdminRecipientModule> {
-  try {
-    return (await import('../modules/email/admin-recipient.js')) as AdminRecipientModule;
-  } catch (jsError) {
-    try {
-      // Runtime-only source fallback: NodeNext resolves the compiled .js import
-      // above, while the source loader resolves this extensionless specifier.
-      const sourceModule: string = '../modules/email/admin-recipient';
-      return (await import(sourceModule)) as AdminRecipientModule;
-    } catch {
-      // Se propaga el error de la PRIMERA forma: es la que aplica en producción
-      // compilada, así que es el mensaje que hay que leer si algún día falla ahí.
-      throw jsError;
-    }
-  }
+  return loadLazyModule<AdminRecipientModule>(
+    'el destinatario de aviso del módulo de email',
+    () => require('../modules/email/admin-recipient'),
+    () => import(sourceSpecifier('../modules/email/admin-recipient')),
+  );
 }
 
 /**
@@ -275,14 +277,9 @@ async function resolveRecipient(
 ): Promise<string | null> {
   try {
     /**
-     * El `.js` no es un descuido: el paquete es CommonJS (`package.json` sin
-     * `"type": "module"`), así que un `import()` es un import ESM de verdad y con
-     * `moduleResolution: nodenext` TypeScript EXIGE la extensión del archivo
-     * emitido (TS2835). Apunta al build (`dist/modules/email/admin-recipient.js`),
-     * que es lo que corre en producción.
-     *
-     * Y si algún día esa resolución cambiara, no rompe nada: cae en el `catch` y
-     * el aviso sale igual por `ADMIN_EMAIL` — el `logger.error` ni se entera.
+     * Si la resolución falla no rompe nada: cae en el `catch` y el aviso sale igual
+     * por `ADMIN_EMAIL` — el `logger.error` ni se entera. Lo que SÍ importa es que
+     * el motivo quede escrito, y por eso `loadLazyModule` nombra cada forma probada.
      */
     const { getAdminNotificationEmail } = await importAdminRecipient();
     const to = await getAdminNotificationEmail(container);
@@ -641,7 +638,14 @@ export default async function eventBusMonitorJob(container: MedusaContainer): Pr
     // Sólo se habla cuando hubo caída. En régimen normal el monitor es mudo: si
     // dijera "todo bien" cada cinco minutos, nadie leería el log donde va a estar
     // la línea que importa.
-    if (alertThrottle.reset()) {
+    //
+    // Los DOS reset importan: cuando el único rastro de la caída fue un mail
+    // postergado —el blip que se cura en un segundo— el throttle nunca se tocó, y
+    // sin mirar la gracia perderíamos la línea de RECUPERADO justo en el caso que
+    // esta gracia vino a manejar.
+    const hadAlert = alertThrottle.reset();
+    const hadDeferred = mailGrace.reset();
+    if (hadAlert || hadDeferred) {
       logger.info(`[event-bus-monitor] RECUPERADO: el bus vuelve a consumir (${verdict.detail}).`);
     }
     return;
@@ -658,20 +662,47 @@ export default async function eventBusMonitorJob(container: MedusaContainer): Pr
 
   // El estado del supervisor va en el mismo aviso: dice si el worker ya se está
   // reconstruyendo solo (y cuántas veces lo hizo) o si esto es una caída de verdad.
-  const supervisorLine =
-    resolved.ok && resolved.supervisor
-      ? `\n\nSupervisor del worker: ${describeSupervisor(resolved.supervisor.snapshot())}`
-      : '';
+  const supervisorSnapshot =
+    resolved.ok && resolved.supervisor ? resolved.supervisor.snapshot() : null;
+  const supervisorLine = supervisorSnapshot
+    ? `\n\nSupervisor del worker: ${describeSupervisor(supervisorSnapshot)}`
+    : '';
   const text = (report ?? verdict.detail) + supervisorLine;
-  if (!alertThrottle.shouldEmit(verdict.kind)) return;
 
+  /**
+   * La gracia se consulta ANTES que el throttle, y el `||` corta a propósito: en el
+   * tick que posterga NO se llama a `shouldEmit`, así que el throttle queda intacto
+   * y el tick siguiente entra como primera detección y manda el mail. Al revés
+   * —consumiendo el slot del throttle acá— el aviso de una caída real se habría
+   * comido los 30 minutos de la ventana sin haber mandado nada.
+   */
+  const deferral = mailGrace.consider({
+    kind: verdict.kind,
+    supervisor: supervisorSnapshot,
+    uptimeMs: process.uptime() * 1000,
+    bootGraceMs: bootGraceMs(),
+  });
+  if (!deferral.defer && !alertThrottle.shouldEmit(verdict.kind)) return;
+
+  // La DETECCIÓN se registra siempre, postergue o no: lo que espera es el correo,
+  // no el diagnóstico.
   logger.error(`[event-bus-monitor] ${text}`);
-  await mailAdmin(
-    container,
-    logger,
-    `[ALERTA] El event bus no está consumiendo (${verdict.kind})`,
-    text,
-  );
+
+  if (deferral.defer) {
+    logger.error(
+      `[event-bus-monitor] El mail NO sale todavía: ${deferral.reason} ` +
+        'Si esto fue un parpadeo, el tick siguiente va a decir RECUPERADO y nadie ' +
+        'recibe nada; si no, el aviso sale con 5 minutos de atraso sobre una caída ' +
+        'que históricamente duró horas.',
+    );
+  } else {
+    await mailAdmin(
+      container,
+      logger,
+      `[ALERTA] El event bus no está consumiendo (${verdict.kind})`,
+      text,
+    );
+  }
 
   /**
    * El re-arme va DESPUÉS de avisar, y el orden importa: si el arranque prende, el

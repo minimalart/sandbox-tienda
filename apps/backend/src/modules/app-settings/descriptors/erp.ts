@@ -45,6 +45,12 @@ import { defineSettings } from './types';
  *     cuando no encuentra el nombre (`import-vtex.ts:112-126`). O sea que el
  *     riesgo de "se pega un ID inválido y falla en silencio" no aplica: acá falla
  *     a los gritos, que es exactamente lo que uno quiere de un script.
+ *
+ *  3. EL TOKEN DEL WEBHOOK DE ODOO. `ERP_ODOO_WEBHOOK_TOKEN` es un secreto
+ *     COMPARTIDO: la ruta lo compara contra el header que manda Odoo. Rotarlo
+ *     desde el admin dejaria a las dos puntas con secretos distintos hasta que
+ *     alguien entre a Odoo, asi que se rota en los dos lados a la vez, en el
+ *     entorno.
  */
 export default defineSettings({
   namespace: 'extension:erp',
@@ -78,6 +84,11 @@ export default defineSettings({
       key: 'ERP_OUTBOX_CRON',
       reason:
         'Medusa hornea el cron al arrancar (job-loader.js:69-78): no se puede reprogramar en runtime. Default `* * * * *` (cada minuto) en jobs/erp-outbox-processor.ts:41. Es el latido del outbox: bajarle la frecuencia retrasa TODO lo que el ERP tiene que empujar, no una parte.',
+    },
+    {
+      key: 'ERP_ODOO_WEBHOOK_TOKEN',
+      reason:
+        'Secreto COMPARTIDO con el lado de Odoo: el webhook de stock compara el header contra esta variable (api/webhooks/erp-odoo/stock/route.ts:74). No baja a la base porque cambiarlo desde el admin dejaria a las dos puntas con secretos distintos hasta que alguien toque Odoo; se rota en el entorno y en la automatizacion, juntos. Vacio = el endpoint acepta cualquier request, asi que en produccion va seteada.',
     },
     {
       key: 'DEFAULT_CURRENCY_CODE',

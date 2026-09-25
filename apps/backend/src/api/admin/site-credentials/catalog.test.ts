@@ -61,7 +61,7 @@ test('las claves del catálogo son las que el provider desestructura', () => {
       'sellerId',
       'customerId',
     ],
-    kapso: ['apiKey', 'baseUrl'],
+    kapso: ['apiKey', 'baseUrl', 'phoneNumberId'],
   };
 
   for (const [integration, keys] of Object.entries(expected)) {

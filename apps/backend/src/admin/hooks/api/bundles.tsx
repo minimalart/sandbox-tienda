@@ -99,6 +99,7 @@ export const useCreateBundle = (
 ) => {
   const qc = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (payload) =>
       sdk.client.fetch<{ bundle: Bundle }>('/admin/bundles', {
         method: 'POST',
@@ -108,7 +109,6 @@ export const useCreateBundle = (
       qc.invalidateQueries({ queryKey: bundlesQueryKeys.lists() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -120,6 +120,7 @@ export const useUpdateBundle = (
 ) => {
   const qc = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (payload) =>
       sdk.client.fetch<{ bundle: Bundle }>(`/admin/bundles/${id}`, {
         method: 'POST',
@@ -130,7 +131,6 @@ export const useUpdateBundle = (
       qc.invalidateQueries({ queryKey: bundlesQueryKeys.detail(id) });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -139,6 +139,7 @@ export const useDeleteBundle = (
 ) => {
   const qc = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (id) =>
       sdk.client.fetch<{ id: string; deleted: true; object: 'bundle' }>(`/admin/bundles/${id}`, {
         method: 'DELETE',
@@ -147,7 +148,6 @@ export const useDeleteBundle = (
       qc.invalidateQueries({ queryKey: bundlesQueryKeys.lists() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -157,6 +157,7 @@ export const usePublishBundle = (
 ) => {
   const qc = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: () =>
       sdk.client.fetch<{ bundle: Bundle }>(`/admin/bundles/${id}/publish`, { method: 'POST' }),
     onSuccess: (data, variables, context) => {
@@ -164,6 +165,5 @@ export const usePublishBundle = (
       qc.invalidateQueries({ queryKey: bundlesQueryKeys.detail(id) });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };

@@ -246,6 +246,10 @@ export const homeConfig: Config = {
           { label: 'Carrusel', value: 'carousel' },
           { label: 'Grilla de 4', value: 'grid-4' },
         ]),
+        withBundles: select('Kits de la tienda', [
+          { label: 'Primero los kits, después los productos', value: 'yes' },
+          { label: 'Solo productos', value: 'no' },
+        ]),
         viewAllLabel: text('Botón "ver todas" — texto (opcional)'),
         viewAllHref: text('Botón "ver todas" — link'),
       },
@@ -262,6 +266,10 @@ export const homeConfig: Config = {
         sortBy: '',
         cardVariant: 'default',
         layout: 'carousel',
+        // Los kits publicados de la tienda abren la fila (PRD Bundles V2 §40):
+        // una tienda sin kits no ve nada distinto, y la que no los quiere en
+        // ESTA fila lo apaga acá.
+        withBundles: 'yes',
         viewAllLabel: '',
         viewAllHref: '/store',
       },
@@ -618,7 +626,9 @@ export const homeConfig: Config = {
 let _seq = 0;
 const b = (type: string, props: Record<string, any> = {}) => ({
   type,
-  props: { id: `${type}-${++_seq}`, ...props },
+  // Null means inherit the store configuration. Omitted keys would let Puck
+  // inject its "new block" example copy over the actual store's content.
+  props: { ...Object.fromEntries(Object.keys(homeConfig.components[type]?.defaultProps ?? {}).map(key => [key, null])), id: `${type}-${++_seq}`, ...props },
 });
 
 const groceryLayout = {
@@ -626,13 +636,15 @@ const groceryLayout = {
   content: [
     b('Banners'),
     b('ShopByLook', { slot: 'top' }),
-    b('Categorias', { title: 'Comprá por categoría', subtitle: '', collections: [], viewAllTitle: '', viewAllHref: '/store' }),
-    b('Marcas', { title: 'Nuestras marcas', subtitle: '' }),
+    b('Categorias'),
+    b('ShopByLook', { slot: 'after_collections' }),
+    b('BannerPromo'),
+    b('Marcas'),
     b('ProductosDestacados', { preset: 'featuredProducts', cardVariant: 'default', viewAllHref: '/store' }),
-    b('Combos', { title: 'Combos y cajas', kits: [] }),
+    b('ShopByLook', { slot: 'after_featured' }),
+    b('Combos'),
     b('ProductosDestacados', { preset: 'novedades', cardVariant: 'compact', viewAllHref: '/store' }),
-    b('Blog', { title: '', subtitle: '', featuredCtaLabel: 'Leer nota', ctaLabel: 'Leer nota', viewAllLabel: 'Ver todas las notas' }),
-    b('MasCategorias', { title: 'Conocé más categorías', items: [], viewAllHref: '/store' }),
+    b('MasCategorias'),
     b('Videos'),
     b('ShopByLook', { slot: 'before_footer' }),
   ],
@@ -678,4 +690,92 @@ export const DEFAULT_HOME_LAYOUT: Record<string, { root: any; content: any[] }> 
   campaign: campaignLayout,
 };
 
+export function homeConfigForTemplate(template?: string, language = 'es'): Config {
+  if (template && templateSections[template]) {
+    const components = homeConfig.components;
+    return { ...homeConfig, categories: { template: { title: language.startsWith('en') ? 'Template' : 'Plantilla', components: ['TemplateSection', 'Hero', 'RichText', 'ImageBlock', 'CTA', 'Spacer'] } }, components: {
+      ...components,
+      TemplateSection: {
+        label: language.startsWith('en') ? 'Template section' : 'Sección de la plantilla',
+        fields: { section: { type: 'select', label: language.startsWith('en') ? 'Section (content from store settings)' : 'Sección (contenido desde la configuración de la tienda)', options: templateSections[template].map((label, index) => ({ label, value: String(index + 1) })) } },
+        defaultProps: { section: '1' }, render: () => <></>,
+      },
+    } } as Config;
+  }
+  return homeConfig;
+}
+
 export default homeConfig;
+const templateSections: Record<string, string[]> = {
+  "technology": [
+    "Hero",
+    "Categorías",
+    "Marcas",
+    "Productos",
+    "Promociones",
+    "Usos",
+    "Banner",
+    "Beneficios",
+    "Newsletter"
+  ],
+  "fashion": [
+    "Hero",
+    "Looks: inicio",
+    "Colecciones",
+    "Looks: colecciones",
+    "Campaña",
+    "Novedades",
+    "Looks: productos",
+    "Categorías",
+    "Lookbook",
+    "Destacados",
+    "Temporada",
+    "Looks: cierre",
+    "Newsletter"
+  ],
+  "tech-retail": [
+    "Hero",
+    "Categorías",
+    "Marcas",
+    "Financiación",
+    "Productos",
+    "Gaming",
+    "Home office",
+    "Beneficios",
+    "Newsletter"
+  ],
+  "sports": [
+    "Hero",
+    "Looks: inicio",
+    "Marcas",
+    "Deportes",
+    "Calzado",
+    "Looks: productos",
+    "Colecciones",
+    "Looks: colecciones",
+    "Indumentaria",
+    "Categorías",
+    "Campaña",
+    "Remeras",
+    "Lookbook",
+    "Looks: cierre"
+  ]
+};
+for (const [template, sections] of Object.entries(templateSections)) {
+  DEFAULT_HOME_LAYOUT[template] = { root: { props: {} }, content: sections.map((label, index) => b('TemplateSection', { section: String(index + 1) })) };
+}
+
+/** Preserve saved Puck content; only seed from store settings when no document exists. */
+export function defaultHomeForStore(store: { template_code: string; is_main?: boolean | null; content_config?: any }) {
+  const seed = DEFAULT_HOME_LAYOUT[store.template_code];
+  if (seed && store.is_main && store.template_code === 'supermercado') {
+    const content = seed.content.filter(block => block.type !== 'MasCategorias' && block.type !== 'Videos' && !(block.type === 'ShopByLook' && block.props.slot === 'before_footer'));
+    return { ...seed, content: [...content, b('Blog'), b('Videos'), b('ProductosDestacados', { preset: 'renovaEnergia', cardVariant: 'compact', onlyPromotions: true, maxItems: 4, viewAllLabel: 'Ver todas las promociones', viewAllHref: '/store?promos=1' }), b('MasCategorias'), b('ProductosDestacados', { preset: 'destacadosDelMes' }), b('ShopByLook', { slot: 'before_footer' })] };
+  }
+  if (!seed || store.template_code !== 'campaign') return seed;
+  const hero = store.content_config?.campaign?.hero;
+  if (!hero) return seed;
+  return { ...seed, content: seed.content.map(block => block.type !== 'CampaignHero' ? block : {
+    ...block, props: { ...block.props, ...hero, ...(hero.primaryCta ? { ctaText: hero.primaryCta.text, ctaHref: hero.primaryCta.href } : {}) },
+  }) };
+}

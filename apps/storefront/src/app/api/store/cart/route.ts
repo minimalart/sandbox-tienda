@@ -3,6 +3,7 @@ import {
   addCartLineItem,
   updateCartLineItem,
   removeCartLineItem,
+  removeCartBundleInstance,
   updateCart,
   updateCartAddresses,
   addGuestCartAddress,
@@ -176,6 +177,23 @@ export async function POST(request: Request) {
         )
       }
       const result = await removeCartLineItem(lineId)
+      return NextResponse.json({
+        cart: result.cart,
+        success: result.success,
+        message: result.error,
+      })
+    }
+
+    // Sacar un kit entero (todas sus líneas) en una sola operación
+    if (action === 'deleteBundle') {
+      const { bundleInstanceId } = body
+      if (!bundleInstanceId) {
+        return NextResponse.json(
+          { message: 'bundleInstanceId is required' },
+          { status: 400 },
+        )
+      }
+      const result = await removeCartBundleInstance(bundleInstanceId)
       return NextResponse.json({
         cart: result.cart,
         success: result.success,

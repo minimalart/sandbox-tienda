@@ -1,5 +1,5 @@
 import type { EmailTemplateFunction, EmailTemplateResult } from './types';
-import { hexToRgba, getIconSrc } from './email-helpers';
+import { hexToRgba, getIconSrc, copyrightLine, storeDisplayName, subjectWithStore } from './email-helpers';
 
 export type TrackingMilestone =
     | 'payment_confirmed'
@@ -158,9 +158,8 @@ export const orderTrackingTemplate: EmailTemplateFunction<OrderTrackingData> = (
 ): EmailTemplateResult => {
   const milestone = (data.current_milestone as TrackingMilestone | undefined) ?? 'payment_confirmed';
   const displayId = data.custom_display_id ?? data.display_id ?? data.order_id ?? '';
-  const channelName = data.sales_channel_name || data.sales_channel_id || '';
   const logoUrl = data.logo_url || '';
-  const cdeDisplayName = (data.cde_display_name || channelName || 'CDE').trim();
+  const cdeDisplayName = storeDisplayName(data);
   const orderDate = data.order_date_formatted || '';
   const primaryColor = (data.primary_color as string | undefined) || '#2e7d32';
   const customerName = (data.customer_name || '').trim();
@@ -172,6 +171,14 @@ export const orderTrackingTemplate: EmailTemplateFunction<OrderTrackingData> = (
   const titleSub = MILESTONE_SUBTITLE[milestone] ?? '';
 
   const year = new Date().getFullYear();
+
+  // Sin logo y sin nombre de tienda, la cabecera se omite: un título de 24px
+  // vacío deja un hueco, pero inventar una marca manda la de otro cliente.
+  const brandHeader = logoUrl
+    ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="200" style="display:block;margin:0 auto;-ms-interpolation-mode:bicubic;border:0;height:auto;line-height:100%;outline:none;text-decoration:none;">`
+    : cdeDisplayName
+      ? `<div style="font-size:24px;font-weight:700;color:${primaryColor};">${cdeDisplayName}</div>`
+      : '';
 
   const shippingName = [shipping?.first_name, shipping?.last_name].filter(Boolean).join(' ').trim();
   const shippingStreet = [shipping?.address_1, shipping?.address_2].filter(Boolean).join(', ').trim();
@@ -216,9 +223,7 @@ export const orderTrackingTemplate: EmailTemplateFunction<OrderTrackingData> = (
 
           <tr>
             <td style="padding:40px 20px 20px 20px;text-align:center;mso-table-lspace:0pt;mso-table-rspace:0pt;">
-              ${logoUrl
-                ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="200" style="display:block;margin:0 auto;-ms-interpolation-mode:bicubic;border:0;height:auto;line-height:100%;outline:none;text-decoration:none;">`
-                : `<div style="font-size:24px;font-weight:700;color:${primaryColor};">${cdeDisplayName}</div>`}
+              ${brandHeader}
             </td>
           </tr>
 
@@ -281,7 +286,7 @@ export const orderTrackingTemplate: EmailTemplateFunction<OrderTrackingData> = (
 
           <tr>
             <td style="padding:20px;background-color:${primaryColor};text-align:center;mso-table-lspace:0pt;mso-table-rspace:0pt;">
-              <p style="margin:0;color:#ffffff;font-size:12px;">© ${year} ${cdeDisplayName}. Todos los derechos reservados.</p>
+              <p style="margin:0;color:#ffffff;font-size:12px;">${copyrightLine(year, cdeDisplayName)}</p>
             </td>
           </tr>
 
@@ -293,9 +298,7 @@ export const orderTrackingTemplate: EmailTemplateFunction<OrderTrackingData> = (
 </html>`.trim();
 
   return {
-    subject: channelName
-      ? `[${channelName}] ${subject} #${displayId}`
-      : `[Mercatto] ${subject} #${displayId}`,
+    subject: subjectWithStore(`${subject} #${displayId}`, data),
     html,
   };
 };

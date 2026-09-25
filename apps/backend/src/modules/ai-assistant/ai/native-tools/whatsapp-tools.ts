@@ -10,8 +10,11 @@ import {
   listWaPinnedProducts,
   listWaFilteredProducts,
   resolveWaVariantId,
+  waHitsToOptions,
+  waMoney,
 } from '../../../../lib/whatsapp/search-products';
 import { groupHitsByProduct } from '../../../../lib/whatsapp/group-hits';
+import { storefrontOrigins } from '../../../../lib/multistore/public-url';
 import {
   isEmptyCatalogFilter,
   type WaCatalogFilter,
@@ -25,7 +28,10 @@ import {
 // workflow via its `./workflows/*` subpath export.
 import { createCheckoutLinkWorkflow } from '@minimalart/mercatto-plugin-checkout-links/workflows/create-checkout-link';
 import { getAdminNotificationEmail } from '../../../email/admin-recipient';
-import { sendWhatsappList, sendWhatsappImage, sendWhatsappButtons, sendWhatsappCarousel } from '../../../../lib/whatsapp/send-whatsapp-text';
+import { STORE_CONFIG_MODULE } from '../../../store-config';
+import type StoreConfigModuleService from '../../../store-config/service';
+import { missingForMinimum } from '../../../store-config/minimum-purchase';
+import { sendWhatsappList, sendWhatsappImage, sendWhatsappButtons, sendWhatsappCarousel, sendWhatsappText } from '../../../../lib/whatsapp/send-whatsapp-text';
 import { resolveWaCustomer } from '../../../../lib/whatsapp/resolve-customer';
 import { createOrderReturn, resolveReturnShippingOption } from '../../../../lib/returns/create-return';
 import { getKapsoSettings } from '../../../kapso-whatsapp/settings';
@@ -34,6 +40,7 @@ import type WhatsappAgentModuleService from '../../../whatsapp-agent/service';
 import { trackWaEvent } from '../../../../lib/whatsapp/events';
 import type { WaEventType } from '../../../whatsapp-agent/event-log/types';
 import { startAdvisor, sanitizeExtractedFilters } from '../../../../lib/whatsapp/advisor/flow';
+import { answerOrderLookup } from '../../../../lib/whatsapp/order-lookup';
 
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
 const int = (v: unknown, def: number): number => {
@@ -41,15 +48,27 @@ const int = (v: unknown, def: number): number => {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : def;
 };
 
-function money(amount: number | null | undefined, currency: string): string {
-  if (amount == null) return 's/precio';
-  const n = Number(amount);
-  if (!Number.isFinite(n)) return 's/precio';
-  return `$${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ${currency.toUpperCase()}`;
-}
+/**
+ * El formateo se mudó a `lib/whatsapp/search-products` para que la PRUEBA del editor
+ * muestre exactamente el mismo texto que recibe el cliente. Acá queda el alias porque
+ * lo usan una docena de mensajes de este archivo.
+ */
+const money = waMoney;
 
-const storefrontBase = () =>
-  (process.env.STOREFRONT_URL || process.env.NEXT_PUBLIC_BASE_URL || '').replace(/\/$/, '');
+/**
+ * Origen público del storefront, por el MISMO camino que el resto del repo.
+ *
+ * Leía `process.env.STOREFRONT_URL` directo, y esa no es la fuente editable: la
+ * base pública vive en la fila `MULTISTORE_PUBLIC_BASE_URL` de la card de
+ * Multitienda, y `storefrontOrigins` resuelve la cascada fila → env → env. El bot
+ * era el único que no la miraba, así que una tienda que cambiaba su dominio desde
+ * el admin lo veía aplicado en todos lados menos en los links de WhatsApp.
+ *
+ * El fallback es '' y NO el `http://localhost:3000` del helper: sin nada
+ * configurado se prefiere un path relativo —que es lo que devolvía antes— a
+ * mandarle a un cliente un link a localhost.
+ */
+const storefrontBase = () => storefrontOrigins('').base.replace(/\/$/, '');
 
 /** Réplica local de buildPublicUrl (evita importar desde src/api hacia el módulo). */
 function checkoutUrl(token: string, country: string): string {
@@ -287,6 +306,24 @@ export const WHATSAPP_TOOL_DEFS: NativeToolDef[] = [
     },
   },
   {
+    name: NATIVE_TOOL.waLookupOrder,
+    description:
+      'Consulta el ESTADO de un pedido con su número y el email de la compra. Sólo muestra datos si los dos corresponden a la misma orden; si no, contesta lo mismo exista o no el pedido. Es para los recorridos dibujados: los valores salen de las respuestas del cliente, no los inventes.',
+    parameters: {
+      type: 'object',
+      properties: {
+        order_number: { type: 'string', description: 'Lo que escribió el cliente como número de pedido ("1234", "#1234", "el 1234").' },
+        email: { type: 'string', description: 'El email con el que se hizo la compra.' },
+        save_as: {
+          type: 'string',
+          description: 'Clave de `vars` donde se publica la respuesta en vez de mandarla. Vacío = la manda la acción.',
+        },
+      },
+      required: ['order_number', 'email'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: NATIVE_TOOL.waClearCart,
     description:
       'Vacía TODO el pedido en armado (borra todos los ítems). Usalo cuando el cliente quiere "empezar de nuevo", "arrancar un pedido nuevo", "vaciar el carrito" o descartar lo que había. Confirmá brevemente después.',
@@ -341,13 +378,7 @@ async function runSearch(args: Record<string, unknown>, ctx: NativeToolContext):
   if (saveAs) {
     if (!ctx.waFlowVars) return 'Publicar la búsqueda en una variable sólo sirve dentro de un recorrido dibujado.';
     const { hits: crudos, ctx: oc } = await searchWaProducts(ctx.container, { query, limit: 30 });
-    const opciones = groupHitsByProduct(crudos)
-      .slice(0, 10)
-      .map((h) => ({
-        value: h.variant_id,
-        label: `${h.title} · ${money(h.unit_price, oc.currency_code)}`,
-        ...(h.in_stock ? {} : { description: 'Sin stock' }),
-      }));
+    const opciones = waHitsToOptions(groupHitsByProduct(crudos).slice(0, 10), oc.currency_code);
     ctx.waFlowVars[saveAs] = opciones;
     track(ctx, 'search', { query, count: opciones.length, mode: 'vars' });
     if (opciones.length === 0) {
@@ -377,7 +408,19 @@ async function runSearch(args: Record<string, unknown>, ctx: NativeToolContext):
   track(ctx, 'search', { query, count: hits.length, variants: crudos.length });
   if (hits.length === 0) {
     track(ctx, 'no_results', { query });
-    return `No encontré productos para "${query}". Pedile al cliente que lo nombre de otra forma o preguntá qué está buscando.`;
+    /**
+     * CERO RESULTADOS ES UNA RESPUESTA, NO UN HUECO PARA RELLENAR.
+     *
+     * Ante un producto que la tienda no vende, el agente contestaba con
+     * conocimiento general —qué tipo de pintura lleva una pileta— en vez de decir
+     * que no lo tiene (DESDEELSUR-72, TC-009). Eso le hace creer al cliente que se
+     * lo pueden vender.
+     *
+     * La regla va ACÁ y no sólo en el prompt del agente a propósito: el prompt es
+     * una fila de la base que cada tienda edita (o recrea, y se pierde), y este
+     * texto llega en el momento exacto en que la tentación aparece.
+     */
+    return `El catálogo NO tiene nada para "${query}". Decíselo con esas palabras: que no lo tenemos disponible. PROHIBIDO recomendar o describir un producto que la búsqueda no devolvió, aunque sepas cuál serviría: el cliente sólo puede comprar lo que está en el catálogo. Ofrecé buscarlo de otra forma, preguntá qué necesita, o derivá con wa_handoff_to_human.`;
   }
 
   // Preferimos un CARRUSEL con fotos (tarjeta = imagen + nombre/precio + botón
@@ -435,18 +478,33 @@ async function runSearch(args: Record<string, unknown>, ctx: NativeToolContext):
     variant_ids: hits.map((h) => h.variant_id),
   });
 
+  /**
+   * EL DETALLE QUE LEE EL MODELO. Dos decisiones, las dos por bugs medidos:
+   *
+   * 1. VA CON EL LINK a la ficha. Antes acá no había NINGÚN link, en ningún turno:
+   *    el único que mandaba uno era `wa_product_detail`, y sólo si el cliente pedía
+   *    la foto de un producto puntual. O sea que cuando el agente ofrecía "te paso
+   *    el link" estaba prometiendo algo que no tenía cómo cumplir — QA lo registró
+   *    tres veces (DESDEELSUR-72, TC-001/002/006).
+   *
+   * 2. NO VA NUMERADO, con viñetas. El prompt del bot prohíbe explícitamente
+   *    contestar "1) … 2) …" porque las opciones van en lista o botones nativos, y
+   *    este mismo texto venía numerado — y el fallback de abajo llegaba a PEDIRLE
+   *    al modelo una "lista numerada". El formato inconsistente del TC-007 estaba
+   *    escrito acá: la tool contradecía al prompt.
+   */
   const compact = hits
-    .map(
-      (h, i) =>
-        `${i + 1}. ${h.title} — ${money(h.unit_price, oc.currency_code)}${h.in_stock ? '' : ' (sin stock)'} [variant_id: ${h.variant_id}]`,
-    )
+    .map((h) => {
+      const link = h.handle ? ` ${productUrl(h.handle, oc.country_code)}` : '';
+      return `• ${h.title} — ${money(h.unit_price, oc.currency_code)}${h.in_stock ? '' : ' (sin stock)'} [variant_id: ${h.variant_id}]${link}`;
+    })
     .join('\n');
 
   if (sent) {
     ctx.sentUserMessage = true;
-    return `Ya le mostré al cliente estas ${hits.length} opciones con sus fotos y precios (elige tocando "Agregar"):\n${compact}\nNO respondas nada más: las opciones ya se enviaron. Cuando toque una, te llega la variante seleccionada. (NO mandes foto por tu cuenta: wa_product_detail SOLO si el cliente pide ver/foto de un producto puntual.)`;
+    return `Ya le mostré al cliente estas ${hits.length} opciones con sus fotos y precios (elige tocando "Agregar"):\n${compact}\nNO respondas nada más: las opciones ya se enviaron. Cuando toque una, te llega la variante seleccionada. (NO mandes foto por tu cuenta: wa_product_detail SOLO si el cliente pide ver/foto de un producto puntual. Los links son SÓLO para cuando el cliente pida uno: no los pegues ahora.)`;
   }
-  return `Encontré estas opciones (mostráselas al cliente como lista numerada, sin inventar nada):\n${compact}\nSi quiere ver una con foto, usá wa_product_detail. Cuando el cliente elija producto, agregá con wa_add_to_cart usando el variant_id.`;
+  return `Encontré estas opciones. La lista interactiva NO se pudo enviar, así que pasáselas al cliente en texto con VIÑETAS (nunca numeradas, nunca "respondé con el número") y sin inventar nada:\n${compact}\nSi quiere ver una con foto, usá wa_product_detail. Cuando el cliente elija producto, agregá con wa_add_to_cart usando el variant_id.`;
 }
 
 async function runProductDetail(args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
@@ -811,12 +869,101 @@ async function runSetQuantity(args: Record<string, unknown>, ctx: NativeToolCont
   return `OK: ${name} quedó en ${qty}. Confirmale al cliente y preguntá si quiere *algo más* o *cerrar la compra*. NO enumeres opciones en texto.`;
 }
 
+/**
+ * Cuánto le falta al pedido para llegar al mínimo de compra, o `null` si no hay
+ * mínimo vigente, si ya lo alcanza o si los montos no son comparables.
+ *
+ * ── POR QUÉ ESTE GATE EXISTE (DESDEELSUR-72, TC-013) ────────────────────────
+ *
+ * El storefront exige el mínimo antes de dejar pagar; el bot no lo miraba nunca.
+ * Generaba el link igual por debajo del mínimo y, cuando el cliente avisaba, el
+ * modelo reconocía que había un mínimo pero no tenía el VALOR en ningún lado, así
+ * que contestaba con alternativas genéricas. En desdeelsur el mínimo vigente es
+ * de $160.000: cada link por debajo era un checkout que el storefront iba a
+ * rechazar, con el carrito ya armado.
+ *
+ * ── FALLA ABIERTA, A PROPÓSITO ─────────────────────────────────────────────
+ *
+ * Si store-config no está instalado o la consulta falla, NO se bloquea: se deja
+ * pasar y se loguea. Voltear todas las ventas del bot por un problema de
+ * configuración es peor que dejar pasar un pedido corto — que además el checkout
+ * del storefront vuelve a validar. (La moneda distinta la resuelve igual, y por
+ * la misma razón, `missingForMinimum`.)
+ */
+async function missingForMinimumPurchase(
+  ctx: NativeToolContext,
+  subtotal: number,
+  currency: string,
+): Promise<{ missing: number; amount: number } | null> {
+  try {
+    const storeConfig = ctx.container.resolve(STORE_CONFIG_MODULE) as StoreConfigModuleService;
+    const minimum = await storeConfig.getEffectiveMinimumPurchase(ctx.waSiteId ?? null);
+    return missingForMinimum(minimum, subtotal, currency);
+  } catch (err) {
+    const logger = ctx.container.resolve<Logger>(ContainerRegistrationKeys.LOGGER);
+    logger.warn(`[WhatsApp bot] No pude leer el mínimo de compra: ${(err as Error).message}`);
+    return null;
+  }
+}
+
 async function runCheckoutLink(args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
   const phone = str(ctx.waPhone);
   if (!phone) return 'Error: no hay conversación de WhatsApp asociada.';
   const service = svc(ctx);
   const draft = await service.getDraft(phone);
   if (draft.length === 0) return 'El pedido está vacío: agregá productos antes de generar el link de pago.';
+
+  /**
+   * El subtotal sale de `buildDraftSummary` —y no de una cuenta propia— para que
+   * sea EXACTAMENTE el número que el cliente acaba de ver en "Este es tu pedido".
+   * Un gate que compara contra otro total es una clase nueva de bug.
+   */
+  const saveAs = str(args.save_as);
+
+  const summary = await buildDraftSummary(ctx, phone);
+  if (summary) {
+    const short = await missingForMinimumPurchase(ctx, summary.subtotal, summary.currency);
+    if (short) {
+      track(ctx, 'checkout_blocked', {
+        reason: 'minimum_purchase',
+        subtotal: summary.subtotal,
+        minimum: short.amount,
+        missing: short.missing,
+        currency: summary.currency,
+      });
+      const aviso =
+        `Tu pedido suma ${money(summary.subtotal, summary.currency)} y el mínimo de compra es de ` +
+        `${money(short.amount, summary.currency)}. Te faltan ${money(short.missing, summary.currency)} ` +
+        'para poder cerrarlo: agregá algo más y lo generamos.';
+
+      /**
+       * EN UN RECORRIDO DIBUJADO, BLOQUEAR SIN PUBLICAR NADA ES PEOR QUE NO
+       * BLOQUEAR.
+       *
+       * El gate del mínimo se agregó pensando en el agente, que LEE lo que devuelve
+       * la tool. En un recorrido no hay modelo: el paso siguiente es un mensaje con
+       * `{{vars.<clave>}}`, y una variable sin valor se reemplaza por VACÍO
+       * (`engine.ts`: "un cliente que recibe 'Hola {{customer_name}}' ve el andamio
+       * del sistema"). Además el runtime corre TODOS los pasos del plan aunque uno
+       * falle, así que el cierre sale igual.
+       *
+       * O sea que con el gate y sin esto, el cliente por debajo del mínimo recibía
+       * "Tu compra está lista para continuar. Abrí el enlace 👇" y después NADA —
+       * ni link ni motivo. Peor que antes del gate, que al menos daba un link.
+       * Reportado por QA sobre el recorrido "Compra guiada".
+       *
+       * Publicando el aviso en la MISMA variable, el mensaje de cierre dice por qué
+       * no hay link. Por eso el cierre del recorrido sembrado es sólo
+       * `{{vars.link_pago}}`: cualquier texto que lo enmarque dando la compra por
+       * hecha se vuelve mentira en este camino.
+       */
+      if (saveAs && ctx.waFlowVars) {
+        ctx.waFlowVars[saveAs] = aviso;
+        return `El pedido está por debajo del mínimo de compra: publiqué el aviso en vars.${saveAs} y NO generé el link.`;
+      }
+      return aviso;
+    }
+  }
 
   const row = await service.getOrCreate(phone);
   const oc = await resolveWaOrderContext(ctx.container);
@@ -873,7 +1020,6 @@ async function runCheckoutLink(args: Record<string, unknown>, ctx: NativeToolCon
    * (`{{vars.<clave>}}`), que además es lo que pide el flujo de referencia: el texto
    * del cierre es copy del negocio, no de la tool.
    */
-  const saveAs = str(args.save_as);
   if (saveAs && ctx.waFlowVars) {
     ctx.waFlowVars[saveAs] = url;
     return `Publiqué el link de pago en vars.${saveAs}.`;
@@ -1082,6 +1228,65 @@ async function runGuidedStart(args: Record<string, unknown>, ctx: NativeToolCont
 }
 
 /**
+ * "Mi pedido" dentro de un recorrido dibujado (DESDEELSUR-81).
+ *
+ * El router ya sabía hacerlo, pero con su propio estado (`awaiting_order_number` →
+ * `awaiting_order_email`) y FUERA del recorrido: la rama "Mi pedido" de Compra
+ * guiada tenía que cederle el turno y se perdía el dibujo. Acá las dos preguntas las
+ * hace el recorrido (`ask_text`) y esta acción sólo recibe las respuestas.
+ *
+ * La verificación NO es opcional ni configurable: no hay un modo "sólo número". Con
+ * el número solo, cualquiera leería el pedido de otra persona probando números
+ * (§28), así que el texto sale de `answerOrderLookup`, que no muestra nada hasta que
+ * número y email correspondan a la misma orden — y contesta IGUAL si el pedido no
+ * existe o si el email no coincide.
+ *
+ * Igual que `wa_checkout_link`: con `save_as` publica la respuesta —ENCONTRADA O
+ * NO— en la variable y no habla, para que el paso siguiente la enmarque. Sin
+ * `save_as` la manda ella. Nunca deja la variable sin escribir: el runtime corre
+ * todos los pasos del plan, y un mensaje con `{{vars.<clave>}}` vacío sería un
+ * turno mudo justo cuando el cliente espera una respuesta.
+ */
+async function runLookupOrder(args: Record<string, unknown>, ctx: NativeToolContext): Promise<string> {
+  const saveAs = str(args.save_as);
+  let answer: Awaited<ReturnType<typeof answerOrderLookup>>;
+  try {
+    answer = await answerOrderLookup(ctx.container, args.order_number, args.email);
+  } catch (err) {
+    const logger = ctx.container.resolve<Logger>(ContainerRegistrationKeys.LOGGER);
+    logger.warn(`[WhatsApp bot] Falló la consulta de pedido: ${(err as Error).message}`);
+    answer = {
+      outcome: 'not_found',
+      text: 'No pude consultar el pedido en este momento. Probá de nuevo en un rato, o decime *hablar con alguien* y te ayuda una persona del equipo.',
+    };
+  }
+
+  // Mismo evento que el camino del router, así el embudo cuenta las dos puertas juntas.
+  track(ctx, 'order_status', {
+    identified: false,
+    source: 'flow',
+    matched: answer.outcome === 'found',
+    ...(answer.outcome === 'found' ? { display_id: answer.displayId } : {}),
+    ...(answer.outcome === 'invalid' ? { invalid: answer.field } : {}),
+  });
+
+  if (saveAs && ctx.waFlowVars) {
+    ctx.waFlowVars[saveAs] = answer.text;
+    return `Publiqué la respuesta de la consulta (${answer.outcome}) en vars.${saveAs}.`;
+  }
+
+  const phone = str(ctx.waPhone);
+  if (!phone) return answer.text;
+  if (ctx.sentUserMessage) return `Ya le hablaste al cliente en este turno. La respuesta era:\n${answer.text}`;
+  const sent = await sendWhatsappText(phone, answer.text).catch(() => null);
+  if (sent) {
+    ctx.sentUserMessage = true;
+    return 'Ya le mandé al cliente la respuesta de la consulta de su pedido. NO respondas nada más.';
+  }
+  return `No pude enviar el mensaje. Mandale esto al cliente:\n${answer.text}`;
+}
+
+/**
  * Dispatcher de las tools de WhatsApp. Devuelve el texto del resultado, o
  * `undefined` si `name` no es una tool de este set (para que el switch principal
  * siga con las demás).
@@ -1126,6 +1331,8 @@ export async function runWhatsappNativeTool(
       return runListFiltered(args, ctx);
     case NATIVE_TOOL.waGuidedStart:
       return runGuidedStart(args, ctx);
+    case NATIVE_TOOL.waLookupOrder:
+      return runLookupOrder(args, ctx);
     default:
       return undefined;
   }

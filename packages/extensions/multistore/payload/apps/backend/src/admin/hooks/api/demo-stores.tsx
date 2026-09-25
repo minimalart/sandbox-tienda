@@ -163,6 +163,14 @@ export interface DemoContentConfig {
    * 'express' (default, redirect), 'api' (embedded Payment Brick), or 'both'.
    */
   mercadopagoCheckoutMode?: 'api' | 'express' | 'both';
+  /** Cart drawer feature toggles. Absent = storefront defaults win. */
+  cart?: {
+    /**
+     * "Recommended products carousel" del minicart. Ausente/true = visible en
+     * ambos estados (con items y vacío). Sólo `false` explícito lo esconde.
+     */
+    recommendationsCarousel?: boolean;
+  };
 }
 
 export interface ImportJob {
@@ -478,6 +486,7 @@ export const useCreateDemoStore = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: AdminCreateDemoStore) =>
       sdk.client.fetch<AdminDemoStoreResponse>('/admin/sites', {
         method: 'POST',
@@ -488,7 +497,6 @@ export const useCreateDemoStore = (
       queryClient.invalidateQueries({ queryKey: demoStoreQueryKey.lists() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -498,6 +506,7 @@ export const useUpdateDemoStore = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: AdminUpdateDemoStore) =>
       sdk.client.fetch<{ demo_store: DemoStore }>(`/admin/sites/${id}`, {
         method: 'POST',
@@ -509,7 +518,6 @@ export const useUpdateDemoStore = (
       queryClient.invalidateQueries({ queryKey: demoStoreQueryKey.detail(id) });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -519,13 +527,13 @@ export const useDeleteDemoStore = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: () =>
       sdk.client.fetch<{ deleted: boolean }>(`/admin/sites/${id}`, { method: 'DELETE' }),
     onSuccess: (data: any, variables: any, context: any) => {
       queryClient.invalidateQueries({ queryKey: demoStoreQueryKey.lists() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -540,6 +548,7 @@ export const useCreateDemoStorePromotions = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: () =>
       sdk.client.fetch<{ totalProducts: number; promotedProducts: number; promotions: number }>(
         `/admin/sites/${id}/promotions`,
@@ -549,7 +558,6 @@ export const useCreateDemoStorePromotions = (
       queryClient.invalidateQueries({ queryKey: demoStoreQueryKey.detail(id) });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -560,6 +568,7 @@ export const useRetryDemoStoreImport = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: () =>
       sdk.client.fetch<AdminDemoStoreResponse>(`/admin/sites/${id}/retry`, {
         method: 'POST',
@@ -569,7 +578,6 @@ export const useRetryDemoStoreImport = (
       queryClient.invalidateQueries({ queryKey: demoStoreQueryKey.detail(id) });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 

@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { getActiveTenant } from "@lib/site-config/active-tenant"
 import { getSiteGateState } from "@lib/site-config/site-gate"
 import SiteGateScreen from "@modules/site-gate/components/site-gate-screen"
@@ -19,6 +20,7 @@ import SiteGateScreen from "@modules/site-gate/components/site-gate-screen"
 export default async function CountryLayout(props: {
   children: React.ReactNode
 }) {
+  if ((await headers()).get('x-puck-preview')) return <>{props.children}</>
   const gate = await getSiteGateState()
 
   if (!gate.locked) {

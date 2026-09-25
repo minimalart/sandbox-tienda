@@ -1,8 +1,15 @@
 /**
  * Criterio ÚNICO para decidir si un carrito hay que re-asociar (transferir) al
- * customer logueado. Vive acá porque lo consumen tres caminos distintos
- * (ensureCartCustomer, el self-heal de getOrSetCart y el CartMismatchBanner) y
- * cuando el criterio estaba copiado en los tres se desincronizó.
+ * customer logueado. Vive acá porque lo consumen varios caminos distintos
+ * (ensureCartCustomer, el self-heal de getOrSetCart, el transfer automático de
+ * app/api/store/auth/route.ts al crear la sesión) y cuando el criterio estaba
+ * copiado en cada uno se desincronizó.
+ *
+ * El pase de invitado a cuenta es SIEMPRE automático y silencioso: nunca se le
+ * pide confirmación al usuario. Hubo un `CartMismatchBanner` que ofrecía
+ * "Sumarlos a mi cuenta"; se sacó porque mostrar ese cartel era en sí mismo el
+ * bug (DESDEELSUR-61 / BUG-16) — el transfer ya corre solo, así que pedirle al
+ * usuario que lo confirme no era una red de seguridad, era ruido.
  *
  * El punto fino: `cart.customer_id` con valor NO significa "el carrito ya es de
  * la cuenta". Medusa v2 crea un customer INVITADO (`has_account: false`) y lo
@@ -18,6 +25,20 @@
  * `transferCartCustomerWorkflow` (v2.18.0) tiene el hook de validación vacío y
  * lo único que hace es saltear la operación si es el mismo customer. El guard
  * del storefront era más estricto que Medusa sin motivo.
+ *
+ * ── EL OTRO EXTREMO: MISMO CUSTOMER, `has_account: false` ───────────────────
+ *
+ * `has_account` describe cómo nació el customer, no si HOY es el logueado. Un
+ * customer invitado puede loguearse más tarde (alta migrada, magic link, lo
+ * que sea) sin que ese flag se ponga en `true`. Si el carrito ya cuelga de ESE
+ * mismo id, `transferCartCustomerWorkflow` compara ids y hace un no-op — no
+ * hay nada que transferir. Pero el criterio viejo sólo miraba `has_account`,
+ * así que devolvía "transferir" para siempre: el self-heal de
+ * `getOrSetCart`/`ensureCartCustomer` disparaba un transfer al pedo en CADA
+ * request para un usuario que ya estaba en su cuenta. Por eso el criterio
+ * ahora recibe el id del customer logueado y lo compara contra
+ * `cart.customer_id` ANTES de mirar `has_account`. Sin ese id (llamador que no
+ * lo puede resolver) el criterio no afirma nada nuevo y se comporta como antes.
  */
 
 /**
@@ -45,9 +66,8 @@ export type CartCustomerLink = {
  * `has_account` es `model.boolean().default(false)` en el módulo customer: nunca
  * es null en la base. Entonces `undefined` acá significa "no pedimos el campo",
  * no "es invitado", y en ese caso NO afirmamos nada. Esa distinción evita el
- * peor escenario: dar invitado por defecto haría que el banner de mismatch se
- * muestre a todo usuario logueado y que cada request dispare un transfer al
- * aire.
+ * peor escenario: dar invitado por defecto dispararía un transfer al aire en
+ * cada request de todo usuario logueado.
  */
 export function isCartOwnedByGuestCustomer(cart: CartCustomerLink): boolean {
   return !!cart.customer_id && cart.customer?.has_account === false;
@@ -55,10 +75,24 @@ export function isCartOwnedByGuestCustomer(cart: CartCustomerLink): boolean {
 
 /**
  * `true` si el carrito hay que transferir al customer logueado: o no tiene
- * customer, o el que tiene es un invitado. Quien llama es responsable de
- * chequear que HAYA sesión (headers de auth / customer en props); esto sólo
- * mira el carrito.
+ * customer, o el que tiene es un invitado DISTINTO del logueado. Quien llama
+ * es responsable de chequear que HAYA sesión (headers de auth / customer en
+ * props); esto sólo mira el carrito.
+ *
+ * `loggedInCustomerId` es opcional a propósito: no todos los llamadores lo
+ * pueden resolver barato (ver `getLoggedInCustomerId` en `lib/data/cookies.ts`
+ * para el camino server con sólo el JWT). Sin el id no se afirma "mismo
+ * customer" y el criterio cae al comportamiento de antes — más falsos
+ * positivos (algún transfer de más), nunca falsos negativos.
  */
-export function shouldTransferCartToCustomer(cart: CartCustomerLink): boolean {
+export function shouldTransferCartToCustomer(
+  cart: CartCustomerLink,
+  loggedInCustomerId?: string | null,
+): boolean {
+  if (loggedInCustomerId && cart.customer_id === loggedInCustomerId) {
+    // Mismo id: `transferCartCustomerWorkflow` lo resuelve como no-op, así que
+    // no hay nada que transferir aunque `has_account` diga `false`.
+    return false;
+  }
   return !cart.customer_id || isCartOwnedByGuestCustomer(cart);
 }
