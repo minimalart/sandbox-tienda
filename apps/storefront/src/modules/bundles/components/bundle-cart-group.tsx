@@ -25,7 +25,7 @@ export const BundleCartGroup = ({ bundle, cart }: BundleCartGroupProps) => {
   const currency = cart?.currency_code ?? "ars";
 
   const handleRemove = async () => {
-    await removeBundleInstance(bundle.items.map((i) => i.id));
+    await removeBundleInstance(bundle.bundleInstanceId);
     router.refresh();
   };
 

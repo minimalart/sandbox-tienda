@@ -16,7 +16,7 @@
  * - `service.ts` + `types.ts` — importados como TYPE por
  *   `workflows/create-banner.ts`, el workflow que quedó en el host porque
  *   `modules/ai-assistant/ai/native-tools/artifact-tools.ts` lo carga con
- *   `await import('../../../../workflows/create-banner.js')`. Los tipos se
+ *   `loadLazyModule` (ver `lib/lazy-module.ts`). Los tipos se
  *   borran en build; no acoplan runtime.
  *
  * - `site-scope.ts`, `models/`, `ai/*` — se dejan por si un futuro consumer

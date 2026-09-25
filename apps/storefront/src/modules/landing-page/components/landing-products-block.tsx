@@ -27,6 +27,7 @@ export type LandingProductsBlockProps = {
   textColor?: string;
   /** Inyectado por el renderer; necesario para las cards. */
   countryCode?: string;
+  previewLanguage?: 'es' | 'en';
 };
 
 const wrap = 'mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8';
@@ -48,6 +49,7 @@ export default async function LandingProductsBlock({
   background,
   textColor,
   countryCode = 'ar',
+  previewLanguage,
 }: LandingProductsBlockProps) {
   const safeLimit = Math.min(Math.max(Number(limit) || 8, 1), 24);
   const params: SearchParams = {
@@ -78,14 +80,19 @@ export default async function LandingProductsBlock({
 
   let products: Awaited<ReturnType<typeof searchTypesenseProducts>>['products'] = [];
   try {
-    const result = await searchTypesenseProducts(params);
+    const result = await searchTypesenseProducts(params, { track: !previewLanguage });
     products = result.products;
   } catch (err) {
     console.error('[LandingProductsBlock] Typesense fetch failed:', err);
+    if (previewLanguage) return <p role="alert" className={`${wrap} py-8`}>
+      {previewLanguage === 'es' ? 'No se pudo cargar el catálogo. Revisá la conexión de búsqueda de esta tienda.' : 'The catalog could not be loaded. Check this store’s search connection.'}
+    </p>;
     return null;
   }
 
-  if (!products.length) return null;
+  if (!products.length) return previewLanguage ? <p className={`${wrap} py-8`}>
+    {previewLanguage === 'es' ? 'Este filtro no tiene productos visibles en la tienda seleccionada.' : 'This filter has no visible products in the selected store.'}
+  </p> : null;
 
   return (
     <section

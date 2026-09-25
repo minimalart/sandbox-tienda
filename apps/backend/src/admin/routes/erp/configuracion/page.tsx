@@ -244,6 +244,12 @@ const ErpConfigPage = () => {
   const [odooShippingItemCode, setOdooShippingItemCode] = useState('');
   const [odooOnlyPublished, setOdooOnlyPublished] = useState(false);
   const [odooAutoConfirm, setOdooAutoConfirm] = useState(true);
+  const [odooPricelistId, setOdooPricelistId] = useState('');
+  type OdooTaxMode = 'default' | 'override_tax_ids' | 'backcalc_from_gross';
+  type OdooTaxRateRow = { country_code: string; currency_code: string; rate_percent: string };
+  const [odooTaxMode, setOdooTaxMode] = useState<OdooTaxMode>('default');
+  const [odooTaxIds, setOdooTaxIds] = useState<string>('');
+  const [odooTaxRates, setOdooTaxRates] = useState<OdooTaxRateRow[]>([]);
 
   // Precarga desde lo guardado. Las credenciales NUNCA vienen del backend:
   // las filas arrancan vacías y solo se envían si el usuario tipea algo.
@@ -360,6 +366,37 @@ const ErpConfigPage = () => {
     setOdooShippingItemCode(odoo.shipping_item_code ?? '');
     setOdooOnlyPublished(odoo.only_published ?? false);
     setOdooAutoConfirm(odoo.auto_confirm ?? true);
+    setOdooPricelistId(odoo.pricelist_id != null ? odoo.pricelist_id.toString() : '');
+    const taxBehavior = (odoo as { tax_behavior?: unknown }).tax_behavior as
+      | { mode?: 'default' | 'override_tax_ids' | 'backcalc_from_gross' }
+      | undefined;
+    if (taxBehavior?.mode === 'override_tax_ids') {
+      setOdooTaxMode('override_tax_ids');
+      const tb = taxBehavior as { mode: 'override_tax_ids'; tax_ids?: number[] };
+      setOdooTaxIds(Array.isArray(tb.tax_ids) ? tb.tax_ids.join(',') : '');
+      setOdooTaxRates([]);
+    } else if (taxBehavior?.mode === 'backcalc_from_gross') {
+      setOdooTaxMode('backcalc_from_gross');
+      const tb = taxBehavior as {
+        mode: 'backcalc_from_gross';
+        rates?: Array<{
+          match?: { country_code?: string; currency_code?: string };
+          rate_percent?: number;
+        }>;
+      };
+      setOdooTaxRates(
+        (tb.rates ?? []).map((r) => ({
+          country_code: r.match?.country_code ?? '',
+          currency_code: r.match?.currency_code ?? '',
+          rate_percent: r.rate_percent != null ? String(r.rate_percent) : '',
+        }))
+      );
+      setOdooTaxIds('');
+    } else {
+      setOdooTaxMode('default');
+      setOdooTaxIds('');
+      setOdooTaxRates([]);
+    }
   }, [config]);
 
   const { mutate: saveConfig, isPending: isSaving } = useUpdateErpConfig({
@@ -562,6 +599,33 @@ const ErpConfigPage = () => {
       .filter(Boolean)
       .map((s) => Number.parseInt(s, 10))
       .filter((n) => Number.isFinite(n) && n > 0);
+    const parsedPricelistId = Number.parseInt(odooPricelistId, 10);
+    let taxBehavior: unknown | undefined;
+    if (odooTaxMode === 'override_tax_ids') {
+      const parsedTaxIds = odooTaxIds
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => Number.parseInt(s, 10))
+        .filter((n) => Number.isFinite(n) && n >= 0);
+      taxBehavior = { mode: 'override_tax_ids', tax_ids: parsedTaxIds };
+    } else if (odooTaxMode === 'backcalc_from_gross') {
+      const rates = odooTaxRates
+        .map((row) => {
+          const country = row.country_code.trim().toUpperCase();
+          const currency = row.currency_code.trim().toUpperCase();
+          const percent = Number.parseFloat(row.rate_percent);
+          const match: { country_code?: string; currency_code?: string } = {};
+          if (country.length === 2) match.country_code = country;
+          if (currency.length === 3) match.currency_code = currency;
+          if (!Number.isFinite(percent) || percent < 0) return null;
+          if (!match.country_code && !match.currency_code) return null;
+          return { match, rate_percent: percent };
+        })
+        .filter((r): r is { match: { country_code?: string; currency_code?: string }; rate_percent: number } => r !== null);
+      taxBehavior = { mode: 'backcalc_from_gross', rates };
+    }
+    // mode='default' se serializa como AUSENTE (no ensuciar la config).
     return {
       base_url: odooBaseUrl.trim(),
       db: odooDb.trim(),
@@ -570,7 +634,9 @@ const ErpConfigPage = () => {
       ...(odooShippingItemCode.trim() ? { shipping_item_code: odooShippingItemCode.trim() } : {}),
       only_published: odooOnlyPublished,
       auto_confirm: odooAutoConfirm,
-    };
+      pricelist_id: Number.isFinite(parsedPricelistId) && parsedPricelistId > 0 ? parsedPricelistId : null,
+      ...(taxBehavior ? { tax_behavior: taxBehavior } : {}),
+    } as ErpOdooSettings;
   };
 
   const handleSave = () => {
@@ -2165,6 +2231,19 @@ const ErpConfigPage = () => {
                 </div>
                 <div className="flex flex-col gap-1">
                   <Text size="xsmall" className="text-ui-fg-subtle">
+                    {t('CONFIG_ODOO_PRICELIST_ID_LABEL')}
+                  </Text>
+                  <Input
+                    type="number"
+                    value={odooPricelistId}
+                    onChange={(e) => setOdooPricelistId(e.target.value)}
+                  />
+                  <Text size="xsmall" className="text-ui-fg-muted">
+                    {t('CONFIG_ODOO_PRICELIST_ID_HINT')}
+                  </Text>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Text size="xsmall" className="text-ui-fg-subtle">
                     {t('CONFIG_ODOO_ALLOWED_COMPANY_IDS')}
                   </Text>
                   <Input
@@ -2207,6 +2286,114 @@ const ErpConfigPage = () => {
                   checked={odooAutoConfirm}
                   onCheckedChange={setOdooAutoConfirm}
                 />
+              </div>
+              <div className="flex flex-col gap-2 rounded-md border p-3">
+                <Label>{t('CONFIG_ODOO_TAX_BEHAVIOR_LABEL')}</Label>
+                <Text size="xsmall" className="text-ui-fg-subtle">
+                  {t('CONFIG_ODOO_TAX_BEHAVIOR_HINT')}
+                </Text>
+                <Select
+                  value={odooTaxMode}
+                  onValueChange={(v) => setOdooTaxMode(v as typeof odooTaxMode)}
+                >
+                  <Select.Trigger>
+                    <Select.Value />
+                  </Select.Trigger>
+                  <Select.Content>
+                    <Select.Item value="default">
+                      {t('CONFIG_ODOO_TAX_MODE_DEFAULT')}
+                    </Select.Item>
+                    <Select.Item value="override_tax_ids">
+                      {t('CONFIG_ODOO_TAX_MODE_OVERRIDE')}
+                    </Select.Item>
+                    <Select.Item value="backcalc_from_gross">
+                      {t('CONFIG_ODOO_TAX_MODE_BACKCALC')}
+                    </Select.Item>
+                  </Select.Content>
+                </Select>
+                {odooTaxMode === 'override_tax_ids' ? (
+                  <div className="flex flex-col gap-1">
+                    <Text size="xsmall" className="text-ui-fg-subtle">
+                      {t('CONFIG_ODOO_TAX_IDS_LABEL')}
+                    </Text>
+                    <Input
+                      value={odooTaxIds}
+                      onChange={(e) => setOdooTaxIds(e.target.value)}
+                      placeholder="88,89"
+                    />
+                    <Text size="xsmall" className="text-ui-fg-muted">
+                      {t('CONFIG_ODOO_TAX_IDS_HINT')}
+                    </Text>
+                  </div>
+                ) : null}
+                {odooTaxMode === 'backcalc_from_gross' ? (
+                  <div className="flex flex-col gap-2">
+                    <Text size="xsmall" className="text-ui-fg-subtle">
+                      {t('CONFIG_ODOO_TAX_RATES_LABEL')}
+                    </Text>
+                    {odooTaxRates.map((row, idx) => (
+                      <div key={idx} className="grid grid-cols-1 gap-2 md:grid-cols-4">
+                        <Input
+                          value={row.country_code}
+                          onChange={(e) =>
+                            setOdooTaxRates((rows) =>
+                              rows.map((r, i) =>
+                                i === idx ? { ...r, country_code: e.target.value } : r
+                              )
+                            )
+                          }
+                          placeholder={t('CONFIG_ODOO_TAX_RATE_COUNTRY')}
+                        />
+                        <Input
+                          value={row.currency_code}
+                          onChange={(e) =>
+                            setOdooTaxRates((rows) =>
+                              rows.map((r, i) =>
+                                i === idx ? { ...r, currency_code: e.target.value } : r
+                              )
+                            )
+                          }
+                          placeholder={t('CONFIG_ODOO_TAX_RATE_CURRENCY')}
+                        />
+                        <Input
+                          type="number"
+                          value={row.rate_percent}
+                          onChange={(e) =>
+                            setOdooTaxRates((rows) =>
+                              rows.map((r, i) =>
+                                i === idx ? { ...r, rate_percent: e.target.value } : r
+                              )
+                            )
+                          }
+                          placeholder={t('CONFIG_ODOO_TAX_RATE_PERCENT')}
+                        />
+                        <Button
+                          variant="secondary"
+                          size="small"
+                          onClick={() =>
+                            setOdooTaxRates((rows) => rows.filter((_, i) => i !== idx))
+                          }
+                        >
+                          {t('CONFIG_ODOO_TAX_RATE_REMOVE')}
+                        </Button>
+                      </div>
+                    ))}
+                    <div>
+                      <Button
+                        variant="secondary"
+                        size="small"
+                        onClick={() =>
+                          setOdooTaxRates((rows) => [
+                            ...rows,
+                            { country_code: '', currency_code: '', rate_percent: '' },
+                          ])
+                        }
+                      >
+                        {t('CONFIG_ODOO_TAX_RATE_ADD')}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : null}

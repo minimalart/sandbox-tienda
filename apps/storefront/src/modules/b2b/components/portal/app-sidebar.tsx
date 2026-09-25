@@ -126,7 +126,8 @@ export default function AppSidebar({
                 return (
                   <SidebarMenuItem key={href}>
                     <SidebarMenuButton asChild isActive={active} tooltip={name}>
-                      <LocalizedClientLink href={href}>
+                      {/* Sin prefetch: cada router.refresh() del checkout los volvía a pedir. */}
+                      <LocalizedClientLink href={href} prefetch={false}>
                         <Icon />
                         <span>{name}</span>
                       </LocalizedClientLink>

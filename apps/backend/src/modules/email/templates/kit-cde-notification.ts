@@ -1,7 +1,6 @@
+import { copyrightLine, hexToRgba, storeDisplayName, subjectWithStore } from './email-helpers';
 import type { EmailTemplateFunction, EmailTemplateResult } from './types';
 
-const MERCATTO_COLOR = '#2e7d32';
-const MERCATTO_COLOR_BG = 'rgba(46,125,50,0.1)';
 
 export interface KitCdeNotificationData {
   order_display_id?: string | number;
@@ -20,6 +19,15 @@ export interface KitCdeNotificationData {
   }>;
   pickup_url?: string;
   delivery_pin?: number | string | null;
+  /**
+   * Branding de la tienda. NO lo manda el emisor: lo inyecta el servicio por
+   * `fillEmpty` antes de renderizar (ver service.ts). Estaba llegando desde
+   * siempre y esta plantilla lo ignoraba, con la marca escrita a mano.
+   */
+  logo_url?: string;
+  cde_display_name?: string;
+  sales_channel_name?: string;
+  primary_color?: string;
   [key: string]: unknown;
 }
 
@@ -39,8 +47,19 @@ export const kitCdeNotificationTemplate: EmailTemplateFunction<KitCdeNotificatio
       ? String(deliveryPinRaw)
       : '';
   const year = new Date().getFullYear();
-  const bucketBase = (process.env.S3_PUBLIC_URL || '').replace(/\/$/, '');
-  const mercattoLogoUrl = bucketBase ? `${bucketBase}/cde-logos/mercatto.png` : '';
+  const storeName = storeDisplayName(data);
+  const primaryColor = data.primary_color || '#2e7d32';
+  const primaryColorBg = hexToRgba(primaryColor, 0.1);
+  const logoUrl = data.logo_url || '';
+
+  // Sin logo y sin nombre de tienda, la cabecera se omite: acá la fila entera
+  // ya se omitía cuando no había logo, así que el hueco no es nuevo. Lo que no
+  // puede pasar es firmar el aviso con una marca que no es la de esta tienda.
+  const brandHeader = logoUrl
+    ? `<img src="${logoUrl}" alt="${storeName}" width="180" style="display: block; margin: 0 auto; -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none;">`
+    : storeName
+      ? `<div style="font-size: 24px; font-weight: 700; color: ${primaryColor};">${storeName}</div>`
+      : '';
 
   const itemsRows = (data.order_items ?? [])
     .map(
@@ -83,16 +102,16 @@ export const kitCdeNotificationTemplate: EmailTemplateFunction<KitCdeNotificatio
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="600" style="margin: auto; background-color: #ffffff; max-width: 600px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
 
                     <!-- Logo -->
-                    ${mercattoLogoUrl ? `
+                    ${brandHeader ? `
                     <tr>
                         <td style="padding: 30px 20px 20px 20px; text-align: center; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            <img src="${mercattoLogoUrl}" alt="Mercatto" width="180" style="display: block; margin: 0 auto; -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none;">
+                            ${brandHeader}
                         </td>
                     </tr>` : ''}
 
                     <!-- Header -->
                     <tr>
-                        <td style="padding: 28px 32px; background-color: ${MERCATTO_COLOR}; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+                        <td style="padding: 28px 32px; background-color: ${primaryColor}; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                             <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">📦 Nuevo kit para preparar</h1>
                             <p style="margin: 6px 0 0; color: rgba(255,255,255,0.75); font-size: 14px;">${cdeName}</p>
                         </td>
@@ -104,7 +123,7 @@ export const kitCdeNotificationTemplate: EmailTemplateFunction<KitCdeNotificatio
                             ${date ? `<p style="margin: 0 0 8px; font-size: 14px; color: #555555;">Fecha del pedido: <strong style="color: #333333;">${date}</strong></p>` : ''}
                             <p style="margin: 0 0 24px; font-size: 14px; color: #555555;">
                                 Número de pedido:
-                                <span style="display: inline-block; margin-left: 6px; padding: 4px 14px; background-color: ${MERCATTO_COLOR_BG}; border: 1.2px solid ${MERCATTO_COLOR}; border-radius: 20px; color: ${MERCATTO_COLOR}; font-size: 13px; font-weight: 700;">#${displayId}</span>
+                                <span style="display: inline-block; margin-left: 6px; padding: 4px 14px; background-color: ${primaryColorBg}; border: 1.2px solid ${primaryColor}; border-radius: 20px; color: ${primaryColor}; font-size: 13px; font-weight: 700;">#${displayId}</span>
                             </p>
                         </td>
                     </tr>
@@ -112,12 +131,12 @@ export const kitCdeNotificationTemplate: EmailTemplateFunction<KitCdeNotificatio
                     <!-- Bloque Cliente -->
                     <tr>
                         <td style="padding: 0 32px 24px 32px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: ${MERCATTO_COLOR_BG}; border-left: 4px solid ${MERCATTO_COLOR}; border-radius: 4px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: ${primaryColorBg}; border-left: 4px solid ${primaryColor}; border-radius: 4px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                                 <tr>
                                     <td style="padding: 14px 18px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                                        <p style="margin: 0 0 4px; font-size: 13px; font-weight: 700; color: ${MERCATTO_COLOR};">Cliente</p>
+                                        <p style="margin: 0 0 4px; font-size: 13px; font-weight: 700; color: ${primaryColor};">Cliente</p>
                                         <p style="margin: 0 0 2px; font-size: 14px; color: #111111;">${customerName}</p>
-                                        <p style="margin: 0; font-size: 13px;"><a href="mailto:${customerEmail}" style="color: ${MERCATTO_COLOR}; text-decoration: none; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">${customerEmail}</a></p>
+                                        <p style="margin: 0; font-size: 13px;"><a href="mailto:${customerEmail}" style="color: ${primaryColor}; text-decoration: none; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">${customerEmail}</a></p>
                                     </td>
                                 </tr>
                             </table>
@@ -127,7 +146,7 @@ export const kitCdeNotificationTemplate: EmailTemplateFunction<KitCdeNotificatio
                     <!-- Productos a preparar - título -->
                     <tr>
                         <td style="padding: 0 32px 12px 32px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            <h2 style="margin: 0; font-size: 16px; font-weight: 700; color: ${MERCATTO_COLOR};">Productos a preparar</h2>
+                            <h2 style="margin: 0; font-size: 16px; font-weight: 700; color: ${primaryColor};">Productos a preparar</h2>
                         </td>
                     </tr>
                     ${itemsRows}
@@ -160,8 +179,8 @@ export const kitCdeNotificationTemplate: EmailTemplateFunction<KitCdeNotificatio
 
                     <!-- Footer -->
                     <tr>
-                        <td style="padding: 20px; background-color: ${MERCATTO_COLOR}; text-align: center; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            <p style="margin: 0; color: #ffffff; font-size: 12px;">© ${year} Mercatto. Todos los derechos reservados.</p>
+                        <td style="padding: 20px; background-color: ${primaryColor}; text-align: center; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+                            <p style="margin: 0; color: #ffffff; font-size: 12px;">${copyrightLine(year, storeName)}</p>
                         </td>
                     </tr>
 
@@ -172,5 +191,8 @@ export const kitCdeNotificationTemplate: EmailTemplateFunction<KitCdeNotificatio
 </body>
 </html>`.trim();
 
-  return { subject, html };
+  // El aviso va al centro de distribución, que puede preparar kits de varias
+  // tiendas: saber de cuál es cada uno es información operativa. Sin tienda
+  // conocida el asunto queda como estaba, pelado.
+  return { subject: subjectWithStore(subject, data), html };
 };

@@ -10,7 +10,7 @@ import SubscriptionCheckbox from "@modules/common/components/subscription-checkb
 import { goToCheckoutStep } from "@lib/util/checkout-step";
 import FormInput from "@modules/common/components/form-input";
 import { usePathname, useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import InvoiceAFields, { type InvoiceAHandle } from "./invoice-a-fields";
 
@@ -40,6 +40,13 @@ const PersonalInfo = ({ cart, customer, onCartUpdate, nextStep }: PersonalInfoPr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const billingRef = useRef<InvoiceAHandle>(null);
+  // Mismo criterio que los campos de arriba: con un obligatorio de facturación
+  // sin completar, "Continuar" queda deshabilitado en vez de rebotar al tocarlo.
+  const [billingValid, setBillingValid] = useState(true);
+  const onBillingValidityChange = useCallback((valid: boolean) => {
+    setBillingValid(valid);
+    if (valid) setError(null);
+  }, []);
 
   const {
     register,
@@ -104,7 +111,7 @@ const PersonalInfo = ({ cart, customer, onCartUpdate, nextStep }: PersonalInfoPr
       // Facturación (Factura A o consumidor final): validar + persistir al cart.
       if (billingRef.current) {
         if (!billingRef.current.validate()) {
-          setError("Revisá los datos de Factura A.");
+          setError("Falta completar datos.");
           return;
         }
         const billingRes = await billingRef.current.persist();
@@ -158,10 +165,11 @@ const PersonalInfo = ({ cart, customer, onCartUpdate, nextStep }: PersonalInfoPr
             cartId={cartId}
             isLoggedIn={isLoggedIn}
             initialMetadata={cart?.metadata as Record<string, unknown> | null}
+            onValidityChange={onBillingValidityChange}
           />
           <button
-            className="mt-2 w-full rounded-[14px] bg-[--primary-color] px-4 py-3 font-semibold text-base text-white hover:opacity-90 disabled:opacity-50"
-            disabled={isSubmitting}
+            className="mt-2 w-full rounded-[14px] bg-[--primary-color] px-4 py-3 font-semibold text-base text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isSubmitting || !billingValid}
             onClick={() =>
               submitPersonalInfo({
                 email: customer.email,
@@ -232,11 +240,12 @@ const PersonalInfo = ({ cart, customer, onCartUpdate, nextStep }: PersonalInfoPr
             cartId={cartId}
             isLoggedIn={isLoggedIn}
             initialMetadata={cart?.metadata as Record<string, unknown> | null}
+            onValidityChange={onBillingValidityChange}
           />
           <button
             className="mt-4 w-full rounded-[14px] bg-[--primary-color] px-4 py-3 font-semibold text-base text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             data-testid="submit-personal-button"
-            disabled={isSubmitting || !isValid}
+            disabled={isSubmitting || !isValid || !billingValid}
             type="submit"
           >
             {isSubmitting ? "Procesando..." : "Continuar"}

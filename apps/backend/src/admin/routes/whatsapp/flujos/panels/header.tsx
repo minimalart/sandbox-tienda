@@ -32,6 +32,7 @@ export function FlowHeader({
   onSeed,
   seedLabel,
   onShowVersions,
+  onUnpublish,
   onUndo,
   onRedo,
   canUndo,
@@ -53,6 +54,12 @@ export function FlowHeader({
   onSeed: () => void;
   seedLabel: string;
   onShowVersions: () => void;
+  /**
+   * Sólo llega cuando lo que está abierto ES el publicado. La contracara de
+   * Publicar, que hasta acá no existía: la única forma de sacar un recorrido de
+   * encima del número era publicar otro.
+   */
+  onUnpublish?: () => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
@@ -145,6 +152,12 @@ export function FlowHeader({
               Organizar automáticamente
             </DropdownMenu.Item>
             <DropdownMenu.Item onClick={onShowVersions}>Versiones del recorrido</DropdownMenu.Item>
+            {/* Despublicar va ARRIBA del separador, con las acciones del recorrido, y
+                no al lado de Publicar: apagar lo que atiende clientes no puede estar
+                a un clic de distraído en el camino de la edición de todos los días. */}
+            {onUnpublish && (
+              <DropdownMenu.Item onClick={onUnpublish}>Despublicar el recorrido</DropdownMenu.Item>
+            )}
             <DropdownMenu.Item onClick={onShowShortcuts}>Atajos del teclado</DropdownMenu.Item>
             <DropdownMenu.Separator />
             {/* "Reemplazar por el base" es destructivo y vivía como un botón suelto

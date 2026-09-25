@@ -1,9 +1,14 @@
 import { ContainerRegistrationKeys, MedusaError } from '@medusajs/framework/utils';
 import { canonicalQuantity, validateCanonicalQuantity, type CatalogCommercial } from './commercial';
 
+/**
+ * `connections` memoiza la conexión por id dentro de una misma validación: un
+ * carrito con N SKUs del mismo catálogo la leía N veces en serie.
+ */
 export async function effectiveCommercial(
   container: any,
-  variant: any
+  variant: any,
+  connections?: Map<string, Promise<any>>
 ): Promise<CatalogCommercial | undefined> {
   const stored = variant.metadata?.catalog_commercial;
   if (!stored) return undefined;
@@ -20,7 +25,12 @@ export async function effectiveCommercial(
   } catch {
     return { ...commercial, purchasePolicy: { enabled: false } };
   }
-  const connection = await service.retrieveCatalogConnection(connectionId).catch(() => null);
+  let pending = connections?.get(connectionId);
+  if (!pending) {
+    pending = service.retrieveCatalogConnection(connectionId).catch(() => null);
+    connections?.set(connectionId, pending!);
+  }
+  const connection = await pending;
   if (!connection?.enabled) return { ...commercial, purchasePolicy: { enabled: false } };
   const protectedFields = new Set([
     ...(connection.config.protectedFields ?? []),
@@ -44,10 +54,11 @@ export async function validateCatalogLines(container: any, items: any[]) {
     fields: ['id', 'metadata', 'product.metadata'],
     filters: { id: variantIds },
   });
+  const connections = new Map<string, Promise<any>>();
   for (const item of items) {
     const variant = data.find((v: any) => v.id === item.variant_id);
     if (!variant?.metadata?.catalog_commercial) continue;
-    const commercial = await effectiveCommercial(container, variant);
+    const commercial = await effectiveCommercial(container, variant, connections);
     try {
       validateCanonicalQuantity(Number(item.quantity), commercial);
       const snapshot = item.metadata?.catalog_presentation;

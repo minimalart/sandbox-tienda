@@ -15,6 +15,7 @@ import {
   getCacheOptions,
   getCacheTag,
   getCartId,
+  getLoggedInCustomerId,
   removeCartId,
   setCartId,
 } from "./cookies";
@@ -69,8 +70,8 @@ export async function retrieveCart(cartId?: string) {
         // `+customer.has_account` no es cosmético: es lo único que distingue un
         // carrito que ya es de la cuenta de uno colgado de un customer invitado.
         // Lo consume shouldTransferCartToCustomer (self-heal de getOrSetCart y
-        // CartMismatchBanner, que recibe este mismo cart por props desde el
-        // layout). Sin el campo, el criterio no puede decidir y no transfiere.
+        // ensureCartCustomer). Sin el campo, el criterio no puede decidir y no
+        // transfiere.
         // `+completed_at` es lo que permite descartar un carrito que ya es una
         // orden. Sin el campo, este camino (layout, /cart, botón del header)
         // devolvía el carrito comprado como si estuviera activo — ver
@@ -125,18 +126,18 @@ export async function ensureCartCustomer(cartId?: string): Promise<void> {
   const headers = { ...(await getAuthHeaders()) };
   if (!headers.authorization) return; // guest: nada que reparar
   try {
-    const { cart } = await sdk.client.fetch<HttpTypes.StoreCartResponse>(
-      `/store/carts/${id}`,
-      {
+    const [{ cart }, loggedInCustomerId] = await Promise.all([
+      sdk.client.fetch<HttpTypes.StoreCartResponse>(`/store/carts/${id}`, {
         method: "GET",
         query: {
           fields: `id,customer_id,${CART_CUSTOMER_ACCOUNT_FIELD}`,
         },
         headers,
         cache: "no-store",
-      },
-    );
-    if (cart && shouldTransferCartToCustomer(cart)) {
+      }),
+      getLoggedInCustomerId(),
+    ]);
+    if (cart && shouldTransferCartToCustomer(cart, loggedInCustomerId)) {
       await sdk.store.cart.transferCart(id, {}, headers);
     }
   } catch {
@@ -164,11 +165,16 @@ export async function getOrSetCart(countryCode: string) {
   // Self-healing: cart guest con customer logueado → re-asociar (transfer).
   // "Guest" es también el cart que ya tiene customer_id de un INVITADO: pasar
   // por el paso de direcciones y loguearse después dejaba el cart (y la orden)
-  // colgando del invitado. Ver cart-customer-transfer.ts.
+  // colgando del invitado. El id del logueado se compara contra
+  // `cart.customer_id` para no reintentar un transfer que el core ya resuelve
+  // como no-op cuando el cart es del mismo customer. Ver cart-customer-transfer.ts.
+  const loggedInCustomerId = headers.authorization
+    ? await getLoggedInCustomerId()
+    : undefined;
   if (
     cart &&
     !!headers.authorization &&
-    shouldTransferCartToCustomer(cart)
+    shouldTransferCartToCustomer(cart, loggedInCustomerId)
   ) {
     try {
       await sdk.store.cart.transferCart(cart.id, {}, headers);

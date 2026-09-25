@@ -12,7 +12,8 @@
  * Ver `EXTENSIONES-MULTITIENDA.md` en el root.
  */
 export { SITE_REGISTRY_MODULE, SITE_REGISTRY_TABLE } from './module-key';
-export { resolveSite, listSites, siteIdOfChannel, toSiteRef } from './resolve-site';
+export { resolveSite, listSites, listSiteBrands, siteIdOfChannel, toSiteRef, toSiteBrandColors } from './resolve-site';
+export type { SiteBrandColors } from './resolve-site';
 export { resolveSiteViaSql, SQL_MIRRORED_COLUMNS } from './resolve-site-sql';
 export {
   attachSiteHint,

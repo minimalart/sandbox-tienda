@@ -5,6 +5,11 @@ import {
   ensureLandingContent,
   resolveProductTitles,
 } from '../campaign-enrich';
+import { loadLazyModule, sourceSpecifier } from '../../../../lib/lazy-module';
+
+/** Sólo tipos: `typeof import()` no emite, así que los workflows siguen fuera del grafo. */
+type CreateBannerWorkflow = typeof import('../../../../workflows/create-banner.js');
+type CreateLandingPageWorkflow = typeof import('../../../../workflows/create-landing-page.js');
 
 /**
  * Tools nativas de ARTEFACTOS para propuestas: crean un banner o una landing en
@@ -96,7 +101,11 @@ async function runCreateBannerDraft(
   const ctaUrl = str(args.cta_url);
 
   // Mismo camino que el admin (valida, dedupe de handle, audit trail).
-  const { createBannerWorkflow } = await import('../../../../workflows/create-banner.js');
+  const { createBannerWorkflow } = await loadLazyModule<CreateBannerWorkflow>(
+    'el workflow de creación de banner',
+    () => require('../../../../workflows/create-banner'),
+    () => import(sourceSpecifier('../../../../workflows/create-banner')),
+  );
   const { result: banner } = await createBannerWorkflow(ctx.container as any).run({
     input: {
       internal_name: internalName,
@@ -137,7 +146,11 @@ async function runCreateLandingDraft(
   const seoDescription = str(args.seo_description);
 
   // Mismo camino que el admin (slug único, defaults, compensación).
-  const { createLandingPageWorkflow } = await import('../../../../workflows/create-landing-page.js');
+  const { createLandingPageWorkflow } = await loadLazyModule<CreateLandingPageWorkflow>(
+    'el workflow de creación de landing',
+    () => require('../../../../workflows/create-landing-page'),
+    () => import(sourceSpecifier('../../../../workflows/create-landing-page')),
+  );
   const { result: landing } = await createLandingPageWorkflow(ctx.container as any).run({
     input: {
       title,

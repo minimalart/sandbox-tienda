@@ -1,5 +1,5 @@
 import { defineRouteConfig } from '@medusajs/admin-sdk';
-import { EllipsisHorizontal, Pencil, PencilSquare, Plus, Trash } from '@medusajs/icons';
+import { EllipsisHorizontal, Pencil, PencilSquare, Plus, PauseSolid, Trash } from '@medusajs/icons';
 import {
   Badge,
   Button,
@@ -21,6 +21,7 @@ import { SiteScopeBar } from '../../../components/common/site-scope-bar';
 import {
   useDeleteWhatsappFlowDraft,
   useRenameWhatsappFlow,
+  useUnpublishWhatsappFlow,
   useSaveWhatsappFlow,
   useSeedWhatsappFlow,
   useWhatsappFlows,
@@ -51,9 +52,20 @@ const FlowListRoute = (): ReactElement => {
   const ejemploMut = useSeedWhatsappFlow();
   const borrarMut = useDeleteWhatsappFlowDraft();
   const renombrarMut = useRenameWhatsappFlow();
+  const despublicarMut = useUnpublishWhatsappFlow();
 
   /** Qué recorrido se está por borrar. Ningún borrado pasa sin preguntar. */
   const [porBorrar, setPorBorrar] = useState<FlowListRow | null>(null);
+
+  /**
+   * Despublicar tampoco pasa sin preguntar, y por un motivo distinto al de borrar: no
+   * se pierde nada, pero CAMBIA lo que le pasa al cliente que escribe en el próximo
+   * minuto. El diálogo dice qué queda atendiendo, que es lo único que el operador no
+   * puede deducir de la pantalla.
+   */
+  const [porDespublicar, setPorDespublicar] = useState<
+    { id: string; name: string; version: number; general: boolean } | null
+  >(null);
 
   /**
    * El nombre se pide ANTES de crear, no después.
@@ -67,7 +79,11 @@ const FlowListRoute = (): ReactElement => {
   >(null);
 
   const ocupado =
-    crearMut.isPending || ejemploMut.isPending || borrarMut.isPending || renombrarMut.isPending;
+    crearMut.isPending ||
+    ejemploMut.isPending ||
+    borrarMut.isPending ||
+    renombrarMut.isPending ||
+    despublicarMut.isPending;
 
   const crear = async (template: 'blanco' | 'base' | 'compra', name: string) => {
     try {
@@ -90,6 +106,21 @@ const FlowListRoute = (): ReactElement => {
     } catch (error) {
       toast.error(`No se pudo cambiar el nombre: ${(error as Error).message}`);
     }
+  };
+
+  const despublicar = async () => {
+    if (!porDespublicar) return;
+    try {
+      const out = await despublicarMut.mutateAsync({ version_id: porDespublicar.id });
+      toast.success(
+        out.already_off
+          ? 'Ya no había ningún recorrido publicado.'
+          : 'Recorrido despublicado. El bot dejó de atender con él y quedó una copia en borrador.',
+      );
+    } catch (error) {
+      toast.error(`No se pudo despublicar: ${(error as Error).message}`);
+    }
+    setPorDespublicar(null);
   };
 
   const borrar = async () => {
@@ -222,7 +253,16 @@ const FlowListRoute = (): ReactElement => {
                   steps: publicado.graph?.nodes?.length ?? 0,
                   problems: 0,
                 }}
+                general={Boolean(data?.site_id) && !publicado.site_id}
                 onOpen={() => navigate(`/whatsapp/flujos/${publicado.id}`)}
+                onUnpublish={() =>
+                  setPorDespublicar({
+                    id: publicado.id,
+                    name: nombreDe(publicado),
+                    version: publicado.version ?? 0,
+                    general: Boolean(data?.site_id) && !publicado.site_id,
+                  })
+                }
               />
             )}
             {borradores.map((row) => (
@@ -262,6 +302,32 @@ const FlowListRoute = (): ReactElement => {
         }}
       />
 
+      {/* Despublicar no se deshace SOLO —hay que volver a publicar—, y sobre todo
+          cambia lo que le contesta el bot al próximo cliente. El diálogo dice las dos
+          cosas que no se ven en la tabla: qué queda atendiendo, y a quién alcanza. */}
+      <Prompt
+        open={porDespublicar !== null}
+        onOpenChange={(open) => !open && setPorDespublicar(null)}
+      >
+        <Prompt.Content>
+          <Prompt.Header>
+            <Prompt.Title>Despublicar “{porDespublicar?.name}”</Prompt.Title>
+            <Prompt.Description>
+              {porDespublicar?.general
+                ? 'Es el recorrido GENERAL: dejan de atenderse con él TODAS las tiendas que no tengan uno propio. '
+                : ''}
+              El bot deja de llevar esta conversación y vuelve a contestar como antes de
+              publicarlo. Queda una copia en borrador para seguir editándola, y la versión{' '}
+              {porDespublicar?.version} se conserva en el historial.
+            </Prompt.Description>
+          </Prompt.Header>
+          <Prompt.Footer>
+            <Prompt.Cancel>Cancelar</Prompt.Cancel>
+            <Prompt.Action onClick={despublicar}>Despublicar</Prompt.Action>
+          </Prompt.Footer>
+        </Prompt.Content>
+      </Prompt>
+
       {/* Borrar un recorrido no se deshace: se pregunta, y se dice qué se lleva. */}
       <Prompt open={porBorrar !== null} onOpenChange={(open) => !open && setPorBorrar(null)}>
         <Prompt.Content>
@@ -292,6 +358,7 @@ function Fila({
   onOpen,
   onRename,
   onDelete,
+  onUnpublish,
 }: {
   row: FlowListRow | (FlowListRow & { graph?: unknown });
   /** Es el recorrido general y se está mirando desde una tienda. */
@@ -299,6 +366,8 @@ function Fila({
   onOpen: () => void;
   onRename?: () => void;
   onDelete?: () => void;
+  /** Sólo lo recibe el publicado: es el único que se puede apagar. */
+  onUnpublish?: () => void;
 }): ReactElement {
   const publicado = row.status === 'active';
 
@@ -361,6 +430,16 @@ function Fila({
               <DropdownMenu.Item onClick={onRename}>
                 <Pencil className="text-ui-fg-subtle" />
                 Cambiar el nombre
+              </DropdownMenu.Item>
+            )}
+            {/* DESPUBLICAR es la única acción que sólo tiene el publicado, y no
+                estaba: hasta acá la única forma de sacar un recorrido de encima del
+                número era publicar OTRO. Un recorrido a medio terminar se quedaba
+                atendiendo, y no había botón que lo apagara. */}
+            {onUnpublish && (
+              <DropdownMenu.Item onClick={onUnpublish}>
+                <PauseSolid className="text-ui-fg-subtle" />
+                Despublicar
               </DropdownMenu.Item>
             )}
             {/* El publicado no se borra: está atendiendo clientes. Se reemplaza

@@ -1,6 +1,6 @@
 {
   "name": "@repo/extension-multistore",
-  "version": "1.14.1",
+  "version": "1.15.0",
   "private": true,
   "description": "Tiendas component source package",
   "dependencies": {}

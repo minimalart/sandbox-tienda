@@ -1,3 +1,7 @@
+import TechnologyHome from '@modules/home-technology';
+import FashionHome from '@modules/home-fashion';
+import TechRetailHome from '@modules/home-tech-retail';
+import SportsHome from '@modules/home-sports';
 import { getRegion } from "@lib/data/regions";
 import { getActiveTenant } from "@lib/site-config/active-tenant";
 import type { HomeLayoutBlock } from "@lib/site-config/types";
@@ -72,6 +76,12 @@ export default async function HomeRenderer({
   const renderBlock = (block: HomeLayoutBlock) => {
     const p = (block.props ?? {}) as Record<string, any>;
     switch (block.type) {
+      case 'TemplateSection': {
+        if (typeof p.section !== 'string' || !/^\d{1,2}$/.test(p.section)) return null;
+        const native = { technology: TechnologyHome, fashion: FashionHome, 'tech-retail': TechRetailHome, sports: SportsHome };
+        const Component = native[tenant.template as keyof typeof native];
+        return Component ? <Component countryCode={countryCode} section={p.section} /> : null;
+      }
       case "Banners":
         return <HeroBanners />;
 
@@ -178,6 +188,7 @@ export default async function HomeRenderer({
           return (
             <CampaignKits
               countryCode={countryCode}
+              withBundles={p.withBundles !== "no"}
               config={{
                 title: p.title || "Productos",
                 subtitle: p.description || undefined,
@@ -233,10 +244,13 @@ export default async function HomeRenderer({
               productCategory={preset}
               config={config}
               cardVariant={p.cardVariant ?? "default"}
+              withBundles={p.withBundles !== "no"}
               layout={p.layout === "grid-4" ? "grid-4" : "carousel"}
               title={p.title || undefined}
               description={p.description || undefined}
               viewAllCard={viewAllCard}
+              onlyPromotions={p.onlyPromotions === true}
+              maxItems={Number(p.maxItems) > 0 ? Number(p.maxItems) : undefined}
             />
           );
         }
@@ -266,6 +280,7 @@ export default async function HomeRenderer({
             countryCode={countryCode}
             config={config}
             cardVariant={p.cardVariant ?? "default"}
+            withBundles={p.withBundles !== "no"}
             layout={p.layout === "grid-4" ? "grid-4" : "carousel"}
             onlyPromotions={p.source === "promotions"}
             viewAllCard={viewAllCard}
@@ -354,7 +369,7 @@ export default async function HomeRenderer({
         return <MoreProductsSection config={config} />;
       }
 
-      // ── BundlesGrid → grid de bundles publicados (gated por sections.bundles)
+      // ── BundlesGrid → grid de kits publicados (se esconde con sections.bundles=false)
       case "BundlesGrid":
         return (
           <BundlesGrid

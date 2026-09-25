@@ -1,5 +1,6 @@
-import { listBundles, type StorefrontBundleSummary } from "@lib/data/bundles";
 import { getActiveTenant } from "@lib/site-config/active-tenant";
+import { BundleCard } from "@modules/bundles/components/bundle-card";
+import { loadBundleCards } from "@modules/bundles/lib/load-bundle-cards";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
 
 interface BundlesGridProps {
@@ -13,22 +14,23 @@ interface BundlesGridProps {
 }
 
 /**
- * BundlesGrid — sección del home que lista bundles publicados de la Store
- * activa como grid clickeable hacia el wizard.
+ * BundlesGrid — sección del home que lista los kits publicados de la tienda
+ * activa como cards clickeables hacia el wizard.
  *
- * Gate: se renderiza solo si `content_config.sections.bundles === true`. Sin
- * ese flag el bloque desaparece del home sin necesidad de tocar el editor
- * Puck — el operador puede tenerlo agregado como preview y activarlo/
- * desactivarlo desde la config de la tienda.
+ * Usa la MISMA card que el índice `/bundles` (`BundleCard`, PRD V2 §28-§39):
+ * el kit que el comprador ve en el home tiene que ser reconocible como el mismo
+ * que abre desde el índice, y el tono sale del primario de la tienda, así que
+ * ninguna tienda necesita producir un asset por kit.
  *
- * Fuente de datos: `listBundles()` — server action tenant-aware (usa
- * getMedusaSDK internamente) que ya scopea por la publishable key del site.
- * El backend filtra por `status: 'published'` y por link Bundle↔DemoStore.
+ * Gate: alcanza con que el bloque esté en el home. Antes hacía falta además
+ * `content_config.sections.bundles === true`, un flag que ningún formulario del
+ * admin escribe: el bloque quedaba puesto en el editor y nunca se veía. Ahora
+ * `sections.bundles === false` lo esconde —para dejarlo armado sin publicarlo—
+ * y cualquier otro valor lo muestra, igual que el resto de las secciones.
  *
- * Selección: si `handles` viene vacío, muestra los primeros `limit` bundles
- * ordenados por `updated_at DESC`. Si viene con handles, respeta ESE orden
- * (los handles inexistentes se ignoran silenciosamente para que un handle
- * borrado no rompa el home).
+ * Selección: si `handles` viene vacío, muestra los primeros `limit` kits. Si
+ * viene con handles, respeta ESE orden (los handles inexistentes se ignoran en
+ * silencio para que un handle borrado no rompa el home).
  */
 export default async function BundlesGrid({
   title,
@@ -37,35 +39,20 @@ export default async function BundlesGrid({
   handles,
   viewAllLabel,
   viewAllHref,
-  countryCode,
 }: BundlesGridProps) {
   const tenant = await getActiveTenant();
   // El backend mapea `content_config.sections` → `assets.sectionVisibility`
-  // (ver apps/backend/src/modules/demo-store/templates/index.ts). Ausente
-  // significa deshabilitado, no visible-por-default: es feature opt-in.
-  const bundlesEnabled = tenant.assets?.sectionVisibility?.bundles === true;
-  if (!bundlesEnabled) return null;
-
-  let bundles: StorefrontBundleSummary[] = [];
-  try {
-    const response = await listBundles();
-    bundles = response.bundles ?? [];
-  } catch {
-    return null;
-  }
+  // (ver apps/backend/src/modules/demo-store/templates/index.ts).
+  if (tenant.assets?.sectionVisibility?.bundles === false) return null;
 
   const requestedHandles = (handles ?? [])
     .map((h) => h?.handle?.trim())
     .filter((h): h is string => !!h);
 
-  const selected =
-    requestedHandles.length > 0
-      ? requestedHandles
-          .map((h) => bundles.find((b) => b.handle === h))
-          .filter((b): b is StorefrontBundleSummary => !!b)
-      : bundles.slice(0, limit);
+  const kits = await loadBundleCards({ limit, handles: requestedHandles });
+  if (kits.length === 0) return null;
 
-  if (selected.length === 0) return null;
+  const primaryColor = tenant.theme?.colors?.primary;
 
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
@@ -75,39 +62,30 @@ export default async function BundlesGrid({
           {subtitle && <p className="mt-2 text-sm text-neutral-600 sm:text-base">{subtitle}</p>}
         </header>
       )}
-      <ul
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        role="list"
-      >
-        {selected.map((bundle) => (
-          <li key={bundle.id}>
-            <LocalizedClientLink
-              href={`/bundles/${bundle.handle}`}
-              className="block h-full rounded-lg border border-neutral-200 p-4 transition hover:border-neutral-400"
-            >
-              {bundle.thumbnail && (
-                <img
-                  src={bundle.thumbnail}
-                  alt=""
-                  className="mb-3 aspect-video w-full rounded object-cover"
-                />
-              )}
-              <h3 className="text-lg font-medium">{bundle.title}</h3>
-              {bundle.description && (
-                <p className="mt-1 line-clamp-2 text-sm text-neutral-600">{bundle.description}</p>
-              )}
-              <span className="mt-3 inline-block text-sm underline">Armar mi kit</span>
-            </LocalizedClientLink>
-          </li>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {kits.map((kit) => (
+          <BundleCard
+            key={kit.id}
+            handle={kit.handle}
+            title={kit.title}
+            itemCount={kit.itemCount}
+            configurableCount={kit.configurableCount}
+            fromAmount={kit.fromAmount}
+            currencyCode={kit.currencyCode}
+            primaryColor={primaryColor}
+            index={kit.index}
+          />
         ))}
-      </ul>
-      {viewAllLabel && viewAllHref && (
+      </div>
+
+      {viewAllHref && (
         <footer className="mt-8 text-center">
           <LocalizedClientLink
             href={viewAllHref}
-            className="inline-block rounded-md border border-neutral-300 px-4 py-2 text-sm hover:border-neutral-500"
+            className="inline-block rounded-md border border-neutral-300 px-4 py-2 text-sm transition-colors hover:border-neutral-500"
           >
-            {viewAllLabel}
+            {viewAllLabel || "Ver todos los kits"}
           </LocalizedClientLink>
         </footer>
       )}

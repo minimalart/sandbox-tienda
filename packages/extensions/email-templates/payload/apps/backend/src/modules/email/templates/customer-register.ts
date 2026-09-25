@@ -1,3 +1,4 @@
+import { copyrightLine, storeDisplayName, subjectWithStore } from './email-helpers';
 import type { EmailTemplateFunction, EmailTemplateResult } from './types';
 
 export type CustomerRegisterData = {
@@ -8,7 +9,7 @@ export type CustomerRegisterData = {
   sales_channel_name?: string;
   /** URL absoluta del logo del CDE */
   logo_url?: string;
-  /** Nombre del CDE para fallback en texto (ej. "Mercatto") */
+  /** Nombre visible de la tienda. Sin este dato el mail no nombra ninguna marca. */
   cde_display_name?: string;
   /** Color primario del tenant (hex) */
   primary_color?: string;
@@ -28,10 +29,17 @@ export const customerRegisterTemplate: EmailTemplateFunction<CustomerRegisterDat
   const name = [data.first_name, data.last_name].filter(Boolean).join(' ').trim() || 'Cliente';
   const email = fmt(data.email);
   const logoUrl = data.logo_url || '';
-  const cdeDisplayName = (data.cde_display_name || data.sales_channel_name || 'Mercatto').trim().replace(/[-\s]b2[cb]$/i, '').trim() || 'Mercatto';
-  const channelName = data.sales_channel_name || '';
+  const cdeDisplayName = storeDisplayName(data);
   const primaryColor = data.primary_color || '#2e7d32';
   const year = new Date().getFullYear();
+
+  // Sin logo y sin nombre de tienda, la cabecera se omite: un título de 24px
+  // vacío deja un hueco, pero inventar una marca manda la de otro cliente.
+  const brandHeader = logoUrl
+    ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="200" style="display: block; margin: 0 auto; -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none;">`
+    : cdeDisplayName
+      ? `<div style="font-size: 24px; font-weight: 700; color: ${primaryColor};">${cdeDisplayName}</div>`
+      : '';
 
   const subject = 'Confirmación de registro';
 
@@ -52,7 +60,7 @@ export const customerRegisterTemplate: EmailTemplateFunction<CustomerRegisterDat
                     <!-- Logo -->
                     <tr>
                         <td style="padding: 40px 40px 20px 40px; text-align: center; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            ${logoUrl ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="200" style="display: block; margin: 0 auto; -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none;">` : `<div style="font-size: 24px; font-weight: 700; color: ${primaryColor};">${cdeDisplayName}</div>`}
+                            ${brandHeader}
                         </td>
                     </tr>
 
@@ -70,7 +78,7 @@ export const customerRegisterTemplate: EmailTemplateFunction<CustomerRegisterDat
                     <!-- Footer -->
                     <tr>
                         <td style="padding: 20px; background-color: ${primaryColor}; text-align: center; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            <p style="margin: 0; color: #ffffff; font-size: 12px;">© ${year} ${cdeDisplayName}. Todos los derechos reservados.</p>
+                            <p style="margin: 0; color: #ffffff; font-size: 12px;">${copyrightLine(year, cdeDisplayName)}</p>
                         </td>
                     </tr>
 
@@ -82,7 +90,7 @@ export const customerRegisterTemplate: EmailTemplateFunction<CustomerRegisterDat
 </html>`.trim();
 
   return {
-    subject: channelName ? `[${channelName}] ${subject}` : `[Mercatto] ${subject}`,
+    subject: subjectWithStore(subject, data),
     html,
   };
 };

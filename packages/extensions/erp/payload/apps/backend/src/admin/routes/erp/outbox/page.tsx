@@ -26,7 +26,8 @@ import {
   type ErpResyncResponse,
 } from '../../../hooks/api';
 import { UnregisteredOrdersTable } from '../components/unregistered-orders-table';
-import { SalePreviewDrawer } from '../components/sale-preview-drawer';
+import { OutboxEventDrawer } from '../components/outbox-event-drawer';
+import { splitOutboxError } from '../components/outbox-error';
 import {
   ErpStatusBadge,
   formatDateTime,
@@ -74,8 +75,8 @@ const ErpOutboxPage = () => {
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [rowSelection, setRowSelection] = useState<DataTableRowSelectionState>({});
   const [bulkOpen, setBulkOpen] = useState(false);
-  /** Evento cuyo documento se está mirando; null = drawer cerrado. */
-  const [previewId, setPreviewId] = useState<string | null>(null);
+  /** Fila abierta en el drawer de detalle; null = cerrado. */
+  const [detail, setDetail] = useState<ErpOutboxEvent | null>(null);
 
   const showUnregistered = statusFilter === UNREGISTERED;
 
@@ -151,11 +152,23 @@ const ErpOutboxPage = () => {
       }),
       columnHelper.accessor('aggregate_id', {
         header: t('COL_ORDER'),
-        cell: ({ getValue }) => (
-          <Text size="small" weight="plus" className="font-mono">
-            {getValue()}
-          </Text>
-        ),
+        // El número de orden es como la nombra el operador ("la #79"); el id
+        // queda para las filas que no lo traen. Y el tipo va debajo porque la
+        // cola mezcla ventas con polls de comprobante, que sin esto se leen
+        // como ventas repetidas.
+        cell: ({ row }) => {
+          const displayId = row.original.payload?.display_id;
+          return (
+            <div className="flex flex-col">
+              <Text size="small" weight="plus" className={displayId ? undefined : 'font-mono'}>
+                {displayId ? `#${displayId}` : row.original.aggregate_id}
+              </Text>
+              <Text size="xsmall" className="text-ui-fg-subtle">
+                {row.original.event_type === 'invoice_fetch' ? t('EVENT_INVOICE') : t('EVENT_SALE')}
+              </Text>
+            </div>
+          );
+        },
       }),
       columnHelper.accessor('status', {
         header: t('COL_STATUS'),
@@ -172,30 +185,58 @@ const ErpOutboxPage = () => {
         header: t('COL_NEXT_RETRY'),
         cell: ({ row }) => (
           <Text size="small" className="text-ui-fg-subtle">
-            {row.original.status === 'failed' ? formatDateTime(row.original.next_retry_at) : '—'}
+            {/* Un poll de comprobante espera en `pending` con fecha propia. */}
+            {(row.original.status === 'failed' || row.original.status === 'pending') &&
+            row.original.next_retry_at
+              ? formatDateTime(row.original.next_retry_at)
+              : '—'}
           </Text>
         ),
       }),
       columnHelper.display({
         id: 'detail',
         header: t('COL_EXTERNAL_REF'),
+        // UNA línea y cortada: el detalle completo vive en el drawer. Un texto
+        // largo acá desbordaba la tabla a lo ancho, y con el scroll la columna
+        // fija de la fecha tapaba la de la orden: el error quedaba a la vista y
+        // ya no se sabía de qué orden era.
         cell: ({ row }) => {
-          if (row.original.external_ref) {
-            return <Text size="small">{row.original.external_ref}</Text>;
-          }
-          // Una fila `skipped` no tiene error: tiene un MOTIVO, y decirlo evita
-          // que el operador busque una falla que no existe.
-          if (row.original.status === 'skipped') {
-            return (
-              <Text size="small" className="text-ui-fg-subtle">
-                {t('SKIPPED_REASON')}
-              </Text>
-            );
+          const event = row.original;
+          let text = '—';
+          let tone = 'text-ui-fg-subtle';
+          if (event.external_ref) {
+            text = event.external_ref;
+            tone = 'text-ui-fg-base';
+          } else if (event.status === 'skipped') {
+            // Una fila `skipped` no tiene error: tiene un MOTIVO, y decirlo
+            // evita que el operador busque una falla que no existe.
+            text = t('SKIPPED_REASON');
+          } else if (
+            event.event_type === 'invoice_fetch' &&
+            (event.status === 'pending' || event.status === 'processing')
+          ) {
+            // "Todavía no facturó" es un REINTENTO, no un error (ver
+            // `ErpOutboxSettings.invoice_fetch`): en rojo hacía buscar una falla
+            // en ventas que ya entraron al ERP.
+            text = t('INVOICE_WAITING_SHORT');
+          } else if (event.last_error) {
+            // Lo que dijo el ERP primero: en el mensaje crudo va al final.
+            const failure = splitOutboxError(event.last_error);
+            text = failure.erpMessage ?? failure.summary;
+            tone = 'text-ui-fg-error';
           }
           return (
-            <Text size="small" className="text-ui-fg-error" title={row.original.last_error ?? ''}>
-              {(row.original.last_error ?? '').slice(0, 60) || '—'}
-            </Text>
+            <button
+              type="button"
+              title={t('DETAIL_ACTION')}
+              className={`txt-compact-small block max-w-[18rem] truncate text-left hover:underline ${tone}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDetail(event);
+              }}
+            >
+              {text}
+            </button>
           );
         },
       }),
@@ -205,22 +246,20 @@ const ErpOutboxPage = () => {
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-2">
             {/*
-              El documento se ofrece para toda venta, no sólo para las enviadas:
-              en una `pending` o `skipped` muestra con qué parámetros SALDRÍA, que
-              es justo lo que hay que revisar antes de destrabarla.
+              El detalle se ofrece para TODA fila, no sólo para las enviadas: en
+              una venta `pending` o `skipped` muestra con qué parámetros SALDRÍA,
+              que es justo lo que hay que revisar antes de destrabarla.
             */}
-            {row.original.event_type === 'sale_created' ? (
-              <Button
-                size="small"
-                variant="transparent"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setPreviewId(row.original.id);
-                }}
-              >
-                {t('PREVIEW_ACTION')}
-              </Button>
-            ) : null}
+            <Button
+              size="small"
+              variant="transparent"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDetail(row.original);
+              }}
+            >
+              {t('DETAIL_ACTION')}
+            </Button>
             {RESYNCABLE.has(row.original.status) ? (
               <Button
                 size="small"
@@ -275,6 +314,7 @@ const ErpOutboxPage = () => {
       enableRowSelection: (row) => RESYNCABLE.has(row.original.status),
     },
     pagination: { state: pagination, onPaginationChange: setPagination },
+    onRowClick: (_event, row) => setDetail(row),
   });
 
   if (showUnregistered) {
@@ -399,7 +439,11 @@ const ErpOutboxPage = () => {
         </Prompt.Content>
       </Prompt>
 
-      <SalePreviewDrawer eventId={previewId} onClose={() => setPreviewId(null)} />
+      {/* La fila del poll trae el estado más nuevo; si salió de la página, queda la última vista. */}
+      <OutboxEventDrawer
+        event={events.find((event) => event.id === detail?.id) ?? detail}
+        onClose={() => setDetail(null)}
+      />
 
       <Toaster />
     </>

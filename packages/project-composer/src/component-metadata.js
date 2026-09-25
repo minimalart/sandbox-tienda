@@ -207,6 +207,8 @@ module.exports = {
       'KAPSO_WEBHOOK_SECRET',
       'KAPSO_WEBHOOK_VERIFY_TOKEN',
       'WHATSAPP_COUNTRY_CODE',
+      'WHATSAPP_AGENT_KEY',
+      'WHATSAPP_GUIDED_ENTRY',
       'WHATSAPP_HANDOFF_AUTO_RESUME_HOURS',
       'WHATSAPP_PLACEHOLDER_IMAGE_URL',
       'WHATSAPP_REGION_ID',
@@ -363,6 +365,7 @@ module.exports = {
       'APPLY',
       'DEFAULT_CURRENCY_CODE',
       'ERP_CATALOG_SYNC_CRON',
+      'ERP_ODOO_WEBHOOK_TOKEN',
       'ERP_OUTBOX_CRON',
       'ERP_STOCK_SYNC_CRON',
       // Fallback de la URL pública del storefront: el mail que avisa el

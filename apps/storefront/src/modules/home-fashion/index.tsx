@@ -27,8 +27,10 @@ import SeasonBanner from "./components/season-banner";
  */
 export default async function FashionHome({
   countryCode,
+  section,
 }: {
   countryCode?: string;
+  section?: string;
 }) {
   const tenant = await getActiveTenant();
   const fashion = tenant.assets.fashion;
@@ -36,51 +38,51 @@ export default async function FashionHome({
   return (
     <main className="fashion-home bg-[--f-canvas]">
       {/* 2. Hero editorial */}
-      <EditorialHero hero={fashion?.hero} />
+      {(!section || section === '1') && (<EditorialHero hero={fashion?.hero} />)}
 
-      <Suspense fallback={null}>
+      {(!section || section === '2') && (<Suspense fallback={null}>
         <ShopByLookSlot slot="top" countryCode={countryCode ?? ""} titleClassName="f-section-title" />
-      </Suspense>
+      </Suspense>)}
 
       {/* 3. Colecciones destacadas */}
-      <CollectionGrid config={fashion?.featuredCollections} />
+      {(!section || section === '3') && (<CollectionGrid config={fashion?.featuredCollections} />)}
 
-      <Suspense fallback={null}>
+      {(!section || section === '4') && (<Suspense fallback={null}>
         <ShopByLookSlot slot="after_collections" countryCode={countryCode ?? ""} titleClassName="f-section-title" />
-      </Suspense>
+      </Suspense>)}
 
       {/* 4. Campaña editorial */}
-      <CampaignBanner config={fashion?.campaign} />
+      {(!section || section === '5') && (<CampaignBanner config={fashion?.campaign} />)}
 
       {/* 5. New Arrivals */}
-      <Suspense fallback={null}>
+      {(!section || section === '6') && (<Suspense fallback={null}>
         <NewArrivalsCarousel source="newArrivals" />
-      </Suspense>
+      </Suspense>)}
 
-      <Suspense fallback={null}>
+      {(!section || section === '7') && (<Suspense fallback={null}>
         <ShopByLookSlot slot="after_featured" countryCode={countryCode ?? ""} titleClassName="f-section-title" />
-      </Suspense>
+      </Suspense>)}
 
       {/* 6. Categorías lifestyle */}
-      <LifestyleCategories config={fashion?.lifestyleCategories} />
+      {(!section || section === '8') && (<LifestyleCategories config={fashion?.lifestyleCategories} />)}
 
       {/* 7. Lookbook */}
-      <LookbookGrid config={fashion?.lookbook} />
+      {(!section || section === '9') && (<LookbookGrid config={fashion?.lookbook} />)}
 
       {/* 8. Productos destacados (carrusel secundario) */}
-      <Suspense fallback={null}>
+      {(!section || section === '10') && (<Suspense fallback={null}>
         <NewArrivalsCarousel source="featuredProducts" />
-      </Suspense>
+      </Suspense>)}
 
       {/* 9. Banner de temporada */}
-      <SeasonBanner config={fashion?.seasonBanner} />
+      {(!section || section === '11') && (<SeasonBanner config={fashion?.seasonBanner} />)}
 
-      <Suspense fallback={null}>
+      {(!section || section === '12') && (<Suspense fallback={null}>
         <ShopByLookSlot slot="before_footer" countryCode={countryCode ?? ""} titleClassName="f-section-title" />
-      </Suspense>
+      </Suspense>)}
 
       {/* 10. Newsletter */}
-      <FashionNewsletter config={fashion?.newsletter} />
+      {(!section || section === '13') && (<FashionNewsletter config={fashion?.newsletter} />)}
     </main>
   );
 }

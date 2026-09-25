@@ -1,6 +1,7 @@
 import type { MedusaContainer } from '@medusajs/framework/types';
 import { ContainerRegistrationKeys } from '@medusajs/framework/utils';
 
+import { readWaBotSwitch } from '../lib/whatsapp/bot-switch';
 import { runFlowTurn } from '../lib/whatsapp/flow/runtime';
 import { planTimeoutSweep, sweepCutoff, type SleepingRow } from '../lib/whatsapp/flow/timeouts';
 import { WHATSAPP_AGENT_MODULE } from '../modules/whatsapp-agent';
@@ -67,8 +68,31 @@ export default async function whatsappFlowTimeouts(container: MedusaContainer) {
     await waSvc.patchSession(phone, { graph: null } as never).catch(() => undefined);
   }
 
+  /**
+   * El interruptor del bot, UNA lectura por tienda y no por conversación.
+   *
+   * `runFlowTurn` lo consulta solo si no se lo pasan —ahí está el gate de verdad—,
+   * pero una pasada puede traer 200 conversaciones y serían 200 consultas por la
+   * misma respuesta. El barrido agrupa por tienda, que son pocas.
+   */
+  const porTienda = new Map<string, boolean>();
+  const botEncendido = async (siteId: string | null): Promise<boolean> => {
+    const key = siteId ?? '';
+    const cacheado = porTienda.get(key);
+    if (cacheado !== undefined) return cacheado;
+    const { enabled } = await readWaBotSwitch(container, siteId);
+    porTienda.set(key, enabled);
+    return enabled;
+  };
+
   for (const { phone, siteId } of plan.due) {
     try {
+      /**
+       * Con el bot apagado NO se despierta a nadie, y el plazo queda vencido a
+       * propósito: apagar PAUSA los recorridos en curso, no los cancela. Cuando
+       * alguien vuelva a prender el bot, la conversación sigue donde quedó.
+       */
+      if (!(await botEncendido(siteId))) continue;
       const session = (await waSvc.getSession(phone)) as unknown as { session_id?: string };
       await runFlowTurn({
         container,
@@ -79,6 +103,10 @@ export default async function whatsappFlowTimeouts(container: MedusaContainer) {
         text: null,
         selectionId: null,
         timedOut: true,
+        // El valor MEMOIZADO y no un `true` escrito a mano: el `continue` de arriba
+        // ya garantiza que es true, pero es una optimización. Si alguien la saca, esto
+        // sigue diciendo la verdad y el gate de `runFlowTurn` sigue cerrando.
+        botEnabled: await botEncendido(siteId),
       });
     } catch {
       // Una conversación que falla no puede frenar a las demás. Vuelve a entrar en

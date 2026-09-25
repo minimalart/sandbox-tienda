@@ -30,6 +30,7 @@ export const BundleCard = ({
   currencyCode,
   primaryColor,
   index,
+  className,
 }: {
   handle: string;
   title: string;
@@ -44,6 +45,8 @@ export const BundleCard = ({
   primaryColor: string | null | undefined;
   /** Posición estable dentro del listado: define el tono. */
   index: number;
+  /** Para estirarla a la celda cuando convive con cards de producto. */
+  className?: string;
 }) => {
   const siteHref = useSiteHref();
   const tone = generateBundleTone(primaryColor, index);
@@ -64,7 +67,7 @@ export const BundleCard = ({
       href={siteHref(`/bundles/${encodeURIComponent(handle)}`)}
       style={style}
       data-tone={tone.toneIndex}
-      className="group flex min-h-[220px] flex-col justify-between rounded-2xl border border-[--tone-border] bg-[--tone-bg] p-6 text-[--tone-fg] transition-colors duration-200 hover:bg-[--tone-bg-hover] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      className={`group flex min-h-[220px] flex-col justify-between rounded-2xl border border-[--tone-border] bg-[--tone-bg] p-6 text-[--tone-fg] transition-colors duration-200 hover:bg-[--tone-bg-hover] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${className ?? ""}`}
     >
       <div className="space-y-2">
         <p className="text-[11px] uppercase tracking-[0.18em] text-[--tone-fg-muted]">Kit</p>

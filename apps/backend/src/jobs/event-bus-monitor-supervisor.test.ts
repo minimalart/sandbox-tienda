@@ -38,9 +38,52 @@ test('con supervisor, el re-arme se le delega y el run() directo queda de fallba
 
 test('el aviso incluye el estado del supervisor', () => {
   // Para que el mail diga "ya se está reconstruyendo, van N" en vez de sólo "está caído".
-  assert.match(SRC, /describeSupervisor\(resolved\.supervisor\.snapshot\(\)\)/);
-  const text = SRC.slice(SRC.indexOf('const supervisorLine'), SRC.indexOf('alertThrottle.shouldEmit(verdict.kind)'));
+  assert.match(SRC, /describeSupervisor\(supervisorSnapshot\)/);
+  const text = SRC.slice(SRC.indexOf('const supervisorSnapshot'), SRC.indexOf('alertThrottle.shouldEmit(verdict.kind)'));
   assert.match(text, /\(report \?\? verdict\.detail\) \+ supervisorLine/);
+});
+
+/**
+ * ── EL PERÍODO DE GRACIA DEL MAIL ───────────────────────────────────────────
+ *
+ * El 2026-09-18 el supervisor se curó en UN SEGUNDO y el monitor mandó el mail
+ * igual, porque su primer tick cayó justo en ese segundo. La lógica de la gracia
+ * se prueba con dobles en `lib/event-bus-health.test.ts`; lo que se fija acá es el
+ * CABLEADO, que es donde está la trampa: el `AlertThrottle` ya existía y silencia
+ * 30 minutos por `kind`. Si el tick que posterga consumiera el slot del throttle,
+ * el tick siguiente no podría mandar nada y la gracia se habría comido el aviso de
+ * una caída real en vez de demorarlo.
+ */
+test('el tick que posterga NO consume el slot del throttle', () => {
+  const guard = SRC.slice(SRC.indexOf('const deferral = mailGrace.consider'));
+  const decision = guard.slice(0, guard.indexOf('\n\n'));
+  assert.match(
+    decision,
+    /if \(!deferral\.defer && !alertThrottle\.shouldEmit\(verdict\.kind\)\) return;/,
+    'el `&&` corta antes de `shouldEmit` cuando se posterga: así el throttle queda intacto para el tick siguiente',
+  );
+});
+
+test('lo que se demora es el MAIL, no la detección: el logger.error va antes del if', () => {
+  const tail = SRC.slice(SRC.indexOf('if (!deferral.defer && !alertThrottle.shouldEmit'));
+  const logIndex = tail.indexOf('logger.error(`[event-bus-monitor] ${text}`)');
+  const branchIndex = tail.indexOf('if (deferral.defer)');
+  assert.ok(logIndex > -1 && branchIndex > -1, 'cambió la forma del tramo de aviso');
+  assert.ok(
+    logIndex < branchIndex,
+    'el reporte completo tiene que quedar en el log también en el tick que posterga',
+  );
+  assert.match(tail.slice(branchIndex), /\} else \{\s*await mailAdmin\(/, 'el mail tiene que quedar en la rama que NO posterga');
+});
+
+test('la recuperación mira la gracia además del throttle', () => {
+  // Si el único rastro de la caída fue una postergación, `alertThrottle.reset()`
+  // devuelve false y sin esto se perdería la línea de RECUPERADO del blip.
+  const ok = SRC.slice(SRC.indexOf("if (verdict.status === 'ok')"));
+  const body = ok.slice(0, ok.indexOf('\n  }'));
+  assert.match(body, /const hadAlert = alertThrottle\.reset\(\);/);
+  assert.match(body, /const hadDeferred = mailGrace\.reset\(\);/);
+  assert.match(body, /if \(hadAlert \|\| hadDeferred\)/);
 });
 
 test('medusa-config apunta event_bus al módulo envuelto, no al paquete pelado', () => {

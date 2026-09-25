@@ -17,7 +17,19 @@ export const getTenantThemeStyles = cache(
       // Fondos del chrome: solo se declaran si el tenant los configuró. El
       // header/footer los consumen como `var(--header-bg, <su default>)`, así
       // que no declararlos = cada template conserva su fondo propio.
-      ...(colors.headerBackground && { "--header-bg": colors.headerBackground }),
+      // Sobre `headerBackground` derivamos fg/fg-muted/border por contraste WCAG
+      // (mismo criterio que --promo-button-fg) — solo se inyectan cuando hay bg
+      // custom, para no romper el look default de otros templates.
+      ...(colors.headerBackground && {
+        "--header-bg": colors.headerBackground,
+        "--header-fg": contrastForeground(colors.headerBackground),
+        "--header-fg-muted": mutedForeground(
+          contrastForeground(colors.headerBackground),
+        ),
+        "--header-border": borderForeground(
+          contrastForeground(colors.headerBackground),
+        ),
+      }),
       ...(colors.footerBackground && { "--footer-bg": colors.footerBackground }),
       // Boton "Promociones": el nav lo consume como
       // `var(--promo-button-bg, var(--primary-color))`, asi que sin configurar
@@ -49,6 +61,23 @@ function contrastForeground(hex: string): string {
     0.7152 * channel((n >> 8) & 255) +
     0.0722 * channel(n & 255);
   return luminance > 0.45 ? "#111827" : "#ffffff";
+}
+
+/**
+ * Texto secundario del header. Derivado del fg principal con alpha reducido,
+ * para que labels muted/íconos default se vean contra el `--header-bg` sin
+ * competir con el texto principal.
+ */
+function mutedForeground(fg: string): string {
+  return fg === "#ffffff" ? "rgba(255,255,255,0.72)" : "rgba(17,24,39,0.65)";
+}
+
+/**
+ * Borde sutil sobre el `--header-bg` (línea entre filas del header). Mismo
+ * criterio que `mutedForeground` pero con alpha aún más bajo.
+ */
+function borderForeground(fg: string): string {
+  return fg === "#ffffff" ? "rgba(255,255,255,0.15)" : "rgba(17,24,39,0.10)";
 }
 
 /** Parsea un hex (#rrggbb) a componentes HSL (0-360, 0-100, 0-100). */

@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { registerCartValidation } from '../../../../packages/contracts/plugin-runtime/src/cart-validation';
+import { registerCartValidation } from '../../../../packages/plugins/plugin-runtime/src/cart-validation';
 import { createHook, createWorkflow, WorkflowResponse, StepResponse } from '@medusajs/framework/workflows-sdk';
 
 test('real Medusa workflow accepts both validators, runs once each and compensates on later failure', async () => {

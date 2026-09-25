@@ -221,13 +221,16 @@ test('dice CUÁL conexión miró', () => {
   assert.match(fn, /NO la bloqueante/);
 });
 
-test('el import del destinatario prueba las dos formas del especificador', () => {
+test('el destinatario se carga por `require`, que es la única forma que resuelve en producción', () => {
   /**
-   * `admin-recipient.js` NO existe cuando el job corre desde `src/`, y así venía
-   * fallando SIEMPRE en producción con la extensión de email instalada.
+   * Acá hubo un doble intento `import('….js')` + `import('…')` y SEGUÍA fallando
+   * con el fix instalado —log del 2026-09-18 12:28:03— porque las dos ramas eran
+   * ESM y el resolver ESM no inventa extensiones: en producción el archivo es `.ts`.
+   * La medición está en `lib/lazy-module.ts`.
    */
   const body = SRC.slice(SRC.indexOf('async function importAdminRecipient'));
   const fn = body.slice(0, body.indexOf('\n}\n'));
-  assert.match(fn, /admin-recipient\.js/);
-  assert.match(fn, /admin-recipient'/, 'no prueba la forma sin extensión');
+  assert.match(fn, /loadLazyModule</, 'tiene que ir por el helper compartido');
+  assert.match(fn, /require\('\.\.\/modules\/email\/admin-recipient'\)/, 'falta la forma CJS, que es la que resuelve');
+  assert.doesNotMatch(fn, /admin-recipient\.js/, 'el `.js` relativo no resuelve cuando el backend corre el fuente');
 });

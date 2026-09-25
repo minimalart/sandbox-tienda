@@ -19,7 +19,11 @@ import { resolveSettingSync } from '../app-settings/resolve';
  */
 
 export type EmailTemplateSettings = {
-  /** Destinatario de los avisos internos. Vacío = no se manda ninguno. */
+  /**
+   * Destinatarios de los avisos internos, TAL COMO están guardados: puede ser
+   * una casilla o varias separadas por coma. Vacío = no se manda ninguno.
+   * Quien necesite las casillas sueltas usa `parseRecipientList`.
+   */
   adminEmail: string;
   /** Base pública de los PNG del email, sin barra final. Vacío = sin iconos. */
   iconsBaseUrl: string;

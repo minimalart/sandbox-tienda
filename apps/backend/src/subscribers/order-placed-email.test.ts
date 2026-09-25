@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { mapOrderItem, quantityOf } from './order-placed-email';
+import { mapOrderItem, quantityOf, withStockStatus } from './order-placed-email';
 
 /**
  * El mail de confirmación salía con "0 x $precio" y TOTAL $0 en todas las líneas.
@@ -216,6 +216,70 @@ test('un `tint` que no es un objeto no rompe el mapeo', () => {
     metadata: { tint: 'Brisa Chic' as unknown as Record<string, unknown> },
   });
   assert.equal(line.color_label, undefined);
+});
+
+/**
+ * DESDEELSUR-80/81: el mail admin necesita `shipping_methods.shipping_option_id`
+ * para resolver la ubicación de stock en una orden que NO es de retiro
+ * (`shipping_option → service_zone.fulfillment_set_id →
+ * location_fulfillment_set.stock_location_id`, ver
+ * `modules/email/order-stock-context.ts`). Sin este campo el pedido #81 (envío a
+ * domicilio) queda sin forma de saber de qué sucursal es el stock.
+ */
+test('pide shipping_methods.shipping_option_id, el eje para resolver stock en envíos', () => {
+  assert.match(SOURCE, /'shipping_methods\.shipping_option_id'/);
+});
+
+/**
+ * El IVA se cobraba DOS VECES (desdeelsur, orden #81): `getLineItemTotals` decide
+ * si `unit_price` ya incluye el impuesto con `item.is_tax_inclusive ?? context.
+ * includeTax`. Sin pedir el campo llega `undefined`, cae al default del contexto,
+ * y una línea con precio CON IVA se trata como si no lo tuviera: el 21% se suma
+ * una segunda vez. Mismo mecanismo del lado del envío
+ * (`shippingMethod.is_tax_inclusive`), que además necesita `amount` para poder
+ * calcular algo.
+ */
+test('pide items.is_tax_inclusive: sin esto el IVA se cobra dos veces', () => {
+  assert.match(SOURCE, /'items\.is_tax_inclusive'/);
+});
+
+test('pide shipping_methods.is_tax_inclusive y shipping_methods.amount', () => {
+  assert.match(SOURCE, /'shipping_methods\.is_tax_inclusive'/);
+  assert.match(SOURCE, /'shipping_methods\.amount'/);
+});
+
+test('el mail del CLIENTE no manda order_items con stock (sharedData tal cual)', () => {
+  const customerBlock = SOURCE.slice(SOURCE.indexOf("recipient_type: 'customer'") - 40, SOURCE.indexOf("recipient_type: 'customer'") + 40);
+  assert.match(customerBlock, /\{ \.\.\.sharedData, recipient_type: 'customer' \}/);
+});
+
+test('el mail ADMIN pisa order_items con la versión que lleva stock', () => {
+  const adminIndex = SOURCE.indexOf("recipient_type: 'creator'");
+  assert.ok(adminIndex > -1, 'no se encontró el bloque del mail admin');
+  const adminBlock = SOURCE.slice(adminIndex, adminIndex + 400);
+  assert.match(adminBlock, /order_items:\s*adminOrderItems/);
+});
+
+// ─── withStockStatus: el stock NUNCA viaja al mail del cliente ────────────────
+
+test('sin estado de stock, el ítem vuelve intacto (no agrega campos undefined)', () => {
+  const item = { title: 'Yerba Mate 1kg', quantity: 1 };
+  assert.deepEqual(withStockStatus(item, undefined), item);
+});
+
+test('con estado de stock, agrega los CUATRO campos que la plantilla admin pinta', () => {
+  const item = { title: 'Yerba Mate 1kg', quantity: 1 };
+  const merged = withStockStatus(item, {
+    status: 'insufficient',
+    status_label: 'Stock insuficiente',
+    status_color: '#b45309',
+    available_label: '1',
+  });
+  assert.equal(merged.title, 'Yerba Mate 1kg');
+  assert.equal(merged.stock_status, 'insufficient');
+  assert.equal(merged.stock_status_label, 'Stock insuficiente');
+  assert.equal(merged.stock_status_color, '#b45309');
+  assert.equal(merged.stock_available_label, '1');
 });
 
 /** El mismo formato que usa el subscriber, para no acoplar el test a un literal. */

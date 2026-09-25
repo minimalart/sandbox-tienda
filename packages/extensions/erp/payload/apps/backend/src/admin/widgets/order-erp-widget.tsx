@@ -29,17 +29,14 @@
 
 import { defineWidgetConfig } from '@medusajs/admin-sdk';
 import type { DetailWidgetProps } from '@medusajs/framework/types';
-import { Button, Container, Heading, Select, StatusBadge, Text, toast } from '@medusajs/ui';
+import { Button, Container, Heading, StatusBadge, Text, toast } from '@medusajs/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useErpOrderStatus, useSetErpOrderBillingDeposito } from '../hooks/api/erp';
+import { useErpOrderStatus, useErpOrderStockByLocation } from '../hooks/api/erp';
 import { ErpStatusBadge, statusLabelKey } from '../routes/erp/components/shared';
 import { registerErpTranslations } from '../translations/erp';
 
 type AdminOrder = { id: string };
-
-/** Sin depósito elegido: el `Select` de Medusa no acepta `value=""`. */
-const USE_CONFIG_DEFAULT = '__config_default__';
 
 const OrderErpWidget = ({ data }: DetailWidgetProps<AdminOrder>) => {
   const { i18n, t } = useTranslation('erp');
@@ -53,14 +50,12 @@ const OrderErpWidget = ({ data }: DetailWidgetProps<AdminOrder>) => {
     refetchInterval: 30_000,
   });
 
-  const [pendingDeposito, setPendingDeposito] = useState<string | null>(null);
-  const { mutate: setDeposito, isPending: isSaving } = useSetErpOrderBillingDeposito(orderId, {
-    onSuccess: () => {
-      setPendingDeposito(null);
-      toast.success(t('ORDER_BILLING_DEPOSITO_SAVED'));
-    },
-    onError: (error) => toast.error(error.message),
-  });
+  /*
+    Consulta aparte y no dentro del status: recorre inventario de todas las
+    ubicaciones mapeadas y no tiene por qué encarecer el poll de 30 s del
+    comprobante. Si falla, la sección no se muestra y el resto del widget sigue.
+  */
+  const { data: stock } = useErpOrderStockByLocation(orderId, { enabled: Boolean(orderId) });
 
   const [downloading, setDownloading] = useState(false);
 
@@ -116,20 +111,16 @@ const OrderErpWidget = ({ data }: DetailWidgetProps<AdminOrder>) => {
             {t('ORDER_BILLING_SECTION')}
           </Text>
 
-          {billing?.resolved ? (
-            <Text size="small" className="text-ui-fg-subtle">
-              {t('ORDER_BILLING_SHIP_FROM', {
-                deposito: billing.deposito,
-                location: billing.stock_location_name ?? billing.stock_location_id,
-              })}
-            </Text>
-          ) : (
-            <Text size="small" className="text-ui-fg-error">
-              {billing?.reason === 'not_mapped'
-                ? t('ORDER_BILLING_NOT_MAPPED', { deposito: billing?.deposito ?? '' })
-                : t('ORDER_BILLING_NOT_CONFIGURED')}
-            </Text>
-          )}
+          {/*
+            Bajo este trigger NO hay depósito facturador preconfigurado: factura
+            la sucursal desde donde el operador despacha. Antes de que exista un
+            fulfillment no hay nada resuelto todavía, y mostrar un error rojo
+            diciendo "falta configurar" sería mentirle al operador: no falta
+            nada, falta despachar.
+          */}
+          <Text size="small" className="text-ui-fg-subtle">
+            {t('ORDER_BILLING_FROM_FULFILLMENT')}
+          </Text>
 
           {billing?.confirmation ? (
             <Text size="xsmall" className="text-ui-fg-muted">
@@ -143,58 +134,55 @@ const OrderErpWidget = ({ data }: DetailWidgetProps<AdminOrder>) => {
               {t('ORDER_BILLING_NOT_CONFIRMED')}
             </Text>
           )}
-
-          {/*
-            El override sólo tiene sentido ANTES de notificar: después, el
-            comprobante ya salió con el depósito anterior y el backend rechaza el
-            cambio. Mostrar un control que va a dar error es peor que no
-            mostrarlo.
-          */}
-          {billing && billing.options.length > 0 && !status?.sale_event?.sent_at && (
-            <div className="flex items-end gap-2">
-              <div className="flex flex-1 flex-col gap-1">
-                <Text size="xsmall" className="text-ui-fg-subtle">
-                  {t('ORDER_BILLING_OVERRIDE')}
-                </Text>
-                <Select
-                  value={pendingDeposito ?? billing.override ?? USE_CONFIG_DEFAULT}
-                  onValueChange={setPendingDeposito}
-                  disabled={isSaving}
-                >
-                  <Select.Trigger>
-                    <Select.Value />
-                  </Select.Trigger>
-                  <Select.Content>
-                    <Select.Item value={USE_CONFIG_DEFAULT}>
-                      {t('ORDER_BILLING_USE_DEFAULT')}
-                    </Select.Item>
-                    {billing.options.map((option) => (
-                      <Select.Item key={option.deposito} value={option.deposito}>
-                        {option.stock_location_name
-                          ? `${option.deposito} — ${option.stock_location_name}`
-                          : option.deposito}
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select>
-              </div>
-              <Button
-                size="small"
-                variant="secondary"
-                isLoading={isSaving}
-                disabled={pendingDeposito === null}
-                onClick={() =>
-                  setDeposito(
-                    pendingDeposito === USE_CONFIG_DEFAULT ? null : (pendingDeposito as string)
-                  )
-                }
-              >
-                {t('ORDER_BILLING_SAVE')}
-              </Button>
-            </div>
-          )}
         </div>
       )}
+
+      {stock?.coverage?.length ? (
+        <div className="flex flex-col gap-3 px-6 py-4">
+          <Text size="small" weight="plus">
+            {t('ORDER_STOCK_SECTION')}
+          </Text>
+          <Text size="xsmall" className="text-ui-fg-muted">
+            {t('ORDER_STOCK_HELP')}
+          </Text>
+
+          {stock.coverage.map((location) => (
+            <div key={location.stock_location_id} className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <StatusBadge color={location.covers_all ? 'green' : 'red'}>
+                  {location.covers_all ? t('ORDER_STOCK_COVERS') : t('ORDER_STOCK_DOES_NOT_COVER')}
+                </StatusBadge>
+                <Text size="small">
+                  {location.stock_location_name ?? location.stock_location_id}
+                  <span className="text-ui-fg-muted">
+                    {' '}
+                    {t('ORDER_STOCK_DEPOSITO', { deposito: location.deposito })}
+                  </span>
+                </Text>
+              </div>
+
+              {/*
+                El faltante se dice con nombre y números. "No cubre" a secas
+                obligaría a abrir la pantalla de fulfillment para averiguar qué
+                falta, que es justo el viaje que esta sección evita.
+              */}
+              {location.gaps.length > 0 && (
+                <Text size="xsmall" className="text-ui-fg-muted pl-1">
+                  {location.gaps
+                    .map((gap) =>
+                      t('ORDER_STOCK_GAP', {
+                        title: gap.title,
+                        pending: gap.pending,
+                        available: gap.available,
+                      })
+                    )
+                    .join(' · ')}
+                </Text>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-2 px-6 py-4">
         <Text size="small" weight="plus">

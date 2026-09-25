@@ -1,4 +1,3 @@
-import type { AdvisorDimension } from '../../../modules/typesense/advisor';
 import { ADVISOR_FLOW, dimensionByKey, type AdvisorDimensionDef, type AdvisorOption } from './dimensions';
 import type { AdvisorAnswers } from './filters';
 
@@ -42,27 +41,42 @@ export const answeredCount = (answers: AdvisorAnswers): number =>
   ADVISOR_FLOW.filter((d) => Boolean(answers[d.key])).length;
 
 /**
- * Valores de una faceta que tienen al menos un producto. Un valor con count 0 no
- * viene en `facet_counts`, así que basta con leer las claves.
- */
-function availableValues(facets: FacetCounts, dimension: AdvisorDimension): Set<string> {
-  return new Set(Object.keys(facets[`advisor_${dimension}`] ?? {}));
-}
-
-/**
  * Opciones ofrecibles de una dimensión: las que tienen productos detrás. Una
  * opción se ofrece si CUALQUIERA de sus valores expandidos existe en la faceta
  * (elegir "Madera" también trae multisuperficie, así que alcanza con que haya
  * multisuperficie). Las que no filtran ("me da igual", "No") se ofrecen siempre.
+ *
+ * ─── LA FACETA VACÍA NO ES LO MISMO QUE LA FACETA AUSENTE ──────────────────
+ *
+ * Antes las dos caían en "se ofrecen todas", con el argumento de que era mejor
+ * preguntar de más que cortar el recorrido por falta de datos. Medido en
+ * producción, es al revés: preguntar por un campo que el índice no tiene es un
+ * callejón sin salida GARANTIZADO, porque la respuesta se traduce a
+ * `advisor_surface:=[...]` y matchea cero documentos.
+ *
+ * Es exactamente lo que pasó en desdeelsur (DESDEELSUR-72, TC-011): la colección
+ * tenía 2.263 productos y las cinco facetas del asesor en `total_values: 0`
+ * —ningún documento llevaba los atributos—, así que el cliente veía las cinco
+ * superficies y las tres que probó QA devolvieron "no encontré productos".
+ *
+ * Ahora se distingue: si Typesense devolvió la faceta y vino VACÍA, la dimensión
+ * se queda sin opciones que discriminen y `nextStep` la saltea. Con todas las
+ * dimensiones sin datos el recorrido termina en `show`/`exhausted` y muestra los
+ * productos del canal: menos filtrado de lo que se prometía, pero productos
+ * reales en vez de un cartel de error.
+ *
+ * La faceta AUSENTE (la clave no está en el objeto: no se pidió, o la respuesta
+ * vino incompleta) sigue ofreciendo todo — ahí sí no hay información, y la
+ * degradación vieja es la correcta.
  */
 export function offerableOptions(
   dimension: AdvisorDimensionDef,
   facets: FacetCounts,
 ): AdvisorOption[] {
-  const available = availableValues(facets, dimension.key);
-  // Sin datos de faceta (Typesense no devolvió nada para el campo) se ofrecen
-  // todas: mejor preguntar de más que cortar el recorrido por falta de datos.
-  if (available.size === 0) return dimension.options;
+  const counts = facets[`advisor_${dimension.key}`];
+  if (!counts) return dimension.options;
+  // Un valor con count 0 no viene en `facet_counts`, así que basta con las claves.
+  const available = new Set(Object.keys(counts));
   return dimension.options.filter(
     (option) => option.expand.length === 0 || option.expand.some((v) => available.has(v)),
   );

@@ -21,6 +21,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   AlertThrottle,
+  MailGrace,
   assessEventBusHealth,
   formatDownReport,
   PENDING_SAMPLE,
@@ -328,5 +329,100 @@ describe('el monitor no arrastra dependencias nuevas', () => {
       /^\s*import[^\n]*from\s+'\.\.\/modules\//m,
       'un import estático a `../modules/**` le entrega este job a la extensión dueña de ese módulo',
     );
+  });
+});
+
+/**
+ * EL PERÍODO DE GRACIA DEL MAIL.
+ *
+ * Lo que se protege acá son las DOS puntas a la vez, y son opuestas:
+ *
+ *   - El blip del 2026-09-18 (supervisor vivo, se curó en 1 segundo, el mail salió
+ *     igual) NO puede volver a mandar un mail.
+ *   - Las caídas de verdad (2026-08-31, 09-03, 09-09, de HORAS) tienen que seguir
+ *     avisando. Como máximo un tick más tarde.
+ *
+ * Una gracia que sólo cumpla la primera es peor que no tener gracia.
+ */
+describe('MailGrace', () => {
+  const rebuilding = { state: 'waiting', restarts: 1, consecutiveFailures: 1, nextRetryAt: 1_000 };
+  const healthy = { state: 'running', restarts: 0, consecutiveFailures: 0, nextRetryAt: null };
+  const settled = { uptimeMs: 3_600_000, bootGraceMs: 600_000 };
+
+  it('posterga el mail cuando el supervisor est\u00e1 en pleno rebuild', () => {
+    const grace = new MailGrace();
+    const verdict = grace.consider({ kind: 'worker-not-running', supervisor: rebuilding, ...settled });
+
+    assert.equal(verdict.defer, true);
+    assert.match(verdict.reason, /se est\u00e1 curando solo/);
+  });
+
+  it('posterga el mail cuando el proceso reci\u00e9n arranc\u00f3, aunque el supervisor figure sano', () => {
+    // El boot del 2026-09-18 tard\u00f3 462 s en llegar a `Server is ready` y el primer
+    // tick del cron cay\u00f3 ah\u00ed nom\u00e1s.
+    const grace = new MailGrace();
+    const verdict = grace.consider({
+      kind: 'worker-not-running',
+      supervisor: healthy,
+      uptimeMs: 480_000,
+      bootGraceMs: 600_000,
+    });
+
+    assert.equal(verdict.defer, true);
+    assert.match(verdict.reason, /arranc\u00f3 hace 480 s/);
+  });
+
+  it('EL CASO QUE IMPORTA: la ca\u00edda de verdad avisa en el tick siguiente', () => {
+    // Un tick postergado = 5 minutos. Las ca\u00eddas reales duraron horas.
+    const grace = new MailGrace();
+    const input = { kind: 'worker-not-running', supervisor: rebuilding, ...settled };
+
+    assert.equal(grace.consider(input).defer, true, 'el primer tick posterga');
+
+    const second = grace.consider(input);
+    assert.equal(second.defer, false, 'el segundo tick TIENE que mandar el mail');
+    assert.match(second.reason, /SIGUE ca\u00edd/);
+  });
+
+  it('sin supervisor en el proceso avisa en el primer tick, como siempre', () => {
+    // Una instalaci\u00f3n que apunte `event_bus` al paquete de Medusa pelado no tiene
+    // a nadie reconstruyendo el worker: postergar ah\u00ed ser\u00eda regalar 5 minutos.
+    const grace = new MailGrace();
+    const verdict = grace.consider({ kind: 'worker-not-running', supervisor: null, ...settled });
+
+    assert.equal(verdict.defer, false);
+    assert.match(verdict.reason, /no hay supervisor/);
+  });
+
+  it('con el supervisor sano y el proceso viejo tampoco posterga', () => {
+    const grace = new MailGrace();
+    const verdict = grace.consider({ kind: 'worker-not-running', supervisor: healthy, ...settled });
+
+    assert.equal(verdict.defer, false);
+    assert.match(verdict.reason, /no est\u00e1 reconstruyendo nada/);
+  });
+
+  it('la gracia es POR TIPO de falla, igual que el throttle', () => {
+    // Si el bus pasa de `worker-not-running` a `subscriber-stuck`, la segunda es
+    // informaci\u00f3n nueva y merece su propia evaluaci\u00f3n.
+    const grace = new MailGrace();
+    const base = { supervisor: rebuilding, ...settled };
+
+    assert.equal(grace.consider({ kind: 'worker-not-running', ...base }).defer, true);
+    assert.equal(grace.consider({ kind: 'subscriber-stuck', ...base }).defer, true);
+    assert.equal(grace.consider({ kind: 'worker-not-running', ...base }).defer, false);
+  });
+
+  it('despu\u00e9s de recuperar, un bache nuevo vuelve a tener su tick de gracia', () => {
+    const grace = new MailGrace();
+    const input = { kind: 'worker-not-running', supervisor: rebuilding, ...settled };
+
+    assert.equal(grace.consider(input).defer, true);
+    assert.equal(grace.reset(), true, 'reset() avisa que hab\u00eda algo postergado');
+    assert.equal(grace.consider(input).defer, true);
+  });
+
+  it('reset() sin nada postergado devuelve false (no inventa un RECUPERADO)', () => {
+    assert.equal(new MailGrace().reset(), false);
   });
 });

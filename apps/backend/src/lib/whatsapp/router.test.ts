@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { isGreeting, parseLeadingQuantity, planGreeting } from './router';
+import { isGreeting, opensMenuOnFreeText, parseLeadingQuantity, planGreeting } from './router';
 import { parseOrderDisplayId, parseEmail, formatOrderStatusForCustomer } from './order-lookup';
 import {
   formatBusinessHours,
@@ -15,6 +15,46 @@ import {
  * lo que sí puede romperse en silencio es el parseo (cantidades, números de pedido,
  * emails) y el formateo de horarios, que es donde están los casos raros.
  */
+
+/**
+ * LA PUERTA DE ENTRADA (DESDEELSUR-72, TC-000).
+ *
+ * Antes, el primer mensaje del cliente decidía en qué bot entraba: "Hola" abría el
+ * menú documentado y cualquier otra cosa abría una conversación libre que no está
+ * en ningún árbol. QA lo midió como bifurcación no controlada y marcó crítico los
+ * cinco hallazgos que salieron de esa rama.
+ */
+describe('opensMenuOnFreeText', () => {
+  const FRESH = { intent: null, step: null, answers: {} };
+
+  test('sesión nueva + compuerta encendida → menú', () => {
+    assert.equal(opensMenuOnFreeText(FRESH, true), true);
+  });
+
+  test('con la compuerta apagada sigue cayendo al agente', () => {
+    assert.equal(opensMenuOnFreeText(FRESH, false), false);
+  });
+
+  /**
+   * Adentro del recorrido NO se mete: ahí el agente es el que atiende lo que el
+   * router deliberadamente no resuelve (asesoramiento, devoluciones). Contestar el
+   * menú sería responderle con un cuestionario a quien preguntó algo concreto.
+   */
+  test('sesión en curso → no interrumpe con el menú', () => {
+    for (const session of [
+      { intent: 'buy', step: 'awaiting_search_query', answers: {} },
+      { intent: 'guided', step: null, answers: { surface: 'wood' } },
+      { intent: null, step: 'awaiting_order_number', answers: {} },
+    ]) {
+      assert.equal(opensMenuOnFreeText(session, true), false);
+    }
+  });
+
+  /** Una sesión vencida por inactividad vuelve a nacer vacía: el menú otra vez. */
+  test('la sesión que venció vuelve a ver el menú', () => {
+    assert.equal(opensMenuOnFreeText({ intent: undefined, step: undefined, answers: undefined }, true), true);
+  });
+});
 
 describe('planGreeting', () => {
   test('sesión recién arrancada → menú', () => {

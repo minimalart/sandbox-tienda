@@ -58,11 +58,16 @@ import type { RouteScopeState } from './scoped-routes';
 
 /** Clave: la ruta relativa a `src/api`, sin `route.ts`. Ej: `store/banners/[id]`. */
 export const STORE_ROUTE_SCOPE: Record<string, RouteScopeState> = {
+  'store/home-previews/[token]': {
+    state: 'not-applicable',
+    reason: 'Snapshot privado de la tienda fijada por el Admin, autorizado por token aleatorio de 256 bits con vencimiento; no depende de la tienda del visitante.',
+  },
   'store/marketing-privacy': { state: 'not-applicable', reason: 'configuracion publica resuelta por x-site-slug explicito o tienda principal; proyeccion allowlist sin secretos, como sites/[slug]/config' },
   'store/demo-stores': { state: 'not-applicable', reason: 'alias compatible del indice publico de tiendas' },
   'store/sites': { state: 'not-applicable', reason: 'indice publico de tiendas publicadas; proyeccion limitada a nombre, slug, logo, plantilla y forma canonica' },
   'store/orders/by-cart': { state: 'not-applicable', reason: 'consulta por capability cart_id para retorno de pago invitado; devuelve únicamente order_id y no lista órdenes ni datos personales' },
   'store/b2b/carts/[id]/presentations': { state: 'not-applicable', reason: 'carrito del cliente autenticado; valida customer_id, canal autorizado por publishable key y pertenencia del SKU a ese canal' },
+  'store/b2b/carts/[id]/sync': { state: 'not-applicable', reason: 'carrito del cliente autenticado; mismos guards que presentations (customer_id, canal de la publishable key, SKU del canal) mas el de productos bundle_only de la tienda del carrito' },
   'store/carts/[id]/checkout': { state: 'not-applicable', reason: 'cart capability plus authenticated customer and publishable channel checked by assertCartAccess; the site is resolved from the authorized cart' },
 
   // ── health ──────────────────────────────────────────────────────
@@ -171,6 +176,12 @@ export const STORE_ROUTE_SCOPE: Record<string, RouteScopeState> = {
     reason:
       'eje = cart_id: mismo camino que confirm — la demo_store se deriva del cart y el workflow ' +
       'valida el link antes de mutar line items',
+  },
+  'store/bundles/remove': {
+    state: 'not-applicable',
+    reason:
+      'eje = cart_id: sólo borra line items que pertenecen a ese cart y a ese bundle_instance_id ' +
+      '(los ids se resuelven server-side, no vienen del cliente); no lee ni expone contenido de tienda',
   },
 
   // ── billing-profiles ────────────────────────────────────────────

@@ -19,6 +19,9 @@ overrides:
   '@minimalart/mercatto-plugin-runtime': 0.6.1
 
 patchedDependencies:
+  '@medusajs/dashboard@2.18.0':
+    hash: mbr5zptuescsbn37gilzoqht6u
+    path: apps/backend/patches/@medusajs__dashboard@2.18.0.patch
   '@medusajs/loyalty-plugin@2.18.0':
     hash: qm4b34kmkbrayr6lpywzbagikm
     path: patches/@medusajs__loyalty-plugin@2.18.0.patch
@@ -74,10 +77,10 @@ importers:
         version: 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/dashboard':
         specifier: 2.18.0
-        version: 2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
+        version: 2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
       '@medusajs/draft-order':
         specifier: 2.18.0
-        version: 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+        version: 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       '@medusajs/framework':
         specifier: 2.18.0
         version: 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
@@ -89,10 +92,10 @@ importers:
         version: 2.18.0
       '@medusajs/loyalty-plugin':
         specifier: 2.18.0
-        version: 2.18.0(patch_hash=qm4b34kmkbrayr6lpywzbagikm)(2slpo77ut47tkw3sk6wn54gqpa)
+        version: 2.18.0(patch_hash=qm4b34kmkbrayr6lpywzbagikm)(2iawuulixtvakn4xuvebmdei7q)
       '@medusajs/medusa':
         specifier: 2.18.0
-        version: 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+        version: 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/modules-sdk':
         specifier: 2.18.0
         version: 2.18.0(@types/node@20.19.41)(express@5.2.1)
@@ -128,82 +131,82 @@ importers:
         version: 0.1.0
       '@minimalart/mercatto-plugin-abandoned-cart':
         specifier: ^1.7.0
-        version: 1.7.0(uhjxmqytp2pqylr6ouk2od46he)
+        version: 1.7.0(r2i52ypdkmun3v5cdsuokv252u)
       '@minimalart/mercatto-plugin-banners':
         specifier: ^1.1.0
-        version: 1.1.2(jf23goyn2teua6fsibthr2p6ni)
+        version: 1.1.2(lifg4gyn35neujvjw24z6ttmbe)
       '@minimalart/mercatto-plugin-blog':
         specifier: ^1.0.3
-        version: 1.0.3(yjxifdaivaastxnlvbwrbdnaiu)
+        version: 1.0.3(7tuo4n7awzanjhhwkden64rorm)
       '@minimalart/mercatto-plugin-brands':
         specifier: ^1.0.3
-        version: 1.0.3(jf23goyn2teua6fsibthr2p6ni)
+        version: 1.0.3(lifg4gyn35neujvjw24z6ttmbe)
       '@minimalart/mercatto-plugin-catalogador':
         specifier: ^1.1.1
-        version: 1.1.1(jf23goyn2teua6fsibthr2p6ni)
+        version: 1.1.1(lifg4gyn35neujvjw24z6ttmbe)
       '@minimalart/mercatto-plugin-checkout-links':
         specifier: ^1.1.2
-        version: 1.1.2(jf23goyn2teua6fsibthr2p6ni)
+        version: 1.1.2(lifg4gyn35neujvjw24z6ttmbe)
       '@minimalart/mercatto-plugin-comments':
         specifier: ^1.4.4
-        version: 1.4.4(vces6vcbi6lgdobz2j2kgrto44)
+        version: 1.4.4(wfdx3tofxrweprb3fsvs6nqydq)
       '@minimalart/mercatto-plugin-commerce-dashboard':
         specifier: ^1.16.1
-        version: 1.16.1(sfs3zpeqgesz6zeeedw3ftirqy)
+        version: 1.16.1(u2v2pwpbleckjupucasya7k75m)
       '@minimalart/mercatto-plugin-contact':
         specifier: 1.4.1
-        version: 1.4.1(mvzvilzre6opodbb6nrxnisgua)
+        version: 1.4.1(ic4lll6v6etwodq2akitmlihai)
       '@minimalart/mercatto-plugin-database-explorer':
         specifier: ^1.1.1
-        version: 1.1.1(njat2ydz4gun4kebd72xg4gada)
+        version: 1.1.1(dz4cet636mj5hqm6qin53i3nr4)
       '@minimalart/mercatto-plugin-dynamic-groups':
         specifier: ^1.3.2
-        version: 1.3.2(vces6vcbi6lgdobz2j2kgrto44)
+        version: 1.3.2(wfdx3tofxrweprb3fsvs6nqydq)
       '@minimalart/mercatto-plugin-fiscal-documentation':
         specifier: ^1.0.8
-        version: 1.0.8(vgh72wgcojtavbh5rdtorgpzhm)
+        version: 1.0.8(5ly36dj7ei2c7lg4ii5khlfyxa)
       '@minimalart/mercatto-plugin-ga4':
         specifier: ^1.0.2
-        version: 1.0.2(qd6d7mesufoe7s5noyxdtignrm)
+        version: 1.0.2(37fjw7owpyt73rjpy5zg6llreu)
       '@minimalart/mercatto-plugin-gift-cards':
         specifier: ^1.1.1
-        version: 1.1.3(5jryzdhkg2o2efnsjv56zcibwq)
+        version: 1.1.3(tjhcobpdszt4zhcf6hlt7pcnou)
       '@minimalart/mercatto-plugin-landing-pages':
         specifier: ^1.1.2
-        version: 1.1.2(vg3gvqfzjrp7inzwatclkfa6di)
+        version: 1.1.2(umlcflfh4x7novf7vwcuya7wp4)
       '@minimalart/mercatto-plugin-loyalty':
         specifier: 1.1.3
-        version: 1.1.3(k6h5swe5kdpox3ajwoixxyfcd4)
+        version: 1.1.3(36oku44zsst5ckct72ov2x6x3u)
       '@minimalart/mercatto-plugin-marketplaces':
         specifier: ^1.2.0
-        version: 1.2.0(y43wzfwqzn5ppcnsenlihc7xgy)
+        version: 1.2.0(kgdjs5zcrpqwlodnrd6b5vqsou)
       '@minimalart/mercatto-plugin-media-library':
         specifier: ^1.1.5
-        version: 1.1.5(vgh72wgcojtavbh5rdtorgpzhm)
+        version: 1.1.5(5ly36dj7ei2c7lg4ii5khlfyxa)
       '@minimalart/mercatto-plugin-multistore-contract':
         specifier: 0.2.0
         version: 0.2.0
       '@minimalart/mercatto-plugin-payment-benefits':
         specifier: ^1.0.2
-        version: 1.0.2(jf23goyn2teua6fsibthr2p6ni)
+        version: 1.0.2(lifg4gyn35neujvjw24z6ttmbe)
       '@minimalart/mercatto-plugin-pdf-catalog':
         specifier: ^1.3.5
-        version: 1.3.5(crlf2chke2udkxwe5suaec7ria)
+        version: 1.3.5(euqusnomkh55dupnvi6wmsgdfm)
       '@minimalart/mercatto-plugin-runtime':
         specifier: 0.6.1
         version: 0.6.1(@medusajs/icons@2.18.0(react@18.3.1))(react@18.3.1)
       '@minimalart/mercatto-plugin-shop-by-looks':
         specifier: ^1.0.3
-        version: 1.0.3(jf23goyn2teua6fsibthr2p6ni)
+        version: 1.0.3(lifg4gyn35neujvjw24z6ttmbe)
       '@minimalart/mercatto-plugin-space-designer':
         specifier: ^1.1.0
-        version: 1.1.0(fkmxtj5o2mc7eq42cpf4qmv4zi)
+        version: 1.1.0(c3yva7k2soszdlwq4y4cmlq2au)
       '@minimalart/mercatto-plugin-videos':
         specifier: ^1.2.4
-        version: 1.2.4(63sacwudhffoamwzc3wv3ac3pa)
+        version: 1.2.4(2yghetomcda7rjj3ipxcol3pq4)
       '@minimalart/mercatto-plugin-wishlist':
         specifier: ^1.0.0
-        version: 1.0.0(zhcj4fx3azbgzvnddkm5xwbtmi)
+        version: 1.0.0(62qby7yquowl2ps5cyrcfzlsoa)
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
         version: 1.29.0(zod@4.2.0)
@@ -474,7 +477,7 @@ importers:
         version: 1.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@minimalart/mercatto-plugin-loyalty':
         specifier: ^1.1.0
-        version: 1.1.0(p5l2xrfouaszvgmabjvgen4fby)
+        version: 1.1.0(suagxn2b7znruhicj5ui6iaq74)
       '@minimalart/mercatto-plugin-storefront-recommendations':
         specifier: ^0.2.0
         version: 0.2.0(@medusajs/js-sdk@2.18.0)(@medusajs/types@2.18.0(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0)))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@minimalart/mercatto-plugin-storefront-shared@packages+plugins+plugin-storefront-shared)(@types/react@19.2.16)(next@16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
@@ -675,64 +678,6 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
-  packages/contracts/multistore-contract:
-    devDependencies:
-      typescript:
-        specifier: ^5.6.3
-        version: 5.9.3
-
-  packages/contracts/plugin-runtime:
-    devDependencies:
-      '@medusajs/icons':
-        specifier: 2.18.0
-        version: 2.18.0(react@18.3.1)
-      '@types/react':
-        specifier: ^19.0.6
-        version: 19.2.16
-      react:
-        specifier: ^18.3.1
-        version: 18.3.1
-      typescript:
-        specifier: ^5.6.3
-        version: 5.9.3
-
-  packages/contracts/storefront-shared:
-    dependencies:
-      '@heroicons/react':
-        specifier: ^2.1.5
-        version: 2.2.0(react@19.2.7)
-      '@medusajs/js-sdk':
-        specifier: 2.18.0
-        version: 2.18.0
-      '@medusajs/types':
-        specifier: 2.18.0
-        version: 2.18.0(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))
-      '@medusajs/ui':
-        specifier: ^4
-        version: 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
-      zustand:
-        specifier: ^5.0.8
-        version: 5.0.14(@types/react@19.2.16)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
-    devDependencies:
-      '@types/react':
-        specifier: ^19.0.6
-        version: 19.2.16
-      '@types/react-dom':
-        specifier: ^19.0.2
-        version: 19.2.3(@types/react@19.2.16)
-      next:
-        specifier: ^16
-        version: 16.2.9(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react:
-        specifier: ^19.0.0
-        version: 19.2.7
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.7(react@19.2.7)
-      typescript:
-        specifier: ^5.6.3
-        version: 5.9.3
-
   packages/extensions/ai-assistant:
     dependencies:
       '@repo/extension-store-config':
@@ -744,15 +689,18 @@ importers:
       '@repo/extension-delivery':
         specifier: workspace:*
         version: link:../delivery
+      '@repo/extension-email-templates':
+        specifier: workspace:*
+        version: link:../email-templates
 
   packages/extensions/b2b:
     dependencies:
       '@minimalart/mercatto-plugin-dynamic-groups':
         specifier: ^1.3.1
-        version: 1.3.1(3uwdffcdvrxqf3lcvbafxqek6q)
+        version: 1.3.1(7apl5do5qgwf6i4pktnsxkagye)
       '@minimalart/mercatto-plugin-fiscal-documentation':
         specifier: ^1.0.4
-        version: 1.0.4(g2thamqhbnnjjzp6ifmvqiwboa)
+        version: 1.0.4(doiqrodjzm4de4qdrmwfmgqktu)
       '@repo/extension-email-templates':
         specifier: workspace:*
         version: link:../email-templates
@@ -765,7 +713,7 @@ importers:
     dependencies:
       '@minimalart/mercatto-plugin-fiscal-documentation':
         specifier: ^1.0.4
-        version: 1.0.4(g2thamqhbnnjjzp6ifmvqiwboa)
+        version: 1.0.4(doiqrodjzm4de4qdrmwfmgqktu)
       '@repo/extension-b2b':
         specifier: workspace:*
         version: link:../b2b
@@ -775,6 +723,9 @@ importers:
       '@repo/extension-delivery':
         specifier: workspace:*
         version: link:../delivery
+      '@repo/extension-email-templates':
+        specifier: workspace:*
+        version: link:../email-templates
 
   packages/extensions/delivery:
     dependencies:
@@ -796,7 +747,7 @@ importers:
     dependencies:
       '@minimalart/mercatto-plugin-payment-benefits':
         specifier: ^1.0.1
-        version: 1.0.1(g2thamqhbnnjjzp6ifmvqiwboa)
+        version: 1.0.1(doiqrodjzm4de4qdrmwfmgqktu)
 
   packages/extensions/multistore: {}
 
@@ -12527,7 +12478,7 @@ snapshots:
     dependencies:
       '@medusajs/admin-shared': 2.18.0
       '@medusajs/admin-vite-plugin': 2.18.0(picomatch@4.0.4)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))
-      '@medusajs/dashboard': 2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
+      '@medusajs/dashboard': 2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
       '@vitejs/plugin-react': 4.7.0(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))
       autoprefixer: 10.5.0(postcss@8.5.15)
       compression: 1.8.1
@@ -12561,7 +12512,7 @@ snapshots:
     dependencies:
       '@medusajs/admin-shared': 2.18.0
       '@medusajs/admin-vite-plugin': 2.18.0(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))
-      '@medusajs/dashboard': 2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
+      '@medusajs/dashboard': 2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
       '@vitejs/plugin-react': 4.7.0(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))
       autoprefixer: 10.5.0(postcss@8.5.15)
       compression: 1.8.1
@@ -12595,7 +12546,7 @@ snapshots:
     dependencies:
       '@medusajs/admin-shared': 2.18.0
       '@medusajs/admin-vite-plugin': 2.18.0(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))
-      '@medusajs/dashboard': 2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
+      '@medusajs/dashboard': 2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
       '@vitejs/plugin-react': 4.7.0(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))
       autoprefixer: 10.5.0(postcss@8.5.15)
       compression: 1.8.1
@@ -13073,7 +13024,7 @@ snapshots:
     dependencies:
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6)
 
-  '@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)':
+  '@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)':
     dependencies:
       '@ariakit/react': 0.4.29(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@babel/runtime': 7.29.7
@@ -13205,7 +13156,7 @@ snapshots:
       - supports-color
       - tedious
 
-  '@medusajs/draft-order@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@17.0.21))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
+  '@medusajs/draft-order@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@17.0.21))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@ariakit/react': 0.4.29(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@babel/runtime': 7.29.7
@@ -13223,7 +13174,7 @@ snapshots:
     optionalDependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/cli': 2.18.0(@types/node@17.0.21)
-      '@medusajs/dashboard': 2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
+      '@medusajs/dashboard': 2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
       '@medusajs/icons': 2.18.0(react@19.2.7)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
       react: 19.2.7
@@ -13233,7 +13184,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@medusajs/draft-order@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
+  '@medusajs/draft-order@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@ariakit/react': 0.4.29(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@babel/runtime': 7.29.7
@@ -13251,7 +13202,7 @@ snapshots:
     optionalDependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/cli': 2.18.0(@types/node@20.19.41)
-      '@medusajs/dashboard': 2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
+      '@medusajs/dashboard': 2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       react: 18.3.1
@@ -13261,7 +13212,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@medusajs/draft-order@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
+  '@medusajs/draft-order@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@ariakit/react': 0.4.29(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@babel/runtime': 7.29.7
@@ -13279,7 +13230,7 @@ snapshots:
     optionalDependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/cli': 2.18.0(@types/node@22.19.19)
-      '@medusajs/dashboard': 2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
+      '@medusajs/dashboard': 2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
       '@medusajs/icons': 2.18.0(react@19.2.7)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
       react: 19.2.7
@@ -13642,21 +13593,21 @@ snapshots:
     dependencies:
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6)
 
-  '@medusajs/loyalty-plugin@2.18.0(patch_hash=qm4b34kmkbrayr6lpywzbagikm)(2slpo77ut47tkw3sk6wn54gqpa)':
+  '@medusajs/loyalty-plugin@2.18.0(patch_hash=qm4b34kmkbrayr6lpywzbagikm)(2iawuulixtvakn4xuvebmdei7q)':
     dependencies:
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
     optionalDependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/cli': 2.18.0(@types/node@20.19.41)
-      '@medusajs/dashboard': 2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
+      '@medusajs/dashboard': 2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
       react-router-dom: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
-  '@medusajs/medusa@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@17.0.21))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@17.0.21)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(picomatch@4.0.4)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)(yaml@2.9.0)':
+  '@medusajs/medusa@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@17.0.21))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@17.0.21)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(picomatch@4.0.4)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)(yaml@2.9.0)':
     dependencies:
       '@inquirer/checkbox': 2.5.0
       '@inquirer/confirm': 2.0.17
@@ -13678,7 +13629,7 @@ snapshots:
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/currency': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/customer': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))
-      '@medusajs/draft-order': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@17.0.21))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+      '@medusajs/draft-order': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@17.0.21))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
       '@medusajs/event-bus-local': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/event-bus-redis': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/file': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))
@@ -13760,7 +13711,7 @@ snapshots:
       - typescript
       - yaml
 
-  '@medusajs/medusa@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)':
+  '@medusajs/medusa@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)':
     dependencies:
       '@inquirer/checkbox': 2.5.0
       '@inquirer/confirm': 2.0.17
@@ -13782,7 +13733,7 @@ snapshots:
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/currency': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/customer': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
-      '@medusajs/draft-order': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+      '@medusajs/draft-order': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       '@medusajs/event-bus-local': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/event-bus-redis': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/file': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
@@ -13864,7 +13815,7 @@ snapshots:
       - typescript
       - yaml
 
-  '@medusajs/medusa@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@22.19.19)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)':
+  '@medusajs/medusa@2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@22.19.19)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)':
     dependencies:
       '@inquirer/checkbox': 2.5.0
       '@inquirer/confirm': 2.0.17
@@ -13886,7 +13837,7 @@ snapshots:
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))
       '@medusajs/currency': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))
       '@medusajs/customer': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))
-      '@medusajs/draft-order': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+      '@medusajs/draft-order': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
       '@medusajs/event-bus-local': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))
       '@medusajs/event-bus-redis': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))
       '@medusajs/file': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))
@@ -15009,14 +14960,14 @@ snapshots:
 
   '@minimalart/mercatto-multistore-contract@0.1.0': {}
 
-  '@minimalart/mercatto-plugin-abandoned-cart@1.7.0(uhjxmqytp2pqylr6ouk2od46he)':
+  '@minimalart/mercatto-plugin-abandoned-cart@1.7.0(r2i52ypdkmun3v5cdsuokv252u)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15031,7 +14982,7 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-banners@1.1.2(jf23goyn2teua6fsibthr2p6ni)':
+  '@minimalart/mercatto-plugin-banners@1.1.2(lifg4gyn35neujvjw24z6ttmbe)':
     dependencies:
       '@dnd-kit/core': 6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@dnd-kit/sortable': 8.0.0(@dnd-kit/core@6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -15041,7 +14992,7 @@ snapshots:
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15055,7 +15006,7 @@ snapshots:
       sharp: 0.33.5
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-blog@1.0.3(yjxifdaivaastxnlvbwrbdnaiu)':
+  '@minimalart/mercatto-plugin-blog@1.0.3(7tuo4n7awzanjhhwkden64rorm)':
     dependencies:
       '@dnd-kit/core': 6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@dnd-kit/sortable': 8.0.0(@dnd-kit/core@6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -15065,7 +15016,7 @@ snapshots:
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15098,14 +15049,14 @@ snapshots:
     transitivePeerDependencies:
       - '@tiptap/pm'
 
-  '@minimalart/mercatto-plugin-brands@1.0.3(jf23goyn2teua6fsibthr2p6ni)':
+  '@minimalart/mercatto-plugin-brands@1.0.3(lifg4gyn35neujvjw24z6ttmbe)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15118,14 +15069,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-catalogador@1.1.1(jf23goyn2teua6fsibthr2p6ni)':
+  '@minimalart/mercatto-plugin-catalogador@1.1.1(lifg4gyn35neujvjw24z6ttmbe)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15138,14 +15089,14 @@ snapshots:
       sharp: 0.33.5
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-checkout-links@1.1.2(jf23goyn2teua6fsibthr2p6ni)':
+  '@minimalart/mercatto-plugin-checkout-links@1.1.2(lifg4gyn35neujvjw24z6ttmbe)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15158,14 +15109,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-comments@1.4.4(vces6vcbi6lgdobz2j2kgrto44)':
+  '@minimalart/mercatto-plugin-comments@1.4.4(wfdx3tofxrweprb3fsvs6nqydq)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15179,14 +15130,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-commerce-dashboard@1.16.1(sfs3zpeqgesz6zeeedw3ftirqy)':
+  '@minimalart/mercatto-plugin-commerce-dashboard@1.16.1(u2v2pwpbleckjupucasya7k75m)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15204,12 +15155,12 @@ snapshots:
       react-router-dom: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       recharts: 2.15.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
-  '@minimalart/mercatto-plugin-contact@1.4.1(mvzvilzre6opodbb6nrxnisgua)':
+  '@minimalart/mercatto-plugin-contact@1.4.1(ic4lll6v6etwodq2akitmlihai)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@mikro-orm/core': 6.6.14
       '@mikro-orm/knex': 6.6.14(@mikro-orm/core@6.6.14)(pg@8.21.0)
@@ -15221,12 +15172,12 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 3.25.76
 
-  '@minimalart/mercatto-plugin-database-explorer@1.1.1(njat2ydz4gun4kebd72xg4gada)':
+  '@minimalart/mercatto-plugin-database-explorer@1.1.1(dz4cet636mj5hqm6qin53i3nr4)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@mikro-orm/core': 6.6.14
       '@mikro-orm/knex': 6.6.14(@mikro-orm/core@6.6.14)(pg@8.21.0)
@@ -15237,14 +15188,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-dynamic-groups@1.3.1(3uwdffcdvrxqf3lcvbafxqek6q)':
+  '@minimalart/mercatto-plugin-dynamic-groups@1.3.1(7apl5do5qgwf6i4pktnsxkagye)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6)
       '@medusajs/icons': 2.18.0(react@19.2.7)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@22.19.19)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@22.19.19)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@22.19.19)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15257,14 +15208,14 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-dynamic-groups@1.3.2(vces6vcbi6lgdobz2j2kgrto44)':
+  '@minimalart/mercatto-plugin-dynamic-groups@1.3.2(wfdx3tofxrweprb3fsvs6nqydq)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15278,14 +15229,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-fiscal-documentation@1.0.4(g2thamqhbnnjjzp6ifmvqiwboa)':
+  '@minimalart/mercatto-plugin-fiscal-documentation@1.0.4(doiqrodjzm4de4qdrmwfmgqktu)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6)
       '@medusajs/icons': 2.18.0(react@19.2.7)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@22.19.19)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@22.19.19)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@22.19.19)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15301,14 +15252,14 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-fiscal-documentation@1.0.8(vgh72wgcojtavbh5rdtorgpzhm)':
+  '@minimalart/mercatto-plugin-fiscal-documentation@1.0.8(5ly36dj7ei2c7lg4ii5khlfyxa)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15324,14 +15275,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-ga4@1.0.2(qd6d7mesufoe7s5noyxdtignrm)':
+  '@minimalart/mercatto-plugin-ga4@1.0.2(37fjw7owpyt73rjpy5zg6llreu)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15348,15 +15299,15 @@ snapshots:
       react-router-dom: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-gift-cards@1.1.3(5jryzdhkg2o2efnsjv56zcibwq)':
+  '@minimalart/mercatto-plugin-gift-cards@1.1.3(tjhcobpdszt4zhcf6hlt7pcnou)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/loyalty-plugin': 2.18.0(patch_hash=qm4b34kmkbrayr6lpywzbagikm)(2slpo77ut47tkw3sk6wn54gqpa)
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/loyalty-plugin': 2.18.0(patch_hash=qm4b34kmkbrayr6lpywzbagikm)(2iawuulixtvakn4xuvebmdei7q)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15370,7 +15321,7 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-landing-pages@1.1.2(vg3gvqfzjrp7inzwatclkfa6di)':
+  '@minimalart/mercatto-plugin-landing-pages@1.1.2(umlcflfh4x7novf7vwcuya7wp4)':
     dependencies:
       '@measured/puck': 0.20.2(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
       '@medusajs/admin-sdk': 2.18.0
@@ -15378,7 +15329,7 @@ snapshots:
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15396,14 +15347,14 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  '@minimalart/mercatto-plugin-loyalty@1.1.0(p5l2xrfouaszvgmabjvgen4fby)':
+  '@minimalart/mercatto-plugin-loyalty@1.1.0(suagxn2b7znruhicj5ui6iaq74)':
     dependencies:
       '@heroicons/react': 2.2.0(react@19.2.7)
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@19.2.7)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@17.0.21))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@17.0.21)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(picomatch@4.0.4)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)(yaml@2.9.0)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@17.0.21))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@17.0.21))(@types/node@17.0.21)(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@17.0.21)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(picomatch@4.0.4)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)(yaml@2.9.0)
       '@medusajs/types': 2.18.0(ioredis@5.11.0)(vite@5.4.21(@types/node@17.0.21)(terser@5.48.0))
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
       '@mikro-orm/core': 6.6.14
@@ -15417,14 +15368,14 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-loyalty@1.1.3(k6h5swe5kdpox3ajwoixxyfcd4)':
+  '@minimalart/mercatto-plugin-loyalty@1.1.3(36oku44zsst5ckct72ov2x6x3u)':
     dependencies:
       '@heroicons/react': 2.2.0(react@18.3.1)
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/types': 2.18.0(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@mikro-orm/core': 6.6.14
@@ -15440,13 +15391,13 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-marketplaces@1.2.0(y43wzfwqzn5ppcnsenlihc7xgy)':
+  '@minimalart/mercatto-plugin-marketplaces@1.2.0(kgdjs5zcrpqwlodnrd6b5vqsou)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@mikro-orm/migrations': 6.6.14(@mikro-orm/core@6.6.14)(@types/node@20.19.41)(pg@8.21.0)
       '@minimalart/mercatto-plugin-runtime': 0.6.1(@medusajs/icons@2.18.0(react@18.3.1))(react@18.3.1)
@@ -15457,14 +15408,14 @@ snapshots:
       react-router-dom: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-media-library@1.1.5(vgh72wgcojtavbh5rdtorgpzhm)':
+  '@minimalart/mercatto-plugin-media-library@1.1.5(5ly36dj7ei2c7lg4ii5khlfyxa)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15481,14 +15432,14 @@ snapshots:
 
   '@minimalart/mercatto-plugin-multistore-contract@0.2.0': {}
 
-  '@minimalart/mercatto-plugin-payment-benefits@1.0.1(g2thamqhbnnjjzp6ifmvqiwboa)':
+  '@minimalart/mercatto-plugin-payment-benefits@1.0.1(doiqrodjzm4de4qdrmwfmgqktu)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6)
       '@medusajs/icons': 2.18.0(react@19.2.7)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@22.19.19)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@22.19.19))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@22.19.19))(@types/node@22.19.19)(ioredis@5.11.0)(vite@5.4.21(@types/node@22.19.19)(terser@5.48.0))(zod@4.3.6))(@medusajs/icons@2.18.0(react@19.2.7))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@22.19.19)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@19.2.7(react@19.2.7))(react-router-dom@6.30.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@22.19.19)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15501,14 +15452,14 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-payment-benefits@1.0.2(jf23goyn2teua6fsibthr2p6ni)':
+  '@minimalart/mercatto-plugin-payment-benefits@1.0.2(lifg4gyn35neujvjw24z6ttmbe)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15521,14 +15472,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-pdf-catalog@1.3.5(crlf2chke2udkxwe5suaec7ria)':
+  '@minimalart/mercatto-plugin-pdf-catalog@1.3.5(euqusnomkh55dupnvi6wmsgdfm)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15553,14 +15504,14 @@ snapshots:
       '@medusajs/icons': 2.18.0(react@19.2.7)
       react: 19.2.7
 
-  '@minimalart/mercatto-plugin-shop-by-looks@1.0.3(jf23goyn2teua6fsibthr2p6ni)':
+  '@minimalart/mercatto-plugin-shop-by-looks@1.0.3(lifg4gyn35neujvjw24z6ttmbe)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15573,14 +15524,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-space-designer@1.1.0(fkmxtj5o2mc7eq42cpf4qmv4zi)':
+  '@minimalart/mercatto-plugin-space-designer@1.1.0(c3yva7k2soszdlwq4y4cmlq2au)':
     dependencies:
       '@medusajs/admin-sdk': 2.18.0
       '@medusajs/core-flows': 2.18.0(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15609,7 +15560,7 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  '@minimalart/mercatto-plugin-videos@1.2.4(63sacwudhffoamwzc3wv3ac3pa)':
+  '@minimalart/mercatto-plugin-videos@1.2.4(2yghetomcda7rjj3ipxcol3pq4)':
     dependencies:
       '@dnd-kit/core': 6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@dnd-kit/sortable': 8.0.0(@dnd-kit/core@6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -15619,7 +15570,7 @@ snapshots:
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
       '@medusajs/icons': 2.18.0(react@18.3.1)
       '@medusajs/js-sdk': 2.18.0
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/ui': 4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
@@ -15637,10 +15588,10 @@ snapshots:
       tus-js-client: 4.3.1
       zod: 4.2.0
 
-  '@minimalart/mercatto-plugin-wishlist@1.0.0(zhcj4fx3azbgzvnddkm5xwbtmi)':
+  '@minimalart/mercatto-plugin-wishlist@1.0.0(62qby7yquowl2ps5cyrcfzlsoa)':
     dependencies:
       '@medusajs/framework': 2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0)
-      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
+      '@medusajs/medusa': 2.18.0(@medusajs/admin-sdk@2.18.0)(@medusajs/cli@2.18.0(@types/node@20.19.41))(@medusajs/dashboard@2.18.0(patch_hash=mbr5zptuescsbn37gilzoqht6u)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(typescript@5.9.3))(@medusajs/framework@2.18.0(@medusajs/cli@2.18.0(@types/node@20.19.41))(@types/node@20.19.41)(ioredis@5.11.0)(vite@5.4.21(@types/node@20.19.41)(terser@5.48.0))(zod@4.2.0))(@medusajs/icons@2.18.0(react@18.3.1))(@medusajs/ui@4.2.0(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(@swc/core@1.15.40(@swc/helpers@0.5.23))(@types/node@20.19.41)(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(awilix@8.0.1)(posthog-node@5.35.11(rxjs@7.8.2))(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(terser@5.48.0)(typescript@5.9.3)
       '@medusajs/utils': 2.18.0(@types/node@20.19.41)(express@5.2.1)
       '@mikro-orm/core': 6.6.14
       '@mikro-orm/knex': 6.6.14(@mikro-orm/core@6.6.14)(pg@8.21.0)

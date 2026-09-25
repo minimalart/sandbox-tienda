@@ -30,7 +30,6 @@ import HomeTopbar from '@modules/home/components/topbar';
 import BrandsStickyBanner from '@modules/layout/components/brands-sticky-banner';
 import CompareFloatingTray from '@modules/layout/components/compare-floating-tray';
 import BranchGate from '@modules/layout/components/branch-gate';
-import CartMismatchBanner from '@modules/layout/components/cart-mismatch-banner';
 
 import PromoConflictGuard from '@modules/layout/components/promo-conflict-guard';
 import CartDrawerMount from '@modules/layout/components/cart-drawer/cart-drawer-mount';
@@ -51,7 +50,8 @@ import SportsFooter from '@modules/home-sports/components/sports-footer';
 import SportsStickyFilters from '@modules/home-sports/components/sports-sticky-filters';
 import CampaignHeader from '@modules/home-campaign/components/campaign-header';
 import CampaignFooter from '@modules/home-campaign/components/campaign-footer';
-import { usesCustomChrome as templateUsesCustomChrome } from '@lib/site-config/template-helpers';
+import CampaignPoweredByFloating from '@modules/home-campaign/components/campaign-powered-by-floating';
+import { usesCustomChrome as templateUsesCustomChrome, templateWrapperClass } from '@lib/site-config/template-helpers';
 import FreeShippingPriceNudge from '@modules/shipping/components/free-shipping-price-nudge';
 import { buildOrganizationJsonLd } from '@lib/util/seo/jsonld';
 import JsonLd from '@modules/common/components/json-ld';
@@ -68,6 +68,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function PageLayout(props: {
 	children: React.ReactNode;
 	params: Promise<{ countryCode: string }>;
+	preview?: boolean;
 }) {
 	const { countryCode } = await props.params;
 	// Datos independientes: resolverlos en paralelo en vez de en cascada.
@@ -91,8 +92,8 @@ export default async function PageLayout(props: {
 			getActiveDemoSlug(),
 			getActiveSitePrefix(),
 			getHomeBanners(),
-			retrieveCustomer(),
-			retrieveCart(),
+			props.preview ? Promise.resolve(null) : retrieveCustomer(),
+			props.preview ? Promise.resolve(null) : retrieveCart(),
 			getActiveSalesChannelId(),
 			getBranchId(),
 			getStoreSettings(),
@@ -156,18 +157,8 @@ export default async function PageLayout(props: {
 	const isSportsTemplate = tenant.template === 'sports';
 	const isCampaignTemplate = tenant.template === 'campaign';
 	const usesCustomChrome = templateUsesCustomChrome(tenant.template);
-	const customWrapperClass = isTechTemplate
-		? 'tech-home'
-		: isFashionTemplate
-			? 'fashion-home'
-			: isTechRetailTemplate
-				? 'tech-retail-home'
-				: isSportsTemplate
-					? 'sports-home'
-					: isCampaignTemplate
-						? 'campaign-home'
-						: undefined;
-	const cartCount = cart?.items?.reduce((acc, item) => acc + (item.quantity || 0), 0) ?? 0;
+	const customWrapperClass = templateWrapperClass(tenant.template);
+	const cartCount = cart?.items?.reduce((acc: number, item: { quantity?: number }) => acc + (item.quantity || 0), 0) ?? 0;
 
 	// Los accesos a "Promociones" (pill del nav, menú mobile, bottom nav) llevan a
 	// la PLP filtrada por promo: sin promociones activas en el canal quedaría
@@ -192,7 +183,7 @@ export default async function PageLayout(props: {
 				customerGroupId={tenant.medusa.customerGroupId || process.env.NEXT_PUBLIC_CUSTOMER_GROUP_ID}
 				salesChannelId={resolvedChannelId}
 			>
-				<StoreProvider cart={cart}>
+				<StoreProvider cart={cart} disabled={props.preview}>
 					<AddToCartAnimationProvider>
 						<BannersProvider initialBanners={homeBanners}>
 							{isTechTemplate ? (
@@ -238,13 +229,16 @@ export default async function PageLayout(props: {
 								/>
 							)}
 							<div className={customWrapperClass}>
-								{/* Grocery-only chrome (branch gate, mismatch banner, shipping
-								    nudge) is suppressed on the editorial/premium templates. */}
-								{!usesCustomChrome && multiBranchEnabled && branchGatePromptEnabled && (
+								{/* Grocery-only chrome (branch gate, shipping nudge) is
+								    suppressed on the editorial/premium templates. El pase de
+								    carrito de invitado a cuenta ya NO se pide acá: es
+								    automático y silencioso (self-heal de getOrSetCart /
+								    ensureCartCustomer + el transfer que corre al crear la
+								    sesión en app/api/store/auth/route.ts). Mostrar un cartel
+								    pidiéndole al usuario que confirme algo que el sistema ya
+								    hizo solo era el bug, no una red de seguridad. */}
+								{!props.preview && !usesCustomChrome && multiBranchEnabled && branchGatePromptEnabled && (
 									<BranchGate googleMapsApiKey={googleMapsApiKey} hasBranch={!!branchId} />
-								)}
-								{!usesCustomChrome && customer && cart && (
-									<CartMismatchBanner cart={cart} customer={customer} />
 								)}
 
 								{!usesCustomChrome && cart && (
@@ -265,8 +259,17 @@ export default async function PageLayout(props: {
 							) : (
 								<Footer />
 							)}
+							{/* Iteración visual del pill "Powered by" flotante — el
+							    componente renderiza solo si el template es campaign y
+							    hay imagen configurada. Cuando aterrice el toggle
+							    admin pasa a leer `assets.campaign.poweredByFloating`. */}
+							{isCampaignTemplate && <CampaignPoweredByFloating />}
 							{/* Una sola instancia: SmartHeader monta Nav para mobile y desktop. */}
-							<CartDrawerMount themeClassName={isSportsTemplate ? 'sports-cart' : undefined} />
+							{!props.preview && <>
+							<CartDrawerMount
+								themeClassName={isSportsTemplate ? 'sports-cart' : undefined}
+								salesChannelId={resolvedChannelId}
+							/>
 							{usesCustomChrome ? (
 								<>
 									{/* El drawer de favoritos no vive en el chrome grocery
@@ -295,6 +298,7 @@ export default async function PageLayout(props: {
 							</Suspense>
 							<PromoConflictGuard />
 							<Toaster />
+							</>}
 						</BannersProvider>
 					</AddToCartAnimationProvider>
 				</StoreProvider>

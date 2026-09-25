@@ -34,7 +34,7 @@ import {
   User,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCheckoutPolicy, checkoutRequest } from '@lib/hooks/use-checkout-policy';
 import Recipients from '@modules/checkout/components/recipients';
 
@@ -66,6 +66,18 @@ async function cartAction(body: Record<string, unknown>): Promise<any> {
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Error" };
   }
+}
+
+/** Misma dirección que ya tiene el carrito: reenviarla corre el workflow entero (4-6 s). */
+function sameAddress(
+  saved: HttpTypes.StoreCart["shipping_address"] | null | undefined,
+  next: ReturnType<typeof buildAddressPayload>,
+): boolean {
+  if (!saved) return false;
+  const norm = (v: unknown) => (v == null ? "" : String(v).trim().toLowerCase());
+  return (Object.keys(next) as Array<keyof typeof next>).every(
+    (k) => norm((saved as unknown as Record<string, unknown>)[k]) === norm(next[k]),
+  );
 }
 
 type SelectedAddr =
@@ -210,16 +222,30 @@ export default function B2BCheckoutFlow({
     activeSession?.provider_id ?? null,
   );
 
+  // Una sola carga de opciones de envío en vuelo: la dispara "Continuar con el
+  // envío" en paralelo al refresh, y el efecto de abajo la reusa en vez de pedir
+  // otra al montar el paso.
+  const shippingLoad = useRef<Promise<ShippingOption[]> | null>(null);
+  const loadShippingOptions = () => {
+    shippingLoad.current ??= cartAction({ action: "shipping-options" })
+      .then((r) => (r.options ?? []) as ShippingOption[])
+      .then((opts) => {
+        setShippingOptions(opts);
+        return opts;
+      })
+      .finally(() => {
+        shippingLoad.current = null;
+      });
+    return shippingLoad.current;
+  };
+
   // Cargar opciones de envío al entrar al paso (o cuando ya hay dirección).
   useEffect(() => {
     if (currentStep === "delivery" && addressComplete && shippingOptions === null) {
-      (async () => {
-        setBusy(true);
-        const opts = ((await cartAction({ action: "shipping-options" })).options ?? []) as ShippingOption[];
-        setShippingOptions(opts);
-        setBusy(false);
-      })();
+      if (!shippingLoad.current) setBusy(true);
+      void loadShippingOptions().finally(() => setBusy(false));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, addressComplete, shippingOptions]);
 
   // Cargar métodos de pago al entrar al paso.
@@ -247,13 +273,14 @@ export default function B2BCheckoutFlow({
       setError("Seleccioná o agregá una dirección de envío.");
       return;
     }
+    const address = buildAddressPayload(selectedAddr, companyName, countryCode);
+    if (sameAddress(cart.shipping_address, address) && cart.email === email) {
+      goToStep("delivery");
+      return;
+    }
     setBusy(true);
     setError(null);
-    const r = await cartAction({
-      action: "address",
-      address: buildAddressPayload(selectedAddr, companyName, countryCode),
-      email,
-    });
+    const r = await cartAction({ action: "address", address, email });
     if (!r.ok) {
       setError(r.error);
       setBusy(false);
@@ -278,15 +305,17 @@ export default function B2BCheckoutFlow({
         lng: d.longitude != null ? String(d.longitude) : undefined,
       });
     }
-    // Recalcular envíos para la dirección elegida.
-    const opts = ((await cartAction({ action: "shipping-options" })).options ?? []) as ShippingOption[];
-    setShippingOptions(opts);
+    // Recalcular envíos para la dirección elegida, en paralelo al refresh que
+    // trae el carrito con la dirección nueva (antes iban en serie).
+    setShippingOptions(null);
+    void loadShippingOptions();
     setBusy(false);
     router.refresh();
     goToStep("delivery");
   };
 
   const pickShipping = async (id: string) => {
+    if (cart.shipping_methods?.some((m) => (m as { shipping_option_id?: string }).shipping_option_id === id)) return;
     setBusy(true);
     setError(null);
     const r = await cartAction({ action: "set-shipping", optionId: id });
@@ -688,6 +717,7 @@ export default function B2BCheckoutFlow({
                 actual), no editar inline. Ahí se agregan/quitan productos. */}
             <LocalizedClientLink
               href="/b2b/pedidos/nuevo"
+              prefetch={false}
               className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <Pencil className="size-4" />

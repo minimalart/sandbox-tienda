@@ -4,7 +4,7 @@ import {
   registerAppSettingsSyncReader,
   registerExternalReader,
   EXTERNAL_KEYS,
-} from '../../../../../packages/contracts/plugin-runtime/dist/index.js';
+} from '../../../../../packages/plugins/plugin-runtime/dist/index.js';
 import { findDescriptor } from './descriptors';
 import { resolveSettingSync } from './resolve';
 import { replaceSnapshot, __resetSnapshot } from './snapshot';

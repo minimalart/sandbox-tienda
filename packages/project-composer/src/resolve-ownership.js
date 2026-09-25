@@ -69,6 +69,9 @@ function resolveOwnership(catalog) {
   const candidates = visitFiles(backend).filter((file) =>
     /\.(?:ts|tsx|js|jsx)$/.test(file) &&
     (/[\\/](?:api|jobs|links|scripts|subscribers|workflows)[\\/]/.test(file) || /[\\/]admin[\\/]/.test(file)) &&
+    // Agregadores GENERADOS del core (`extract-components.js` los reescribe):
+    // importan de todas las extensiones a propósito y no son de ninguna.
+    !/[\\/]api[\\/]extension-middlewares\.ts$/.test(file) &&
     !/[\\/]api[\\/]middlewares\.ts$/.test(file) &&
     !/[\\/]api[\\/]admin[\\/]middlewares\.ts$/.test(file) &&
     !/[\\/]admin[\\/]hooks[\\/]api[\\/]index\.ts$/.test(file) &&
@@ -83,6 +86,9 @@ function resolveOwnership(catalog) {
     }
     return seen;
   };
+  // Los descartes se juntan y se avisan DESPUÉS del punto fijo: el mismo archivo
+  // se re-evalúa en cada vuelta del `while`, así que avisar adentro lo repetiría.
+  const dropped = new Map();
   let changed = true;
   while (changed) {
     changed = false;
@@ -101,13 +107,29 @@ function resolveOwnership(catalog) {
         const dependencies = dependenciesOf(candidate);
         return [...owners].every((owner) => owner === candidate || dependencies.has(owner));
       });
-      if (compatible.length !== 1) continue;
+      if (compatible.length !== 1) {
+        dropped.set(toPosix(path.relative(root, file)), [...owners].sort());
+        continue;
+      }
       const owner = compatible[0];
       const relative = toPosix(path.relative(root, file));
       resolved[owner].push(relative);
       ownedRoots.push({ id: owner, absolute: file });
       changed = true;
     }
+  }
+  // Un archivo que importa módulos de dos extensiones sin dependencia declarada
+  // entre ellas NO se atribuye a ninguna: desaparece del payload y la extensión
+  // se instala sin esa funcionalidad. Sin este aviso el único síntoma es
+  // `verify-components` en rojo, que no dice por qué.
+  for (const [file, owners] of dropped) {
+    if (Object.values(resolved).some((files) => files.includes(file))) continue;
+    console.warn(
+      `[ownership] ${file} no se atribuye a ninguna extensión: importa de ${owners.join(' y ')}, ` +
+        'y ninguna declara a la otra como dependencia. Queda FUERA del payload. ' +
+        'Salidas: declarar la dependencia real en el catálogo, duplicar el helper, ' +
+        'o listar el path a mano en component-definitions.js.'
+    );
   }
   return resolved;
 }

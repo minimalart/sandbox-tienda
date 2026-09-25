@@ -1,6 +1,6 @@
 {
   "name": "@repo/extension-whatsapp",
-  "version": "1.25.0",
+  "version": "1.27.3",
   "private": true,
   "description": "WhatsApp component source package",
   "dependencies": {}

@@ -3,6 +3,11 @@ import { z } from 'zod';
 import { siteFromRequest } from '../../../../lib/multistore/request';
 import { STORE_CONFIG_MODULE } from '../../../../modules/store-config';
 import type StoreConfigModuleService from '../../../../modules/store-config/service';
+import {
+  invalidRecipients,
+  joinRecipientList,
+  parseRecipientList,
+} from '../../../../lib/recipient-list';
 
 const HEX_COLOR = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
@@ -42,9 +47,38 @@ const UpdateEmailBrandingSchema = z.object({
     emptyStringToNull,
     z.string().nullable().optional(),
   ),
+  /**
+   * UNA casilla o VARIAS separadas por coma o punto y coma.
+   *
+   * `z.string().email()` no sirve acá: rechaza la lista entera por el primer
+   * separador, y ese 400 llega a la pantalla como "must be a valid email" sobre
+   * un campo donde los dos mails que el operador escribió SON válidos.
+   *
+   * Se valida casilla por casilla con `invalidRecipients`, que es el reverso
+   * exacto del parser del envío: el criterio de qué es un mail no cambió, cambió
+   * cuántos entran. Y se guarda la lista NORMALIZADA —`parseRecipientList` limpia
+   * espacios y duplicados—, así que lo que queda en la fila es exactamente lo que
+   * va a leer el provider, y no la forma en que alguien la pegó.
+   *
+   * Una lista que queda vacía después de limpiar (`" , "`) cae en `null`, que es
+   * lo mismo que dejar el campo en blanco: sin destinatario propio, esta tienda
+   * hereda el `ADMIN_EMAIL` de la instancia.
+   */
   admin_notification_email: z.preprocess(
     emptyStringToNull,
-    z.string().email('admin_notification_email must be a valid email').nullable().optional(),
+    z
+      .string()
+      .nullable()
+      .optional()
+      .superRefine((value, ctx) => {
+        for (const bad of invalidRecipients(value)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `admin_notification_email: "${bad}" is not a valid email`,
+          });
+        }
+      })
+      .transform((value) => (value == null ? value : joinRecipientList(parseRecipientList(value)) || null)),
   ),
 });
 

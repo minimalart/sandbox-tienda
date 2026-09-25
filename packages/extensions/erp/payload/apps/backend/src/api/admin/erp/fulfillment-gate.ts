@@ -5,7 +5,7 @@ import { ERP_MODULE } from '../../../modules/erp';
 import type ErpModuleService from '../../../modules/erp/service';
 import {
   activeDepositoMappings,
-  resolveBillingDeposito,
+  depositoForStockLocation,
   resolveSalesTrigger,
 } from '../../../modules/erp/billing-deposito';
 import {
@@ -19,12 +19,30 @@ import type { ErpBillingConfirmation } from '../../../modules/erp/types';
  * Gate de `POST /admin/orders/:id/fulfillments` cuando el ERP factura al crear
  * el fulfillment.
  *
+ * ────────────────────────────────────────────────────────────────────────────
+ * LA UBICACIÓN DE DESPACHO ES LA QUE FACTURA
+ *
+ * El operador elige en la pantalla de fulfillment de dónde salen los productos,
+ * y ESA elección determina desde qué depósito se factura. No hay depósito
+ * facturador preconfigurado: `location_id` → `deposito_map` → depósito del ERP.
+ *
+ * Antes era al revés —la configuración dictaba el depósito y el gate rechazaba
+ * el fulfillment si la ubicación elegida no coincidía, mandando al operador a
+ * ERP → Configuración a cambiarla—. Ese flujo obligaba a tocar una pantalla de
+ * configuración global para despachar UN pedido, que es justo lo que no puede
+ * pasar cuando el stock vive repartido y cada pedido sale de donde hay.
+ *
+ * Consecuencia buscada: no hay default. Si la ubicación no está mapeada a
+ * ningún depósito, se corta y se dice cuál mapear — mejor que facturar desde
+ * un depósito que nadie eligió.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
  * Hace dos cosas, y la segunda es la importante:
  *
- * 1. VALIDA que el despacho sea facturable: que salga de la stock location del
- *    depósito facturador y que cubra la orden COMPLETA (el ERP emite una sola
- *    factura por orden; un parcial la partiría en dos, o peor, facturaría de
- *    menos).
+ * 1. VALIDA que el despacho sea facturable: que diga de dónde sale, que esa
+ *    ubicación esté mapeada a un depósito del ERP y que cubra la orden COMPLETA
+ *    (el ERP emite una sola factura por orden; un parcial la partiría en dos, o
+ *    peor, facturaría de menos).
  *
  * 2. MARCA la orden con `metadata.erp_billing` — el registro auditable de qué
  *    depósito confirmó una persona. Es lo único que distingue este fulfillment
@@ -89,38 +107,29 @@ export async function erpFulfillmentGate(
     const order = orders[0];
     if (!order) return next(); // que el 404 lo tire el core
 
-    // 1) Depósito facturador resoluble y mapeado.
-    const resolution = resolveBillingDeposito(config.settings, order.metadata ?? null);
-    if (!resolution.ok) {
-      const mapped = activeDepositoMappings(config.settings)
-        .map((row) => row.deposito)
-        .join(', ');
-      throw new MedusaError(
-        MedusaError.Types.INVALID_DATA,
-        resolution.reason === 'not_configured'
-          ? 'El ERP factura al crear el fulfillment, pero no hay depósito facturador elegido. Configuralo en ERP → Configuración.'
-          : `El depósito facturador "${resolution.deposito}" no está mapeado a ninguna stock location${
-              mapped ? ` (mapeados: ${mapped})` : ''
-            }. Revisá ERP → Configuración.`
-      );
-    }
-
-    // 2) El fulfillment tiene que salir de ESA stock location.
+    // 1) De dónde sale la mercadería. Sin esto no hay nada que facturar: es la
+    //    elección del operador, y es la que manda.
     const body = (req.body ?? {}) as { location_id?: unknown; items?: unknown };
     const locationId = typeof body.location_id === 'string' ? body.location_id : null;
     if (!locationId) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
-        `Elegí la ubicación de despacho: el ERP factura desde el depósito "${resolution.deposito}" y necesita saber que la mercadería salió de ahí.`
+        'Elegí la ubicación de despacho: el ERP factura desde la sucursal de donde sale la mercadería.'
       );
     }
-    if (locationId !== resolution.stock_location_id) {
-      const locationName = await resolveLocationName(req, resolution.stock_location_id);
+
+    // 2) Esa ubicación tiene que estar mapeada a un depósito del ERP. Este es
+    //    el ÚNICO dato de configuración que sigue haciendo falta, y es un mapeo
+    //    (sucursal ↔ depósito), no un default: no elige nada por nosotros.
+    const deposito = depositoForStockLocation(config.settings, locationId);
+    if (!deposito) {
+      const locationName = await resolveLocationName(req, locationId);
+      const mappedNames = await resolveMappedLocationNames(req, config.settings);
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
-        `Este pedido se factura desde el depósito "${resolution.deposito}"${
-          locationName ? ` (${locationName})` : ''
-        }. Consolidá la mercadería ahí en el ERP y creá el fulfillment desde esa ubicación.`
+        `La ubicación "${locationName ?? locationId}" no está mapeada a ningún depósito del ERP, así que no se puede facturar desde ahí.${
+          mappedNames.length ? ` Mapeadas hoy: ${mappedNames.join(', ')}.` : ''
+        } Agregala en ERP → Configuración → mapeo de depósitos.`
       );
     }
 
@@ -141,8 +150,8 @@ export async function erpFulfillmentGate(
     // mejor que el operador reintente que facturar sin registro de qué depósito
     // se confirmó.
     const confirmation: ErpBillingConfirmation = {
-      deposito: resolution.deposito,
-      stock_location_id: resolution.stock_location_id,
+      deposito,
+      stock_location_id: locationId,
       confirmed_at: new Date().toISOString(),
       confirmed_by:
         (req as unknown as { auth_context?: { actor_id?: string | null } }).auth_context?.actor_id ??
@@ -157,7 +166,7 @@ export async function erpFulfillmentGate(
     ]);
 
     logger.info(
-      `[erp] fulfillment de la orden ${order.id} confirmado desde el depósito ${resolution.deposito} (${resolution.source}); se facturará al crearse.`
+      `[erp] fulfillment de la orden ${order.id} confirmado desde el depósito ${deposito} (ubicación ${locationId} elegida por el operador); se facturará al crearse.`
     );
     return next();
   } catch (error) {
@@ -173,6 +182,30 @@ export async function erpFulfillmentGate(
       }`
     );
     return next();
+  }
+}
+
+/**
+ * Nombres de las ubicaciones que SÍ están mapeadas, para que el error diga
+ * desde dónde se puede despachar en vez de sólo desde dónde no. Sólo corre en
+ * el camino de error.
+ */
+async function resolveMappedLocationNames(
+  req: MedusaRequest,
+  settings: Parameters<typeof activeDepositoMappings>[0]
+): Promise<string[]> {
+  const ids = [...new Set(activeDepositoMappings(settings).map((row) => row.stock_location_id))];
+  if (!ids.length) return [];
+  try {
+    const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
+    const { data } = (await query.graph({
+      entity: 'stock_location',
+      fields: ['id', 'name'],
+      filters: { id: ids },
+    })) as { data: Array<{ id: string; name?: string | null }> };
+    return data.map((location) => location.name ?? location.id);
+  } catch {
+    return [];
   }
 }
 
