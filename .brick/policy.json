@@ -50,7 +50,8 @@
       "apps/backend/src/**/migrations/**",
       ".github/workflows/**",
       "Dockerfile*",
-      "patches/**"
+      "patches/**",
+      "apps/backend/patches/**"
     ]
   }
 }

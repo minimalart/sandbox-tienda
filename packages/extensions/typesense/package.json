@@ -1,6 +1,6 @@
 {
   "name": "@repo/extension-typesense",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "private": true,
   "description": "Typesense component source package",
   "dependencies": {}

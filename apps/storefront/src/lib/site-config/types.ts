@@ -569,9 +569,9 @@ export type TenantAssets = {
      */
     categories?: boolean
     /**
-     * Bundled Products: habilita el bloque Puck `BundlesGrid` en el home y —
-     * a futuro — el índice `/bundles`. Ausente/false = deshabilitado por
-     * defecto (feature opt-in per tenant, plan §5.4).
+     * Kits (Bundled Products) en el home. Ausente/true = el bloque Puck
+     * `BundlesGrid` se pinta si está en el home; `false` lo esconde sin sacarlo
+     * del editor. El índice `/bundles` no mira este flag.
      */
     bundles?: boolean
     /**
@@ -596,6 +596,19 @@ export type TenantAssets = {
    *  - 'button': pill sólido en el color de marca + acordeón de subcategorías
    */
   categoriesMenuLayout?: 'hamburger' | 'button'
+  /**
+   * Toggles del carrito lateral (minicart). Opt-OUT: ausente/`true` = visible,
+   * como estaba antes de que existiera este flag. Sólo un `false` explícito lo
+   * apaga, así que ninguna tienda derivada cambia sin optar.
+   */
+  cart?: {
+    /**
+     * Carrusel de productos recomendados dentro del drawer. Gatea los dos
+     * puntos donde aparece (con items y con carrito vacío) desde un solo
+     * lugar.
+     */
+    recommendationsCarousel?: boolean
+  }
   /**
    * Orden de preferencia del LUGAR FLEXIBLE de la barra inferior mobile (el
    * cuarto ítem, entre el carrito y el menú). La barra gana el primer id de
@@ -1314,6 +1327,8 @@ export type CampaignChromeConfig = {
   poweredByLabel?: string
   /** Link del pill "Powered by". */
   poweredByHref?: string
+  /** Logo (URL) del pill "Powered by" del header. Cargado = reemplaza al label; ausente = se cae al label si hay, o se oculta. */
+  poweredByImage?: string
   /**
    * Fondo del header (hex). Vacío = blanco por preset. El texto/borders del
    * header eligen contraste automáticamente sobre este color.
@@ -1369,7 +1384,12 @@ export type CampaignFooterConfig = {
   address?: string
   email?: string
   copyright?: string
-  poweredBy?: { label: string; href: string }
+  /**
+   * Crédito "Powered by" del footer. XOR: `image` (si viene) reemplaza a `label`.
+   * Sin `image` ni `label`, el bloque se oculta. `href` (opcional) envuelve
+   * la imagen o el label en un `<a>`.
+   */
+  poweredBy?: { label?: string; href?: string; image?: string }
   /** Fondo del footer (hex). Vacío = blanco. */
   backgroundColor?: string
 }

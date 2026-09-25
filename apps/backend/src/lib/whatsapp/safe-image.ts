@@ -1,23 +1,37 @@
 /**
  * ¿Esta imagen la acepta WhatsApp?
  *
- * Meta sólo admite JPEG, PNG y WebP **estático** en las cards del carrusel y en las
- * imágenes sueltas. Si UNA sola card trae algo que no puede decodificar, rechaza el
- * mensaje COMPLETO con el error 131053 ("Media upload error / Image is invalid") y
- * el cliente no recibe nada — ni las cards buenas.
+ * Meta admite **JPEG y PNG, y nada más**, en las cards del carrusel y en las imágenes
+ * sueltas; el webp existe en su API sólo para stickers. Si UNA sola card trae algo
+ * que no puede decodificar, rechaza el mensaje COMPLETO con el error 131053 ("Media
+ * upload error / Image is invalid") y el cliente no recibe nada — ni las cards buenas.
  *
- * Y no es un caso teórico: el 2026-08-04 el asesor le contestó a un cliente con tres
- * pinturas y no le llegó ninguna. La culpable era
- * `REVESTA_4040-…JPG`, que se llama `.JPG`, el CDN la sirve como `image/jpeg` y por
- * dentro es un **WebP ANIMADO** (RIFF/WEBP, chunk VP8X con el flag ANIM). El import
- * de imágenes guarda los bytes que descarga con el nombre que le toca, así que ni la
- * extensión ni el `content-type` sirven para decidir: hay que mirar los BYTES.
+ * Y lo hace DESPUÉS de devolvernos el id del mensaje, así que el backend registra
+ * "carrusel enviado" y nadie se entera de nada: no queda ni un renglón rojo.
  *
- * Por eso la verificación vive en el emisor y no en cada llamador: así la cubre
- * cualquier carrusel, presente o futuro.
+ * ── Las dos veces que esto dejó mudo al bot ──────────────────────────────────────
+ *
+ * El 2026-08-04, `REVESTA_4040-…JPG`: se llama `.JPG`, el CDN la sirve como
+ * `image/jpeg` y por dentro es un **WebP ANIMADO** (RIFF/WEBP, chunk VP8X con el flag
+ * ANIM). De ahí sale la regla de mirar los BYTES y no la extensión ni el
+ * `content-type`.
+ *
+ * El 2026-09-17, el catálogo ENTERO: 2721 productos con el thumbnail en webp estático
+ * (`norm-*.webp`). Ese arreglo de agosto dio por buenos los webp estáticos —"Meta los
+ * acepta"— y es falso: acepta jpeg y png. Con el catálogo en webp, ninguna búsqueda
+ * del bot llegaba a destino.
+ *
+ * Por eso lo que no es jpeg ni png no se descarta: se manda a convertir a jpeg al
+ * vuelo (ver `image-proxy.ts`). Descartarlo dejaría al catálogo sin fotos, y el webp
+ * es lo correcto para la tienda.
+ *
+ * La verificación vive en el emisor y no en cada llamador: así la cubre cualquier
+ * carrusel, presente o futuro.
  */
 
-/** Formatos que Meta decodifica. `animated_webp` es el que se cuela disfrazado. */
+import { buildJpegUrl } from './image-proxy';
+
+/** Cómo llegó la imagen. Sólo `jpeg` y `png` viajan tal cual; el resto se convierte. */
 export type ImageVerdict = 'jpeg' | 'png' | 'webp_static' | 'animated_webp' | 'unsupported';
 
 const startsWith = (bytes: Uint8Array, ...prefix: number[]): boolean =>
@@ -55,8 +69,19 @@ export function classifyImageHead(head: Uint8Array): ImageVerdict {
   return 'unsupported';
 }
 
+/** Los dos formatos que Meta decodifica. El webp NO está, por más estático que sea. */
 export const isSendableVerdict = (verdict: ImageVerdict): boolean =>
-  verdict === 'jpeg' || verdict === 'png' || verdict === 'webp_static';
+  verdict === 'jpeg' || verdict === 'png';
+
+/**
+ * Lo que no sirve como está pero sharp sí sabe leer, así que vale convertirlo.
+ *
+ * El webp animado entra: de ahí se toma el primer cuadro. Lo que no se pudo
+ * clasificar (`unsupported`) queda afuera porque bien puede ser un HTML de error del
+ * CDN, y mandarlo al conversor sería pagar una descarga para fallar igual.
+ */
+export const isConvertibleVerdict = (verdict: ImageVerdict): boolean =>
+  verdict === 'webp_static' || verdict === 'animated_webp';
 
 /** Cuántos bytes alcanzan para clasificar (VP8X necesita llegar al byte 16). */
 const HEAD_BYTES = 32;
@@ -115,10 +140,19 @@ export async function classifyImageUrl(url: string): Promise<ImageVerdict | null
 /**
  * URL usable para una card, o `null` si no hay ninguna.
  *
- * Con la imagen del producto rechazada se usa el placeholder configurado
- * (`WHATSAPP_PLACEHOLDER_IMAGE_URL`), que es exactamente para lo que existe. Sin
- * placeholder devuelve `null` y el llamador cae a la lista sin fotos: mostrar los
- * productos sin imagen es infinitamente mejor que no mostrar nada.
+ * El orden de las salidas, de mejor a peor:
+ *
+ *   1. jpeg o png → la URL original, sin tocar nada.
+ *   2. webp → la URL del conversor, que la sirve en jpeg (`image-proxy.ts`).
+ *   3. lo que no se pudo convertir → el placeholder configurado
+ *      (`WHATSAPP_PLACEHOLDER_IMAGE_URL`), que es exactamente para lo que existe, y
+ *      que pasa por esta misma escalera.
+ *   4. nada → `null`, y el llamador cae a la lista sin fotos: mostrar los productos
+ *      sin imagen es infinitamente mejor que no mostrar nada.
+ *
+ * El escalón 2 puede no estar disponible (una instalación sin URL pública del backend
+ * o sin secreto): ahí se sigue de largo al placeholder. La degradación es la misma que
+ * ya existía, nunca un mensaje que no llega.
  */
 export async function pickSendableImageUrl(
   imageUrl: string | null | undefined,
@@ -131,6 +165,10 @@ export async function pickSendableImageUrl(
     const verdict = await classifyImageUrl(candidate);
     // `null` (indeterminado) se deja pasar a propósito: ver `classifyImageUrl`.
     if (verdict === null || isSendableVerdict(verdict)) return candidate;
+    if (isConvertibleVerdict(verdict)) {
+      const converted = buildJpegUrl(candidate);
+      if (converted) return converted;
+    }
   }
   return null;
 }

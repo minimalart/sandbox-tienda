@@ -49,6 +49,8 @@ export function describeEvent(event: WaEvent): string {
       return `Revisó el pedido (${String(p.lines ?? 0)} ítems)`;
     case 'checkout_generated':
       return 'Se generó el link de pago';
+    case 'checkout_blocked':
+      return `No se generó el link: ${p.reason === 'minimum_purchase' ? `falta $${String(p.missing ?? '')} para el mínimo` : String(p.reason ?? '')}`;
     case 'guided_started':
       return 'Arrancó el asesor guiado';
     case 'guided_asked':

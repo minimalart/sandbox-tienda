@@ -2,6 +2,7 @@ import { MiddlewareRoute, validateAndTransformBody } from '@medusajs/framework/h
 import { SaveBindingSchema } from './bindings/validators';
 import { UpdateFloatingButtonSchema } from './floating-button/validators';
 import { UpdateBotChannelsSchema } from './bot-channels/validators';
+import { UpdateBotSwitchSchema } from './bot-switch/validators';
 import {
   CreateKapsoTemplateSchema,
   UpdateKapsoTemplateSchema,
@@ -32,5 +33,10 @@ export const adminKapsoMiddlewares: MiddlewareRoute[] = [
     matcher: '/admin/kapso/bot-channels',
     method: ['POST'],
     middlewares: [validateAndTransformBody(UpdateBotChannelsSchema)],
+  },
+  {
+    matcher: '/admin/kapso/bot-switch',
+    method: ['POST'],
+    middlewares: [validateAndTransformBody(UpdateBotSwitchSchema)],
   },
 ];

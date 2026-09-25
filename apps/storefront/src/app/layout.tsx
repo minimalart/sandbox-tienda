@@ -1,3 +1,4 @@
+import { headers } from 'next/headers'
 import PrivacyRoot from '@lib/consent/root'
 import { getPrivacyConfiguration } from '@lib/data/privacy'
 import UtmCapture from '@lib/context/utm-capture'
@@ -259,6 +260,13 @@ export async function generateViewport(): Promise<Viewport> {
 export default async function RootLayout(props: { children: React.ReactNode }) {
   // Inyectar CSS variables del tenant dinámicamente (cacheable)
   const themeStyles = await getTenantThemeStyles()
+  const preview = Boolean((await headers()).get('x-puck-preview'))
+  if (preview) return (
+    <html data-mode='light' lang='es' style={themeStyles} className={`${inter.variable} ${manrope.variable} ${cormorant.variable}`}>
+      <body><StorefrontSharedProviders>{props.children}</StorefrontSharedProviders></body>
+    </html>
+  )
+
   const privacy = await getPrivacyConfiguration()
   const legacyTrackers = privacy.available && privacy.legacyAllowed && !privacy.consent?.enabled
 

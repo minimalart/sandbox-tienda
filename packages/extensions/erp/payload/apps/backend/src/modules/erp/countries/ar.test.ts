@@ -59,6 +59,135 @@ describe('argentinaLayer.inferDocument', () => {
   });
 });
 
+describe('argentinaLayer.inferFiscalCondition', () => {
+  // Silenciar warns esperados: los tests que cubren fallbacks (invoice_a sin
+  // tax_condition / legal_name / condicion desconocida) disparan console.warn a
+  // propósito. Reponemos el spy en el after de cada spec para no filtrar noise.
+  const withSilencedWarn = async (fn: () => void | Promise<void>): Promise<string[]> => {
+    const original = console.warn;
+    const calls: string[] = [];
+    console.warn = (msg: unknown) => {
+      calls.push(String(msg));
+    };
+    try {
+      await fn();
+    } finally {
+      console.warn = original;
+    }
+    return calls;
+  };
+
+  it('sin invoice_type + doc DNI válido → consumer_final, sin razón social', () => {
+    const result = argentinaLayer.inferFiscalCondition!({
+      metadata: {
+        billing_snapshot: { document_type: 'DNI', document_number: '20304050' },
+      },
+    });
+    assert.deepEqual(result, { condition: 'consumer_final', legal_name: null });
+  });
+
+  it('sin invoice_type + sin documento → consumer_final', () => {
+    const result = argentinaLayer.inferFiscalCondition!({ metadata: null });
+    assert.deepEqual(result, { condition: 'consumer_final', legal_name: null });
+  });
+
+  it('invoice_a + tax_condition=responsable_inscripto + legal_name → responsable_inscripto con razón social', () => {
+    const result = argentinaLayer.inferFiscalCondition!({
+      metadata: {
+        invoice_type: 'invoice_a',
+        billing_snapshot: {
+          document_type: 'CUIT',
+          document_number: '20-12345678-6',
+          tax_condition: 'responsable_inscripto',
+          legal_name: 'Razón Social SRL',
+        },
+      },
+    });
+    assert.deepEqual(result, { condition: 'responsable_inscripto', legal_name: 'Razón Social SRL' });
+  });
+
+  it('invoice_a + tax_condition=exento + legal_name → exento con razón social', () => {
+    const result = argentinaLayer.inferFiscalCondition!({
+      metadata: {
+        invoice_type: 'invoice_a',
+        billing_snapshot: {
+          document_type: 'CUIT',
+          document_number: '20-12345678-6',
+          tax_condition: 'exento',
+          legal_name: 'ONG Educativa',
+        },
+      },
+    });
+    assert.deepEqual(result, { condition: 'exento', legal_name: 'ONG Educativa' });
+  });
+
+  it('invoice_a + tax_condition=monotributo + legal_name → monotributo (cross-cliente)', () => {
+    const result = argentinaLayer.inferFiscalCondition!({
+      metadata: {
+        invoice_type: 'invoice_a',
+        billing_snapshot: {
+          document_type: 'CUIT',
+          document_number: '20-12345678-6',
+          tax_condition: 'monotributo',
+          legal_name: 'Estudio Freelance',
+        },
+      },
+    });
+    assert.deepEqual(result, { condition: 'monotributo', legal_name: 'Estudio Freelance' });
+  });
+
+  it('invoice_a sin tax_condition → cae a consumer_final con warn', async () => {
+    let result: ReturnType<NonNullable<typeof argentinaLayer.inferFiscalCondition>> | undefined;
+    const warns = await withSilencedWarn(() => {
+      result = argentinaLayer.inferFiscalCondition!({
+        metadata: {
+          invoice_type: 'invoice_a',
+          billing_snapshot: { document_type: 'CUIT', document_number: '20-12345678-6', legal_name: 'X' },
+        },
+      });
+    });
+    assert.deepEqual(result, { condition: 'consumer_final', legal_name: null });
+    assert.ok(warns.some((m) => /sin billing_snapshot\.tax_condition/.test(m)));
+  });
+
+  it('invoice_a sin legal_name → cae a consumer_final con warn', async () => {
+    let result: ReturnType<NonNullable<typeof argentinaLayer.inferFiscalCondition>> | undefined;
+    const warns = await withSilencedWarn(() => {
+      result = argentinaLayer.inferFiscalCondition!({
+        metadata: {
+          invoice_type: 'invoice_a',
+          billing_snapshot: {
+            document_type: 'CUIT',
+            document_number: '20-12345678-6',
+            tax_condition: 'responsable_inscripto',
+          },
+        },
+      });
+    });
+    assert.deepEqual(result, { condition: 'consumer_final', legal_name: null });
+    assert.ok(warns.some((m) => /sin billing_snapshot\.legal_name/.test(m)));
+  });
+
+  it('invoice_a con tax_condition desconocida → cae a consumer_final con warn', async () => {
+    let result: ReturnType<NonNullable<typeof argentinaLayer.inferFiscalCondition>> | undefined;
+    const warns = await withSilencedWarn(() => {
+      result = argentinaLayer.inferFiscalCondition!({
+        metadata: {
+          invoice_type: 'invoice_a',
+          billing_snapshot: {
+            document_type: 'CUIT',
+            document_number: '20-12345678-6',
+            tax_condition: 'algo_raro',
+            legal_name: 'X',
+          },
+        },
+      });
+    });
+    assert.deepEqual(result, { condition: 'consumer_final', legal_name: null });
+    assert.ok(warns.some((m) => /desconocida 'algo_raro'/.test(m)));
+  });
+});
+
 describe('argentinaLayer — normalizaciones', () => {
   it('normalizePhone conserva el + internacional y limpia el resto', () => {
     assert.equal(argentinaLayer.normalizePhone('+54 9 (11) 5555-1234'), '+5491155551234');

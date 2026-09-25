@@ -114,3 +114,114 @@ export function resolveBillingDeposito(
     source: override ? 'order' : 'config',
   };
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Depósito facturador DERIVADO DE LA SUCURSAL QUE ELIGIÓ EL COMPRADOR
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Regla de negocio (DESDEELSUR-61): en retiro en tienda factura la sucursal
+ * donde la persona va a retirar. Es lo que pasa en el mostrador — vas a una
+ * sucursal y te factura ésa — y evita que el depósito facturador sea una
+ * constante que no se corresponde con la operación real.
+ *
+ * NO cubre el envío a domicilio, y es a propósito: ahí el comprador no elige
+ * ninguna sucursal, así que no hay nada que derivar. Esos pedidos siguen
+ * cayendo al depósito de la configuración, que por eso no sobra.
+ *
+ * Todo lo que sigue es puro. Quien junta los datos es
+ * `subscribers/erp-order-billing-deposito.ts`.
+ */
+
+/** Dato mínimo de una shipping method para decidir si el pedido es retiro. */
+export type BillingShippingMethod = {
+  data?: Record<string, unknown> | null;
+};
+
+const readString = (source: unknown, key: string): string | null => {
+  if (typeof source !== 'object' || source === null) return null;
+  const value = (source as Record<string, unknown>)[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+};
+
+/**
+ * ¿El pedido es retiro EN SUCURSAL NUESTRA?
+ *
+ * `pickup_kind` distingue tres cosas que en el checkout se parecen: `store`
+ * (nuestras sucursales), `carrier` (sucursal de Andreani o Correo, que no es
+ * nuestra y no factura nada) y el envío a domicilio, que no lo trae. Sin este
+ * filtro, un retiro en sucursal de Correo derivaría un depósito facturador que
+ * no existe.
+ */
+export function isStorePickup(shippingMethods: BillingShippingMethod[]): boolean {
+  return shippingMethods.some((method) => readString(method?.data, 'pickup_kind') === 'store');
+}
+
+/**
+ * Sucursal elegida por el comprador.
+ *
+ * DUPLICADO A PROPÓSITO de `modules/email/pickup-context.ts`
+ * (`chosenStoreLocationId`) y de `workflows/create-delivery-execution.ts`: son
+ * cinco líneas contra un acople entre extensiones. `erp` no puede importar de
+ * `email-templates` ni de `delivery` — cualquiera de las tres puede no estar
+ * instalada.
+ *
+ * Que se descarte el string vacío no es un detalle: al cambiar de modo de
+ * entrega el storefront LIMPIA el campo escribiendo `store_id: ''` en vez de
+ * borrarlo, así que un `''` significa "no eligió", no un id.
+ */
+export function chosenStoreLocationId(
+  orderMetadata: unknown,
+  shippingMethods: BillingShippingMethod[]
+): string | null {
+  return (
+    readString(orderMetadata, 'store_id') ??
+    shippingMethods.map((m) => readString(m?.data, 'store_id')).find((v) => Boolean(v)) ??
+    null
+  );
+}
+
+/** Depósito del ERP mapeado a una stock location, o null si esa location no está mapeada. */
+export function depositoForStockLocation(
+  settings: ErpConfigSettings | null | undefined,
+  stockLocationId: string | null | undefined
+): string | null {
+  if (!stockLocationId) return null;
+  return (
+    activeDepositoMappings(settings).find((row) => row.stock_location_id === stockLocationId)
+      ?.deposito ?? null
+  );
+}
+
+/** Por qué no se derivó un depósito. Se loguea; nada de esto es un error. */
+export type BillingDepositoDerivation =
+  | { kind: 'derived'; deposito: string }
+  | { kind: 'skip'; reason: 'already_set' | 'not_store_pickup' | 'no_store' | 'no_location' | 'not_mapped' };
+
+/**
+ * Decide qué depósito facturador le corresponde a una orden por su sucursal de
+ * retiro.
+ *
+ * `storeStockLocationId` es el `stock_location_id` de la sucursal elegida, que
+ * el subscriber resuelve contra el módulo `store-location`.
+ *
+ * Un override ya escrito NO se pisa: si alguien lo puso a mano para esa orden,
+ * gana sobre cualquier derivación automática.
+ */
+export function deriveOrderBillingDeposito(input: {
+  settings: ErpConfigSettings | null | undefined;
+  orderMetadata: OrderBillingMetadata | null | undefined;
+  shippingMethods: BillingShippingMethod[];
+  storeStockLocationId: string | null | undefined;
+}): BillingDepositoDerivation {
+  if (readOrderBillingDeposito(input.orderMetadata)) return { kind: 'skip', reason: 'already_set' };
+  if (!isStorePickup(input.shippingMethods)) return { kind: 'skip', reason: 'not_store_pickup' };
+  if (!chosenStoreLocationId(input.orderMetadata, input.shippingMethods)) {
+    return { kind: 'skip', reason: 'no_store' };
+  }
+  if (!input.storeStockLocationId) return { kind: 'skip', reason: 'no_location' };
+
+  const deposito = depositoForStockLocation(input.settings, input.storeStockLocationId);
+  if (!deposito) return { kind: 'skip', reason: 'not_mapped' };
+  return { kind: 'derived', deposito };
+}

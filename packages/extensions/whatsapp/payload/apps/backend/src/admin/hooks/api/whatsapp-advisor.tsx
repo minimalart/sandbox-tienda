@@ -85,16 +85,17 @@ export const useSaveAdvisorConfig = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: Record<string, unknown>) =>
       sdk.client.fetch<AdvisorConfigResponse>('/admin/whatsapp-advisor/config', {
         method: 'POST',
         body,
       }),
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: whatsappAdvisorQueryKey.config });
       queryClient.invalidateQueries({ queryKey: ['whatsapp-advisor', 'audit'] });
+      options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 

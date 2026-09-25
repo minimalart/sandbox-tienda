@@ -17,22 +17,32 @@ module.exports = {
     // que sí se escanea; borrar ese comentario habría dejado sin aire a todas
     // las fotos del catálogo.
     "./src/lib/**/*.{js,ts,jsx,tsx}",
-    // Los componentes compartidos del contrato viven FUERA de `src` y entran por
-    // alias del tsconfig (`@modules/common/components/checkbox-input`,
-    // `product-image`, `scroll-carousel`). Sin este glob Tailwind no los ve y sus
-    // clases no existen en el CSS: el componente renderiza, el build pasa, el
-    // typecheck pasa, y el estilo simplemente no está.
+    // Los componentes compartidos del contrato viven FUERA de `src` y entran
+    // por alias del tsconfig (`@modules/common/components/checkbox-input`,
+    // `product-image`, `scroll-carousel`). Sin este glob Tailwind no los ve
+    // y sus clases no existen en el CSS: el componente renderiza, el build
+    // pasa, el typecheck pasa, y el estilo simplemente no está.
     //
-    // Eso fue un bug vivo en producción (DESDEELSUR-61 / BUG-06): el tilde de
-    // `CheckboxInput` se pinta con `peer-checked:opacity-100`, regla que nunca se
-    // generó — `peer:checked` no aparecía en NINGÚN chunk CSS servido. El checkbox
-    // "Necesito Factura A" alternaba los campos pero jamás se veía tildado, igual
-    // que los de login, filtros de tienda, localizador de sucursales, shop-by-look,
-    // devoluciones y suscripciones.
+    // Bug histórico (DESDEELSUR-61 / BUG-06): el tilde de `CheckboxInput` se
+    // pinta con `peer-checked:...`, regla que nunca se generó — no aparecía
+    // en NINGÚN chunk CSS servido. El checkbox "Necesito Factura A"
+    // alternaba los campos pero jamás se veía tildado, igual que los de
+    // login, filtros de tienda, localizador, shop-by-look, devoluciones y
+    // suscripciones.
     //
-    // El glob se deriva de los alias del tsconfig; `content-cubre-alias.test.ts`
-    // falla si se agrega un alias a un paquete que este array no cubre.
-    "../../packages/contracts/storefront-shared/src/**/*.{js,ts,jsx,tsx}",
+    // REGLA: la base y las hijas consumen el MISMO artefacto (`dist/` del
+    // plugin publicado). Cualquier bug de compilación aparece en las dos.
+    // pnpm symlinkea el workspace local del boilerplate a
+    // `node_modules/@minimalart/...`, así que este glob resuelve al `dist/`
+    // compilado (que el `^build` de Turbo genera). En las hijas resuelve
+    // al `dist/` del tarball publicado. Una línea, dos entornos, mismo
+    // comportamiento — la asimetría previa (src en base, dist en hijas)
+    // ocultaba bugs de compilación hasta producción de un derivado.
+    //
+    // El glob se deriva de los alias del tsconfig; `tailwind-content-coverage
+    // .test.ts` falla si se agrega un alias a un paquete que este array no
+    // cubra.
+    "./node_modules/@minimalart/mercatto-plugin-storefront-shared/dist/**/*.js",
     "./node_modules/@medusajs/ui/dist/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {

@@ -1,6 +1,12 @@
 import type { EmailTemplateFunction, EmailTemplateResult } from './types';
 import type { OrderItemForEmail } from './order-notification-admin';
-import { formatLineTotalForEmail, hexToRgba } from './email-helpers';
+import {
+  copyrightLine,
+  formatLineTotalForEmail,
+  hexToRgba,
+  storeDisplayName,
+  subjectWithStore,
+} from './email-helpers';
 
 export type QuotationNotificationAdminData = {
   order_id?: string;
@@ -48,9 +54,8 @@ export const quotationNotificationAdminTemplate: EmailTemplateFunction<Quotation
 ): EmailTemplateResult => {
   const displayId = data.custom_display_id ?? data.display_id ?? data.order_id ?? '';
   const total = fmt(data.total);
-  const channelName = data.sales_channel_name || data.sales_channel_id || '';
   const logoUrl = data.logo_url || '';
-  const cdeDisplayName = (data.cde_display_name || channelName || 'CDE').trim();
+  const cdeDisplayName = storeDisplayName(data);
   const orderDate = data.order_date_formatted || '';
   const items = Array.isArray(data.order_items) ? data.order_items : [];
   const subtotal = data.subtotal_formatted ?? total;
@@ -67,6 +72,14 @@ export const quotationNotificationAdminTemplate: EmailTemplateFunction<Quotation
   const titleSub = 'Detalles de la cotización a continuación.';
 
   const year = new Date().getFullYear();
+
+  // Sin logo y sin nombre de tienda, la cabecera se omite: un título de 24px
+  // vacío deja un hueco, pero inventar una marca manda la de otro cliente.
+  const brandHeader = logoUrl
+    ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="200" style="display: block; margin: 0 auto; -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none;">`
+    : cdeDisplayName
+      ? `<div style="font-size: 24px; font-weight: 700; color: ${primaryColor};">${cdeDisplayName}</div>`
+      : '';
 
   const itemsRows = items
     .map(
@@ -112,7 +125,7 @@ export const quotationNotificationAdminTemplate: EmailTemplateFunction<Quotation
                     <!-- Logo -->
                     <tr>
                         <td style="padding: 40px 20px 20px 20px; text-align: center; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            ${logoUrl ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="200" style="display: block; margin: 0 auto; -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none;">` : `<div style="font-size: 24px; font-weight: 700; color: ${primaryColor};">${cdeDisplayName}</div>`}
+                            ${brandHeader}
                         </td>
                     </tr>
 
@@ -192,7 +205,7 @@ export const quotationNotificationAdminTemplate: EmailTemplateFunction<Quotation
                     <!-- Footer -->
                     <tr>
                         <td style="padding: 20px; background-color: ${primaryColor}; text-align: center; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            <p style="margin: 0; color: #ffffff; font-size: 12px;">© ${year} ${cdeDisplayName}. Todos los derechos reservados.</p>
+                            <p style="margin: 0; color: #ffffff; font-size: 12px;">${copyrightLine(year, cdeDisplayName)}</p>
                         </td>
                     </tr>
 
@@ -204,7 +217,7 @@ export const quotationNotificationAdminTemplate: EmailTemplateFunction<Quotation
 </html>`.trim();
 
   return {
-    subject: channelName ? `[${channelName}] ${subject} #${displayId}` : `[Mercatto] ${subject} #${displayId}`,
+    subject: subjectWithStore(`${subject} #${displayId}`, data),
     html,
   };
 };

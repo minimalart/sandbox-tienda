@@ -13,8 +13,8 @@ compartido. No se cambia la precedencia ni el cifrado de las credenciales.
 
 ## Validación
 
-- `npm run build --prefix packages/contracts/plugin-runtime` y `npm test --prefix
-  packages/contracts/plugin-runtime`: tres copias físicas, registro tardío,
+- `npm run build --prefix packages/plugins/plugin-runtime` y `npm test --prefix
+  packages/plugins/plugin-runtime`: tres copias físicas, registro tardío,
   reemplazo, desconexión y lectores externos. La prueba falla contra 0.6.0.
 - Builds de servidor y admin de ambos plugins y empaquetado con `pnpm pack`.
 - `scripts/test-plugin-central-settings.ts` carga los `.tgz`, con una copia del

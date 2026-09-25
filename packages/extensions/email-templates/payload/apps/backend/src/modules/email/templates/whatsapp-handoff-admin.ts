@@ -1,3 +1,4 @@
+import { copyrightLine, storeDisplayName } from './email-helpers';
 import type { EmailTemplateFunction, EmailTemplateResult } from './types';
 
 export type WhatsappHandoffAdminData = {
@@ -35,6 +36,7 @@ export const whatsappHandoffAdminTemplate: EmailTemplateFunction<WhatsappHandoff
     : null;
   const inboxUrl = typeof data.inbox_url === 'string' ? data.inbox_url : null;
   const year = new Date().getFullYear();
+  const storeName = storeDisplayName(data);
 
   const html = `
 <!DOCTYPE html>
@@ -55,7 +57,7 @@ export const whatsappHandoffAdminTemplate: EmailTemplateFunction<WhatsappHandoff
           ${summaryHtml ? `<div style="margin:0 0 16px 0;padding:12px 16px;background-color:#f8f9fa;border-radius:6px;color:#444;font-size:14px;line-height:1.5;">${summaryHtml}</div>` : ''}
           ${inboxUrl ? `<p style="margin:0;"><a href="${inboxUrl}" style="display:inline-block;background-color:#25D366;color:#fff;text-decoration:none;padding:10px 20px;border-radius:6px;font-weight:bold;">Responder en el Inbox</a></p>` : `<p style="margin:0;color:#666;">Respondé desde el Inbox de WhatsApp en el backoffice.</p>`}
         </td></tr>
-        <tr><td style="padding:16px 32px;background-color:#f8f9fa;text-align:center;color:#999;font-size:12px;">© ${year} Mercatto</td></tr>
+        <tr><td style="padding:16px 32px;background-color:#f8f9fa;text-align:center;color:#999;font-size:12px;">${copyrightLine(year, storeName)}</td></tr>
       </table>
     </td></tr>
   </table>

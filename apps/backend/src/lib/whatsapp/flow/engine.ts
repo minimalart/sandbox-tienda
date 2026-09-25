@@ -121,13 +121,33 @@ export type FlowInput = {
 
 // ─── Plan ─────────────────────────────────────────────────────────────────────
 
+/**
+ * EL CUERPO CRUDO DEL MENSAJE, PARA VOLVER A RESOLVERLO AL ENVIAR.
+ *
+ * `body` viene resuelto contra el estado que había cuando se armó el plan, y eso
+ * llega tarde para cualquier `{{vars.…}}` que escriba una acción SILENCIOSA de
+ * este mismo turno: el plan se arma entero antes de ejecutar nada.
+ *
+ * Es exactamente el problema que `optionsFrom` ya resolvía para las OPCIONES —el
+ * runtime las vuelve a resolver justo antes de mandar— y que a los CUERPOS nadie
+ * les había extendido. En el recorrido de compra, `{{vars.link_pago}}` se
+ * reemplazaba por vacío y el cierre salía "Tu compra está lista para continuar.
+ * Abrí el enlace 👇" sin ningún enlace: la venta moría en el último paso, con el
+ * carrito armado. Lo reportó QA.
+ *
+ * Sólo se guarda cuando el texto del nodo TIENE algo que resolver, así que un
+ * mensaje literal no paga nada.
+ */
+export type FlowStepTemplate = { template?: string };
+
 export type FlowStep =
-  | { kind: 'send_text'; nodeId: string; body: string }
-  | { kind: 'ask_text'; nodeId: string; body: string }
+  | ({ kind: 'send_text'; nodeId: string; body: string } & FlowStepTemplate)
+  | ({ kind: 'ask_text'; nodeId: string; body: string } & FlowStepTemplate)
   | {
       kind: 'ask_buttons';
       nodeId: string;
       body: string;
+      template?: string;
       buttons: Array<{ id: string; label: string }>;
       /**
        * Presente cuando las opciones salen de una variable. El runtime las vuelve
@@ -141,6 +161,7 @@ export type FlowStep =
       kind: 'ask_list';
       nodeId: string;
       body: string;
+      template?: string;
       button: string;
       rows: Array<{ id: string; title: string; description?: string }>;
       /** Ver `optionsFrom` en `ask_buttons`. */
@@ -292,6 +313,14 @@ export function foldText(value: string): string {
  * Lo que no se conoce se reemplaza por VACÍO y no se deja el `{{...}}` crudo: un
  * cliente que recibe "Hola {{customer_name}}" ve el andamio del sistema.
  */
+/** ¿El texto tiene algún `{{…}}` que valga la pena volver a resolver al enviar? */
+export const hasPlaceholders = (template: string | undefined): boolean =>
+  typeof template === 'string' && /\{\{\s*[a-zA-Z0-9_.]+\s*\}\}/.test(template);
+
+/** `{ template }` cuando hay algo que resolver, y nada cuando no. */
+const rawBody = (template: string | undefined): FlowStepTemplate =>
+  hasPlaceholders(template) ? { template: template as string } : {};
+
 export function renderText(template: string, state: FlowState, input: FlowInput): string {
   return template.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_match, path: string) => {
     if (path === 'text') return input.text ?? '';
@@ -676,7 +705,12 @@ export function advance(
     switch (node.type) {
       case 'message':
         if (node.body) {
-          steps.push({ kind: 'send_text', nodeId: node.id, body: renderText(node.body, next, input) });
+          steps.push({
+            kind: 'send_text',
+            nodeId: node.id,
+            body: renderText(node.body, next, input),
+            ...rawBody(node.body),
+          });
         }
         break;
 
@@ -685,6 +719,7 @@ export function advance(
           kind: 'ask_buttons',
           nodeId: node.id,
           body: renderText(node.body ?? '', next, input),
+          ...rawBody(node.body),
           buttons: resolveNodeOptions(node, next).map((o) => ({
             id: flowTapId(node.id, o.value),
             label: o.label,
@@ -700,6 +735,7 @@ export function advance(
           kind: 'ask_list',
           nodeId: node.id,
           body: renderText(node.body ?? '', next, input),
+          ...rawBody(node.body),
           button: node.listButton || 'Ver opciones',
           rows: resolveNodeOptions(node, next).map((o) => ({
             id: flowTapId(node.id, o.value),
@@ -711,7 +747,12 @@ export function advance(
         return esperar(node);
 
       case 'ask_text':
-        steps.push({ kind: 'ask_text', nodeId: node.id, body: renderText(node.body ?? '', next, input) });
+        steps.push({
+          kind: 'ask_text',
+          nodeId: node.id,
+          body: renderText(node.body ?? '', next, input),
+          ...rawBody(node.body),
+        });
         return esperar(node);
 
       case 'agent':
@@ -751,7 +792,12 @@ export function advance(
 
       case 'end':
         if (node.body) {
-          steps.push({ kind: 'send_text', nodeId: node.id, body: renderText(node.body, next, input) });
+          steps.push({
+            kind: 'send_text',
+            nodeId: node.id,
+            body: renderText(node.body, next, input),
+            ...rawBody(node.body),
+          });
         }
         next.node_id = null;
         return done('ended');

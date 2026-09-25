@@ -31,10 +31,18 @@ import type { TopbarIconType } from '@lib/site-config/types';
 import { useTenantBrand } from '@lib/site-config/context';
 import { useEffect, useMemo, useState } from 'react';
 
-// Mapa de iconos disponibles
+// Mapa de íconos disponibles. `style` está en el contrato porque el render
+// pinta el ícono con el `iconColor` del banner (`style={{ color }}`); el tipo
+// estrecho anterior sobrevivía en el árbol viejo gracias al fallback hardcoded
+// a `CreditCardIcon` (props más anchas) que ensanchaba la unión — al quitar
+// ese fallback hay que declararlo explícito acá.
 export const iconMap: Record<
   TopbarIconType,
-  React.ComponentType<{ className?: string; 'aria-hidden'?: any }>
+  React.ComponentType<{
+    className?: string;
+    'aria-hidden'?: any;
+    style?: React.CSSProperties;
+  }>
 > = {
   'credit-card': CreditCardIcon,
   truck: TruckIcon,
@@ -64,64 +72,42 @@ export const iconMap: Record<
   'building-storefront': BuildingStorefrontIcon,
 };
 
+/** Default que el form viejo de banners imponía a `card_color` (verde Mercatto). */
+const LEGACY_DEFAULT_CARD_COLOR = '#166534';
+
 const HomeTopbar = () => {
   const { topbar } = useTenantBrand();
   const { banners, isLoading } = useBannersByPlacement('top_bar');
   const [dismissed, setDismissed] = useState(false);
 
-  // Usar configuración del tenant o valores por defecto
+  // La topbar depende ÚNICAMENTE de banners con placement `top_bar` publicados
+  // para el sales channel activo. Sin banners no se muestra nada — no hay
+  // fallback a `tenant.topbar.messages` ni a mensajes hardcoded.
   const messages = useMemo(() => {
-    if (!isLoading && banners.length > 0) {
-      const mapped = banners
-        .filter((b) => !!(b.title || b.text))
-        .map((b) => ({
-          id: b.id,
-          text: (b.title || b.text) as string,
-          Icon: iconMap[(b.icon as TopbarIconType) ?? ''] || CreditCardIcon,
-          // La barra superior es una franja de marca: el fondo usa SIEMPRE el
-          // color primario del tenant activo (una demo pinta su propio color, no
-          // el verde de Mercatto), con texto/ícono en blanco. Antes tomaba el
-          // `card_color` del banner, que quedaba verde por el preset del form
-          // (#166534) aunque la demo fuera de otro color. El banner solo aporta
-          // el texto y el ícono.
-          backgroundColor: 'var(--primary-color)',
-          textColor: '#ffffff',
-          iconColor: '#ffffff',
-        }));
-      if (mapped.length > 0) return mapped;
-    }
-
-    if (topbar?.messages && topbar.messages.length > 0) {
-      return topbar.messages.map((msg) => ({
-        id: msg.id,
-        text: msg.text,
-        Icon: iconMap[msg.icon] || CreditCardIcon,
-        backgroundColor: 'var(--primary-color)',
-        textColor: '#ffffff',
-        iconColor: '#ffffff',
+    if (isLoading || banners.length === 0) return [];
+    return banners
+      .filter((b) => !!(b.title || b.text))
+      .map((b) => ({
+        id: b.id,
+        text: (b.title || b.text) as string,
+        Icon: iconMap[(b.icon as TopbarIconType) ?? ''] || CreditCardIcon,
+        // Colores editables desde el banner (`card_color`/`color_font`/
+        // `icon_color`). Sin valor explícito caen al preset de marca: fondo =
+        // color primario del tenant activo, texto e ícono en blanco. El
+        // hardcode previo pisaba SIEMPRE el `card_color` porque el form viejo
+        // defaulteaba a `#166534` (verde Mercatto) y contaminaba demos de
+        // otros colores; el form actual ya no impone default y el operador
+        // decide.
+        // Los banners guardados con ese form viejo todavía traen `#166534`:
+        // se tratan como "sin color" para que la demo pinte su primario.
+        backgroundColor:
+          b.card_color && b.card_color.trim().toLowerCase() !== LEGACY_DEFAULT_CARD_COLOR
+            ? b.card_color
+            : 'var(--primary-color)',
+        textColor: b.color_font || '#ffffff',
+        iconColor: b.icon_color || '#ffffff',
       }));
-    }
-
-    // Valores por defecto si no hay configuración
-    return [
-      {
-        id: 'payment',
-        text: 'Tarjeta o efectivo',
-        Icon: CreditCardIcon,
-        backgroundColor: 'var(--primary-color)',
-        textColor: '#ffffff',
-        iconColor: '#ffffff',
-      },
-      {
-        id: 'shipping',
-        text: 'Envío gratis',
-        Icon: TruckIcon,
-        backgroundColor: 'var(--primary-color)',
-        textColor: '#ffffff',
-        iconColor: '#ffffff',
-      },
-    ];
-  }, [banners, isLoading, topbar]);
+  }, [banners, isLoading]);
 
   const rotationInterval = topbar?.rotationInterval || 6000;
   const [activeMessage, setActiveMessage] = useState(0);
@@ -136,7 +122,8 @@ const HomeTopbar = () => {
     return () => clearInterval(interval);
   }, [messages.length, rotationInterval]);
 
-  // Si está deshabilitado o no hay mensajes, no mostrar
+  // `topbar.enabled === false` queda como kill-switch manual del tenant; sin
+  // banners tampoco hay nada que renderizar.
   if (dismissed || topbar?.enabled === false || messages.length === 0) {
     return null;
   }

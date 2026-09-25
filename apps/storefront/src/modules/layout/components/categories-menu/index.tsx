@@ -153,7 +153,7 @@ const HamburgerVariant = ({
         className={`group relative flex items-center gap-1.5 self-stretch whitespace-nowrap text-[14px] leading-5 antialiased transition-colors duration-200 ${
           open
             ? "font-semibold text-[--primary-color]"
-            : "font-normal text-[#374151] hover:text-[--accent-color]"
+            : "font-normal text-[color:var(--header-fg,#374151)] hover:text-[--accent-color]"
         }`}
         onClick={() => setOpen((v) => !v)}
         style={FONT_STYLE}
@@ -165,7 +165,7 @@ const HamburgerVariant = ({
         <span
           aria-hidden="true"
           className={`absolute inset-x-0 bottom-0 h-[3px] rounded-t-full transition-colors duration-200 ${
-            open ? "bg-[--primary-color]" : "bg-transparent group-hover:bg-gray-300"
+            open ? "bg-[--primary-color]" : "bg-transparent group-hover:bg-[color:var(--header-fg-muted,#d1d5db)]"
           }`}
         />
       </button>

@@ -26,6 +26,7 @@ import {
   emptyState,
   flowTapId,
   parseFlowTapId,
+  renderText,
   resolveNodeOptions,
   type FlowGraph,
   type FlowPlan,
@@ -105,6 +106,44 @@ export function continueAfterAction(
     ? { ...session, state: { ...session.state, vars: { ...session.state.vars, ...vars } } }
     : session;
   return run(graph, conVars, { text: null, selectionId: null }, null);
+}
+
+/**
+ * LO QUE LA ACCIÓN DEJÓ EN `vars`, SIN MOVER EL RECORRIDO.
+ *
+ * Una acción `silent` no pausa: el motor la corre y dibuja la pregunta siguiente EN EL
+ * MISMO TURNO. O sea que para el caso más común —buscar en el catálogo y ofrecer los
+ * resultados— nunca había un momento en el que el operador pudiera decir qué había
+ * devuelto la acción: la lista ya estaba en pantalla, vacía, con sólo las salidas de
+ * emergencia. El campo de JSON de "seguir después de una acción" ni siquiera aparecía.
+ *
+ * Por eso esto NO avanza el turno: escribe la variable y listo. `choicesForStep` vuelve
+ * a resolver las opciones contra el estado VIVO —igual que hace el runtime justo antes
+ * de mandar el mensaje— así que la pregunta que ya está dibujada se rellena sola con
+ * los productos que la vista previa acaba de traer del catálogo real.
+ *
+ * Con los TEXTOS pasa lo mismo y la solución es otra. Un mensaje que dice
+ * `{{vars.estado_pedido}}` detrás de una acción silenciosa salía vacío en la prueba:
+ * el plan lo resolvió antes de que la vista previa trajera la respuesta. El runtime
+ * lo resuelve justo antes de mandar (`template`), así que acá se hace lo mismo con los
+ * mensajes que vienen DESPUÉS de la última acción, en el momento en que la variable
+ * se escribe. Resolverlos en cada render contra el estado vivo sería peor: consultar
+ * un segundo pedido reescribiría también la burbuja del primero.
+ */
+export function applyActionVars(session: SimSession, vars: Record<string, unknown>): SimSession {
+  const state = { ...session.state, vars: { ...session.state.vars, ...vars } };
+  const desde = session.turns.reduce(
+    (found, turn, index) => (turn.role === 'system' && turn.kind === 'action' ? index : found),
+    -1,
+  );
+  if (desde < 0) return { ...session, state };
+  const cliente = [...session.turns.slice(0, desde)].reverse().find((t) => t.role === 'client');
+  const input = { text: cliente?.role === 'client' ? cliente.text : null, selectionId: null };
+  const turns = session.turns.map((turn, index) => {
+    if (index <= desde || turn.role !== 'bot' || !('template' in turn.step) || !turn.step.template) return turn;
+    return { ...turn, step: { ...turn.step, body: renderText(turn.step.template, state, input) } } as SimTurn;
+  });
+  return { ...session, state, turns };
 }
 
 /**

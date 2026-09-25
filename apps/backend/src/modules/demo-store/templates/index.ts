@@ -207,6 +207,13 @@ export function buildTenantConfig(demo: DemoStoreLike): TenantConfigPayload {
     ...(content.searchSuggestions ? { searchSuggestions: content.searchSuggestions } : {}),
     ...(content.searchHints ? { searchHints: content.searchHints } : {}),
     ...(content.brandsLayout ? { brandsLayout: content.brandsLayout } : {}),
+    // Cart drawer toggles. Sólo se emite cuando el operador cargó al menos un
+    // sub-campo: presente, la clave GANA ENTERA sobre `defaultConfig.assets.cart`
+    // (el merge de assets es shallow por clave), así que emitirla vacía le
+    // borraría defaults al storefront.
+    ...(content.cart && Object.keys(content.cart).length
+      ? { cart: content.cart }
+      : {}),
     // Footer: todo lo que el backoffice edita (descripción, redes, legales,
     // newsletter, copyright) más el contacto, mergeado
     // sobre el footer del template (que aporta su propio copy por defecto).

@@ -6,6 +6,7 @@ import type EmailTemplateModuleService from '../../../../../modules/email-templa
 import { renderEmailTemplate } from '../../../../../modules/email-template/render';
 import { PostAdminTestSendEmailTemplate } from '../../validators';
 import { withBrandingDefaults } from '../../../../../modules/email-template/branding-defaults';
+import { withCatalogSampleData } from '../../../../../modules/email-template/catalog-sample-data';
 
 import { siteFromRequest } from '../../../../../lib/multistore/request';
 import { assertIdInSite } from '../../../../../lib/multistore/scope';
@@ -41,14 +42,22 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
     const stored = await service.retrieveEmailTemplate(req.params.id as string);
 
+    /**
+     * Mismo criterio que `preview`: los productos de `data` que sigan iguales a
+     * los de `sample_data` (del seed, iguales en toda instalación) se cambian
+     * por productos reales de la tienda activa. Ver `../../catalog-sample-data.ts`.
+     */
+    const sampleData = await withCatalogSampleData(
+      req,
+      resolution,
+      data,
+      stored.sample_data as Record<string, unknown> | null,
+    );
+
     const rendered = renderEmailTemplate({
       subject: stored.subject as string,
       html: stored.html as string,
-      data: await withBrandingDefaults(
-        req,
-        resolution,
-        { ...(data ?? ((stored.sample_data as Record<string, unknown>) || {})) },
-      ),
+      data: await withBrandingDefaults(req, resolution, { ...(sampleData ?? {}) }),
     });
 
     await notificationService.createNotifications({

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { invalidRecipients, parseRecipientList } from '../../../lib/recipient-list';
 
 const statusSchema = z.enum(['draft', 'published']);
 
@@ -78,7 +79,27 @@ export const PostAdminUpdateEmailTemplate = z.object({
 
 // Test send / preview share an optional data override (falls back to sample_data).
 export const PostAdminTestSendEmailTemplate = z.object({
-  to: z.string().email('A valid recipient email is required'),
+  /**
+   * UNA casilla o VARIAS separadas por coma: el modal PRELLENA este campo con el
+   * `admin_notification_email` de la tienda, que desde que los avisos internos
+   * aceptan varios destinatarios puede ser una lista. Con `z.string().email()`
+   * acá, abrir "Enviar prueba" y apretar enviar sin tocar nada fallaba con "A
+   * valid recipient email is required" sobre direcciones todas válidas.
+   */
+  to: z
+    .string()
+    .min(1, 'A valid recipient email is required')
+    .superRefine((value, ctx) => {
+      const bad = invalidRecipients(value);
+      const parsed = parseRecipientList(value);
+      if (bad.length === 0 && parsed.length > 0) return;
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: bad.length
+          ? `A valid recipient email is required: "${bad[0]}" is not one`
+          : 'A valid recipient email is required',
+      });
+    }),
   data: z.record(z.string(), z.any()).optional().nullable(),
 });
 

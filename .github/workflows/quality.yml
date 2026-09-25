@@ -1,6 +1,7 @@
 name: Quality
 
-# Segundo check bloqueante de PR: tipos y tests.
+# Segundo check bloqueante de PR: tipos y tests. Además se puede disparar a mano
+# sobre main desde la pestaña Actions (ver el bloque `on:` más abajo).
 #
 # POR QUÉ EXISTE. Hasta ahora el único check de PR era `validate-catalog.yml`, que
 # valida el catálogo y los payloads de extensiones — nada de código. Y el build de
@@ -33,11 +34,24 @@ name: Quality
 #                    proyecto aparte. Consecuencia asumida: un JSX desbalanceado en el
 #                    admin sólo lo atrapa el build de Vite. Para validarlo a mano ver
 #                    el comentario en `apps/backend/tsconfig.json`.
+
+# POR QUÉ VUELVE A CORRER EN PR. Entre 2026-09-22 y 2026-09-23 este workflow quedó
+# sólo en `workflow_dispatch`, y el primer commit que entró después rompió `tsc` en
+# el backend (`has_account` no existe en `CustomerUpdatableFields`). Se mergeó a main
+# sin que nada lo viera, y el primero en enterarse fue el sync de una tienda, que
+# corre el build de verdad. Un check que hay que acordarse de disparar no es un
+# check: es una intención. `pull_request` vuelve.
+#
+# `push: main` NO vuelve a propósito: con `pull_request` gateando, el push a main
+# sería el mismo árbol corriendo dos veces. `workflow_dispatch` se queda para poder
+# re-correrlo sobre main a mano cuando haga falta.
+#
+# `workflow_dispatch` no acepta filtro de branch — el ref lo elige quien dispara,
+# y el workflow sólo aparece en la UI si el archivo existe en la branch default.
+# Por eso la restricción a main se hace en el job, con un `if` sobre `github.ref`.
 on:
   pull_request:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -45,6 +59,10 @@ permissions:
 
 jobs:
   quality:
+    # En PR corre siempre. El `if` sólo acota el disparo MANUAL: en un
+    # `workflow_dispatch` desde otra branch el run termina en verde sin haber
+    # corrido nada, y un verde vacío miente peor que un rojo.
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     services:
       checkout-postgres:

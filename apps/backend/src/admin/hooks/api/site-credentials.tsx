@@ -198,6 +198,7 @@ export const useUpdateSiteCredentials = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (data: UpsertSiteCredentialsInput) =>
       sdk.client.fetch<UpsertSiteCredentialsResponse>('/admin/site-credentials', {
         method: 'POST',
@@ -208,7 +209,6 @@ export const useUpdateSiteCredentials = (
       queryClient.invalidateQueries({ queryKey: SITE_CREDENTIALS_QUERY_KEY });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -225,6 +225,7 @@ export const useDeleteSiteCredentials = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (integration: string) =>
       sdk.client.fetch<DeleteSiteCredentialsResponse>(
         `/admin/site-credentials?integration=${encodeURIComponent(integration)}`,
@@ -234,7 +235,6 @@ export const useDeleteSiteCredentials = (
       queryClient.invalidateQueries({ queryKey: SITE_CREDENTIALS_QUERY_KEY });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 

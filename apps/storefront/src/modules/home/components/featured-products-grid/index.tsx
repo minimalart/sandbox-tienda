@@ -1,5 +1,7 @@
 import { getActiveTenant } from '@lib/site-config/active-tenant'
 import { searchTypesenseProducts } from '@lib/typesense'
+import { BundleCard } from '@modules/bundles/components/bundle-card'
+import { loadBundleCards } from '@modules/bundles/lib/load-bundle-cards'
 import LocalizedClientLink from '@modules/common/components/localized-client-link'
 import Reveal from '@modules/common/components/reveal'
 import ScrollCarousel from '@modules/common/components/scroll-carousel'
@@ -48,6 +50,12 @@ type FeaturedProductsGridProps = {
    * descripción y filtro Typesense editados por el usuario).
    */
   config?: FeaturedProductsConfig
+  /**
+   * Los kits publicados de la tienda abren la fila, con la misma card que el
+   * índice `/bundles` (PRD Bundles V2 §40). Una tienda sin kits no ve nada
+   * distinto; la que no los quiere en ESTA fila lo apaga desde el bloque.
+   */
+  withBundles?: boolean
 }
 
 export default async function FeaturedProductsGrid({
@@ -61,6 +69,7 @@ export default async function FeaturedProductsGrid({
   title: titleOverride,
   description: descriptionOverride,
   config,
+  withBundles = false,
 }: FeaturedProductsGridProps) {
   const tenant = await getActiveTenant()
   const assetConfig = config ?? tenant.assets[productCategory]
@@ -79,6 +88,9 @@ export default async function FeaturedProductsGrid({
   // Sin bajada NO se pinta nada: un texto por defecto acá se filtraba a todos
   // los demos (hablaba de fragancias/aromaterapia en una pinturería).
   const description = descriptionOverride || assetConfig.description || ''
+
+  // En paralelo con la búsqueda: los kits no le suman latencia a la fila.
+  const kitsPromise = withBundles ? loadBundleCards() : Promise.resolve([])
 
   let result: Awaited<ReturnType<typeof searchTypesenseProducts>>
   try {
@@ -103,6 +115,7 @@ export default async function FeaturedProductsGrid({
   }
 
   const { products } = result
+  const kits = await kitsPromise
 
   // Post-filter: si hay un tag configurado, solo mantener productos que realmente lo tengan
   // Normaliza guiones/espacios para comparar (ej: "renova-energia" == "renova energia")
@@ -122,7 +135,7 @@ export default async function FeaturedProductsGrid({
     return aInStock ? -1 : 1
   })
 
-  if (!filteredProducts?.length) {
+  if (!filteredProducts?.length && !kits.length) {
     return null
   }
 
@@ -144,6 +157,24 @@ export default async function FeaturedProductsGrid({
       ) : null}
     </div>
   )
+
+  // Los kits abren la fila con la card del índice `/bundles`, estirada a la
+  // celda para que conviva con las de producto. `index` viene de la lista
+  // completa: el mismo kit tiene el mismo color acá y en el índice.
+  const kitCards = kits.map((kit) => (
+    <BundleCard
+      key={kit.id}
+      handle={kit.handle}
+      title={kit.title}
+      itemCount={kit.itemCount}
+      configurableCount={kit.configurableCount}
+      fromAmount={kit.fromAmount}
+      currencyCode={kit.currencyCode}
+      primaryColor={tenant.theme?.colors?.primary}
+      index={kit.index}
+      className='h-full'
+    />
+  ))
 
   const renderCard = (product: (typeof limitedProducts)[number]) =>
     cardVariant === 'compact' ? (
@@ -171,6 +202,11 @@ export default async function FeaturedProductsGrid({
             {header}
           </div>
           <div className='no-scrollbar grid grid-flow-col auto-cols-[72%] gap-4 overflow-x-auto pb-8 snap-x snap-mandatory sm:auto-cols-[42%] md:auto-cols-[30%] lg:grid-flow-row lg:auto-cols-auto lg:grid-cols-5 lg:overflow-visible'>
+            {kitCards.map((card) => (
+              <div key={card.key} className='snap-start'>
+                {card}
+              </div>
+            ))}
             {limitedProducts.map((product) => (
               <div key={product.id} className='snap-start'>
                 {renderCard(product)}
@@ -201,6 +237,11 @@ export default async function FeaturedProductsGrid({
             {header}
           </div>
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+            {kitCards.map((card) => (
+              <div key={card.key} className='min-w-0'>
+                {card}
+              </div>
+            ))}
             {limitedProducts.map((product) => (
               <div key={product.id} className='min-w-0'>
                 {renderCard(product)}
@@ -222,6 +263,11 @@ export default async function FeaturedProductsGrid({
           containerClassName='gap-4 pb-8'
           snap
         >
+          {kitCards.map((card) => (
+            <div key={card.key} className='w-[260px] flex-shrink-0 snap-start'>
+              {card}
+            </div>
+          ))}
           {limitedProducts.map((product) => (
             <div
               key={product.id}

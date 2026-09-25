@@ -139,6 +139,33 @@ export const ACTION_ARGS: Record<string, ActionArgField[]> = {
     { name: 'filter', label: 'Qué productos', kind: 'filter' },
     { name: 'save_as', label: 'Dónde dejar las opciones', kind: 'text', placeholder: 'filtrados', help: 'La pregunta siguiente las lee con vars.<esta clave>.' },
   ],
+  /**
+   * Los dos datos salen de dos preguntas abiertas y NINGUNO es opcional: la acción no
+   * muestra nada del pedido hasta que número y email correspondan a la misma orden.
+   */
+  wa_lookup_order: [
+    {
+      name: 'order_number',
+      label: 'Número de pedido',
+      kind: 'text',
+      placeholder: '{{answers.pedir_numero_pedido}}',
+      help: 'La respuesta de la pregunta abierta que pide el número: {{answers.<id del paso>}}. Se acepta "1234", "#1234" o "el 1234".',
+    },
+    {
+      name: 'email',
+      label: 'Email de la compra',
+      kind: 'text',
+      placeholder: '{{answers.pedir_email_pedido}}',
+      help: 'La respuesta de la pregunta abierta que pide el email. Si no coincide con el del pedido, el cliente no ve ningún dato.',
+    },
+    {
+      name: 'save_as',
+      label: 'Dónde dejar la respuesta (opcional)',
+      kind: 'text',
+      placeholder: 'estado_pedido',
+      help: 'Con esto el paso no manda nada: deja el estado del pedido (o el motivo por el que no se encontró) en vars.<clave> y lo escribe el mensaje siguiente con {{vars.<clave>}}. Vacío = lo manda la acción.',
+    },
+  ],
   wa_add_to_cart: [
     { name: 'variant_id', label: 'Qué agregar', kind: 'product', placeholder: '{{answers.elegir_producto}}' },
     { name: 'quantity', label: 'Cantidad', kind: 'text', placeholder: '1', help: 'Podés atarla a un paso: {{answers.cantidad}}.' },
@@ -699,6 +726,7 @@ export const ACTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: 'wa_checkout_link', label: 'Link de pago' },
   { value: 'wa_clear_cart', label: 'Vaciar el carrito' },
   { value: 'wa_start_return', label: 'Iniciar devolución' },
+  { value: 'wa_lookup_order', label: 'Consultar un pedido' },
 ];
 
 /** El nombre que ve el operador, o el id crudo si es una tool que no está en la lista. */

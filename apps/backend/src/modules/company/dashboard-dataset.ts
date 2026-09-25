@@ -73,7 +73,11 @@ registerDashboardDataset(
         })
         .whereNull('o.deleted_at')
         .whereNull('c.deleted_at')
-        .whereNotIn('o.status', ['draft', 'canceled', 'cancelled'])
+        // Solo los valores reales de order_status_enum: pending, completed,
+        // draft, archived, canceled, requires_action. 'cancelled' con doble L no
+        // existe, y como binding contra la columna enum Postgres rechaza la
+        // consulta entera en vez de ignorarlo.
+        .whereNotIn('o.status', ['draft', 'canceled'])
         .whereRaw('NOT COALESCE(o.is_draft_order,false)')
         .where('o.created_at', '>=', context.from)
         .where('o.created_at', '<', context.to)

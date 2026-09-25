@@ -13,6 +13,7 @@ import type { MedusaContainer } from '@medusajs/framework/types';
 import { runWhatsappNativeTool } from '../../../modules/ai-assistant/ai/native-tools/whatsapp-tools';
 import type WhatsappAgentModuleService from '../../../modules/whatsapp-agent/service';
 import { getActiveFlow } from '../../../modules/whatsapp-flow/cache';
+import { readWaBotSwitch } from '../bot-switch';
 import { trackWaEvent } from '../events';
 import {
   sendWhatsappButtons,
@@ -24,6 +25,7 @@ import {
   advance,
   flowTapId,
   readState,
+  renderText,
   resolveNodeOptions,
   type FlowInput,
   type FlowState,
@@ -45,6 +47,18 @@ export type FlowTurnInput = {
    * escribió nada, venció el plazo del paso donde la conversación quedó.
    */
   timedOut?: boolean;
+  /**
+   * Si el bot de esta tienda está encendido, cuando el caller YA lo preguntó.
+   *
+   * Sin esto se lee acá. Es a propósito que el default sea preguntar y no asumir
+   * que sí: el interruptor se agregó gateando el webhook, y el barrido de plazos
+   * vencidos —que es el OTRO caller, y manda mensajes sin que nadie escriba— se
+   * quedó afuera. El bot apagado seguía despertando conversaciones cada minuto.
+   *
+   * El gate vive acá, en el punto por donde pasan los dos, y no en cada caller:
+   * un caller nuevo hereda el gate en vez de heredar el agujero.
+   */
+  botEnabled?: boolean;
   /**
    * Cómo se le pregunta a un agente del asistente. Sin esto, un paso de tipo agente
    * no contesta y el recorrido sigue de largo — que es lo correcto para un caller que
@@ -101,6 +115,32 @@ async function runStep(input: FlowTurnInput, step: FlowStep, state: FlowState): 
         )
       : null;
 
+  /**
+   * El CUERPO se vuelve a resolver acá, por lo mismo que las opciones.
+   *
+   * El plan se arma entero antes de ejecutar nada, así que un `{{vars.…}}` que
+   * escribe una acción SILENCIOSA de este mismo turno todavía no existía cuando se
+   * renderizó el texto — y `renderText` reemplaza lo desconocido por VACÍO, que es
+   * lo correcto para no mostrarle el andamio al cliente y lo peor posible para un
+   * link.
+   *
+   * Es el bug que mató la venta en el último paso del recorrido de compra: el
+   * cierre decía "Abrí el enlace 👇" y el enlace no estaba, porque
+   * `wa_checkout_link` lo publica DESPUÉS. `optionsFrom` ya tenía resuelto este
+   * problema para las opciones; a los cuerpos nadie se lo había extendido.
+   *
+   * Sin `template` —el texto del nodo no tenía nada que resolver— se manda el del
+   * plan, byte por byte como antes.
+   */
+  const freshBody = (step: { body: string; template?: string }): string =>
+    step.template === undefined
+      ? step.body
+      : renderText(step.template, state, {
+          text: input.text,
+          selectionId: input.selectionId,
+          ...(input.timedOut ? { timedOut: true } : {}),
+        });
+
   const track = (type: 'send_failed' | 'node_entered', payload: AnyRecord) =>
     trackWaEvent(container, {
       phone,
@@ -117,7 +157,7 @@ async function runStep(input: FlowTurnInput, step: FlowStep, state: FlowState): 
       // se queda esperando lo que el cliente escriba.
       case 'ask_text':
       case 'send_text': {
-        const sent = await sendWhatsappText(phone, step.body);
+        const sent = await sendWhatsappText(phone, freshBody(step));
         if (!sent) track('send_failed', { node_id: step.nodeId, kind: 'text' });
         return Boolean(sent);
       }
@@ -135,14 +175,14 @@ async function runStep(input: FlowTurnInput, step: FlowStep, state: FlowState): 
         }
         const sent = await sendWhatsappButtons({
           to: phone,
-          body: step.body,
+          body: freshBody(step),
           buttons: buttons.map((b) => ({ id: b.id, title: b.label })),
         });
         if (sent) return true;
         // Fallback a texto: mejor una pregunta sin botones que un turno mudo.
         track('send_failed', { node_id: step.nodeId, kind: 'buttons' });
         const options = buttons.map((b, i) => `${i + 1}. ${b.label}`).join('\n');
-        return Boolean(await sendWhatsappText(phone, `${step.body}\n\n${options}`));
+        return Boolean(await sendWhatsappText(phone, `${freshBody(step)}\n\n${options}`));
       }
 
       case 'ask_list': {
@@ -156,14 +196,14 @@ async function runStep(input: FlowTurnInput, step: FlowStep, state: FlowState): 
         }
         const sent = await sendWhatsappList({
           to: phone,
-          body: step.body,
+          body: freshBody(step),
           button: step.button,
           rows,
         });
         if (sent) return true;
         track('send_failed', { node_id: step.nodeId, kind: 'list' });
         const options = rows.map((r, i) => `${i + 1}. ${r.title}`).join('\n');
-        return Boolean(await sendWhatsappText(phone, `${step.body}\n\n${options}`));
+        return Boolean(await sendWhatsappText(phone, `${freshBody(step)}\n\n${options}`));
       }
 
       case 'run_tool': {
@@ -276,6 +316,21 @@ async function runStep(input: FlowTurnInput, step: FlowStep, state: FlowState): 
 export async function runFlowTurn(input: FlowTurnInput): Promise<FlowTurnResult> {
   const { container, waSvc, phone } = input;
   if (!waSvc) return NOT_HANDLED;
+
+  /**
+   * EL INTERRUPTOR, antes de mirar el grafo.
+   *
+   * Se sale sin tocar la sesión, y eso es deliberado: el plazo vencido queda como
+   * está, así que apagar el bot PAUSA el recorrido en vez de cancelarlo, y la
+   * conversación sigue donde quedó cuando alguien lo vuelva a prender. Persistir el
+   * estado acá sería consumir el vencimiento en silencio.
+   *
+   * El costo es que el barrido vuelve a encontrarla cada minuto mientras el bot esté
+   * apagado. Es una consulta que ya estaba haciendo igual: lo caro sería mandar el
+   * mensaje, y eso es justamente lo que no pasa.
+   */
+  const botEnabled = input.botEnabled ?? (await readWaBotSwitch(container, input.siteId)).enabled;
+  if (!botEnabled) return NOT_HANDLED;
 
   const active = await getActiveFlow(container, undefined, input.siteId);
   if (!active) return NOT_HANDLED;

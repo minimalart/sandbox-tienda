@@ -25,8 +25,9 @@ import { useHasActivePromotions } from "@lib/context/promotions-availability";
 import { useWishlist } from "@lib/hooks/use-wishlist";
 import { useCartStore, selectTotalItems } from "@lib/stores/cart.store";
 import { useWishlistDrawerStore } from "@lib/stores/wishlist-drawer.store";
-import { useDemoHref, useTenantBrand, useTenantSections } from "@lib/site-config/context";
+import { useDemoHref, useTenantBrand, useTenantSections, useTenantTheme } from "@lib/site-config/context";
 import { getCustomerAvatar } from "@lib/util/customer-avatar";
+import { pickContrastText } from "@lib/util/contrast";
 import type { HttpTypes } from "@medusajs/types";
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
 import UserAvatar from "@modules/common/components/user-avatar";
@@ -94,17 +95,22 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-// Componente para logo dinámico del tenant
+// Componente para logo dinámico del tenant.
+// Cuando el tenant configura `theme.header_background` oscuro (contraste WCAG
+// blanco) y tiene cargado `logos.mainNegative`, usamos el negativo — el
+// positivo suele venir en tinta oscura y se pierde contra el header custom.
 function TenantLogo() {
   const { name, logos } = useTenantBrand();
+  const { colors } = useTenantTheme();
+  const headerFg = pickContrastText(colors?.headerBackground);
+  const useNegative = headerFg === "#ffffff" && !!logos?.mainNegative;
+  const src =
+    (useNegative ? logos?.mainNegative : logos?.main) ||
+    "/logos-mercatto/logocompleto-verde.svg";
   return (
     <>
       <span className="sr-only">{name}</span>
-      <img
-        alt={`${name} Logo`}
-        className="h-8 w-auto"
-        src={logos?.main || "/logos-mercatto/logocompleto-verde.svg"}
-      />
+      <img alt={`${name} Logo`} className="h-8 w-auto" src={src} />
     </>
   );
 }
@@ -391,6 +397,10 @@ const NavClient = ({
         </div>
       </Dialog>
 
+      {/* Los tokens `--header-fg`/`--header-fg-muted`/`--header-border` solo se
+          inyectan cuando el operador configuró `headerBackground` (ver
+          `theme/inject-theme.ts`); sin config, los fallbacks preservan el look
+          default (gray-400/gray-500/#374151/gray-100). */}
       <header className="hidden bg-[color:var(--header-bg,rgba(255,255,255,0.95))] backdrop-blur supports-[backdrop-filter]:bg-[color:var(--header-bg,rgba(255,255,255,0.8))] lg:block">
         {/* Row 1: Logo + Search + Icons */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -410,7 +420,7 @@ const NavClient = ({
             <div className="flex flex-shrink-0 items-center gap-1">
               {/* Cart */}
               <button
-                className="group relative flex items-center p-2 text-gray-400 transition-colors duration-200 hover:text-gray-600"
+                className="group relative flex items-center p-2 text-[color:var(--header-fg-muted,#9ca3af)] transition-colors duration-200 hover:text-[color:var(--header-fg,#4b5563)]"
                 data-testid="nav-cart-link"
                 onClick={openCart}
                 ref={(el) => registerCartIcon(el)}
@@ -418,7 +428,7 @@ const NavClient = ({
               >
                 <ShoppingCart
                   aria-hidden="true"
-                  className={`size-5 shrink-0 transition-transform group-hover:text-gray-600 ${cartBounce ? "animate-bounce" : ""}`}
+                  className={`size-5 shrink-0 transition-transform group-hover:text-[color:var(--header-fg,#4b5563)] ${cartBounce ? "animate-bounce" : ""}`}
                   style={
                     cartBounce
                       ? { animation: "bounce 0.3s ease-in-out" }
@@ -430,7 +440,7 @@ const NavClient = ({
               </button>
 
               <button
-                className="group relative flex items-center justify-center rounded-full p-2 text-gray-400 transition-colors duration-200 hover:text-[--primary-color]"
+                className="group relative flex items-center justify-center rounded-full p-2 text-[color:var(--header-fg-muted,#9ca3af)] transition-colors duration-200 hover:text-[--primary-color]"
                 data-testid="nav-wishlist-link"
                 onClick={openWishlistDrawer}
                 ref={(el) => registerWishlistIcon(el)}
@@ -456,7 +466,7 @@ const NavClient = ({
 
               {/* Account */}
               <LocalizedClientLink
-                className="group flex items-center gap-1.5 rounded-full py-1 pl-2 pr-3 text-gray-500 transition-colors duration-200 hover:text-[--accent-color]"
+                className="group flex items-center gap-1.5 rounded-full py-1 pl-2 pr-3 text-[color:var(--header-fg-muted,#6b7280)] transition-colors duration-200 hover:text-[--accent-color]"
                 href="/account"
               >
                 {customer ? (
@@ -470,11 +480,11 @@ const NavClient = ({
                 ) : (
                   <UserIcon
                     aria-hidden="true"
-                    className="size-5 text-gray-400 transition-colors duration-200 group-hover:text-[--primary-color]"
+                    className="size-5 text-[color:var(--header-fg-muted,#9ca3af)] transition-colors duration-200 group-hover:text-[--primary-color]"
                   />
                 )}
                 <span
-                  className="whitespace-nowrap text-[13px] font-normal text-[#374151] transition-colors duration-200 group-hover:text-[--accent-color] antialiased"
+                  className="whitespace-nowrap text-[13px] font-normal text-[color:var(--header-fg,#374151)] transition-colors duration-200 group-hover:text-[--accent-color] antialiased"
                   data-testid="account-link-label"
                   style={{ fontFamily: "var(--font-roboto), Roboto, sans-serif" }}
                 >
@@ -488,7 +498,7 @@ const NavClient = ({
         </div>
 
         {/* Row 2: Navigation links */}
-        <div className="border-t border-gray-100">
+        <div className="border-t border-[color:var(--header-border,#f3f4f6)]">
           <nav
             aria-label="Top"
             className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
@@ -497,7 +507,7 @@ const NavClient = ({
               {navigation.categories.map((category) => (
                 <Popover className="relative flex" key={category.name}>
                   <div className="relative flex">
-                    <PopoverButton className="group relative flex items-center justify-center font-medium text-gray-700 text-sm transition-colors duration-200 ease-out hover:text-gray-800 data-open:text-[--primary-color]">
+                    <PopoverButton className="group relative flex items-center justify-center font-medium text-[color:var(--header-fg,#374151)] text-sm transition-colors duration-200 ease-out hover:text-[color:var(--header-fg,#1f2937)] data-open:text-[--primary-color]">
                       {category.name}
                       <span
                         aria-hidden="true"
@@ -626,7 +636,7 @@ const NavClient = ({
                       "after:absolute after:inset-x-0 after:bottom-0 after:h-[3px] after:rounded-t-full after:transition-colors after:duration-200 after:content-['']",
                       isActive
                         ? "text-[--primary-color] font-semibold after:bg-[--primary-color]"
-                        : "text-[#374151] font-normal hover:text-[--accent-color] after:bg-transparent hover:after:bg-gray-300",
+                        : "text-[color:var(--header-fg,#374151)] font-normal hover:text-[--accent-color] after:bg-transparent hover:after:bg-[color:var(--header-fg-muted,#d1d5db)]",
                     )}
                     href={page.href}
                     key={page.name}

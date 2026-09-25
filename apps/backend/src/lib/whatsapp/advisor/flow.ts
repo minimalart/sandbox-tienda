@@ -187,7 +187,15 @@ export async function advanceAdvisor(input: AdvisorFlowInput): Promise<boolean> 
       siteId,
     });
 
-  const config = await getAdvisorConfig(container);
+  /**
+   * CON `siteId`: `getAdvisorConfig` lo baja a `readSetting(key, siteId)` y sin él
+   * se lee la fila GLOBAL. En multitienda eso significaba que una tienda con su
+   * propia config —el asesor apagado, otro umbral, otro máximo de resultados—
+   * corría igual con la de la instancia, sin que nada avisara. Mismo patrón que
+   * ya mordió en store-config (el admin leía la fila del sitio y el público la
+   * global). El `siteId` viaja desde el webhook por `?site=`.
+   */
+  const config = await getAdvisorConfig(container, siteId);
   /**
    * La compuerta va también ACÁ y no sólo en `startAdvisor`, porque hay un camino
    * que no pasa por él: con una sesión viva y una dimensión pendiente, un simple
@@ -313,7 +321,7 @@ export async function startAdvisor(
   // no en cada llamador porque son TRES —el botón del menú, la tool del modelo y el
   // nodo del grafo— y alcanza con que uno se olvide para que el cliente reciba un
   // cuestionario de otro rubro.
-  const enabled = await getAdvisorConfig(container)
+  const enabled = await getAdvisorConfig(container, siteId)
     .then((c) => c.enabled)
     .catch(() => true);
   if (!enabled) return false;

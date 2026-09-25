@@ -1,3 +1,4 @@
+import { copyrightLine, storeDisplayName, subjectWithStore } from './email-helpers';
 import type { EmailTemplateFunction, EmailTemplateResult } from './types';
 
 /**
@@ -54,9 +55,8 @@ export const orderReadyForPickupTemplate: EmailTemplateFunction<OrderReadyForPic
   data
 ): EmailTemplateResult => {
   const displayId = String(data.custom_display_id ?? data.display_id ?? data.order_id ?? '');
-  const channelName = data.sales_channel_name || '';
   const logoUrl = data.logo_url || '';
-  const cdeDisplayName = (data.cde_display_name || channelName || 'Mercatto').trim();
+  const cdeDisplayName = storeDisplayName(data);
   const primaryColor = data.primary_color || '#2e7d32';
   const customerName = (data.customer_name || '').trim();
   const year = new Date().getFullYear();
@@ -70,6 +70,14 @@ export const orderReadyForPickupTemplate: EmailTemplateFunction<OrderReadyForPic
   const instructions = (data.pickup_instructions || '').trim();
 
   const subjectBase = `Tu pedido #${displayId} ya está listo para retirar`;
+
+  // Sin logo y sin nombre de tienda, la cabecera se omite: un título de 24px
+  // vacío deja un hueco, pero inventar una marca manda la de otro cliente.
+  const brandHeader = logoUrl
+    ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(cdeDisplayName)}" width="200" style="display:block;margin:0 auto;border:0;height:auto;">`
+    : cdeDisplayName
+      ? `<div style="font-size:24px;font-weight:700;color:${escapeHtml(primaryColor)};">${escapeHtml(cdeDisplayName)}</div>`
+      : '';
 
   const hoursRows = hours
     .map(
@@ -94,9 +102,7 @@ export const orderReadyForPickupTemplate: EmailTemplateFunction<OrderReadyForPic
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="600" style="margin:auto;background-color:#ffffff;max-width:600px;">
           <tr>
             <td style="padding:40px 20px 20px 20px;text-align:center;">
-              ${logoUrl
-                ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(cdeDisplayName)}" width="200" style="display:block;margin:0 auto;border:0;height:auto;">`
-                : `<div style="font-size:24px;font-weight:700;color:${escapeHtml(primaryColor)};">${escapeHtml(cdeDisplayName)}</div>`}
+              ${brandHeader}
             </td>
           </tr>
           <tr>
@@ -143,7 +149,7 @@ export const orderReadyForPickupTemplate: EmailTemplateFunction<OrderReadyForPic
             : ''}
           <tr>
             <td style="padding:20px;background-color:${escapeHtml(primaryColor)};text-align:center;">
-              <p style="margin:0;color:#ffffff;font-size:12px;">© ${year} ${escapeHtml(cdeDisplayName)}. Todos los derechos reservados.</p>
+              <p style="margin:0;color:#ffffff;font-size:12px;">${escapeHtml(copyrightLine(year, cdeDisplayName))}</p>
             </td>
           </tr>
         </table>
@@ -154,7 +160,7 @@ export const orderReadyForPickupTemplate: EmailTemplateFunction<OrderReadyForPic
 </html>`.trim();
 
   return {
-    subject: channelName ? `[${channelName}] ${subjectBase}` : subjectBase,
+    subject: subjectWithStore(subjectBase, data),
     html,
   };
 };

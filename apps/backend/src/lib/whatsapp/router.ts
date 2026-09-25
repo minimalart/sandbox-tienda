@@ -1,4 +1,5 @@
 import type { MedusaContainer } from '@medusajs/framework/types';
+import { getKapsoSettings } from '../../modules/kapso-whatsapp/settings';
 import { NATIVE_TOOL } from '../../modules/ai-assistant/ai/native-tools/names';
 import { runWhatsappNativeTool } from '../../modules/ai-assistant/ai/native-tools/whatsapp-tools';
 import type WhatsappAgentModuleService from '../../modules/whatsapp-agent/service';
@@ -10,6 +11,7 @@ import {
   formatCustomerOrders,
   formatOrderStatusForCustomer,
   lookupOrderByDisplayIdAndEmail,
+  ORDER_NOT_FOUND_MESSAGE,
   parseEmail,
   parseOrderDisplayId,
 } from './order-lookup';
@@ -105,6 +107,23 @@ function isFreshSession(session: { intent?: unknown; step?: unknown; answers?: R
 
 /** ¿El texto es un saludo? (expuesto para poder testear la decisión). */
 export const isGreeting = (folded: string): boolean => GREETING_RE.test(folded);
+
+/**
+ * ¿El texto libre que NO se reconoció abre el menú, o cae al agente?
+ *
+ * Expuesto —como `planGreeting`— porque es una DECISIÓN y no I/O: es la puerta de
+ * entrada del bot, y lo único que la separa del bug es esta condición.
+ *
+ * Ver el recuadro del descriptor `WHATSAPP_GUIDED_ENTRY`: con la compuerta
+ * encendida, el primer mensaje de una sesión nueva ve el menú documentado en vez
+ * de abrir una conversación libre que no está en ningún árbol.
+ */
+export function opensMenuOnFreeText(
+  session: { intent?: unknown; step?: unknown; answers?: Record<string, string> },
+  guidedEntry: boolean,
+): boolean {
+  return guidedEntry && isFreshSession(session);
+}
 
 export type GreetingPlan = 'menu' | 'resume_guided';
 
@@ -353,6 +372,32 @@ export async function routeInbound(input: RouterInput): Promise<RouterResult> {
     }
   }
 
+  /**
+   * LA PUERTA DE ENTRADA (§8/§23, DESDEELSUR-72 TC-000).
+   *
+   * Hasta acá el turno es texto libre sin intención reconocible, y el destino
+   * histórico era el agente. Eso convertía al PRIMER mensaje del cliente en la
+   * decisión de en qué bot entra: "Hola" abría el menú y "busco algo para el
+   * techo" abría una conversación libre que no está en ningún árbol, con otro
+   * formato de opciones y sin las garantías del recorrido. QA lo midió como
+   * bifurcación no controlada y lo marcó crítico.
+   *
+   * Con la compuerta encendida, una sesión NUEVA ve el menú: la misma respuesta
+   * que ya recibe un saludo, por la misma razón. No es un caso raro — es la
+   * puerta por la que entra cualquiera que escriba algo antes de saludar.
+   *
+   * Y NO se extiende a la sesión en curso a propósito: adentro del recorrido el
+   * agente sigue siendo el que atiende lo que el router deliberadamente no
+   * resuelve (asesoramiento §19, devoluciones). Mandar el menú ahí sería
+   * contestarle con un cuestionario a quien está preguntando algo concreto.
+   */
+  if (opensMenuOnFreeText(session, getKapsoSettings().guidedEntry)) {
+    ctx.track('menu_shown', { reason: 'fresh_session_free_text' });
+    if (await sendMainMenu(phone)) return HANDLED;
+    // El menú no salió (ni botones ni texto): que lo atienda el agente antes que
+    // dejar el turno mudo, que es la peor salida posible.
+  }
+
   // Texto libre sin intención clara → el agente.
   return NOT_HANDLED;
 }
@@ -590,12 +635,7 @@ async function handleOrderEmail(
     // MISMA respuesta si el pedido no existe o si el email no coincide: confirmar
     // la existencia de un pedido ajeno ya sería filtrar información (§28).
     ctx.track('order_status', { identified: false, matched: false });
-    return result(
-      await send(
-        phone,
-        'No encontré un pedido con ese número y ese email. Revisalo y probá de nuevo, o decime *hablar con alguien* y te ayuda una persona del equipo.',
-      ),
-    );
+    return result(await send(phone, ORDER_NOT_FOUND_MESSAGE));
   }
 
   ctx.track('order_status', { identified: false, matched: true, display_id: displayId });

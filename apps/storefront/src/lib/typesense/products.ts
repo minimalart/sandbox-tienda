@@ -1,4 +1,5 @@
 import "server-only";
+import { headers } from "next/headers";
 
 import { getActivePromotionIdsForChannel } from "@lib/data/active-promotion-ids";
 import { getActiveSalesChannelId } from "@lib/data/cookies";
@@ -12,7 +13,7 @@ async function trackSearchQuery(
   query: string,
   hasResults: boolean = true,
 ): Promise<void> {
-  if (!query || query === "*") return;
+  if (!query || query === "*" || (await headers()).has("x-puck-preview")) return;
 
   try {
     const backendUrl =
@@ -56,6 +57,7 @@ async function trackSearchQuery(
  */
 export async function searchTypesenseProducts(
   params: TypesenseProductsParams,
+  options?: { track?: boolean },
 ): Promise<TypesenseProductsResponse> {
   const rawQuery: string = params.q?.trim() || "*";
 
@@ -95,7 +97,7 @@ export async function searchTypesenseProducts(
   const result = await searchTypesenseProductsCore(effectiveParams, activePromoIds);
 
   // Analytics en el path servidor — igual que antes del refactor.
-  if (rawQuery !== "*") {
+  if (rawQuery !== "*" && options?.track !== false) {
     const hasResults = result.found > 0;
     trackSearchQuery(rawQuery, hasResults).catch((err) =>
       console.warn("[TYPESENSE] Analytics tracking error:", err),

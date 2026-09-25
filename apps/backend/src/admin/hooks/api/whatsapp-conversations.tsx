@@ -56,14 +56,15 @@ export const useSetWhatsappMode = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: { phone: string; action: 'pause' | 'resume' }) =>
       sdk.client.fetch<{ ok: boolean; phone: string; action: string }>(
         '/admin/whatsapp-conversations',
         { method: 'POST', body },
       ),
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: whatsappConversationsQueryKey.all });
+      options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };

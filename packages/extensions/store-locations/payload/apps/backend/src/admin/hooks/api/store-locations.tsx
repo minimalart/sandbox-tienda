@@ -220,6 +220,7 @@ export const useCreateStoreLocation = (
   const queryClient = useQueryClient();
 
   return useMutation({
+    ...options,
     mutationFn: (storeLocation: AdminCreateStoreLocation) =>
       sdk.client.fetch<AdminStoreLocationResponse>('/admin/store-locations', {
         method: 'POST',
@@ -234,7 +235,6 @@ export const useCreateStoreLocation = (
       });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -245,6 +245,7 @@ export const useUpdateStoreLocation = (
   const queryClient = useQueryClient();
 
   return useMutation({
+    ...options,
     mutationFn: (storeLocation: AdminUpdateStoreLocation) =>
       sdk.client.fetch<AdminStoreLocationResponse>(`/admin/store-locations/${storeLocationId}`, {
         method: 'POST',
@@ -262,7 +263,6 @@ export const useUpdateStoreLocation = (
       });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -273,6 +273,7 @@ export const useDeleteStoreLocation = (
   const queryClient = useQueryClient();
 
   return useMutation({
+    ...options,
     mutationFn: () =>
       sdk.client.fetch<void>(`/admin/store-locations/${storeLocationId}`, {
         method: 'DELETE',
@@ -283,7 +284,6 @@ export const useDeleteStoreLocation = (
       });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -310,6 +310,7 @@ export const useUpdateBranchConfig = (
   const queryClient = useQueryClient();
 
   return useMutation({
+    ...options,
     mutationFn: (body: AdminUpdateBranchConfig) =>
       sdk.client.fetch<AdminBranchConfigResponse>(
         `/admin/store-locations/${storeLocationId}/branch-config`,
@@ -326,7 +327,6 @@ export const useUpdateBranchConfig = (
       queryClient.invalidateQueries({ queryKey: storeLocationQueryKey.lists() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -402,6 +402,7 @@ export const useCreateCoverage = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: AdminCreateCoverage) =>
       sdk.client.fetch<AdminCoverageResponse>(
         `/admin/store-locations/${storeLocationId}/coverage`,
@@ -411,7 +412,6 @@ export const useCreateCoverage = (
       queryClient.invalidateQueries({ queryKey: coverageKey(storeLocationId) });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -422,6 +422,7 @@ export const useUpdateCoverage = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: AdminUpdateCoverage) =>
       sdk.client.fetch<AdminCoverageResponse>(
         `/admin/store-locations/${storeLocationId}/coverage/${coverageId}`,
@@ -431,7 +432,6 @@ export const useUpdateCoverage = (
       queryClient.invalidateQueries({ queryKey: coverageKey(storeLocationId) });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -442,6 +442,7 @@ export const useDeleteCoverage = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: () =>
       sdk.client.fetch<{ id: string; deleted: boolean }>(
         `/admin/store-locations/${storeLocationId}/coverage/${coverageId}`,
@@ -451,7 +452,6 @@ export const useDeleteCoverage = (
       queryClient.invalidateQueries({ queryKey: coverageKey(storeLocationId) });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -502,6 +502,7 @@ export const useUpdateBranchDelivery = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: AdminUpdateBranchDelivery) =>
       sdk.client.fetch<AdminBranchDeliveryResponse>(
         `/admin/store-locations/${storeLocationId}/delivery`,
@@ -511,6 +512,5 @@ export const useUpdateBranchDelivery = (
       queryClient.invalidateQueries({ queryKey: deliveryKey(storeLocationId) });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };

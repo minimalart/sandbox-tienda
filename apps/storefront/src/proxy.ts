@@ -1,3 +1,4 @@
+import { fetchLandingPreview } from './lib/landing-preview'
 import { isSitesHubHost, sitesHubOrigin, normalizeSiteSuffix } from '@lib/site-config/site-hosts'
 import { resolveHostSlug, normalizeHost } from '@lib/site-config/resolve-site'
 import { applyCustomerSessionHeaders, resolveCustomerSession } from '@lib/util/customer-session'
@@ -112,6 +113,29 @@ function applyRecommendationSessionCookie(
  * - Si llega una URL limpia, se hace rewrite interno para que Next matchee [countryCode].
  */
 export default async function proxy(request: NextRequest) {
+  // Never trust a caller-supplied preview flag. Only an authenticated snapshot
+  // can bypass the shopper shell/gate and choose the preview's tenant.
+  request.headers.delete('x-puck-preview')
+  const previewMatch = request.nextUrl.pathname.match(/^\/_puck\/(home\/)?([a-f0-9]{64})$/)
+  if (previewMatch) {
+    const kind = previewMatch[1] ? 'home' : 'landing'
+    const preview = await fetchLandingPreview(previewMatch[2], kind)
+    if (!preview) return new NextResponse('Preview expired or unavailable', { status: 404, headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } })
+    const previewHeaders = new Headers(request.headers)
+    previewHeaders.delete('cookie')
+    previewHeaders.set('x-puck-preview', previewMatch[2])
+    previewHeaders.set(SITE_SLUG_HEADER, preview.site_slug)
+    previewHeaders.set(LEGACY_SITE_SLUG_HEADER, preview.site_slug)
+    previewHeaders.set(SITE_PREFIX_HEADER, preview.site_slug ? `/tienda/${preview.site_slug}` : '')
+    const target = new URL(`/${preview.country_code}/${kind === 'home' ? 'home-preview' : 'puck-preview'}/${previewMatch[2]}`, request.url)
+    const response = NextResponse.rewrite(target, { request: { headers: previewHeaders } })
+    response.headers.set('Cache-Control', 'private, no-store')
+    response.headers.set('Referrer-Policy', 'no-referrer')
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    response.headers.set('Content-Security-Policy', `frame-ancestors ${preview.parent_origin}`)
+    return response
+  }
+
   // Provider callbacks keep their exact path even during storefront maintenance.
   // Ownership is recovered by the backend from OAuth state / authenticated ML data.
   if (isMarketplaceIngress(request.nextUrl.pathname)) {

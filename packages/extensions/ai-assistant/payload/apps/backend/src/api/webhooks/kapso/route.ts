@@ -16,6 +16,7 @@ import {
 } from '../../../lib/whatsapp/order-status';
 import { sendWhatsappText, sendWhatsappTyping } from '../../../lib/whatsapp/send-whatsapp-text';
 import { trackWaEvent } from '../../../lib/whatsapp/events';
+import { readWaBotSwitch } from '../../../lib/whatsapp/bot-switch';
 import { runFlowTurn } from '../../../lib/whatsapp/flow/runtime';
 import { routeInbound, sendMainMenu } from '../../../lib/whatsapp/router';
 import { AI_ASSISTANT_MODULE } from '../../../modules/ai-assistant';
@@ -25,12 +26,19 @@ import {
   type AiStore,
   type MemoryRuntimeOptions,
 } from '../../../modules/ai-assistant/ai/agent';
+import { agentIsFallback, resolveAgentByKey } from '../../../modules/ai-assistant/ai/agents';
 import { WHATSAPP_AGENT_MODULE } from '../../../modules/whatsapp-agent';
 import type WhatsappAgentModuleService from '../../../modules/whatsapp-agent/service';
 import { STORE_CONFIG_MODULE } from '../../../modules/store-config';
 import type StoreConfigModuleService from '../../../modules/store-config/service';
 
-const WHATSAPP_AGENT_KEY = 'whatsapp';
+/**
+ * Agente que atiende el bot. Configurable desde Admin → WhatsApp → Ajustes → Bot;
+ * el default es el histórico. Ver el recuadro del descriptor `WHATSAPP_AGENT_KEY`:
+ * estaba hardcodeado acá y una tienda que recreó su agente con otra key se quedó,
+ * sin enterarse, con el bot corriendo sin prompt.
+ */
+const whatsappAgentKey = (): string => getKapsoSettings().agentKey || 'whatsapp';
 
 /**
  * El contexto que reciben las tools nativas. Era un cast inline; pasó a tipo con
@@ -313,6 +321,51 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
     }
   }
 
+  /**
+   * EL INTERRUPTOR DEL BOT, y va ANTES del handoff.
+   *
+   * El handoff apaga el bot en UNA conversación; esto lo apaga en el NÚMERO. Hace
+   * falta porque despublicar el recorrido no alcanza: sin grafo activo el turno cae
+   * al router y al agente, que siguen contestando. Con un solo número —el caso
+   * normal— eso es justamente lo que impide que una persona lleve la conversación
+   * mientras el recorrido se termina de armar.
+   *
+   * Va primero porque si el bot está apagado no hay nada que evaluar: `isPaused`
+   * además decide auto-resume, y devolverle una conversación a un bot que está
+   * apagado no significa nada.
+   *
+   * El mensaje entrante se persiste IGUAL —el inbox tiene que mostrarlo— y se
+   * registra el drop. `paused_drop` y no un tipo nuevo: para el embudo es lo mismo
+   * que una pausa (el bot calla a propósito), y agregar un tipo obligaría a tocar
+   * todas las agregaciones para que un apagado no se lea como una caída.
+   */
+  const botSwitch = await readWaBotSwitch(container, siteId);
+  if (!botSwitch.enabled) {
+    logger.info(
+      `[WhatsApp bot] APAGADO para esta tienda — el turno de ${from} no se atiende. ` +
+        'Se prende en Admin → WhatsApp → Ajustes → El bot contesta.',
+    );
+    trackWaEvent(container, {
+      siteId,
+      sessionId,
+      phone: from,
+      type: 'paused_drop',
+      payload: {
+        reason: 'bot_off',
+        kind: selectionId ? 'selection' : 'text',
+        text: text.slice(0, 120),
+      },
+    });
+    if (waSvc) {
+      try {
+        await waSvc.appendInbound(from, text);
+      } catch {
+        /* noop */
+      }
+    }
+    return;
+  }
+
   // Handoff: si un humano está atendiendo esta conversación, el bot NO responde
   // (evalúa auto-resume por inactividad adentro). Igual persiste el mensaje entrante.
   if (waSvc && (await waSvc.isPaused(from))) {
@@ -472,6 +525,10 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
       siteId,
       text: rawText,
       selectionId: selectionId ?? null,
+      // Ya se preguntó arriba, antes del handoff: se pasa para no releerlo por
+      // mensaje. El default de `runFlowTurn` es preguntar, así que un caller que se
+      // olvide queda gateado igual.
+      botEnabled: true,
       /**
        * Cómo contesta un paso de tipo agente.
        *
@@ -563,12 +620,56 @@ async function handleInbound(req: MedusaRequest, turn: InboundTurn): Promise<voi
     logger.warn(`[WhatsApp bot] El router falló para ${from}: ${(err as Error).message}`);
   }
 
+  /**
+   * ── EL AGENTE DEL BOT TIENE QUE EXISTIR ────────────────────────────────────
+   *
+   * `resolveAgentByKey` falla ABIERTO: sin fila devuelve el `GENERAL_AGENT`, que
+   * es `instructions: ''` + `allowedTools: null`. En el backoffice eso es una
+   * degradación razonable; acá, del otro lado hay un CLIENTE, y significa un bot
+   * sin una sola regla de formato, sin el asesor guiado, sin las reglas de
+   * honestidad — y con todas las tools de la instalación a la vista, de las que
+   * las LECTURAS corren en `auto` (`policy.ts:defaultMode`).
+   *
+   * Medido en desdeelsur (DESDEELSUR-72): el agente del bot se llamaba `wanda` y
+   * la key pedida era `whatsapp`, así que su prompt entero nunca corrió. Los
+   * cinco hallazgos de QA sobre el "asistente libre" —formato inconsistente, no
+   * entrega links, inventa productos fuera del catálogo— son ese prompt vacío.
+   *
+   * Se corta ANTES de llamar al modelo y se responde el MENÚ, que es un estado
+   * conocido. Mudo, nunca: eso ya costó una conversación entera el 2026-08-04.
+   */
+  const agentKey = whatsappAgentKey();
+  const resolvedAgent = await resolveAgentByKey(store, agentKey).catch(() => null);
+  if (!resolvedAgent || agentIsFallback(resolvedAgent, agentKey)) {
+    logger.error(
+      `[WhatsApp bot] El agente "${agentKey}" no existe o no tiene instrucciones: ` +
+        'NO se llama al modelo (sería un bot sin prompt y con todas las tools). ' +
+        'Configurá la key en Admin → WhatsApp → Ajustes → Bot. Se responde el menú.',
+    );
+    trackWaEvent(container, {
+      siteId,
+      sessionId,
+      phone: from,
+      type: 'error',
+      payload: { where: 'agent_missing', agent_key: agentKey },
+    });
+    await sendMainMenu(from);
+    if (waSvc) {
+      try {
+        await waSvc.appendTurn(from, rawText ?? text, '(el agente del bot no está configurado: se ofreció el menú)');
+      } catch {
+        /* noop */
+      }
+    }
+    return;
+  }
+
   const { memory, context, nativeCtx } = await prepararAgente();
   let reply: string;
   try {
     reply = await runWhatsappTurn({
       store,
-      agentKey: WHATSAPP_AGENT_KEY,
+      agentKey,
       message: text,
       context,
       history,

@@ -15,6 +15,12 @@ import {
   type KapsoSettings,
 } from './settings';
 import { whatsappTemplates, type WhatsappTemplatePayload } from './templates';
+import { loadLazyModule, sourceSpecifier } from '../../lib/lazy-module';
+
+/** Sólo tipos: `typeof import()` no emite y no entra al grafo de arranque. */
+type ResolveSiteSql = typeof import('../../lib/multistore/resolve-site-sql.js');
+type SiteCredentials = typeof import('../../lib/multistore/credentials.js');
+type AbandonedCartDelivery = typeof import('./abandoned-cart-delivery.js');
 
 export type KapsoProviderOptions = {
   api_key?: string;
@@ -160,8 +166,19 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
     if ((!siteId && !salesChannelId) || !this.pgConnection) return this.instanceClient(settings);
 
     try {
-      const { resolveSiteViaSql } = await import('../../lib/multistore/resolve-site-sql.js');
-      const { readSiteCredentialsViaSql } = await import('../../lib/multistore/credentials.js');
+      // Diferidos con `loadLazyModule` y NO con `await import('….js')`: ese
+      // especificador no resuelve en producción (ver `lib/lazy-module.ts`), y acá
+      // el catch de abajo lo habría tapado como "no se pudo resolver la tienda".
+      const { resolveSiteViaSql } = await loadLazyModule<ResolveSiteSql>(
+        'el resolutor de tienda por SQL',
+        () => require('../../lib/multistore/resolve-site-sql'),
+        () => import(sourceSpecifier('../../lib/multistore/resolve-site-sql')),
+      );
+      const { readSiteCredentialsViaSql } = await loadLazyModule<SiteCredentials>(
+        'el lector de credenciales por tienda',
+        () => require('../../lib/multistore/credentials'),
+        () => import(sourceSpecifier('../../lib/multistore/credentials')),
+      );
 
       // `siteId` gana: es explícito. El canal es la derivación, y resuelve también
       // por el canal MAYORISTA de una tienda B2B.
@@ -275,7 +292,11 @@ class KapsoWhatsappProviderService extends AbstractNotificationProviderService {
 
     if (/^cart-abandoned-[123]$/.test(String(notification.template)) && typeof data.cart_abandoned_template_name === 'string') {
       if (!this.pgConnection) throw new Error('WhatsApp store settings require a database connection');
-      const { abandonedCartDelivery } = await import('./abandoned-cart-delivery.js');
+      const { abandonedCartDelivery } = await loadLazyModule<AbandonedCartDelivery>(
+        'el envío de carrito abandonado por WhatsApp',
+        () => require('./abandoned-cart-delivery'),
+        () => import(sourceSpecifier('./abandoned-cart-delivery')),
+      );
       const delivery = await abandonedCartDelivery(this.pgConnection, data);
       const client = new KapsoClient({ apiKey: delivery.apiKey, baseUrl: delivery.baseUrl });
       const { id } = await client.sendMessage(delivery.phoneNumberId, { messaging_product: 'whatsapp', to, type: 'template', template: delivery.template });

@@ -6,6 +6,7 @@ import KapsoWhatsappProviderService from './service';
 import { KapsoClient } from './client';
 import { WHATSAPP_SETTINGS_NAMESPACE } from './settings';
 import { invalidateNamespace } from '../../lib/settings-cache';
+import { encryptCredentials } from '../../lib/multistore/credentials';
 
 /**
  * De dónde saca el provider las credenciales para ENVIAR.
@@ -36,22 +37,41 @@ function settingsBlob(entries: Record<string, string>): Record<string, unknown> 
  * son los bindings de plantilla (acá siempre vacíos, para que resuelva por el
  * fallback hardcodeado).
  */
-function fakePg(entries: Record<string, string>) {
+function fakePg(
+  entries: Record<string, string>,
+  siteCredentials?: Record<string, string>,
+) {
   return {
     raw: async (sql: string) => {
       if (sql.includes('site_setting')) {
         return { rows: [{ value: settingsBlob(entries) }] };
+      }
+      // La credencial POR TIENDA va cifrada de verdad: con un blob a mano el test
+      // mediría el stub y no el camino que corre en producción.
+      if (sql.includes('site_credential')) {
+        return siteCredentials
+          ? { rows: [{ credentials_enc: encryptCredentials(siteCredentials) }] }
+          : { rows: [] };
+      }
+      if (sql.includes('demo_store')) {
+        return { rows: [{ id: 'demo_main', slug: 'principal', name: 'Principal', is_main: true }] };
       }
       return { rows: [] };
     },
   };
 }
 
-type SentMessage = { phoneNumberId: string; payload: Record<string, unknown> };
+type SentMessage = {
+  phoneNumberId: string;
+  payload: Record<string, unknown>;
+  /** La API key con la que SALIÓ el mensaje, leída del header del cliente. */
+  apiKey: string;
+};
 
 function buildService(opts: {
   entries?: Record<string, string>;
   options?: Record<string, unknown>;
+  siteCredentials?: Record<string, string>;
 }) {
   const warnings: string[] = [];
   const logger = {
@@ -61,7 +81,7 @@ function buildService(opts: {
   };
   const cradle = {
     logger,
-    [ContainerRegistrationKeys.PG_CONNECTION]: fakePg(opts.entries ?? {}),
+    [ContainerRegistrationKeys.PG_CONNECTION]: fakePg(opts.entries ?? {}, opts.siteCredentials),
   };
   const service = new (KapsoWhatsappProviderService as unknown as new (
     cradle: unknown,
@@ -90,8 +110,19 @@ beforeEach(() => {
   mock.method(
     KapsoClient.prototype,
     'sendMessage',
-    async (phoneNumberId: string, payload: Record<string, unknown>) => {
-      sent.push({ phoneNumberId, payload });
+    // `function` y no flecha a propósito: hace falta el `this` para leer con qué
+    // API key salió. Es el ÚNICO discriminador cuando el número es el mismo en
+    // los dos caminos, que es justo el caso que produjo el 401.
+    async function (
+      this: { http?: { defaults?: { headers?: Record<string, unknown> } } },
+      phoneNumberId: string,
+      payload: Record<string, unknown>,
+    ) {
+      sent.push({
+        phoneNumberId,
+        payload,
+        apiKey: String(this?.http?.defaults?.headers?.['X-API-Key'] ?? ''),
+      });
       return { id: 'wamid.TEST', raw: {} };
     },
   );
@@ -195,6 +226,51 @@ describe('KapsoWhatsappProviderService.send — origen de las credenciales', () 
       template.components[0].parameters.map((p) => p.text),
       ['Camila', '71', '187.977,46'],
     );
+  });
+
+  /**
+   * El incidente del 22/09 en desdeelsur. La tienda tenía API key propia cargada
+   * en Credenciales por tienda y el número seguía saliendo de los ajustes de la
+   * instancia: Kapso devolvía 401 `Invalid credentials for WhatsApp configuration`
+   * —la key es válida, pero no sobre ESE número— y la orden se confirmaba sin que
+   * saliera la confirmación. El bot seguía contestando porque usa el par global,
+   * así que desde afuera la integración parecía sana.
+   */
+  test('con key propia pero sin número propio usa el par de la instancia, no una mezcla', async () => {
+    const { service, warnings } = buildService({
+      entries: { KAPSO_API_KEY: 'key-instancia', KAPSO_PHONE_NUMBER_ID: 'phone-instancia' },
+      siteCredentials: { apiKey: 'key-de-la-tienda' },
+    });
+
+    await service.send({ ...notification, data: { ...notification.data, site_id: 'demo_main' } });
+
+    assert.equal(sent.length, 1);
+    // LA aserción del incidente. El número es el de la instancia en los dos
+    // caminos, así que sola no prueba nada: lo que separa el arreglo del bug es
+    // que la key también sea la de la instancia y no la de la tienda.
+    assert.equal(
+      sent[0].apiKey,
+      'key-instancia',
+      'key de la tienda + número de la instancia es el 401 que rompió producción',
+    );
+    assert.equal(sent[0].phoneNumberId, 'phone-instancia');
+    assert.ok(
+      warnings.some((w) => w.includes("no 'phoneNumberId'")),
+      'el operador tiene que enterarse de que la credencial está a medias',
+    );
+  });
+
+  test('con el par completo de la tienda manda desde el número de la tienda', async () => {
+    const { service } = buildService({
+      entries: { KAPSO_API_KEY: 'key-instancia', KAPSO_PHONE_NUMBER_ID: 'phone-instancia' },
+      siteCredentials: { apiKey: 'key-de-la-tienda', phoneNumberId: 'phone-de-la-tienda' },
+    });
+
+    await service.send({ ...notification, data: { ...notification.data, site_id: 'demo_main' } });
+
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0].apiKey, 'key-de-la-tienda');
+    assert.equal(sent[0].phoneNumberId, 'phone-de-la-tienda');
   });
 
   test('normaliza el teléfono al formato de Meta (sólo dígitos)', async () => {

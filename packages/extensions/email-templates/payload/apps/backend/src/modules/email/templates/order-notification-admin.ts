@@ -1,5 +1,12 @@
 import type {EmailTemplateFunction, EmailTemplateResult} from './types';
-import {formatLineTotalForEmail, getIconTag, hexToRgba} from './email-helpers';
+import {
+    copyrightLine,
+    formatLineTotalForEmail,
+    getIconTag,
+    hexToRgba,
+    storeDisplayName,
+    subjectWithStore,
+} from './email-helpers';
 
 export type OrderItemForEmail = {
     title?: string;
@@ -126,11 +133,10 @@ export const orderNotificationAdminTemplate: EmailTemplateFunction<OrderNotifica
 ): EmailTemplateResult => {
     const displayId = data.custom_display_id ?? data.display_id ?? data.order_id ?? '';
     const total = fmt(data.total);
-    const channelName = data.sales_channel_name || data.sales_channel_id || '';
     const isCustomer = data.recipient_type === 'customer';
     const customerName = (data.customer_name || '').trim();
     const logoUrl = data.logo_url || '';
-    const cdeDisplayName = (data.cde_display_name || channelName || 'CDE').trim();
+    const cdeDisplayName = storeDisplayName(data);
     const orderDate = data.order_date_formatted || '';
     const items = Array.isArray(data.order_items) ? data.order_items : [];
     const subtotal = data.subtotal_formatted ?? total;
@@ -173,6 +179,14 @@ export const orderNotificationAdminTemplate: EmailTemplateFunction<OrderNotifica
             : 'Detalles del pedido a continuación';
 
     const year = new Date().getFullYear();
+
+    // Sin logo y sin nombre de tienda, la cabecera se omite: un título de 24px
+    // vacío deja un hueco, pero inventar una marca manda la de otro cliente.
+    const brandHeader = logoUrl
+        ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="170" style="display: block; margin: 0 auto; -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none;">`
+        : cdeDisplayName
+            ? `<div style="font-size: 24px; font-weight: 700; color: ${primaryColor};">${cdeDisplayName}</div>`
+            : '';
 
     // Iconos (set provisto por diseño — ver images/icons/)
     const iconUser = getIconTag('user.png', '', 20, 20);
@@ -321,7 +335,7 @@ export const orderNotificationAdminTemplate: EmailTemplateFunction<OrderNotifica
                                     </td>
                                     <td style="padding: 12px 12px 12px 4px; vertical-align: middle; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                                         <p style="margin: 0 0 4px 0; font-size: 15px; color: #333333; font-weight: bold;">${fmt(item.title)}</p>
-                                        ${item.color_label ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 0 4px 0; mso-table-lspace: 0pt; mso-table-rspace: 0pt;"><tr><td width="12" height="12" style="width: 12px; height: 12px; background-color: ${escapeHtml(item.color_hex && /^#[0-9A-Fa-f]{6}$/.test(item.color_hex) ? item.color_hex : '#d1d5db')}; border: 1px solid #e5e7eb; font-size: 0; line-height: 0;">&nbsp;</td><td style="padding-left: 6px; font-size: 13px; color: #666666;">Color: ${escapeHtml(item.color_label)}</td></tr></table>` : ''}
+                                        ${item.color_label ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 0 4px 0; mso-table-lspace: 0pt; mso-table-rspace: 0pt;"><tr><td width="12" style="width: 12px; vertical-align: top; padding-top: 2px; font-size: 0; line-height: 0; mso-table-lspace: 0pt; mso-table-rspace: 0pt;"><table role="presentation" cellspacing="0" cellpadding="0" border="0" width="12" style="width: 12px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;"><tr><td width="12" height="12" style="width: 12px; height: 12px; background-color: ${escapeHtml(item.color_hex && /^#[0-9A-Fa-f]{6}$/.test(item.color_hex) ? item.color_hex : '#d1d5db')}; border: 1px solid #e5e7eb; font-size: 0; line-height: 0;">&nbsp;</td></tr></table></td><td style="padding-left: 6px; font-size: 13px; line-height: 18px; color: #666666; vertical-align: top;">Color: ${escapeHtml(item.color_label)}</td></tr></table>` : ''}
                                         <p style="margin: 0; font-size: 13px; color: #666666;">${fmt(item.quantity)} x $ ${fmt(item.unit_price_formatted ?? item.unit_price)}</p>
                                     </td>
                                     <td style="padding: 12px; text-align: right; vertical-align: middle; font-size: 15px; color: #333333; font-weight: bold; white-space: nowrap; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
@@ -354,7 +368,7 @@ export const orderNotificationAdminTemplate: EmailTemplateFunction<OrderNotifica
                     <!-- Logo -->
                     <tr>
                         <td style="padding: 40px 20px 12px 20px; text-align: center; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            ${logoUrl ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="170" style="display: block; margin: 0 auto; -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none;">` : `<div style="font-size: 24px; font-weight: 700; color: ${primaryColor};">${cdeDisplayName}</div>`}
+                            ${brandHeader}
                         </td>
                     </tr>
 
@@ -464,7 +478,7 @@ export const orderNotificationAdminTemplate: EmailTemplateFunction<OrderNotifica
                     <!-- Footer -->
                     <tr>
                         <td style="padding: 18px; background-color: ${primaryColor}; text-align: center; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            <p style="margin: 0; color: #ffffff; font-size: 12px;">© ${year} ${cdeDisplayName}. Todos los derechos reservados.</p>
+                            <p style="margin: 0; color: #ffffff; font-size: 12px;">${copyrightLine(year, cdeDisplayName)}</p>
                         </td>
                     </tr>
 
@@ -475,10 +489,8 @@ export const orderNotificationAdminTemplate: EmailTemplateFunction<OrderNotifica
 </body>
 </html>`.trim();
 
-    const channel = `[${channelName}] `;
-    const channelCondition = channelName == "Mercatto B2C" ? "" : channel;
     return {
-        subject: channelName ? `${channelCondition}${subject} #${displayId}` : `[Mercatto] ${subject} #${displayId}`,
+        subject: subjectWithStore(`${subject} #${displayId}`, data),
         html,
     };
 };

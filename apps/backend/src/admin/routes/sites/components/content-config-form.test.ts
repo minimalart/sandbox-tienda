@@ -209,3 +209,32 @@ describe('content config — ícono o texto en la barra mobile', () => {
     assert.equal(form.mobileNavDisplay.blog, 'icon');
   });
 });
+
+/**
+ * Minicart recommendations carousel toggle. Opt-out contract: default = `true`,
+ * only a `false` from the operator gets persisted. These tests guard the
+ * round-trip so a legacy record without the `cart` key rehydrates as visible
+ * and an operator's `false` survives save + reload without silently flipping.
+ */
+describe('cartRecommendationsCarousel — round-trip', () => {
+  it('persists `false` and rehydrates it as `false`', () => {
+    const form = { ...emptyContentForm(), cartRecommendationsCarousel: false };
+    const cfg = formToContentConfig(form, 'main', {});
+    assert.deepEqual(cfg.cart, { recommendationsCarousel: false });
+    const back = contentConfigToForm(cfg);
+    assert.equal(back.cartRecommendationsCarousel, false);
+  });
+
+  it('does not emit `cart` when the toggle is on (default) and rehydrates as `true`', () => {
+    const form = { ...emptyContentForm(), cartRecommendationsCarousel: true };
+    const cfg = formToContentConfig(form, 'main', {});
+    assert.equal('cart' in cfg, false);
+    const back = contentConfigToForm(cfg);
+    assert.equal(back.cartRecommendationsCarousel, true);
+  });
+
+  it('legacy record without `cart` rehydrates as `true`', () => {
+    const form = contentConfigToForm({} as DemoContentConfig);
+    assert.equal(form.cartRecommendationsCarousel, true);
+  });
+});

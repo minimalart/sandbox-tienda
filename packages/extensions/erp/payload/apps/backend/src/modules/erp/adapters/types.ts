@@ -131,6 +131,19 @@ export type ErpSaleResult = {
    * cambiar en la config entre la venta y el poll.
    */
   sucursal?: number | null;
+  /**
+   * Cuerpo CRUDO con el que el ERP respondió el conflicto que produjo
+   * `status: 'duplicate'`.
+   *
+   * Existe porque "conflicto" y "duplicado" no son lo mismo. Zeus usa HTTP 409
+   * tanto para "este pedido ya lo tengo" como para rechazar un pedido cuyos
+   * datos no valida, y el motivo sólo está en el cuerpo. Sin guardarlo, un
+   * rechazo se archiva como venta resuelta y nadie se entera hasta cruzar los
+   * `idtransac` a mano (DESDEELSUR-61).
+   *
+   * Opcional: un adapter que no lo devuelva se comporta como antes.
+   */
+  conflict_body?: string | null;
 };
 
 /**

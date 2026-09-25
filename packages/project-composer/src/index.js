@@ -363,14 +363,6 @@ function configureProject(targetRoot, blueprint, selection, sourceState) {
   if (!selection.extensions.some((extension) => extension.id === 'gift-cards')) {
     const patch = findLoyaltyPatch(rootPackage);
     if (patch) {
-      // The `(patch_hash=…)` strip below is global, so it is only correct while
-      // the boilerplate ships exactly one patch.
-      if (patch.total !== 1) {
-        throw new Error(
-          `expected exactly 1 pnpm.patchedDependencies entry, found ${patch.total}: the global ` +
-            `(patch_hash=…) strip would corrupt the other patches' lockfile entries`,
-        );
-      }
       delete rootPackage.pnpm.patchedDependencies[patch.key];
       if (Object.keys(rootPackage.pnpm.patchedDependencies).length === 0) {
         delete rootPackage.pnpm.patchedDependencies;
@@ -388,8 +380,8 @@ function configureProject(targetRoot, blueprint, selection, sourceState) {
       const pnpmLockPath = path.join(targetRoot, 'pnpm-lock.yaml');
       const before = fs.readFileSync(pnpmLockPath, 'utf8');
       const block = new RegExp(
-        `\\r?\\npatchedDependencies:\\r?\\n  '${escapeRegExp(patch.key)}':\\r?\\n` +
-          `    hash: [^\\r\\n]+\\r?\\n    path: ${escapeRegExp(patch.file)}\\r?\\n`,
+        `  '${escapeRegExp(patch.key)}':\\r?\\n` +
+          `    hash: ([a-z0-9]+)\\r?\\n    path: ${escapeRegExp(patch.file)}\\r?\\n`,
       );
       if (!block.test(before)) {
         throw new Error(
@@ -397,9 +389,12 @@ function configureProject(targetRoot, blueprint, selection, sourceState) {
             `(patch_hash=…) suffixes would leave the lockfile internally inconsistent`,
         );
       }
-      const after = before.replace(block, '\n').replace(/\(patch_hash=[a-z0-9]+\)/g, '');
-      if (/patchedDependencies:|\(patch_hash=/.test(after)) {
-        throw new Error('pnpm-lock.yaml still references a patch after stripping');
+      // Strip only this patch's hash: dashboard and future patches must survive.
+      const hashSuffix = `(patch_hash=${before.match(block)[1]})`;
+      let after = before.replace(block, '').split(hashSuffix).join('');
+      if (patch.total === 1) after = after.replace(/patchedDependencies:\r?\n/, '');
+      if (block.test(after) || after.includes(hashSuffix)) {
+        throw new Error('pnpm-lock.yaml still references the loyalty patch after stripping');
       }
       fs.writeFileSync(pnpmLockPath, after);
     }

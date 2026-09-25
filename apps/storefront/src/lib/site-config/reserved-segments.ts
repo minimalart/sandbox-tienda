@@ -74,6 +74,9 @@ export const ROUTABLE_SEGMENTS: readonly string[] = [
   'catalogo',
   'checkout',
   'splash',
+  // Internal Puck preview routes
+  'home-preview',
+  'puck-preview',
   // (main)
   'about',
   'account',
