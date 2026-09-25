@@ -86,24 +86,46 @@ export default async function CampaignFooter() {
           className={`mx-auto flex max-w-6xl flex-col-reverse items-start justify-between gap-3 px-4 py-6 text-xs sm:flex-row sm:items-center sm:px-6 ${subtleClass}`}
         >
           {footer?.copyright ? <p>{footer.copyright}</p> : <span />}
-          {footer?.poweredBy?.label ? (
-            footer.poweredBy.href ? (
+          {(() => {
+            // Iteración visual: cuando hay imagen configurada la firma se
+            // muestra en el pill flotante (bottom-right) y suprimimos también
+            // el crédito inline del footer para no duplicarla. Sin imagen
+            // queda el label-only inline como fallback.
+            const floatingImage =
+              campaign?.chrome?.poweredByImage?.trim() ||
+              footer?.poweredBy?.image?.trim();
+            if (floatingImage) return null;
+            // XOR: image gana sobre label; sin image ni label, se oculta.
+            const poweredByImage = footer?.poweredBy?.image?.trim() || undefined;
+            const poweredByLabel = footer?.poweredBy?.label?.trim() || undefined;
+            const poweredByHref = footer?.poweredBy?.href?.trim() || undefined;
+            const hasPoweredBy = !!poweredByImage || !!poweredByLabel;
+            if (!hasPoweredBy) return null;
+            const textHoverClass = isDarkText
+              ? "transition hover:text-neutral-900"
+              : "transition hover:text-white";
+            const inner = poweredByImage ? (
+              <img
+                src={poweredByImage}
+                alt={poweredByLabel || tenant.name}
+                className="max-h-[24px] w-auto object-contain sm:max-h-[28px]"
+              />
+            ) : (
+              poweredByLabel
+            );
+            return poweredByHref ? (
               <a
-                href={footer.poweredBy.href}
+                href={poweredByHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={
-                  isDarkText
-                    ? "transition hover:text-neutral-900"
-                    : "transition hover:text-white"
-                }
+                className={poweredByImage ? "transition hover:opacity-80" : textHoverClass}
               >
-                {footer.poweredBy.label}
+                {inner}
               </a>
             ) : (
-              <span>{footer.poweredBy.label}</span>
-            )
-          ) : null}
+              <span>{inner}</span>
+            );
+          })()}
         </div>
       </div>
     </footer>

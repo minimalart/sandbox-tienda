@@ -49,6 +49,26 @@ export type ResolvedAgent = {
  * (p. ej. antes de correr la migración/seed en un deploy nuevo), así el chat nunca
  * se rompe por falta de datos.
  */
+/**
+ * ¿Lo que volvió del resolver es el FALLBACK y no el agente que se pidió?
+ *
+ * `resolveAgentByKey` falla ABIERTO a propósito: en el backoffice, un agente que
+ * falta no puede dejar al operador sin asistente, así que devuelve el
+ * `GENERAL_AGENT`. Para un canal de cara al CLIENTE ese default es lo contrario
+ * de lo que hace falta — `instructions: ''` y `allowedTools: null` significan un
+ * bot sin una sola regla y con todas las tools de la instalación a la vista.
+ *
+ * Pasó en producción (DESDEELSUR-72): el agente del bot se había recreado con
+ * otra key y nadie se enteró; el prompt entero —formato, asesor, honestidad— no
+ * corrió NUNCA, y los cinco hallazgos de QA sobre el "asistente libre" salieron
+ * todos de ahí.
+ *
+ * `instructions` vacío cuenta como fallback aunque la key coincida: un agente sin
+ * instrucciones de cara al público es el mismo agujero con otro nombre.
+ */
+export const agentIsFallback = (agent: ResolvedAgent, requestedKey: string): boolean =>
+  agent.key !== requestedKey || agent.instructions.trim() === '';
+
 export const GENERAL_AGENT: ResolvedAgent = {
   key: 'general',
   name: 'Asistente',

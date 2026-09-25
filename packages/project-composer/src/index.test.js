@@ -131,8 +131,14 @@ test('generates repeatable independent folders without Git or platform code', as
       // propio `pnpm install --frozen-lockfile`. Es exactamente el modo de falla
       // que tenían los literales de versión hardcodeados.
       const generatedLock = fs.readFileSync(path.join(output, 'pnpm-lock.yaml'), 'utf8');
-      assert.equal(generatedLock.includes('patchedDependencies:'), false);
-      assert.equal(generatedLock.includes('(patch_hash='), false);
+      assert.equal(generatedLock.replace(/\r\n/g, '\n').includes(`'${loyaltyPatchKey}':\n    hash:`), false);
+      const sourceLock = fs.readFileSync(path.join(sourceRoot, 'pnpm-lock.yaml'), 'utf8');
+      const patchEntries = [...sourceLock.matchAll(/  '([^']+)':\r?\n    hash: ([a-z0-9]+)\r?\n    path: ([^\r\n]+)/g)];
+      for (const [, key, hash, file] of patchEntries) {
+        const retained = key !== loyaltyPatchKey;
+        assert.equal(generatedLock.includes(`(patch_hash=${hash})`), retained, key);
+        assert.equal(fs.existsSync(path.join(output, file)), retained, file);
+      }
       const compose = fs.readFileSync(path.join(output, 'infra/docker-compose.yml'), 'utf8');
       assert.match(compose, new RegExp(`^name: ${slug}$`, 'm'));
       const appSpec = fs.readFileSync(path.join(output, '.do/app.yaml.example'), 'utf8');
@@ -187,7 +193,7 @@ test('includes the loyalty containment patch only when gift-cards is selected', 
     // al contrato portable que consumen tanto el host como el plugin.
     assert.equal(fs.existsSync(path.join(output, 'apps/storefront/src/lib/util/free-shipping-target.ts')), false);
     const storefrontTsconfig = fs.readFileSync(path.join(output, 'apps/storefront/tsconfig.json'), 'utf8');
-    assert.match(storefrontTsconfig, /packages\/contracts\/storefront-shared\/src\/util\/free-shipping-target/);
+    assert.match(storefrontTsconfig, /node_modules\/@minimalart\/mercatto-plugin-storefront-shared\/dist\/util\/free-shipping-target/);
   } finally {
     fs.rmSync(parent, { recursive: true, force: true });
   }

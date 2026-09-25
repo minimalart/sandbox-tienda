@@ -2,11 +2,12 @@
   "schema_version": 1,
   "id": "andreani",
   "name": "Andreani",
-  "version": "1.4.0",
+  "version": "1.6.0",
   "kind": "extension",
   "status": "ready",
   "dependencies": [
-    "delivery"
+    "delivery",
+    "email-templates"
   ],
   "incompatibilities": [],
   "settings_namespace": "extension:andreani",
@@ -87,6 +88,10 @@
     {
       "source": "payload/apps/backend/src/workflows/andreani-generate-tickets.ts",
       "target": "apps/backend/src/workflows/andreani-generate-tickets.ts"
+    },
+    {
+      "source": "payload/apps/backend/src/subscribers/andreani-ticket-tracking-email.ts",
+      "target": "apps/backend/src/subscribers/andreani-ticket-tracking-email.ts"
     }
   ],
   "migrations": [
@@ -292,6 +297,10 @@
     {
       "path": "apps/backend/src/subscribers/andreani-order.ts",
       "sha256": "f6e0ebd4eccfde428651975c312ec2d27f4626f2f167ff98aa2057756b898e87"
+    },
+    {
+      "path": "apps/backend/src/subscribers/andreani-ticket-tracking-email.ts",
+      "sha256": "a7a09b66a229e085b609208eda0706984dc64959f112cd512169bf16cb7f4763"
     },
     {
       "path": "apps/backend/src/subscribers/andreani-ticket-tracking-whatsapp.ts",

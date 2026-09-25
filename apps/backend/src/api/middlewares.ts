@@ -10,6 +10,7 @@ import type { Logger } from '@medusajs/framework/types';
 import type { MiddlewareRoute } from '@medusajs/framework/http';
 import * as Sentry from '@sentry/node';
 import { extensionMiddlewares } from './extension-middlewares';
+import { fulfillmentStockGate } from './admin/fulfillment-stock-gate';
 import { storeAuthMiddlewares } from './store/auth/middlewares';
 import { productExportMiddlewares } from './product-export-middlewares';
 import { multistoreMiddlewares } from './multistore-middlewares';
@@ -106,10 +107,26 @@ const salesModeMiddlewares: MiddlewareRoute[] = [
   },
 ];
 
+// El core descuenta el inventario en la ubicación que eligió el operador
+// (`input.location_id ?? reservation.location_id`) y no mira si hay stock ahí:
+// despachar desde una sucursal distinta a la de la reserva deja el nivel en
+// negativo, sin error. Corre ANTES que `extensionMiddlewares` a propósito: el
+// gate del ERP marca la orden con el depósito confirmado, y no tiene sentido
+// dejar esa marca en una orden cuyo despacho vamos a rechazar. Ver
+// `admin/fulfillment-stock-gate.ts`.
+const fulfillmentStockMiddlewares: MiddlewareRoute[] = [
+  {
+    matcher: '/admin/orders/:id/fulfillments',
+    method: ['POST'],
+    middlewares: [fulfillmentStockGate],
+  },
+];
+
 export default defineMiddlewares({
   routes: [
     { matcher: '/*', middlewares: [memoryRequestLogger] },
     ...apiKeyRbacMiddlewares,
+    ...fulfillmentStockMiddlewares,
     ...multistoreMiddlewares,
     ...productExportMiddlewares,
     ...extensionMiddlewares,

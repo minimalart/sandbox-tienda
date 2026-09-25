@@ -1,4 +1,4 @@
-import type { ErpOdooSettings, ErpSalePayload } from '../types';
+import type { ErpFiscalCondition, ErpOdooSettings, ErpOdooTaxBehavior, ErpSalePayload } from '../types';
 import { htmlToMarkdown } from './html-to-markdown';
 import { OdooRpcClient, type OdooRpcConfig } from './odoo-rpc-client';
 import {
@@ -165,6 +165,7 @@ type SaleOrderLinePayload = {
   product_uom_qty: number;
   price_unit: number;
   name: string;
+  tax_id?: [[number, number, number[]]];
 };
 
 function sanitizeSku(sku: string): string {
@@ -239,6 +240,45 @@ const OPTIONAL_PRODUCT_TEMPLATE_FIELDS = ['description_ecommerce'] as const;
 /** 5min de cache: si el cliente crea los campos, la próxima ronda los recoge. */
 const OPTIONAL_FIELDS_CACHE_TTL_MS = 5 * 60 * 1000;
 
+/**
+ * Códigos AFIP (estándar, iguales en toda instancia con `l10n_ar` instalado):
+ * - `l10n_ar.afip.responsibility.type.code` = "5" Consumidor Final, "1" IVA
+ *   Responsable Inscripto, "6" Responsable Monotributo, "4" IVA Sujeto Exento.
+ * - `l10n_latam.identification.type.l10n_ar_afip_code` = "80" CUIT, "96" DNI,
+ *   "86" CUIL.
+ *
+ * Los IDs internos VARÍAN entre instancias (dependen del orden de instalación),
+ * por eso se sondean con `search_read` filtrando por los códigos y se cachean
+ * `baseUrl::db`. Los códigos SON el contrato.
+ */
+const AR_AFIP_RESPONSIBILITY_CODES: Record<ErpFiscalCondition, string> = {
+  consumer_final: '5',
+  responsable_inscripto: '1',
+  monotributo: '6',
+  exento: '4',
+};
+
+const AR_IDENTIFICATION_AFIP_CODES = {
+  CUIT: '80',
+  DNI: '96',
+  CUIL: '86',
+} as const;
+
+type ArIdentificationType = keyof typeof AR_IDENTIFICATION_AFIP_CODES;
+
+/**
+ * Resultado del sondeo de IDs Odoo para AR. `null` en un slot significa "la
+ * instancia no lo tiene definido" — el adapter no lo manda al `create`/`write`.
+ * `null` en el objeto entero (cache) significa "la instancia no tiene la
+ * localización AR instalada" y el adapter cae al comportamiento sin fiscal
+ * data (compat legacy).
+ */
+type ArFiscalIds = {
+  responsibility: Record<ErpFiscalCondition, number | null>;
+  identification: Record<ArIdentificationType, number | null>;
+  country_ar: number | null;
+};
+
 export class OdooErpAdapter implements ErpAdapter {
   readonly provider = 'odoo';
 
@@ -258,6 +298,15 @@ export class OdooErpAdapter implements ErpAdapter {
     string,
     { at: number; fields: Set<string> }
   >();
+
+  /**
+   * Cache separado del `sale.order fields_get`: se sondean 3 modelos distintos
+   * (`l10n_ar.afip.responsibility.type`, `l10n_latam.identification.type`,
+   * `res.country`) y el resultado agrupa IDs por código AFIP. `ids: null` = la
+   * instancia no tiene la localización AR y no se re-sondea hasta el próximo
+   * refresh.
+   */
+  private arFiscalIdsCache = new Map<string, { at: number; ids: ArFiscalIds | null }>();
 
   // Inyectable para tests; en runtime cada call construye su cliente con las
   // credenciales del context (los adapters son stateless por llamada).
@@ -389,6 +438,172 @@ export class OdooErpAdapter implements ErpAdapter {
     }
     this.productTemplateOptionalFieldsCache.set(cacheKey, { at: Date.now(), fields: present });
     return present;
+  }
+
+  /**
+   * Sonda los 3 modelos AFIP y devuelve los IDs indexados por código semántico.
+   * Cache por `baseUrl::db` con el mismo TTL de las otras sondas.
+   *
+   * Devuelve `null` (cacheado) si CUALQUIER sondeo falla o si el modelo de
+   * `l10n_ar` no existe — la instancia sin la localización AR instalada NO es
+   * un error del pipeline: el adapter tiene que seguir creando el `sale.order`
+   * como antes (sin fiscal data), y avisar por warn una vez cada 5min.
+   *
+   * IDs individualmente `null` (el modelo existe pero no está la fila con ese
+   * código): el `buildArFiscalPatch` los omite del create/write. La orden pasa.
+   */
+  private async resolveArFiscalIds(
+    client: OdooRpcClient,
+    ctx: AdapterContext
+  ): Promise<ArFiscalIds | null> {
+    const settings = this.odooSettings(ctx);
+    const cacheKey = `${settings?.base_url ?? ''}::${settings?.db ?? ''}`;
+    const cached = this.arFiscalIdsCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < OPTIONAL_FIELDS_CACHE_TTL_MS) {
+      return cached.ids;
+    }
+    let ids: ArFiscalIds | null;
+    try {
+      const responsibilityCodes = Object.values(AR_AFIP_RESPONSIBILITY_CODES);
+      const identificationCodes = Object.values(AR_IDENTIFICATION_AFIP_CODES);
+      const [respRows, identRows, countryRows] = await Promise.all([
+        client.executeKw<Array<{ id: number; code?: string | null }>>(
+          'l10n_ar.afip.responsibility.type',
+          'search_read',
+          [[['code', 'in', responsibilityCodes]]],
+          { fields: ['id', 'code'], limit: responsibilityCodes.length }
+        ),
+        client.executeKw<Array<{ id: number; l10n_ar_afip_code?: string | null }>>(
+          'l10n_latam.identification.type',
+          'search_read',
+          [[['l10n_ar_afip_code', 'in', identificationCodes]]],
+          { fields: ['id', 'l10n_ar_afip_code'], limit: identificationCodes.length }
+        ),
+        client.executeKw<Array<{ id: number; code?: string | null }>>(
+          'res.country',
+          'search_read',
+          [[['code', '=', 'AR']]],
+          { fields: ['id', 'code'], limit: 1 }
+        ),
+      ]);
+
+      const respByCode = new Map((respRows ?? []).map((r) => [String(r.code ?? ''), r.id]));
+      const identByCode = new Map(
+        (identRows ?? []).map((r) => [String(r.l10n_ar_afip_code ?? ''), r.id])
+      );
+      const countryId = countryRows?.[0]?.id ?? null;
+
+      ids = {
+        responsibility: {
+          consumer_final: respByCode.get(AR_AFIP_RESPONSIBILITY_CODES.consumer_final) ?? null,
+          responsable_inscripto:
+            respByCode.get(AR_AFIP_RESPONSIBILITY_CODES.responsable_inscripto) ?? null,
+          monotributo: respByCode.get(AR_AFIP_RESPONSIBILITY_CODES.monotributo) ?? null,
+          exento: respByCode.get(AR_AFIP_RESPONSIBILITY_CODES.exento) ?? null,
+        },
+        identification: {
+          CUIT: identByCode.get(AR_IDENTIFICATION_AFIP_CODES.CUIT) ?? null,
+          DNI: identByCode.get(AR_IDENTIFICATION_AFIP_CODES.DNI) ?? null,
+          CUIL: identByCode.get(AR_IDENTIFICATION_AFIP_CODES.CUIL) ?? null,
+        },
+        country_ar: typeof countryId === 'number' ? countryId : null,
+      };
+
+      const missingResp = (Object.keys(ids.responsibility) as ErpFiscalCondition[]).filter(
+        (k) => ids!.responsibility[k] === null
+      );
+      const missingIdent = (Object.keys(ids.identification) as ArIdentificationType[]).filter(
+        (k) => ids!.identification[k] === null
+      );
+      if (missingResp.length > 0 || missingIdent.length > 0 || ids.country_ar === null) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[erp:odoo] sondeo AR (${cacheKey}) — faltan responsibility=[${missingResp.join(',')}] identification=[${missingIdent.join(',')}] country_ar=${ids.country_ar ?? 'null'} — los ausentes se omiten del create/write.`
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[erp:odoo] sondeo AR (${cacheKey}) falló — instancia sin l10n_ar instalado o RPC roto; se cae al comportamiento sin fiscal data: ${message}`
+      );
+      ids = null;
+    }
+    this.arFiscalIdsCache.set(cacheKey, { at: Date.now(), ids });
+    return ids;
+  }
+
+  /**
+   * Arma el delta de campos fiscales AR a setear/parchar en el `res.partner`.
+   *
+   * - Create (`existing` undefined): incluye todos los campos que tengamos data.
+   * - Patch (`existing` presente): solo incluye campos donde el partner Odoo
+   *   tiene `false`/vacío/ausente Y nosotros tenemos data — nunca pisa data
+   *   existente. Es la regla dura: partner con CUIT viejo se preserva; solo
+   *   completamos huecos.
+   *
+   * `name` gana con `legal_name` solo para condiciones que facturan A (responsable
+   * inscripto, exento, monotributo). Para consumer_final NO se toca el `name`
+   * (el ERP arma el name como first_name + last_name — sigue el flujo default).
+   */
+  private buildArFiscalPatch(
+    fiscalIds: ArFiscalIds,
+    payload: ErpSalePayload,
+    existing?: {
+      vat?: unknown;
+      country_id?: unknown;
+      l10n_ar_afip_responsibility_type_id?: unknown;
+      l10n_latam_identification_type_id?: unknown;
+    }
+  ): Record<string, unknown> {
+    const patch: Record<string, unknown> = {};
+    const isCreate = existing === undefined;
+
+    const isEmpty = (v: unknown): boolean =>
+      v === undefined || v === null || v === false || v === '' ||
+      (Array.isArray(v) && v.length === 0);
+
+    const condition = payload.customer.fiscal_condition ?? null;
+    const docType = payload.customer.document.type as ArIdentificationType | null;
+    const docNumber = payload.customer.document.number
+      ? payload.customer.document.number.replace(/\s+/g, '').trim()
+      : '';
+
+    if (fiscalIds.country_ar !== null && (isCreate || isEmpty(existing?.country_id))) {
+      patch.country_id = fiscalIds.country_ar;
+    }
+
+    if (condition && fiscalIds.responsibility[condition] !== null) {
+      if (isCreate || isEmpty(existing?.l10n_ar_afip_responsibility_type_id)) {
+        patch.l10n_ar_afip_responsibility_type_id = fiscalIds.responsibility[condition];
+      }
+    }
+
+    if (docType && (docType === 'CUIT' || docType === 'DNI' || docType === 'CUIL')) {
+      const identId = fiscalIds.identification[docType];
+      if (identId !== null && (isCreate || isEmpty(existing?.l10n_latam_identification_type_id))) {
+        patch.l10n_latam_identification_type_id = identId;
+      }
+      if (docNumber && (isCreate || isEmpty(existing?.vat))) {
+        // Odoo AR permite guardar DNI/CUIL como VAT (el l10n valida el shape
+        // según l10n_latam_identification_type_id, no exige CUIT).
+        patch.vat = docNumber;
+      }
+    }
+
+    // Razón social gana sobre first_name+last_name en comprobante A / exento /
+    // monotributo. Consumer final no toca `name` (queda el compuesto del
+    // partner o el que decida el flujo de create legacy).
+    if (
+      payload.customer.legal_name &&
+      condition &&
+      condition !== 'consumer_final' &&
+      isCreate
+    ) {
+      patch.name = payload.customer.legal_name;
+    }
+
+    return patch;
   }
 
   /**
@@ -525,6 +740,87 @@ export class OdooErpAdapter implements ErpAdapter {
       `Odoo: barrido de stock cortado en ${STOCK_SWEEP_MAX_PRODUCTS} productos (tope de v1). Ampliá el cinturón si el catálogo real es mayor.`
     );
     return out;
+  }
+
+  /**
+   * Resuelve el SKU (`default_code`) de un `product.product` por su ID interno.
+   *
+   * Nace del webhook `POST /webhooks/erp-odoo/stock`: los server actions
+   * nativos de tipo `webhook` mandan `product_id` como entero (el id de
+   * `product.product`), no como SKU. Este método hace el hop de resolución
+   * usando la misma auth que el resto del adapter — el endpoint no necesita
+   * conocer credenciales ni armar clientes RPC.
+   *
+   * Devuelve `null` si el producto fue borrado o si su `default_code` es
+   * vacío/`false`. Silencia errores de red devolviendo `null` también: el
+   * caller decide si abortar o loguear. Un webhook que no puede resolver el
+   * SKU no debe reventar; el cron `stock_sync` reconcilia después.
+   */
+  async lookupSkuByProductId(
+    productId: number,
+    ctx: AdapterContext
+  ): Promise<string | null> {
+    if (!Number.isInteger(productId) || productId <= 0) return null;
+    const client = this.buildClient(ctx);
+    try {
+      const rows = await client.executeKw<ProductProductLookupRow[]>(
+        'product.product',
+        'read',
+        [[productId], ['default_code']]
+      );
+      const row = rows?.[0];
+      return row ? codeOrNull(row.default_code) : null;
+    } catch (error) {
+      ctx.logger?.warn?.(
+        `Odoo lookupSkuByProductId(${productId}) falló: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Resuelve el `complete_name` (`WH/Stock`, `My Co/Stock/Shelf A`) de un
+   * `stock.location` por su id numérico. Contraparte de
+   * `lookupSkuByProductId` para el otro campo que el webhook nativo de Odoo
+   * envía como int scalar (many2one → id) sin poder navegar la relación.
+   *
+   * El `complete_name` es la clave que usa `settings.stock_sync.deposito_map`
+   * para mapear un depósito del ERP a una `stock_location` de Medusa —
+   * elegimos ese en vez del id porque es lo que ve el operador en el admin de
+   * Odoo, más estable frente a re-instalaciones que renumeran ids y consistente
+   * con lo que ya usan los otros adapters (Zeus, Bsale) cuando llenan
+   * `by_deposito` con nombres.
+   *
+   * Devuelve `null` si el location no existe o el nombre está vacío. Silencia
+   * errores de red por el mismo motivo que `lookupSkuByProductId`: el webhook
+   * no debe reventar por un lookup fallido; el cron reconcilia después.
+   */
+  async lookupLocationCompleteName(
+    locationId: number,
+    ctx: AdapterContext
+  ): Promise<string | null> {
+    if (!Number.isInteger(locationId) || locationId <= 0) return null;
+    const client = this.buildClient(ctx);
+    try {
+      const rows = await client.executeKw<Array<{ id: number; complete_name?: string | null }>>(
+        'stock.location',
+        'read',
+        [[locationId], ['complete_name']]
+      );
+      const row = rows?.[0];
+      if (!row) return null;
+      const name = typeof row.complete_name === 'string' ? row.complete_name.trim() : '';
+      return name.length > 0 ? name : null;
+    } catch (error) {
+      ctx.logger?.warn?.(
+        `Odoo lookupLocationCompleteName(${locationId}) falló: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return null;
+    }
   }
 
   async getCatalogChanges(since: string | null, ctx: AdapterContext): Promise<ErpCatalogRow[]> {
@@ -804,11 +1100,13 @@ export class OdooErpAdapter implements ErpAdapter {
       return { status: 'duplicate', external_ref: String(duplicate) };
     }
 
-    const partnerId = await this.resolvePartner(client, payload);
+    const partnerId = await this.resolvePartner(client, payload, ctx);
     const productIds = await this.resolveProductIds(
       client,
       payload.items.map((item) => sanitizeSku(item.sku!))
     );
+
+    const settings = this.odooSettings(ctx);
 
     const orderLines: OdooCreateCommand<SaleOrderLinePayload>[] = payload.items.map((item) => {
       const cleanSku = sanitizeSku(item.sku!);
@@ -820,6 +1118,7 @@ export class OdooErpAdapter implements ErpAdapter {
           `Odoo: no se encontró el producto con default_code '${cleanSku}' al armar las líneas.`
         );
       }
+      const tax = this.applyTaxBehavior(item.unit_price, payload, settings?.tax_behavior);
       return [
         0,
         0,
@@ -828,28 +1127,30 @@ export class OdooErpAdapter implements ErpAdapter {
           product_uom_qty: item.quantity,
           // Bruto tal cual lo cobró Medusa: Odoo aplica los impuestos default
           // del producto sobre este precio (ver caveat en el JSDoc de la clase).
-          price_unit: item.unit_price,
+          price_unit: tax.price_unit ?? item.unit_price,
           name: item.title ?? cleanSku,
+          ...(tax.tax_id ? { tax_id: tax.tax_id } : {}),
         },
       ];
     });
 
-    const settings = this.odooSettings(ctx);
     const shippingCode = settings?.shipping_item_code?.trim() || null;
     const shippingAmount = payload.totals.shipping;
 
     if (shippingCode && shippingAmount > 0) {
       const shippingProductId = await this.resolveShippingProductId(client, shippingCode);
+      const tax = this.applyTaxBehavior(shippingAmount, payload, settings?.tax_behavior);
       orderLines.push([
         0,
         0,
         {
           product_id: shippingProductId,
           product_uom_qty: 1,
-          price_unit: shippingAmount,
+          price_unit: tax.price_unit ?? shippingAmount,
           name: payload.shipping.method
             ? `Costo de envío (${payload.shipping.method})`
             : 'Costo de envío',
+          ...(tax.tax_id ? { tax_id: tax.tax_id } : {}),
         },
       ]);
     }
@@ -870,6 +1171,11 @@ export class OdooErpAdapter implements ErpAdapter {
     };
     if (noteLines.length > 0) {
       orderPayload.note = noteLines.join('\n');
+    }
+
+    const pricelistId = await this.resolvePricelistId(client, partnerId, settings);
+    if (pricelistId !== null) {
+      orderPayload.pricelist_id = pricelistId;
     }
 
     // Custom fields opcionales (escuela + asignación de alumnos). Se agregan
@@ -939,16 +1245,31 @@ export class OdooErpAdapter implements ErpAdapter {
 
   /**
    * Busca el partner por VAT (cuando hay documento fiscal) y cae a email si no
-   * aparece. Si tampoco existe por email, lo crea. `country_id` queda null en
-   * v1 (ver caveat de la clase).
+   * aparece. Si tampoco existe por email, lo crea. Para `country_code === 'AR'`
+   * y localización `l10n_ar` presente, además:
+   *
+   * - En el CREATE agrega los IDs fiscales (responsibility AFIP, tipo de
+   *   documento LATAM, country_id AR) y usa `legal_name` como `name` cuando la
+   *   condición es responsable inscripto / exento / monotributo.
+   * - En el MATCH POR EMAIL lee el partner con los mismos campos fiscales y
+   *   parcha SOLO los que están vacíos en Odoo — regla conservadora, nunca
+   *   pisamos data existente porque no sabemos qué configuró el equipo del ERP
+   *   a mano.
+   * - En el MATCH POR VAT NO parcha: si el partner ya tiene VAT probablemente
+   *   está fiscal-complete, y arriesgar un write ahí introduce cambios silentes
+   *   sobre partners históricos.
    */
   private async resolvePartner(
     client: OdooRpcClient,
-    payload: ErpSalePayload
+    payload: ErpSalePayload,
+    ctx: AdapterContext
   ): Promise<number> {
     const doc = payload.customer.document;
     const vat = doc.number ? doc.number.replace(/\s+/g, '').trim() : '';
     const email = payload.customer.email?.trim() ?? '';
+
+    const isAr = payload.country_code === 'AR';
+    const arFiscalIds = isAr ? await this.resolveArFiscalIds(client, ctx) : null;
 
     if (vat) {
       const byVat = await client.executeKw<ResPartnerRow[]>(
@@ -969,7 +1290,41 @@ export class OdooErpAdapter implements ErpAdapter {
         { fields: ['id', 'name', 'email', 'vat'], limit: 1 }
       );
       const row = Array.isArray(byEmail) ? byEmail[0] : undefined;
-      if (row?.id) return row.id;
+      if (row?.id) {
+        // Match por email → intentamos completar fiscal data ausente. NO pisamos
+        // valores existentes (buildArFiscalPatch se ocupa del filtrado).
+        if (arFiscalIds) {
+          const existingRows = await client.executeKw<
+            Array<{
+              id: number;
+              vat?: unknown;
+              country_id?: unknown;
+              l10n_ar_afip_responsibility_type_id?: unknown;
+              l10n_latam_identification_type_id?: unknown;
+            }>
+          >(
+            'res.partner',
+            'read',
+            [[row.id]],
+            {
+              fields: [
+                'vat',
+                'country_id',
+                'l10n_ar_afip_responsibility_type_id',
+                'l10n_latam_identification_type_id',
+              ],
+            }
+          );
+          const existing = existingRows?.[0];
+          if (existing) {
+            const patch = this.buildArFiscalPatch(arFiscalIds, payload, existing);
+            if (Object.keys(patch).length > 0) {
+              await client.executeKw<boolean>('res.partner', 'write', [[row.id], patch]);
+            }
+          }
+        }
+        return row.id;
+      }
     }
 
     // Crear partner: el nombre es lo único requerido por Odoo; el resto es
@@ -986,8 +1341,14 @@ export class OdooErpAdapter implements ErpAdapter {
     if (payload.shipping.address.street) partnerBody.street = payload.shipping.address.street;
     if (payload.shipping.address.city) partnerBody.city = payload.shipping.address.city;
     if (payload.shipping.address.postal_code) partnerBody.zip = payload.shipping.address.postal_code;
-    // `country_id` se deja fuera en v1: requiere resolver el `res.country` por
-    // código ISO en otro request y no vale el round-trip para el alta.
+
+    // Fiscal data AR: el patch include `name = legal_name` cuando corresponde
+    // (responsable inscripto / exento / monotributo). Merge después del body
+    // base para que gane sobre el `name` computed arriba.
+    if (arFiscalIds) {
+      const arPatch = this.buildArFiscalPatch(arFiscalIds, payload);
+      Object.assign(partnerBody, arPatch);
+    }
 
     const createdId = await client.executeKw<number>('res.partner', 'create', [partnerBody]);
     if (!Number.isInteger(createdId) || createdId <= 0) {
@@ -1058,5 +1419,71 @@ export class OdooErpAdapter implements ErpAdapter {
       );
     }
     return row.id;
+  }
+
+  /**
+   * `sale.order.create` por RPC no dispara el onchange `_onchange_partner_id`,
+   * así que el pricelist heredado del partner no se aplica y Odoo cae al default
+   * global de la instancia — que puede ser en moneda distinta a la esperada.
+   * Por eso el ordering: setting explícito primero, luego el del partner leído
+   * a mano, y como último recurso dejar que Odoo elija (compat con lo previo).
+   */
+  private async resolvePricelistId(
+    client: OdooRpcClient,
+    partnerId: number,
+    settings: ErpOdooSettings | null
+  ): Promise<number | null> {
+    if (settings?.pricelist_id) return settings.pricelist_id;
+    const rows = await client.executeKw<Array<{ id: number; property_product_pricelist?: OdooMany2One }>>(
+      'res.partner',
+      'read',
+      [[partnerId]],
+      { fields: ['property_product_pricelist'] }
+    );
+    // Odoo many2one vacío viene como `false`; poblado, como `[id, name]`.
+    const pl = rows?.[0]?.property_product_pricelist;
+    if (Array.isArray(pl) && typeof pl[0] === 'number') return pl[0];
+    return null;
+  }
+
+  /**
+   * Aplica el `tax_behavior` configurado a la line del `sale.order.create`.
+   *
+   * Devuelve un objeto con posibles overrides:
+   * - `price_unit`: si el modo es `backcalc_from_gross` y hubo match, viene
+   *   el neto ya calculado; sino, `undefined`.
+   * - `tax_id`: si el modo es `override_tax_ids`, viene el comando m2m
+   *   `[[6, 0, tax_ids]]`; sino, `undefined`.
+   *
+   * Modo `default` o sin match en `backcalc_from_gross` -> devuelve todo
+   * `undefined` para no tocar la line.
+   */
+  private applyTaxBehavior(
+    originalPriceUnit: number,
+    payload: ErpSalePayload,
+    behavior: ErpOdooTaxBehavior | undefined
+  ): { price_unit?: number; tax_id?: [[number, number, number[]]] } {
+    if (!behavior || behavior.mode === 'default') return {};
+
+    if (behavior.mode === 'override_tax_ids') {
+      return { tax_id: [[6, 0, behavior.tax_ids]] };
+    }
+
+    const country = payload.country_code;
+    const currency = payload.currency_code?.toUpperCase();
+    const rate = behavior.rates.find((r) => {
+      if (r.match.country_code) return r.match.country_code === country;
+      if (r.match.currency_code) return r.match.currency_code.toUpperCase() === currency;
+      return false;
+    });
+    if (!rate) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[erp:odoo] backcalc: no rate match for country=${country ?? '?'} currency=${currency ?? '?'} - falling back to default (no back-calc).`
+      );
+      return {};
+    }
+    const netto = Math.round((originalPriceUnit / (1 + rate.rate_percent / 100)) * 100) / 100;
+    return { price_unit: netto };
   }
 }

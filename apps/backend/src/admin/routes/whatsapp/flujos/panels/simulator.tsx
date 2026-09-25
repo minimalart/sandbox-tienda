@@ -1,10 +1,10 @@
 import { ArrowPath, XMarkMini } from '@medusajs/icons';
 import { Button, Input, Text, Textarea } from '@medusajs/ui';
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 
 import { actionLabel, type Graph } from '../_editor';
 import { WA } from '../lib/skin';
-import { ActionPreview } from './action-preview';
+import { ActionPreview, type PreviewResult } from './action-preview';
 import {
   canTimeOut,
   choicesForStep,
@@ -31,6 +31,7 @@ export function SimulatorPanel({
   onSendText,
   onTap,
   onContinue,
+  onActionVars,
   onTimeout,
   onReset,
   onClose,
@@ -40,6 +41,8 @@ export function SimulatorPanel({
   onSendText: (text: string) => void;
   onTap: (id: string, label?: string) => void;
   onContinue: (vars?: Record<string, unknown>) => void;
+  /** Escribe en `vars` lo que la acción habría dejado, sin avanzar el turno. */
+  onActionVars: (vars: Record<string, unknown>) => void;
   onTimeout: () => void;
   onReset: () => void;
   onClose: () => void;
@@ -47,9 +50,46 @@ export function SimulatorPanel({
   const [draft, setDraft] = useState('');
   const finRef = useRef<HTMLDivElement | null>(null);
 
+  /**
+   * Lo que la última acción habría dejado en `vars`.
+   *
+   * Lo trae la vista previa, que ya corrió la búsqueda de verdad contra el catálogo.
+   * Antes esa información moría en la tarjeta: se veían los productos y la pregunta
+   * siguiente salía igual de vacía, porque `vars` seguía sin nada. El operador tenía
+   * que copiar los ids de variante a mano dentro de un JSON — y para eso hay que saber
+   * los ids, que no están a la vista en ningún lado.
+   */
+  const [dejado, setDejado] = useState<PreviewResult | null>(null);
+  /** Qué se aplicó ya, para no volver a escribir lo mismo en cada render. */
+  const aplicado = useRef<string | null>(null);
+
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    // Cada turno nuevo invalida lo de la acción anterior: si no, se aplicarían los
+    // resultados de una búsqueda vieja.
+    setDejado(null);
+    aplicado.current = null;
   }, [session.turns.length]);
+
+  /**
+   * En cuanto la vista previa contesta, la variable se escribe SOLA.
+   *
+   * Es lo que hace la acción en producción, y la razón de que sea automático es que
+   * una acción `silent` no pausa: cuando la vista previa contesta, la pregunta que
+   * consume esa variable YA está dibujada en pantalla. Pedir un click ahí sería pedirlo
+   * para completar algo que el operador no eligió ni tiene por qué entender.
+   */
+  const recibirPreview = useCallback(
+    (result: PreviewResult) => {
+      setDejado(result);
+      if (!result.saveAs) return;
+      const firma = `${session.turns.length}:${result.saveAs}:${typeof result.value === 'string' ? result.value : result.value.length}`;
+      if (aplicado.current === firma) return;
+      aplicado.current = firma;
+      onActionVars({ [result.saveAs]: result.value });
+    },
+    [onActionVars, session.turns.length],
+  );
 
   const enviar = () => {
     if (!draft.trim()) return;
@@ -58,6 +98,10 @@ export function SimulatorPanel({
   };
 
   const arranques = openers(graph);
+  const ultimaAccion = session.turns.reduce(
+    (found, turn, index) => (turn.role === 'system' && turn.kind === 'action' ? index : found),
+    -1,
+  );
   const ultimo = session.turns[session.turns.length - 1];
   const esperaChoice = session.waiting === 'choice' && ultimo?.role === 'bot';
 
@@ -119,10 +163,20 @@ export function SimulatorPanel({
         )}
 
         {session.turns.map((turn, index) => (
-          <Turn key={index} turn={turn} graph={graph} session={session} onTap={onTap} />
+          <Turn
+            key={index}
+            turn={turn}
+            graph={graph}
+            session={session}
+            onTap={onTap}
+            // Sólo la ÚLTIMA acción completa `vars`. No se puede pedir que sea el
+            // último turno: una acción `silent` deja la pregunta siguiente dibujada
+            // abajo suyo en el mismo turno, que es el caso más común de todos.
+            {...(index === ultimaAccion ? { onResult: recibirPreview } : {})}
+          />
         ))}
 
-        {session.waiting === 'action' && <ActionControls onContinue={onContinue} />}
+        {session.waiting === 'action' && <ActionControls dejado={dejado} onContinue={onContinue} />}
 
         {/**
           * El camino de "no contestó" no se puede provocar de ninguna otra forma: el
@@ -178,11 +232,13 @@ function Turn({
   graph,
   session,
   onTap,
+  onResult,
 }: {
   turn: SimTurn;
   graph: Graph;
   session: SimSession;
   onTap: (id: string, label?: string) => void;
+  onResult?: (result: PreviewResult) => void;
 }): ReactElement {
   if (turn.role === 'client') {
     return (
@@ -214,7 +270,12 @@ function Turn({
               * dibuja lo que el cliente recibiría. Las que tocan el carrito o generan
               * un pago siguen describiéndose: la vista previa dice cuál es cuál.
               */}
-            <ActionPreview tool={turn.step.tool} args={turn.step.args} onTap={onTap} />
+            <ActionPreview
+              tool={turn.step.tool}
+              args={turn.step.args}
+              onTap={onTap}
+              {...(onResult ? { onResult } : {})}
+            />
           </div>
         ) : (
           <Text size="xsmall" className="text-ui-fg-subtle">
@@ -281,18 +342,39 @@ const Bubble = ({ background, children }: { background: string; children: React.
 );
 
 /**
- * Lo que la acción habría dejado.
+ * SEGUIR DESPUÉS DE UNA ACCIÓN.
  *
- * Sin esto, todo lo que vive detrás de una acción —que es la mitad del recorrido— no
- * se puede probar: la pregunta siguiente sale vacía porque sus opciones venían de una
- * variable que nadie escribió, y el camino de compra no arranca porque nadie tocó un
- * producto.
+ * Todo lo que vive detrás de una acción es la mitad del recorrido, y era la mitad que
+ * no se podía probar: la acción no se ejecuta en la prueba, así que la pregunta
+ * siguiente salía sin opciones —las suyas venían de una variable que nadie escribió— y
+ * la única salida era que el operador tipeara a mano un JSON con los ids de variante
+ * adentro. Para eso hay que saber los ids, y los ids no están a la vista en ningún
+ * lado: la prueba se terminaba ahí.
+ *
+ * Ahora las trae la vista previa, que YA corrió la búsqueda de sólo lectura contra el
+ * catálogo real. "Continuar" escribe eso mismo en `vars` y el recorrido sigue solo. El
+ * campo de JSON queda para el caso raro —una variable que ninguna acción produce— y
+ * ahora está guardado, no al frente.
  */
-function ActionControls({ onContinue }: { onContinue: (vars?: Record<string, unknown>) => void }): ReactElement {
+function ActionControls({
+  dejado,
+  onContinue,
+}: {
+  dejado: PreviewResult | null;
+  onContinue: (vars?: Record<string, unknown>) => void;
+}): ReactElement {
   const [vars, setVars] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [avanzado, setAvanzado] = useState(false);
+
+  const saveAs = dejado?.saveAs ?? null;
+  const options = Array.isArray(dejado?.value) ? dejado.value : [];
+  // La consulta de pedido deja un TEXTO, no opciones: decir "0 opciones" sería mentir.
+  const dejoTexto = typeof dejado?.value === 'string';
 
   const seguir = () => {
+    // Lo que la acción habría publicado ya se escribió solo en cuanto contestó la
+    // vista previa: acá sólo se avanza, con lo escrito a mano si lo hay.
     if (!vars.trim()) {
       onContinue();
       return;
@@ -309,27 +391,66 @@ function ActionControls({ onContinue }: { onContinue: (vars?: Record<string, unk
 
   return (
     <div className="space-y-2 rounded-md border bg-ui-bg-base p-2">
-      <Text size="xsmall" weight="plus">
-        ¿Qué habría dejado la acción?
-      </Text>
-      <Textarea
-        rows={2}
-        placeholder={'{"presentations": [{"value": "20l", "label": "20 L"}]}'}
-        value={vars}
-        onChange={(e) => setVars(e.target.value)}
-      />
-      {error && (
-        <Text size="xsmall" className="text-ui-fg-error">
-          {error}
+      {saveAs && options.length > 0 && (
+        <Text size="xsmall" className="text-ui-fg-subtle">
+          La acción dejó {options.length}
+          {options.length === 1 ? ' opción' : ' opciones'} en <code>vars.{saveAs}</code>: el
+          paso siguiente ya las tiene.
         </Text>
       )}
-      <Text size="xsmall" className="text-ui-fg-subtle">
-        Opcional. Sirve para las preguntas que sacan sus respuestas de una variable. Para simular que
-        el cliente tocó un producto, escribí <code>variant_123</code> abajo y mandalo.
-      </Text>
-      <Button size="small" variant="secondary" onClick={seguir}>
-        Continuar
-      </Button>
+
+      {/* El hallazgo que justifica la prueba: el recorrido está bien dibujado y la
+          pregunta siguiente igual va a salir vacía. Verlo acá es verlo antes de
+          publicar. */}
+      {saveAs && dejoTexto && (
+        <Text size="xsmall" className="text-ui-fg-subtle">
+          La acción dejó su respuesta en <code>vars.{saveAs}</code>: el paso siguiente la
+          muestra.
+        </Text>
+      )}
+
+      {saveAs && !dejoTexto && options.length === 0 && (
+        <Text size="xsmall" className="text-ui-fg-error">
+          La acción no deja nada en <code>vars.{saveAs}</code>: el paso siguiente no va a
+          tener ninguna opción que mostrar.
+        </Text>
+      )}
+
+      {!saveAs && (
+        <Text size="xsmall" className="text-ui-fg-subtle">
+          Esta acción le habla al cliente ella misma. Continuá para ver por dónde sigue el
+          recorrido.
+        </Text>
+      )}
+
+      <div className="flex items-center gap-x-2">
+        <Button size="small" variant="secondary" onClick={seguir}>
+          Continuar
+        </Button>
+        <Button size="small" variant="transparent" onClick={() => setAvanzado((v) => !v)}>
+          {avanzado ? 'Ocultar variables' : 'Escribir variables a mano'}
+        </Button>
+      </div>
+
+      {avanzado && (
+        <div className="space-y-1">
+          <Textarea
+            rows={2}
+            placeholder={'{"presentations": [{"value": "variant_123", "label": "20 L"}]}'}
+            value={vars}
+            onChange={(e) => setVars(e.target.value)}
+          />
+          {error && (
+            <Text size="xsmall" className="text-ui-fg-error">
+              {error}
+            </Text>
+          )}
+          <Text size="xsmall" className="text-ui-fg-subtle">
+            Sólo hace falta para una variable que ninguna acción produce: lo que la acción
+            deja se escribe solo.
+          </Text>
+        </div>
+      )}
     </div>
   );
 }

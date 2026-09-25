@@ -32,6 +32,16 @@ export const WA_EVENT_TYPES = [
   'cart_reviewed',
   /** Se generó el link de pago; `payload.token`. */
   'checkout_generated',
+  /**
+   * El link de pago NO se generó a propósito; `payload.reason` dice por qué
+   * (`minimum_purchase`), más `subtotal`, `minimum` y `missing`.
+   *
+   * No es un `error`: el bot hizo lo correcto. Pero tampoco puede quedar como un
+   * embudo que muere en `cart_reviewed` sin explicación — ese hueco es justo el
+   * que hay que poder medir, porque dice cuántas ventas se pierden contra el
+   * mínimo y por cuánta plata.
+   */
+  'checkout_blocked',
   /** Arrancó el asesor guiado. */
   'guided_started',
   /**

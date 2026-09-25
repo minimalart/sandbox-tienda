@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { browserCustomerSession, sessionCookieName } from '../util/customer-session';
 import { createCheckoutRequestQueue } from '../util/checkout-request-queue';
 
@@ -42,6 +42,11 @@ export function useCheckoutPolicy(cart: any) {
     catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
   }, [key]);
-  useEffect(() => { let live = true; if (!key) return; setLoading(true); checkoutRequest({ action: 'begin' }).then(next => { if (live) { setState(next); setError(''); } }).catch(e => { if (live) setError(e.message); }).finally(() => { if (live) setLoading(false); }); return () => { live = false; }; }, [key]);
+  // Sin política configurada, 'begin' responde { configured: false } para
+  // cualquier carrito: re-pedirlo en cada cambio del carrito (dirección, envío)
+  // sumaba 0,7-1,5 s por paso sin cambiar nada. Se vuelve a consultar al recargar
+  // o si cambia el carrito.
+  const unconfiguredCart = useRef<string | null>(null);
+  useEffect(() => { let live = true; if (!key) return; if (unconfiguredCart.current === cart?.id) return; setLoading(true); checkoutRequest({ action: 'begin' }).then(next => { if (next && next.configured === false) unconfiguredCart.current = cart?.id ?? null; if (live) { setState(next); setError(''); } }).catch(e => { if (live) setError(e.message); }).finally(() => { if (live) setLoading(false); }); return () => { live = false; }; }, [key]);
   return { state, setState, error, loading, refresh };
 }

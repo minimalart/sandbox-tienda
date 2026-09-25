@@ -199,6 +199,38 @@ const OdooSettingsSchema = z.object({
   shipping_item_code: z.string().max(120).nullable().optional(),
   auto_confirm: z.boolean().optional(),
   only_published: z.boolean().optional(),
+  /**
+   * Sin esta entrada Zod descarta la clave en silencio (strip default) y el
+   * campo nunca llega al service — precedente PR #933 (odoo) y PR #1090
+   * (images.min_dimension_px).
+   */
+  pricelist_id: z.number().int().positive().nullable().optional(),
+  /**
+   * Comportamiento de impuestos al crear el `sale.order`. Sin esta entrada Zod
+   * descarta la clave en silencio (strip default) y el campo nunca llega al
+   * service — precedente PR #933 (odoo) y PR #1090 (images.min_dimension_px).
+   */
+  tax_behavior: z
+    .discriminatedUnion('mode', [
+      z.object({ mode: z.literal('default') }),
+      z.object({
+        mode: z.literal('override_tax_ids'),
+        tax_ids: z.array(z.number().int().nonnegative()),
+      }),
+      z.object({
+        mode: z.literal('backcalc_from_gross'),
+        rates: z.array(
+          z.object({
+            match: z.object({
+              country_code: z.string().min(2).max(2).optional(),
+              currency_code: z.string().min(3).max(3).optional(),
+            }),
+            rate_percent: z.number().nonnegative(),
+          })
+        ),
+      }),
+    ])
+    .optional(),
 });
 
 /**

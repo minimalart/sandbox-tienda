@@ -1,4 +1,5 @@
 import { Input, Label, Text } from '@medusajs/ui';
+import { ImageField } from '../../../components/image-field';
 import type { ContentConfigForm } from './content-config-form';
 
 /**
@@ -90,6 +91,14 @@ export const CampaignContentFields = ({ value, onChange }: Props) => {
           </div>
         </div>
         <div className="flex flex-col gap-y-2">
+          <ImageField
+            label='Pill "Powered by" — logo'
+            value={value.campaignChromePoweredByImage}
+            onChange={(v) => set('campaignChromePoweredByImage', v)}
+            help='Si cargás un logo, se muestra en vez del texto. Alto máx. sugerido: 28 px.'
+          />
+        </div>
+        <div className="flex flex-col gap-y-2">
           <Label>Color de fondo del header (hex)</Label>
           <Input
             value={value.campaignChromeBackgroundColor}
@@ -132,6 +141,14 @@ export const CampaignContentFields = ({ value, onChange }: Props) => {
               }
             />
           </div>
+        </div>
+        <div className="flex flex-col gap-y-2">
+          <ImageField
+            label='"Powered by" del footer — logo'
+            value={value.campaignFooterPoweredByImage}
+            onChange={(v) => set('campaignFooterPoweredByImage', v)}
+            help='Si cargás un logo, se muestra en vez del texto. Alto máx. sugerido: 28 px.'
+          />
         </div>
         <div className="flex flex-col gap-y-2">
           <Label>Color de fondo del footer (hex)</Label>

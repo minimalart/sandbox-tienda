@@ -119,9 +119,17 @@ export const CREDENTIAL_CATALOG: IntegrationSpec[] = [
     integration: 'kapso',
     label: 'Kapso (WhatsApp)',
     reader: 'src/modules/kapso-whatsapp/service.ts',
-    envKeys: ['KAPSO_API_KEY'],
+    envKeys: ['KAPSO_API_KEY', 'KAPSO_PHONE_NUMBER_ID'],
     keys: [
       { key: 'apiKey', label: 'API key', secret: true },
+      {
+        key: 'phoneNumberId',
+        label: 'Phone number ID',
+        secret: false,
+        help:
+          'Obligatorio si cargás API key propia: la key sólo vale sobre SU número. ' +
+          'Sin esto se usa el par completo de la instancia (Ajustes → WhatsApp).',
+      },
       {
         key: 'baseUrl',
         label: 'Base URL',

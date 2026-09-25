@@ -43,17 +43,30 @@ export default defineSettings({
       type: 'string',
       tier: 'runtime',
       group: 'Destinatarios',
-      label: 'Email de avisos al administrador',
+      label: 'Emails de avisos al administrador',
       /**
-       * UNA oración. Las dos capas —que Preferencias → Emails pisa a esto y que
-       * vacío en los dos lugares no manda nada— son la sección "Los avisos internos
-       * tienen dos capas" del drawer. Parado frente al campo no se puede adivinar
-       * cuál gana, pero tampoco se resuelve leyendo tres renglones cada vez.
+       * UNA oración, y la que se queda es la del FORMATO: que se puede poner más
+       * de una casilla y cómo se separan no se deduce parado frente a un campo de
+       * texto, y escribir dos mails pegados sin coma manda el aviso a ninguna.
+       * Las dos capas —que Preferencias → Emails pisa a esto y que vacío en los
+       * dos lugares no manda nada— siguen en la sección "Los avisos internos
+       * tienen dos capas" del drawer.
        */
-      help: 'Recibe las notificaciones internas (pedidos nuevos, alertas).',
-      placeholder: 'ventas@tutienda.com',
-      pattern: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$',
-      maxLength: 254,
+      help: 'Reciben las notificaciones internas (pedidos nuevos, alertas); varias casillas se separan con coma.',
+      placeholder: 'ventas@tutienda.com, admin@tutienda.com',
+      /**
+       * Una casilla, o varias separadas por coma o punto y coma. El separador
+       * ADMITE el espacio a los costados porque una lista pegada de otro lado lo
+       * trae, y `parseRecipientList` (en `modules/email/settings.ts`) lo limpia:
+       * rechazar acá lo que el parser sí entiende sería trabar el guardado por un
+       * espacio invisible.
+       */
+      pattern:
+        '^\\s*[^@\\s,;]+@[^@\\s,;]+\\.[^@\\s,;]+\\s*([,;]\\s*[^@\\s,;]+@[^@\\s,;]+\\.[^@\\s,;]+\\s*)*$',
+      // 254 es el largo de UNA casilla. Con lista, el techo tiene que dar para
+      // varias: 1000 entra cómodo un equipo de cuatro o cinco y sigue siendo un
+      // tope, no una invitación a pegar una base de datos acá.
+      maxLength: 1000,
     },
 
     // ─── Recursos ────────────────────────────────────────────────────────────

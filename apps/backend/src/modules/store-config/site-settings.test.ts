@@ -74,6 +74,9 @@ test('ningún módulo lee store_setting por listStoreSettings a secas', () => {
       if (!entry.name.endsWith('.ts') || entry.name.endsWith('.test.ts')) continue;
       // El propio service es quien implementa la lectura correcta.
       if (full.endsWith(join('store-config', 'service.ts'))) continue;
+      // El interruptor de emergencia agrega apagados globales/de tienda en vez de
+      // resolver una fila por precedencia. bot-switch.test.ts cubre ese contrato.
+      if (full.endsWith(join('kapso-whatsapp', 'bot-switch.ts'))) continue;
       // Se sacan los comentarios antes de buscar: si no, la propia nota que explica
       // por qué NO hay que usarlo cuenta como infracción.
       const src = readFileSync(full, 'utf8')

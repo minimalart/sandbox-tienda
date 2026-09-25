@@ -58,19 +58,18 @@ export const en = {
   ORDER_WIDGET_TITLE: 'ERP invoicing',
   ORDER_NOT_NOTIFIED: 'Not notified',
   ORDER_BILLING_SECTION: 'Billing warehouse',
-  ORDER_BILLING_SHIP_FROM:
-    'Ship from "{{location}}" (ERP warehouse {{deposito}}). A fulfillment from any other location is rejected.',
-  ORDER_BILLING_NOT_CONFIGURED:
-    'No billing warehouse selected, so this order cannot be fulfilled. Set it in ERP → Configuration.',
-  ORDER_BILLING_NOT_MAPPED:
-    'The billing warehouse "{{deposito}}" is not mapped to any stock location. Fix it in ERP → Configuration.',
+  ORDER_BILLING_FROM_FULFILLMENT:
+    'The warehouse you ship from is the one that invoices. Pick the dispatch location when you create the fulfillment — nothing is preselected.',
   ORDER_BILLING_CONFIRMED: 'Confirmed from warehouse {{deposito}} on {{at}}.',
   ORDER_BILLING_NOT_CONFIRMED:
     'No warehouse confirmed yet. It is recorded when an operator creates the fulfillment from the admin.',
-  ORDER_BILLING_OVERRIDE: 'Override for this order',
-  ORDER_BILLING_USE_DEFAULT: 'Use the configured default',
-  ORDER_BILLING_SAVE: 'Save',
-  ORDER_BILLING_DEPOSITO_SAVED: 'Billing warehouse updated for this order.',
+  ORDER_STOCK_SECTION: 'Stock by branch',
+  ORDER_STOCK_HELP:
+    'Which branch can ship this order in full. Only branches mapped to an ERP warehouse are listed — the others cannot invoice.',
+  ORDER_STOCK_COVERS: 'Ships in full',
+  ORDER_STOCK_DOES_NOT_COVER: 'Cannot ship in full',
+  ORDER_STOCK_DEPOSITO: '(ERP warehouse {{deposito}})',
+  ORDER_STOCK_GAP: '{{title}}: needs {{pending}}, has {{available}}',
   ORDER_INVOICE_SECTION: 'Document',
   ORDER_INVOICE_DOWNLOAD: 'Download PDF',
   ORDER_INVOICE_NO_PDF:
@@ -219,6 +218,23 @@ export const en = {
     'Odoo product.product.default_code used to bill shipping as an extra sale.order.line. Empty = shipping goes as note.',
   CONFIG_ODOO_ONLY_PUBLISHED: 'Sync only products published in website_sale',
   CONFIG_ODOO_AUTO_CONFIRM: 'Auto-confirm sale.order (action_confirm)',
+  CONFIG_ODOO_PRICELIST_ID_LABEL: 'Pricelist ID',
+  CONFIG_ODOO_PRICELIST_ID_HINT:
+    "Odoo product.pricelist ID to use for sale orders. If empty, uses the partner's default pricelist or the Odoo instance default.",
+  CONFIG_ODOO_TAX_BEHAVIOR_LABEL: 'Tax behavior',
+  CONFIG_ODOO_TAX_BEHAVIOR_HINT:
+    "Medusa charges the gross (VAT-included) price. Odoo then applies the product's default taxes on top -> double-taxing. Modes: 'Default' keeps historical behavior (no change). 'Override tax IDs' forces specific account.tax IDs (empty list = no tax). 'Back-calculate net from gross' divides price_unit by (1 + rate/100) before sending so Odoo's default VAT reproduces the gross Medusa charged.",
+  CONFIG_ODOO_TAX_MODE_DEFAULT: 'Default (no override)',
+  CONFIG_ODOO_TAX_MODE_OVERRIDE: 'Override tax IDs',
+  CONFIG_ODOO_TAX_MODE_BACKCALC: 'Back-calculate net from gross',
+  CONFIG_ODOO_TAX_IDS_LABEL: 'Tax IDs (CSV)',
+  CONFIG_ODOO_TAX_IDS_HINT: 'Comma-separated Odoo account.tax IDs. Empty = no tax.',
+  CONFIG_ODOO_TAX_RATES_LABEL: 'Tax rates by country/currency',
+  CONFIG_ODOO_TAX_RATE_ADD: 'Add rate',
+  CONFIG_ODOO_TAX_RATE_REMOVE: 'Remove',
+  CONFIG_ODOO_TAX_RATE_COUNTRY: 'Country (2)',
+  CONFIG_ODOO_TAX_RATE_CURRENCY: 'Currency (3)',
+  CONFIG_ODOO_TAX_RATE_PERCENT: 'Rate %',
 
   CONFIG_OUTBOX_TITLE: 'Retries (outbox)',
   CONFIG_OUTBOX_MAX: 'Max attempts',
@@ -273,7 +289,11 @@ export const en = {
   RETRY_ERROR: 'Could not retry: {{msg}}',
   OUTBOX_EMPTY: 'No sale events yet.',
   SKIPPED_REASON: 'Skipped: sales notification was off',
-  PREVIEW_ACTION: 'View JSON',
+  EVENT_SALE: 'Sale',
+  EVENT_INVOICE: 'Invoice',
+  INVOICE_WAITING_SHORT: 'Waiting for the invoice',
+  DETAIL_ACTION: 'View detail',
+  DETAIL_ERP_SAID: 'The ERP answered',
   PREVIEW_TITLE: 'Document sent to the ERP',
   PREVIEW_SOURCE_STORED: 'Exactly as sent',
   PREVIEW_SOURCE_RECONSTRUCTED: 'Rebuilt',
@@ -538,19 +558,18 @@ export const es: typeof en = {
   ORDER_WIDGET_TITLE: 'Facturación ERP',
   ORDER_NOT_NOTIFIED: 'Sin notificar',
   ORDER_BILLING_SECTION: 'Depósito facturador',
-  ORDER_BILLING_SHIP_FROM:
-    'Despachá desde "{{location}}" (depósito {{deposito}} del ERP). Un fulfillment desde cualquier otra ubicación se rechaza.',
-  ORDER_BILLING_NOT_CONFIGURED:
-    'No hay depósito facturador elegido, así que este pedido no se puede despachar. Configuralo en ERP → Configuración.',
-  ORDER_BILLING_NOT_MAPPED:
-    'El depósito facturador "{{deposito}}" no está mapeado a ninguna stock location. Corregilo en ERP → Configuración.',
+  ORDER_BILLING_FROM_FULFILLMENT:
+    'Factura la sucursal desde donde despachás. Elegí la ubicación al crear el fulfillment — no hay nada preseleccionado.',
   ORDER_BILLING_CONFIRMED: 'Confirmado desde el depósito {{deposito}} el {{at}}.',
   ORDER_BILLING_NOT_CONFIRMED:
     'Todavía no hay depósito confirmado. Se registra cuando un operador crea el fulfillment desde el admin.',
-  ORDER_BILLING_OVERRIDE: 'Cambiar solo para este pedido',
-  ORDER_BILLING_USE_DEFAULT: 'Usar el default de la configuración',
-  ORDER_BILLING_SAVE: 'Guardar',
-  ORDER_BILLING_DEPOSITO_SAVED: 'Se actualizó el depósito facturador de este pedido.',
+  ORDER_STOCK_SECTION: 'Stock por sucursal',
+  ORDER_STOCK_HELP:
+    'Qué sucursal puede despachar el pedido completo. Sólo se listan las mapeadas a un depósito del ERP — desde las otras no se puede facturar.',
+  ORDER_STOCK_COVERS: 'Despacha todo',
+  ORDER_STOCK_DOES_NOT_COVER: 'No alcanza',
+  ORDER_STOCK_DEPOSITO: '(depósito {{deposito}} del ERP)',
+  ORDER_STOCK_GAP: '{{title}}: faltan {{pending}}, hay {{available}}',
   ORDER_INVOICE_SECTION: 'Comprobante',
   ORDER_INVOICE_DOWNLOAD: 'Descargar PDF',
   ORDER_INVOICE_NO_PDF:
@@ -700,6 +719,23 @@ export const es: typeof en = {
     'default_code del product.product en Odoo para facturar el envío como línea extra. Vacío = el envío va como nota.',
   CONFIG_ODOO_ONLY_PUBLISHED: 'Sincronizar solo productos publicados en website_sale',
   CONFIG_ODOO_AUTO_CONFIRM: 'Auto-confirmar sale.order (action_confirm)',
+  CONFIG_ODOO_PRICELIST_ID_LABEL: 'ID de lista de precios',
+  CONFIG_ODOO_PRICELIST_ID_HINT:
+    'ID del product.pricelist de Odoo a usar en los sale.order. Vacío usa la lista default del partner o la default de la instancia Odoo.',
+  CONFIG_ODOO_TAX_BEHAVIOR_LABEL: 'Comportamiento de impuestos',
+  CONFIG_ODOO_TAX_BEHAVIOR_HINT:
+    'Medusa cobra el bruto (con IVA incluido). Odoo aplica luego los impuestos default del producto por encima -> doble imposición. Modos: "Por defecto" mantiene el comportamiento histórico (sin cambios). "Sobrescribir IDs de impuesto" fuerza IDs específicos de account.tax (lista vacía = sin impuestos). "Recalcular neto desde bruto" divide price_unit por (1 + tasa/100) antes de enviar para que el IVA default de Odoo reproduzca el bruto que cobró Medusa.',
+  CONFIG_ODOO_TAX_MODE_DEFAULT: 'Por defecto (sin override)',
+  CONFIG_ODOO_TAX_MODE_OVERRIDE: 'Sobrescribir IDs de impuesto',
+  CONFIG_ODOO_TAX_MODE_BACKCALC: 'Recalcular neto desde bruto',
+  CONFIG_ODOO_TAX_IDS_LABEL: 'IDs de impuesto (CSV)',
+  CONFIG_ODOO_TAX_IDS_HINT: 'IDs de account.tax de Odoo separados por coma. Vacío = sin impuestos.',
+  CONFIG_ODOO_TAX_RATES_LABEL: 'Tasas de impuesto por país/moneda',
+  CONFIG_ODOO_TAX_RATE_ADD: 'Agregar tasa',
+  CONFIG_ODOO_TAX_RATE_REMOVE: 'Quitar',
+  CONFIG_ODOO_TAX_RATE_COUNTRY: 'País (2)',
+  CONFIG_ODOO_TAX_RATE_CURRENCY: 'Moneda (3)',
+  CONFIG_ODOO_TAX_RATE_PERCENT: 'Tasa %',
 
   CONFIG_OUTBOX_TITLE: 'Reintentos (outbox)',
   CONFIG_OUTBOX_MAX: 'Intentos máximos',
@@ -751,7 +787,11 @@ export const es: typeof en = {
   RETRY_ERROR: 'No se pudo reintentar: {{msg}}',
   OUTBOX_EMPTY: 'Todavía no hay eventos de venta.',
   SKIPPED_REASON: 'Salteada: la notificación de ventas estaba apagada',
-  PREVIEW_ACTION: 'Ver JSON',
+  EVENT_SALE: 'Venta',
+  EVENT_INVOICE: 'Comprobante',
+  INVOICE_WAITING_SHORT: 'Esperando factura',
+  DETAIL_ACTION: 'Ver detalle',
+  DETAIL_ERP_SAID: 'Respuesta del ERP',
   PREVIEW_TITLE: 'Documento enviado al ERP',
   PREVIEW_SOURCE_STORED: 'Tal cual se envió',
   PREVIEW_SOURCE_RECONSTRUCTED: 'Reconstruido',

@@ -388,8 +388,16 @@ export const emailPuckConfig: Config = {
           ],
         },
         currency: { type: 'text', label: 'Símbolo de moneda' },
+        showStock: {
+          type: 'radio',
+          label: 'Mostrar estado de stock por ítem',
+          options: [
+            { label: 'Sí', value: 'yes' },
+            { label: 'No', value: 'no' },
+          ],
+        },
       },
-      defaultProps: { source: 'order_items', showImage: 'yes', currency: '$' },
+      defaultProps: { source: 'order_items', showImage: 'yes', currency: '$', showStock: 'no' },
       // Canvas shows static sample rows (real data resolves at send/preview).
       render: ({ showImage, currency }: any) => {
         const cur = currency || '$';

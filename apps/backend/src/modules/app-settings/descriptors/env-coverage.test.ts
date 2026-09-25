@@ -72,18 +72,19 @@ import { settingsNamespaces } from './index.ts';
  * mejor, dale un descriptor en `descriptors/<extension>.ts` para que se pueda
  * configurar desde el admin.
  */
-const PENDING_UNDECLARED_ENV: Record<string, string[]> = {
-  // EXCEPCIÓN PERMANENTE, no deuda. `S3_PUBLIC_URL` la declara y la gestiona
-  // `media-library`, que es la dueña del bucket; email-templates sólo la LEE para
-  // armar los `<img src>` de los mails. Migrarla acá también chocaría contra el
-  // test que prohíbe la misma env editable en dos namespaces, y con razón: dos
-  // cards editando el mismo bucket es peor que una sola.
-  //
-  // **Es la única que queda.** Arrancó con 22 extensiones y 125 pares: cada una
-  // que sale de acá es una extensión que dejó de leer `process.env` a escondidas.
-  // La lista sólo puede ACHICARSE, y ya no tiene de dónde.
-  'email-templates': ['S3_PUBLIC_URL'],
-};
+// LA LISTA QUEDÓ VACÍA. Arrancó con 22 extensiones y 125 pares.
+//
+// La última entrada era `email-templates: S3_PUBLIC_URL`, anotada como
+// "excepción permanente" porque `kit-cde-notification` armaba la URL del logo a
+// mano: `${process.env.S3_PUBLIC_URL}/cde-logos/mercatto.png`. O sea que la
+// excepción no era estructural — era el síntoma de una plantilla que tenía la
+// marca escrita a mano en vez de usar el `logo_url` que el servicio ya le
+// inyecta. Al sacarle la marca (2026-09-18), esa lectura de `process.env`
+// desapareció y con ella la última deuda.
+//
+// Dejarla vacía NO es decorativo: el test de abajo falla si alguien vuelve a
+// leer una env sin declararla, y ahora no hay ninguna entrada donde esconderla.
+const PENDING_UNDECLARED_ENV: Record<string, string[]> = {};
 
 /**
  * Env que el CORE provee a TODO proyecto, lea las extensiones que lea.

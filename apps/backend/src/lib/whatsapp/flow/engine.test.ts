@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { advance, emptyState, flowTapId, parseFlowTapId, type FlowState } from './engine';
+import { advance, emptyState, flowTapId, hasPlaceholders, parseFlowTapId, type FlowState } from './engine';
 import { validateGraph, type FlowGraph } from './graph';
 
 /** Menú → compra o sucursales. Es el recorrido más chico que ejerce todo. */
@@ -706,5 +706,58 @@ describe('advance — opciones que llegan en vivo', () => {
       ],
     };
     assert.ok(validateGraph(raro).some((i) => i.message.includes('no es una pregunta con respuestas')));
+  });
+});
+
+
+/**
+ * EL CUERPO CRUDO VIAJA CON EL PASO.
+ *
+ * `advance()` arma el plan ENTERO antes de ejecutar ninguna acción, así que un
+ * `{{vars.…}}` que escribe una acción silenciosa de este mismo turno se resuelve a
+ * VACÍO. El runtime lo vuelve a resolver antes de mandar —igual que ya hacía con
+ * las opciones—, pero para eso necesita el texto sin resolver.
+ *
+ * Sin esto, el cierre del recorrido de compra salía "Abrí el enlace 👇" sin enlace.
+ */
+describe('el paso se lleva el texto sin resolver', () => {
+  const graph = (body: string): FlowGraph => ({
+    nodes: [
+      { id: 'inicio', type: 'start', label: 'Entrada', match: { fallback: true }, position: { x: 0, y: 0 } },
+      { id: 'cierre', type: 'message', label: 'Cierre', body, position: { x: 100, y: 0 } },
+    ],
+    edges: [{ id: 'e1', source: 'inicio', target: 'cierre' }],
+  });
+
+  it('un cuerpo con variable guarda el crudo y resuelve vacío en el plan', () => {
+    const plan = advance(graph('Abrí el enlace 👇\n{{vars.link}}'), state(), {
+      text: 'hola',
+      selectionId: null,
+    });
+    const paso = plan.steps[0] as { body: string; template?: string };
+    assert.equal(paso.body, 'Abrí el enlace 👇\n');
+    assert.equal(paso.template, 'Abrí el enlace 👇\n{{vars.link}}');
+  });
+
+  /** Un texto literal no paga nada: sin `template`, el runtime manda el del plan. */
+  it('un cuerpo sin variables no guarda nada', () => {
+    const plan = advance(graph('Gracias por escribirnos 👋'), state(), {
+      text: 'hola',
+      selectionId: null,
+    });
+    const paso = plan.steps[0] as { body: string; template?: string };
+    assert.equal(paso.body, 'Gracias por escribirnos 👋');
+    assert.equal(paso.template, undefined);
+  });
+});
+
+describe('hasPlaceholders', () => {
+  it('reconoce lo que hay que volver a resolver', () => {
+    assert.equal(hasPlaceholders('{{vars.link}}'), true);
+    assert.equal(hasPlaceholders('hola {{text}} 👋'), true);
+    assert.equal(hasPlaceholders('hola 👋'), false);
+    // Las llaves sueltas no son un placeholder: no hay nada que resolver.
+    assert.equal(hasPlaceholders('un {{ } raro'), false);
+    assert.equal(hasPlaceholders(undefined), false);
   });
 });

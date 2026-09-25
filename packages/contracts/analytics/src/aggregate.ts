@@ -12,6 +12,9 @@ export type Measure = {
   numerator: string;
   denominator?: string;
   distinct?: string;
+  /** Share of one distinct population within another, such as returning buyers
+   *  over buyers. Counting rows cannot express it: both sides are de-duplicated. */
+  distinctDenominator?: string;
   average?: boolean;
 };
 export function bucketKey(at: string, dimension: string, timezone: string): string {
@@ -42,7 +45,14 @@ export function aggregateFacts(
 ): Result['rows'] {
   const groups = new Map<
     string,
-    { key: string; currency: string | null; sum: number; count: number; distinct: Set<string> }
+    {
+      key: string;
+      currency: string | null;
+      sum: number;
+      count: number;
+      distinct: Set<string>;
+      population: Set<string>;
+    }
   >();
   for (const fact of facts) {
     if (!(measure.numerator in fact.values)) continue;
@@ -81,6 +91,7 @@ export function aggregateFacts(
         sum: 0,
         count: 0,
         distinct: new Set<string>(),
+        population: new Set<string>(),
       };
       // Category membership overlaps. Allocate additive measures so totals reconcile.
       const weight = ['category', 'brand', 'payment', 'shipping'].includes(query.dimension ?? '')
@@ -92,6 +103,10 @@ export function aggregateFacts(
         const value = fact.dimensions[measure.distinct];
         if (typeof value === 'string') group.distinct.add(value);
       }
+      if (measure.distinctDenominator) {
+        const value = fact.dimensions[measure.distinctDenominator];
+        if (typeof value === 'string') group.population.add(value);
+      }
       groups.set(id, group);
     }
   }
@@ -99,13 +114,17 @@ export function aggregateFacts(
     .map((g) => ({
       key: g.key,
       currency: g.currency,
-      value: measure.distinct
-        ? g.distinct.size
-        : measure.denominator || measure.average
-          ? g.count
-            ? g.sum / g.count
-            : 0
-          : g.sum,
+      value: measure.distinctDenominator
+        ? g.population.size
+          ? g.distinct.size / g.population.size
+          : 0
+        : measure.distinct
+          ? g.distinct.size
+          : measure.denominator || measure.average
+            ? g.count
+              ? g.sum / g.count
+              : 0
+            : g.sum,
     }))
     .sort((a, b) => a.key.localeCompare(b.key));
 }

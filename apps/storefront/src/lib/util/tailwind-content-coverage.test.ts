@@ -1,7 +1,25 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
+
+/**
+ * pnpm hoistea el paquete local del boilerplate como
+ * `node_modules/@minimalart/...` apuntando a `packages/plugins/...`. El glob
+ * de Tailwind vive del lado de `node_modules` (uniforme boilerplate/hijas),
+ * mientras que el alias del tsconfig apunta al path físico del monorepo.
+ * Sin resolver el symlink, ambos lados de la comparación quedan en paths
+ * distintos y el guard nunca matchea. `realpathSync` con fallback silencioso
+ * porque en primera corrida (previo a `pnpm install`) los symlinks no existen
+ * y el test no debe explotar.
+ */
+const resolveReal = (candidate: string): string => {
+  try {
+    return realpathSync(candidate);
+  } catch {
+    return candidate;
+  }
+};
 
 /**
  * Guardián de un fallo INVISIBLE (DESDEELSUR-61 / BUG-06).
@@ -12,7 +30,7 @@ import { test } from "node:test";
  * error, no hay warning: el estilo simplemente no está.
  *
  * Fue exactamente lo que pasó con `CheckboxInput`, que vive en
- * `packages/contracts/storefront-shared` y entra por alias del tsconfig. Su tilde
+ * `packages/plugins/plugin-storefront-shared` y entra por alias del tsconfig. Su tilde
  * se muestra con el variant `peer-checked` sobre la opacidad, y esa regla no
  * existía en el CSS de producción: medido en vivo, el ícono quedaba en
  * `opacity: 0` incluso con el input en `checked`. El checkbox "Necesito Factura
@@ -52,7 +70,7 @@ function aliasTargetsOutsideApp(): string[] {
     for (const entry of entries) {
       // Los targets del tsconfig son relativos a `baseUrl` (./src), así que un
       // paquete del monorepo se ve como "../../../packages/...".
-      const absolute = path.resolve(STOREFRONT_DIR, "src", entry);
+      const absolute = resolveReal(path.resolve(STOREFRONT_DIR, "src", entry));
       if (absolute.startsWith(`${STOREFRONT_DIR}${path.sep}`)) continue;
       targets.add(absolute);
     }
@@ -96,7 +114,7 @@ function scannedPrefixes(): string[] {
   return globs.map((glob) => {
     const wildcard = glob.search(/[*?[]/);
     const literal = wildcard === -1 ? glob : glob.slice(0, wildcard);
-    return path.resolve(STOREFRONT_DIR, literal);
+    return resolveReal(path.resolve(STOREFRONT_DIR, literal));
   });
 }
 
@@ -122,12 +140,21 @@ test("el paquete storefront-shared está entre lo que Tailwind escanea", () => {
   // Aserción explícita del caso concreto que rompió: si alguien saca el glob,
   // el test de arriba lo agarra sólo mientras el alias siga existiendo. Este
   // fija la expectativa aunque el tsconfig cambie de forma.
-  const shared = path.resolve(
-    STOREFRONT_DIR,
-    "../../packages/contracts/storefront-shared/src",
+  //
+  // Sentinel = `dist/`. La base y las hijas consumen el mismo artefacto: el
+  // `dist/` del plugin publicado. En el boilerplate ese path resuelve por
+  // symlink de pnpm al `dist/` compilado del workspace local; en las hijas
+  // resuelve al `dist/` del tarball publicado. Chequear contra `dist/` acá
+  // fija el contrato uniforme y evita la asimetría previa (src en base, dist
+  // en hijas) que ocultaba bugs de compilación hasta producción.
+  const sharedDist = resolveReal(
+    path.resolve(
+      STOREFRONT_DIR,
+      "node_modules/@minimalart/mercatto-plugin-storefront-shared/dist",
+    ),
   );
   assert.ok(
-    scannedPrefixes().some((prefix) => shared.startsWith(prefix)),
-    "packages/contracts/storefront-shared/src salió de `content`: las clases de CheckboxInput, ProductImage y ScrollCarousel dejan de generarse",
+    scannedPrefixes().some((prefix) => sharedDist.startsWith(prefix)),
+    "@minimalart/mercatto-plugin-storefront-shared/dist salió de `content`: las clases de CheckboxInput, ProductImage y ScrollCarousel dejan de generarse",
   );
 });

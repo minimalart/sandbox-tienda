@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "erp",
   "name": "ERP",
-  "version": "2.29.1",
+  "version": "2.35.3",
   "kind": "extension",
   "status": "ready",
   "dependencies": [],
@@ -12,6 +12,7 @@
     "APPLY",
     "DEFAULT_CURRENCY_CODE",
     "ERP_CATALOG_SYNC_CRON",
+    "ERP_ODOO_WEBHOOK_TOKEN",
     "ERP_OUTBOX_CRON",
     "ERP_STOCK_SYNC_CRON",
     "NEXT_PUBLIC_BASE_URL",
@@ -53,6 +54,10 @@
       "target": "apps/backend/src/admin/widgets/order-erp-widget.tsx"
     },
     {
+      "source": "payload/apps/backend/src/api/webhooks/erp-odoo/stock/route.ts",
+      "target": "apps/backend/src/api/webhooks/erp-odoo/stock/route.ts"
+    },
+    {
       "source": "payload/apps/backend/src/jobs/erp-catalog-sync.ts",
       "target": "apps/backend/src/jobs/erp-catalog-sync.ts"
     },
@@ -81,6 +86,10 @@
       "target": "apps/backend/src/subscribers/erp-invoice-ready-email.ts"
     },
     {
+      "source": "payload/apps/backend/src/subscribers/erp-order-billing-deposito.ts",
+      "target": "apps/backend/src/subscribers/erp-order-billing-deposito.ts"
+    },
+    {
       "source": "payload/apps/backend/src/subscribers/erp-order-placed-reconcile.ts",
       "target": "apps/backend/src/subscribers/erp-order-placed-reconcile.ts"
     },
@@ -100,7 +109,7 @@
   "managed_files": [
     {
       "path": "apps/backend/src/admin/hooks/api/erp.tsx",
-      "sha256": "4517ea6bdd82f4d0d448e86ad0b83f88ecc0f1f925e1b0773d1c317784e69b56"
+      "sha256": "5c667f8a1f002639c450aeedde995cc289fd7ad6565a671b17122cfcb86fafb8"
     },
     {
       "path": "apps/backend/src/admin/routes/erp/components/code-field.tsx",
@@ -119,8 +128,16 @@
       "sha256": "7535f117026bf14306f0324feba3f3afea8d60234ce5bbe0b25262f86c716360"
     },
     {
-      "path": "apps/backend/src/admin/routes/erp/components/sale-preview-drawer.tsx",
-      "sha256": "89be84d1f0befd75fdd62c3427923b89d7ed21ccb241564340904738e68345c1"
+      "path": "apps/backend/src/admin/routes/erp/components/outbox-error.test.ts",
+      "sha256": "11c58e8479522289e79f25648b3de70d976685887d138642f6751f2a09325ea1"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/components/outbox-error.ts",
+      "sha256": "f563fd0f9ffec25867e4865432944263be62f7817fb41178b73ca3c3e2152956"
+    },
+    {
+      "path": "apps/backend/src/admin/routes/erp/components/outbox-event-drawer.tsx",
+      "sha256": "3078261e6bd79aef3403b67fb4c514bd3a3db6a6add66952678ff2e4c74e55ca"
     },
     {
       "path": "apps/backend/src/admin/routes/erp/components/shared.tsx",
@@ -132,7 +149,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/erp/configuracion/page.tsx",
-      "sha256": "2bc42ddf17938210dc4fab42dc5b5e3a83c614beb5a4bdfaec5f4555b50624f6"
+      "sha256": "9940ff426acf9183e40d45963bf9d1c4296ed90c4553d0fab2ecff1653101925"
     },
     {
       "path": "apps/backend/src/admin/routes/erp/credenciales/page.tsx",
@@ -148,7 +165,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/erp/outbox/page.tsx",
-      "sha256": "8ff01242024d45f4b048da4a9dacee62e72b94e90d9e351e646891fb5b002807"
+      "sha256": "3f5df2b22b15697a574ebd4061a0d01ba21e48dde5e0c5f9ed624c1278b81649"
     },
     {
       "path": "apps/backend/src/admin/routes/erp/page.tsx",
@@ -160,11 +177,11 @@
     },
     {
       "path": "apps/backend/src/admin/translations/erp/index.ts",
-      "sha256": "4774dbba0be01f5473a8fefec3c650c948d79450ba2295ffc4df073a393fdbb7"
+      "sha256": "4c234875ef16937c5b5bce70d6846b49b425262c7d3a0717e6bc0b935f66bdb4"
     },
     {
       "path": "apps/backend/src/admin/widgets/order-erp-widget.tsx",
-      "sha256": "88195388ca7393d32e5805abd76431a4fc38dd4543bdcdc92ec50dbfc8ecaf4a"
+      "sha256": "33be56e1dd66b086e0a78a788983572ea5b4d47909d9bd2aadac97267a889057"
     },
     {
       "path": "apps/backend/src/api/admin/erp/catalog-sync/run/route.ts",
@@ -183,8 +200,12 @@
       "sha256": "e55f014c2cfef95a8eab83a88821f686f9834964b0d69fdd4fa0cb73488619b3"
     },
     {
+      "path": "apps/backend/src/api/admin/erp/fulfillment-gate.test.ts",
+      "sha256": "2021967427f03573706152ec602a1a04b3df3f80de893c2ecedbc401ec9db404"
+    },
+    {
       "path": "apps/backend/src/api/admin/erp/fulfillment-gate.ts",
-      "sha256": "10dd229c49959b6d0339f60147e3598b0e35e8b1cd236505081e5e40d6c209c2"
+      "sha256": "752bd69407e5d15b1c046a57b1318409ebe525eb2b40920b300858005e2a3e9e"
     },
     {
       "path": "apps/backend/src/api/admin/erp/invoices/[id]/download/route.ts",
@@ -201,6 +222,10 @@
     {
       "path": "apps/backend/src/api/admin/erp/orders/[id]/route.ts",
       "sha256": "0659e9cde03718cd09ab6ca669f87f48b9b9067b855fa8e8445cebd2be5cbc66"
+    },
+    {
+      "path": "apps/backend/src/api/admin/erp/orders/[id]/stock-by-location/route.ts",
+      "sha256": "90ec3978f58b00ecf1f8c81b472635da5150739e53d81300631a58a500042fb2"
     },
     {
       "path": "apps/backend/src/api/admin/erp/outbox-events/[id]/preview/route.ts",
@@ -284,7 +309,7 @@
     },
     {
       "path": "apps/backend/src/api/admin/erp/validators.ts",
-      "sha256": "c731c898fcee0fda1a54a705230562dd26e331feea3e9cacf5b42ad6840a8598"
+      "sha256": "3e1b55fbec277c489b486a5714ed2d2abd6314ba4e458c62beb74f54085b9b29"
     },
     {
       "path": "apps/backend/src/api/store/erp/invoices/[order_id]/download/route.ts",
@@ -333,6 +358,10 @@
     {
       "path": "apps/backend/src/api/store/tinting/validators.ts",
       "sha256": "97dafa40251241d0c82df3ef7325140f45dc1a66da176213c82025f709cc58c1"
+    },
+    {
+      "path": "apps/backend/src/api/webhooks/erp-odoo/stock/route.ts",
+      "sha256": "7d54a58f8b81c4396625ab27082c82cf1ba90efd0c8b77b64566ef0c1364c1db"
     },
     {
       "path": "apps/backend/src/jobs/erp-catalog-sync.ts",
@@ -384,11 +413,11 @@
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/odoo.test.ts",
-      "sha256": "b43f23f0c5534888e76df5d776af986cb0b64b423c3aeb092eb662284283258e"
+      "sha256": "76236abc8ecff8dc53a9186f901c662b5e6c957fcb1f406c78dca6eb55de3cbd"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/odoo.ts",
-      "sha256": "c4b132fb5092c388ca1240b7e0f4e9a4e439de4a635e16ffd07628d33a62b5c4"
+      "sha256": "83170b845af4e5d5517ec41258d2e51c9e0032c181d3e8c51447d71a6fcec9f6"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/registry.ts",
@@ -396,15 +425,15 @@
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/types.ts",
-      "sha256": "2381ba62b761ddba14823e462d0b8509bf39854f10c7bcf8bb5870b14eba60a2"
+      "sha256": "a1f4d9085c1e5e83202f8e3e1eb9bdf7b1d11fff5042498833a6903db82000aa"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/zeus.test.ts",
-      "sha256": "474868edb793cf0a73d20c288ba48c1d957309b1128fde249da2ff78ef741ff9"
+      "sha256": "8c758f50da85be490a3cb5a8db641af002fb5a1d78e91b9467e13f7120c71394"
     },
     {
       "path": "apps/backend/src/modules/erp/adapters/zeus.ts",
-      "sha256": "ea11567f67016fff4e3bc3b5e6d060821d56b139e8250f0d78e9cf4d9c03dee0"
+      "sha256": "5bb65043f7ef30766066a77b7b0a0d81e134159cf3c7ed2e472f336febe59cde"
     },
     {
       "path": "apps/backend/src/modules/erp/barcode.test.ts",
@@ -415,12 +444,24 @@
       "sha256": "f3f590549eb5dd1531353842668c0b2e32c3162347ddf2aadcf5461b4d031b91"
     },
     {
+      "path": "apps/backend/src/modules/erp/billing-deposito-for-order.test.ts",
+      "sha256": "a8e014d655170c86dd5ffe7334169c9da74a3afcae3e05663dfc8bcbd6bb087a"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/billing-deposito-for-order.ts",
+      "sha256": "c616570b573fdb6fdaae5cdff25f69ce7397d3e233386eaa6b8fe2044b010d2f"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/billing-deposito-por-sucursal.test.ts",
+      "sha256": "7ac86b7336b871cba3f6359bbd3f5f6f6e053e9bbd9ef97f64fd4be1dce59e54"
+    },
+    {
       "path": "apps/backend/src/modules/erp/billing-deposito.test.ts",
       "sha256": "f7905afe63d4a98ae5abddeed5249d40b0b308948888647a210181b8af12323c"
     },
     {
       "path": "apps/backend/src/modules/erp/billing-deposito.ts",
-      "sha256": "a8d74ce9bb9ce31a69228715d010f020867e57c5ec6f0be97968a90240bca74a"
+      "sha256": "50c3cbfc3d395507f79d15d3f49cae39f1df6f248c556dee8486ada49888bb6a"
     },
     {
       "path": "apps/backend/src/modules/erp/countries/ar.test.ts",
@@ -456,7 +497,7 @@
     },
     {
       "path": "apps/backend/src/modules/erp/descriptor.test.ts",
-      "sha256": "452f42a734a5b2889660086aaacde99915fa534a46320d9aede6ec8204821154"
+      "sha256": "71ab9836b7bd210ae29a971fed0330700c44606ba20b415c5e8a5af3c683f277"
     },
     {
       "path": "apps/backend/src/modules/erp/fulfillment-coverage.test.ts",
@@ -547,8 +588,16 @@
       "sha256": "55cd5a89e068a12e56f9abcb136fb08b822472c6a65f77d35d1c0824307a5a31"
     },
     {
+      "path": "apps/backend/src/modules/erp/outbox/conflict-decision.test.ts",
+      "sha256": "be5ac6c3294cb7930d2b1f604f44a8ccecd354493aae37a2b4b05ac5a7bb5f4f"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/outbox/conflict-decision.ts",
+      "sha256": "a7e0e0d73c95ea97061b8b3544853e627fd7682f8d63ce996762ae59835d147d"
+    },
+    {
       "path": "apps/backend/src/modules/erp/outbox/enqueue-sale.ts",
-      "sha256": "59c4e68edb48efd5c5e9330629c9ad8c19b12544ce27848a80ac18703905cc63"
+      "sha256": "90d53ae577ebd7cc4c648c06d3798a71a222ea863fdd111945a05e463ebdc7df"
     },
     {
       "path": "apps/backend/src/modules/erp/outbox/invoice-fetch.ts",
@@ -556,7 +605,7 @@
     },
     {
       "path": "apps/backend/src/modules/erp/outbox/process-outbox.ts",
-      "sha256": "8a1faf43093895e08cd9e129895262e04bfdd85735b25f2512cf07ceb7465f2b"
+      "sha256": "fa67f53e8a3e25692ec30034936a962cc0109b96447ffa6bd6a1ab60a8948be3"
     },
     {
       "path": "apps/backend/src/modules/erp/outbox/resync-decision.test.ts",
@@ -599,6 +648,14 @@
       "sha256": "5c675c63d8c609bfcce18dd2cfe93f4c7882aa3143d1adbd37345b4bc635b47d"
     },
     {
+      "path": "apps/backend/src/modules/erp/stock-by-location.test.ts",
+      "sha256": "e11a13c4e453c989c1459d3693cf97d117be0636bdae7fd38d8ca7780a85e6ce"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/stock-by-location.ts",
+      "sha256": "7c559e9e7eda7338f5cb3cb06a68a58edd205514dff54e4a5123f0116cd81279"
+    },
+    {
       "path": "apps/backend/src/modules/erp/sync/apply-brand-assignments.ts",
       "sha256": "64d9e81b2609ee49e3b47cc8ae3b9687e70b03c479aa5cc46c0368e6140ebd1c"
     },
@@ -624,7 +681,7 @@
     },
     {
       "path": "apps/backend/src/modules/erp/sync/apply-product-images.ts",
-      "sha256": "8de352328b584ba32438bc17f2bc3b65b644f641b34e9e176f72e58dd8d80c55"
+      "sha256": "7755865dd212124b3fbe964cf2a8cb4d3280fd0e624ed9195b23ae3e9a964c36"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/apply-product-status.ts",
@@ -677,6 +734,10 @@
     {
       "path": "apps/backend/src/modules/erp/sync/image-failures.ts",
       "sha256": "463fa5ba027ebe23482c4a697cb4f029b481ac5ddcee041b56cc785e861bd49f"
+    },
+    {
+      "path": "apps/backend/src/modules/erp/sync/image-normalize.test.ts",
+      "sha256": "d348b4c3567cee55b3ecc09b644a3ff3aebc8484814ad3fe2a6f9b10b7459b83"
     },
     {
       "path": "apps/backend/src/modules/erp/sync/image-resolution.test.ts",
@@ -908,7 +969,7 @@
     },
     {
       "path": "apps/backend/src/modules/erp/types.ts",
-      "sha256": "d9521eee6e1d8d8941fbe8e7e544eca67e3e7dec5d583abb04a61b977b74a999"
+      "sha256": "851aba468be28df983afcf8038e9bc852d8ff1c2a0904aab96749aec37273bcc"
     },
     {
       "path": "apps/backend/src/scripts/backfill-tinting-base-titles.ts",
@@ -925,6 +986,10 @@
     {
       "path": "apps/backend/src/subscribers/erp-invoice-ready-email.ts",
       "sha256": "5c16b798c7d88f99b147110b8e548a7089dd0ca5ba62360cb328a39ee2ac2a34"
+    },
+    {
+      "path": "apps/backend/src/subscribers/erp-order-billing-deposito.ts",
+      "sha256": "4c4d8f257ba571ed31156ddad725c40a880172538ffe143d36ee8337d57743c1"
     },
     {
       "path": "apps/backend/src/subscribers/erp-order-placed-reconcile.ts",

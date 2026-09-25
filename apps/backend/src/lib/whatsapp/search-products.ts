@@ -17,6 +17,15 @@ export type WaProductHit = {
   unit_price: number | null;
   in_stock: boolean;
   image_url: string | null;
+  /**
+   * Handle del producto, para armar el link a su ficha.
+   *
+   * No lo usa el carrusel —la tarjeta lleva un botón "Agregar", no un link— sino
+   * el RESULTADO que lee el modelo. Sin esto el agente no recibía ni un link en
+   * ningún turno, así que cada vez que prometía "te paso el link" mentía por
+   * construcción (DESDEELSUR-72, TC-001/002/006).
+   */
+  handle: string | null;
 };
 
 type VariantRow = {
@@ -28,7 +37,7 @@ type VariantRow = {
     inventory?: { location_levels?: Array<{ available_quantity?: number }> } | null;
   }>;
 };
-type ProductRow = { id: string; title?: string; thumbnail?: string | null; variants?: VariantRow[] };
+type ProductRow = { id: string; title?: string; handle?: string | null; thumbnail?: string | null; variants?: VariantRow[] };
 
 /** Títulos de variante "placeholder" que no aportan info (no se muestran al cliente). */
 /** El tope de filas de una lista de WhatsApp. Se repite para no atar este
@@ -179,6 +188,7 @@ export async function hydrateWaProductIds(
     fields: [
       'id',
       'title',
+      'handle',
       'thumbnail',
       'variants.id',
       'variants.title',
@@ -209,6 +219,7 @@ export async function hydrateWaProductIds(
         unit_price: v.calculated_price?.calculated_amount ?? null,
         in_stock: stockOf(v) > 0,
         image_url: p.thumbnail ?? null,
+        handle: p.handle ?? null,
       });
     }
   }
@@ -273,6 +284,7 @@ export async function searchWaProducts(
     fields: [
       'id',
       'title',
+      'handle',
       'thumbnail',
       'variants.id',
       'variants.title',
@@ -308,6 +320,7 @@ export async function searchWaProducts(
         unit_price: v.calculated_price?.calculated_amount ?? null,
         in_stock: stockOf(v) > 0,
         image_url: p.thumbnail ?? null,
+        handle: p.handle ?? null,
       });
     }
   }
@@ -363,6 +376,42 @@ export type WaPresentationOption = {
   label: string;
   description?: string;
 };
+
+/**
+ * El precio como lo lee el cliente en WhatsApp.
+ *
+ * Vive acá, y no dentro de la tool, porque la PRUEBA del editor tiene que mostrar el
+ * mismo texto: si cada lado formatea por su cuenta, la prueba deja de probar.
+ */
+export function waMoney(amount: number | null | undefined, currency: string): string {
+  if (amount == null) return 's/precio';
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return 's/precio';
+  return `$${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ${currency.toUpperCase()}`;
+}
+
+/**
+ * Las opciones que una búsqueda deja en `vars` para el `ask_list` que sigue.
+ *
+ * Misma razón que `waMoney`, y más fuerte: el simulador no ejecuta la acción, pero sí
+ * corre la búsqueda —que es de sólo lectura— y escribe el resultado en el `vars` de
+ * la sesión, así el paso siguiente muestra los productos DE VERDAD en vez de salir
+ * vacío. Si esta lista se armara dos veces, el operador probaría una cosa y
+ * publicaría otra.
+ *
+ * Se espera recibir los hits YA AGRUPADOS por producto (`groupHitsByProduct`): una
+ * opción por variante repetiría el mismo balde cuatro veces.
+ */
+export function waHitsToOptions(
+  hits: readonly WaProductHit[],
+  currencyCode: string,
+): WaPresentationOption[] {
+  return hits.map((h) => ({
+    value: h.variant_id,
+    label: `${h.title} · ${waMoney(h.unit_price, currencyCode)}`,
+    ...(h.in_stock ? {} : { description: 'Sin stock' }),
+  }));
+}
 
 /**
  * Las presentaciones comprables de un producto (1 L, 4 L, 20 L…), listas para que

@@ -95,6 +95,12 @@ export const kapsoQueryKey = {
    */
   floatingButton: () => siteScopedKey([...kapsoQueryKey.all, 'floating-button'], getActiveSiteId()),
   botChannels: () => [...kapsoQueryKey.all, 'bot-channels'] as const,
+  /**
+   * La tienda VA en la key, por el mismo motivo que el botón flotante: acá lo que
+   * se muestra es si el bot contesta. Servir el cache de la tienda A estando parado
+   * en la B le diría al operador que apagó un bot que sigue atendiendo.
+   */
+  botSwitch: () => siteScopedKey([...kapsoQueryKey.all, 'bot-switch'], getActiveSiteId()),
 };
 
 export const useKapsoInboxEmbed = (
@@ -131,6 +137,26 @@ export const useKapsoTemplates = (
     ...options,
   });
 
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ `...options` VA PRIMERO EN TODA MUTACIÓN DE ESTE ARCHIVO. No es estilo.  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * `useMutation({ onSuccess: mio, ...options })` es un objeto literal: si el que
+ * llama pasa su propio `onSuccess` —y todas las cards lo pasan, aunque sea para un
+ * toast— el spread PISA el nuestro. El `setQueryData` / `invalidateQueries` que
+ * refresca la pantalla no corre nunca, y como la mutación igual devuelve 200 y el
+ * toast igual sale, no parece un error: parece que el backend no guardó.
+ *
+ * Así se veía el bug real (interruptor del bot, 2026-09-22): apretabas el switch, el
+ * toast decía "listo", el valor quedaba guardado en la base, y la pantalla seguía
+ * mostrando el estado anterior hasta recargar. En las cards que además tienen estado
+ * local —el botón flotante, los canales— el mismo defecto está TAPADO, porque lo que
+ * ves es lo que escribiste, no lo que volvió del server.
+ *
+ * Con `...options` primero, el que llama sigue pudiendo pasar `onError`, `onSettled`
+ * o lo que quiera, y nuestro `onSuccess` gana y lo invoca al final.
+ */
 export const useCreateKapsoTemplate = (
   options?: UseMutationOptions<
     { template: KapsoTemplate },
@@ -140,6 +166,7 @@ export const useCreateKapsoTemplate = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: CreateKapsoTemplate) =>
       sdk.client.fetch<{ template: KapsoTemplate }>('/admin/kapso/templates', {
         method: 'POST',
@@ -150,7 +177,6 @@ export const useCreateKapsoTemplate = (
       queryClient.invalidateQueries({ queryKey: kapsoQueryKey.templates() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -163,6 +189,7 @@ export const useUpdateKapsoTemplate = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: ({ name, ...body }: UpdateKapsoTemplate) =>
       sdk.client.fetch<{ updated: boolean; name: string; result: unknown }>(
         `/admin/kapso/templates/${encodeURIComponent(name)}`,
@@ -176,7 +203,6 @@ export const useUpdateKapsoTemplate = (
       queryClient.invalidateQueries({ queryKey: kapsoQueryKey.templates() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -185,6 +211,7 @@ export const useDeleteKapsoTemplate = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (name: string) =>
       sdk.client.fetch<{ deleted: boolean; name: string }>(
         `/admin/kapso/templates/${encodeURIComponent(name)}`,
@@ -194,7 +221,6 @@ export const useDeleteKapsoTemplate = (
       queryClient.invalidateQueries({ queryKey: kapsoQueryKey.templates() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -220,6 +246,7 @@ export const useSaveKapsoBinding = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: SaveKapsoBinding) =>
       sdk.client.fetch<KapsoBindingsResponse>('/admin/kapso/bindings', {
         method: 'POST',
@@ -230,7 +257,6 @@ export const useSaveKapsoBinding = (
       queryClient.invalidateQueries({ queryKey: kapsoQueryKey.bindings() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -267,6 +293,7 @@ export const useUpdateKapsoFloatingButton = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: UpdateKapsoFloatingButton) =>
       sdk.client.fetch<KapsoFloatingButtonResponse>('/admin/kapso/floating-button', {
         method: 'POST',
@@ -277,7 +304,6 @@ export const useUpdateKapsoFloatingButton = (
       queryClient.setQueryData(kapsoQueryKey.floatingButton(), data);
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -290,6 +316,7 @@ export const useDeleteKapsoBinding = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (key: string) =>
       sdk.client.fetch<{ deleted: boolean; key: string }>(
         `/admin/kapso/bindings/${encodeURIComponent(key)}`,
@@ -299,7 +326,6 @@ export const useDeleteKapsoBinding = (
       queryClient.invalidateQueries({ queryKey: kapsoQueryKey.bindings() });
       options?.onSuccess?.(data, variables, context);
     },
-    ...options,
   });
 };
 
@@ -341,6 +367,7 @@ export const useUpdateKapsoBotChannels = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
+    ...options,
     mutationFn: (body: { sales_channel_ids: string[] }) =>
       sdk.client.fetch<KapsoBotChannelsResponse>('/admin/kapso/bot-channels', {
         method: 'POST',
@@ -351,6 +378,63 @@ export const useUpdateKapsoBotChannels = (
       queryClient.setQueryData(kapsoQueryKey.botChannels(), data);
       options?.onSuccess?.(data, variables, context);
     },
+  });
+};
+
+// ─── El interruptor del bot ───────────────────────────────────────────────────
+
+/**
+ * Si el bot contesta en esta tienda, y qué recorrido está publicado.
+ *
+ * Las dos cosas juntas a propósito: son las DOS palancas del mismo número y
+ * confundirlas sale caro. Apagar el bot deja el recorrido publicado (vuelve a
+ * atender en cuanto se prenda), y despublicar el recorrido NO apaga el bot —el
+ * turno cae al router y al agente, que siguen contestando.
+ */
+export interface KapsoBotSwitchResponse {
+  bot_switch: { enabled: boolean; note: string | null };
+  active_flow: { id: string; name: string | null; version: number } | null;
+  /** Ámbito al que escribe la pantalla: `null` = todas las tiendas. */
+  site_id: string | null;
+}
+
+export const useKapsoBotSwitch = (
+  options?: UseQueryOptions<KapsoBotSwitchResponse, FetchError, KapsoBotSwitchResponse, QueryKey>,
+) =>
+  useQuery({
+    queryKey: kapsoQueryKey.botSwitch(),
+    queryFn: async () =>
+      sdk.client.fetch<KapsoBotSwitchResponse>('/admin/kapso/bot-switch', {
+        method: 'GET',
+        /**
+         * El header POR LLAMADA, además del global: `lib/client.ts` resuelve
+         * `globalHeaders` una sola vez al construirse, así que cambiar de tienda sin
+         * recargar dejaría este GET leyendo el interruptor de la tienda anterior.
+         */
+        headers: siteHeader(),
+      }),
     ...options,
+  });
+
+export const useUpdateKapsoBotSwitch = (
+  options?: UseMutationOptions<
+    KapsoBotSwitchResponse,
+    FetchError,
+    { enabled: boolean; note?: string | null }
+  >,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    ...options,
+    mutationFn: (body: { enabled: boolean; note?: string | null }) =>
+      sdk.client.fetch<KapsoBotSwitchResponse>('/admin/kapso/bot-switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...siteHeader() },
+        body,
+      }),
+    onSuccess: (data, variables, context) => {
+      queryClient.setQueryData(kapsoQueryKey.botSwitch(), data);
+      options?.onSuccess?.(data, variables, context);
+    },
   });
 };

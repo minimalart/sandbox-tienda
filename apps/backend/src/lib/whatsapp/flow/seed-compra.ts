@@ -4,11 +4,24 @@ import type { FlowGraph } from './graph';
  * EL TRAMO DE COMPRA DEL FLUJO DE REFERENCIA (secciones 2.1 a 2.6), dibujado.
  *
  * No es un ejemplo de juguete ni una variante del recorrido base: es la traducción
- * literal del documento de flujo optimizado, con sus textos, sus opciones y su regla
- * central — **antes de mostrar productos, el bot hace siempre una pregunta de
- * contexto**. Esa pregunta es lo que separa "te tiro diez resultados" de "te muestro
- * lo que sirve para lo que vas a hacer", y es lo único del documento que no se puede
- * deducir mirando el catálogo.
+ * del documento de flujo optimizado, con sus textos y sus opciones.
+ *
+ * ─── POR QUÉ YA NO PREGUNTA "¿QUÉ VAS A PINTAR?" ────────────────────────────
+ *
+ * El documento pide una pregunta de contexto antes de mostrar productos, y acá
+ * estaba dibujada: un `ask_list` con ocho superficies. Pero las ocho aristas iban
+ * al MISMO nodo de búsqueda y la búsqueda corría con el texto del cliente, así que
+ * la respuesta se guardaba y no filtraba nada.
+ *
+ * Eso no es una pregunta de más: es una pregunta que MIENTE. El texto decía "quiero
+ * confirmar que sea adecuado" y después ofrecía un fijador para cielorraso a quien
+ * había contestado "madera" — medido por QA. Y se hacía siempre, así que comprar un
+ * rodillo también obligaba a decir qué ibas a pintar.
+ *
+ * Filtrar de verdad necesita dos cosas que hoy no están: los atributos `advisor_*`
+ * en el índice (en desdeelsur están en cero) y que `wa_search_products` acepte esos
+ * filtros. Hasta entonces, el camino que SÍ filtra por superficie es el asesor
+ * guiado, y el recorrido ya lo ofrece en "Ayudame a elegir".
  *
  * ─── Las tres cosas que hacen que esto funcione ──────────────────────────────
  *
@@ -95,37 +108,12 @@ export const COMPRA_GRAPH: FlowGraph = {
       position: { x: 360, y: 200 },
     },
     {
-      /**
-       * LA REGLA DEL DOCUMENTO: una pregunta de contexto ANTES de mostrar nada.
-       *
-       * La respuesta queda en `answers.superficie` aunque todavía no filtre la
-       * búsqueda: es el dato que va a usar el asesor por superficie (2.7) cuando se
-       * dibuje, y guardarlo desde ahora no cuesta nada.
-       */
-      id: 'superficie',
-      type: 'ask_list',
-      label: 'Sobre qué la va a usar',
-      body: 'Antes de mostrarte opciones, quiero confirmar que sea adecuado. ¿Qué vas a pintar?',
-      listButton: 'Elegir superficie',
-      options: [
-        { value: 'paredes', label: 'Paredes / Cemento' },
-        { value: 'cielorraso', label: 'Cielorraso' },
-        { value: 'madera', label: 'Madera' },
-        { value: 'metal', label: 'Metal o chapa' },
-        { value: 'piso', label: 'Piso' },
-        { value: 'techo', label: 'Techo' },
-        { value: 'pileta', label: 'Pileta' },
-        { value: 'no_se', label: 'No estoy seguro' },
-      ],
-      position: { x: 360, y: 340 },
-    },
-    {
       id: 'buscar',
       type: 'action',
       label: 'Buscar en el catálogo',
       tool: 'wa_search_products',
-      // `{{answers.pedir_texto}}`: lo que el cliente escribió, no `{{text}}` — el
-      // último mensaje es la superficie que acaba de elegir, no la búsqueda.
+      // `{{answers.pedir_texto}}` y no `{{text}}`: la respuesta guardada del nodo, que
+      // sobrevive aunque más adelante se intercale otro paso entre preguntar y buscar.
       args: { query: '{{answers.pedir_texto}}', save_as: 'resultados' },
       // No habla: deja los productos y el recorrido dibuja la lista con sus opciones.
       silent: true,
@@ -227,16 +215,97 @@ export const COMPRA_GRAPH: FlowGraph = {
       position: { x: 1440, y: 1260 },
     },
     {
+      /**
+       * EL CIERRE ES SÓLO LA VARIABLE, Y ESO NO ES DESPROLIJIDAD.
+       *
+       * Antes decía "Tu compra está lista para continuar. Abrí el enlace 👇" y
+       * después `{{vars.link_pago}}`. Eso da la compra por hecha ANTES de saber si
+       * se pudo: `wa_checkout_link` puede negarse —hoy, cuando el pedido está por
+       * debajo del mínimo de compra— y entonces la variable trae el motivo en vez
+       * del link. Con el texto viejo el cliente leía "tu compra está lista" seguido
+       * de la explicación de por qué no lo está.
+       *
+       * Y no alcanza con poner el texto en una bifurcación: el motor arma el plan
+       * ENTERO del turno antes de ejecutar ninguna acción, así que una condición no
+       * puede mirar una variable que escribe una acción silenciosa de ese mismo
+       * turno. Está explicado arriba, en el encabezado del archivo.
+       *
+       * Quien quiera enmarcarlo con sus palabras puede, pero el texto tiene que
+       * leerse bien también cuando NO hay link. Por eso el default no enmarca nada.
+       */
       id: 'cerrar_compra',
       type: 'message',
       label: 'Link de pago',
-      body: 'Tu compra está lista para continuar. Abrí el enlace para completar tus datos, elegir envío o retiro y pagar de forma segura 👇\n{{vars.link_pago}}',
+      body: '{{vars.link_pago}}',
       position: { x: 1440, y: 1400 },
     },
 
 
+    // ── Mi pedido ────────────────────────────────────────────────────────────
+    /**
+     * NÚMERO Y EMAIL, Y RECIÉN DESPUÉS EL PEDIDO.
+     *
+     * Antes esta rama le cedía el turno al router, que ya sabía consultar pedidos
+     * pero con su propio estado y fuera del dibujo: el operador no podía cambiar un
+     * texto ni probarla en el editor. Ahora las dos preguntas son del recorrido y la
+     * acción sólo verifica: no muestra NADA hasta que los dos datos correspondan a la
+     * misma orden, y contesta igual si el pedido no existe o si el email no coincide.
+     */
+    {
+      id: 'pedir_numero_pedido',
+      type: 'ask_text',
+      label: 'Número de pedido',
+      body: 'Para buscar tu pedido necesito el *número de pedido* 🔎 Lo encontrás en el mail de confirmación de la compra.',
+      position: { x: 40, y: 330 },
+    },
+    {
+      id: 'pedir_email_pedido',
+      type: 'ask_text',
+      label: 'Email de la compra',
+      body: 'Perfecto. Ahora pasame el *email* con el que hiciste la compra, así confirmo que el pedido es tuyo.',
+      position: { x: 40, y: 470 },
+    },
+    {
+      id: 'consultar_pedido',
+      type: 'action',
+      label: 'Consultar el pedido',
+      tool: 'wa_lookup_order',
+      args: {
+        order_number: '{{answers.pedir_numero_pedido}}',
+        email: '{{answers.pedir_email_pedido}}',
+        save_as: 'estado_pedido',
+      },
+      // No habla: la respuesta la escribe el paso siguiente, encontrada o no.
+      silent: true,
+      position: { x: 40, y: 610 },
+    },
+    {
+      /**
+       * SÓLO LA VARIABLE, por la misma razón que el cierre de la compra: la acción
+       * publica acá tanto el estado del pedido como el motivo por el que no lo
+       * encontró. Un "Este es tu pedido 👇" delante sería mentira en ese camino.
+       */
+      id: 'estado_pedido',
+      type: 'message',
+      label: 'Estado del pedido',
+      body: '{{vars.estado_pedido}}',
+      position: { x: 40, y: 750 },
+    },
+    {
+      id: 'despues_pedido',
+      type: 'ask_buttons',
+      label: 'Algo más',
+      body: '¿Te ayudo con algo más?',
+      options: [
+        { value: 'otro_pedido', label: 'Consultar otro' },
+        { value: 'comprar', label: 'Comprar productos' },
+        { value: 'ayuda', label: 'Necesito ayuda' },
+      ],
+      position: { x: 40, y: 890 },
+    },
+
     { id: 'asesor', type: 'action', label: 'Asesor guiado', tool: 'wa_guided_start', args: {}, position: { x: 720, y: 40 } },
-    { id: 'persona', type: 'handoff', label: 'Derivar', reason: 'lo pidió el cliente', position: { x: 40, y: 960 } },
+    { id: 'persona', type: 'handoff', label: 'Derivar', reason: 'lo pidió el cliente', position: { x: 40, y: 1040 } },
     {
       id: 'despedida',
       type: 'end',
@@ -250,31 +319,20 @@ export const COMPRA_GRAPH: FlowGraph = {
      * cliente que pregunta "¿tienen sucursal en Caballito?" recibiría el menú y su
      * pregunta no llegaría nunca al router ni al modelo. Esta Entrada cede el turno.
      */
-    { id: 'libre', type: 'start', label: 'Consulta libre', match: { fallback: true }, position: { x: 40, y: 1120 } },
-    { id: 'ceder', type: 'end', label: 'Lo atiende el bot anterior', position: { x: 360, y: 1120 } },
+    { id: 'libre', type: 'start', label: 'Consulta libre', match: { fallback: true }, position: { x: 40, y: 1180 } },
+    { id: 'ceder', type: 'end', label: 'Lo atiende el bot anterior', position: { x: 360, y: 1180 } },
   ],
 
   edges: [
     { id: 'e1', source: 'inicio', target: 'menu' },
     { id: 'e2', source: 'menu', target: 'como_buscar', on: 'comprar' },
-    // "Mi pedido" lo resuelve el router, que ya sabe leer el historial de compras.
-    { id: 'e3', source: 'menu', target: 'ceder', on: 'pedido' },
+    { id: 'e3', source: 'menu', target: 'pedir_numero_pedido', on: 'pedido' },
     { id: 'e4', source: 'menu', target: 'persona', on: 'ayuda' },
 
     { id: 'e5', source: 'como_buscar', target: 'pedir_texto', on: 'se_cual' },
     { id: 'e6', source: 'como_buscar', target: 'asesor', on: 'ayuda_elegir' },
 
-    { id: 'e7', source: 'pedir_texto', target: 'superficie' },
-    // Las ocho superficies convergen en la búsqueda: la respuesta queda guardada
-    // para el asesor por superficie, que todavía no está dibujado.
-    { id: 'e8', source: 'superficie', target: 'buscar', on: 'paredes' },
-    { id: 'e9', source: 'superficie', target: 'buscar', on: 'cielorraso' },
-    { id: 'e10', source: 'superficie', target: 'buscar', on: 'madera' },
-    { id: 'e11', source: 'superficie', target: 'buscar', on: 'metal' },
-    { id: 'e12', source: 'superficie', target: 'buscar', on: 'piso' },
-    { id: 'e13', source: 'superficie', target: 'buscar', on: 'techo' },
-    { id: 'e14', source: 'superficie', target: 'buscar', on: 'pileta' },
-    { id: 'e15', source: 'superficie', target: 'buscar', on: 'no_se' },
+    { id: 'e7', source: 'pedir_texto', target: 'buscar' },
 
     { id: 'e16', source: 'buscar', target: 'elegir_producto' },
 
@@ -312,6 +370,15 @@ export const COMPRA_GRAPH: FlowGraph = {
     // El asesor guiado se queda con la conversación: hace sus propias preguntas por
     // el router. El recorrido le cede el turno y no vuelve.
     { id: 'e46', source: 'asesor', target: 'ceder' },
+
+    { id: 'e48', source: 'pedir_numero_pedido', target: 'pedir_email_pedido' },
+    { id: 'e49', source: 'pedir_email_pedido', target: 'consultar_pedido' },
+    { id: 'e50', source: 'consultar_pedido', target: 'estado_pedido' },
+    { id: 'e51', source: 'estado_pedido', target: 'despues_pedido' },
+    // "Consultar otro" también es el reintento cuando el número o el email no coinciden.
+    { id: 'e52', source: 'despues_pedido', target: 'pedir_numero_pedido', on: 'otro_pedido' },
+    { id: 'e53', source: 'despues_pedido', target: 'como_buscar', on: 'comprar' },
+    { id: 'e54', source: 'despues_pedido', target: 'persona', on: 'ayuda' },
     { id: 'e47', source: 'libre', target: 'ceder' },
   ],
 };

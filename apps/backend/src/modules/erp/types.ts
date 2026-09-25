@@ -703,6 +703,24 @@ export const DEFAULT_TINTING_SETTINGS = {
 } as const;
 
 /**
+ * Comportamiento de impuestos al crear el `sale.order` en Odoo.
+ *
+ * Discriminated union por `mode`. TypeScript infiere qué campos existen según
+ * el valor de `mode`; ver el JSDoc de `tax_behavior` en `ErpOdooSettings` para
+ * la semántica de cada modo.
+ */
+export type ErpOdooTaxBehavior =
+  | { mode: 'default' }
+  | { mode: 'override_tax_ids'; tax_ids: number[] }
+  | {
+      mode: 'backcalc_from_gross';
+      rates: Array<{
+        match: { country_code?: string; currency_code?: string };
+        rate_percent: number;
+      }>;
+    };
+
+/**
  * Settings del adapter Odoo (self-hosted / cloud). El uid y la API Key salen
  * de la cuenta: ver `docs/recipes/erp-odoo.md` para el flujo de generación
  * (Preferences → Account Security → New API Key).
@@ -744,6 +762,16 @@ export type ErpOdooSettings = {
    */
   auto_confirm?: boolean;
   /**
+   * ID de `product.pricelist` en Odoo a usar como pricelist explícito del
+   * `sale.order`. Sin esto, Odoo aplica el pricelist DEFAULT de la instancia
+   * (que puede ser en moneda distinta a la esperada, porque `sale.order.create`
+   * por RPC NO dispara el onchange que heredaría el pricelist del partner).
+   *
+   * Resolución (adapter): (1) este valor si está seteado, (2) sino
+   * `property_product_pricelist` del partner, (3) sino default de Odoo.
+   */
+  pricelist_id?: number | null;
+  /**
    * Solo trae `product.template` con `is_published=true` (flag del módulo
    * `website_sale`, marca publicación en el storefront de Odoo eCommerce).
    * Default `false` — sin filtro, se sincroniza todo template con
@@ -755,6 +783,27 @@ export type ErpOdooSettings = {
    * no está, la query falla con "Field is_published does not exist".
    */
   only_published?: boolean;
+  /**
+   * Comportamiento de impuestos al crear el `sale.order` en Odoo.
+   *
+   * Contexto: Medusa cobra al cliente el bruto CON IVA incluido, y el adapter
+   * lo pasa como `price_unit` sin tocar `taxes_id`. Odoo aplica los impuestos
+   * default del `product.product` por encima -> double-taxing (el `amount_total`
+   * en Odoo queda inflado por el % de IVA).
+   *
+   * Modos:
+   * - `default` (o ausente): NO toca `taxes_id`. Comportamiento historico.
+   * - `override_tax_ids`: agrega `tax_id: [[6, 0, tax_ids]]` en cada line.
+   *   `tax_ids: []` fuerza SIN impuestos. Con IDs, override explicito.
+   * - `backcalc_from_gross`: calcula el neto dividiendo `price_unit` por
+   *   `(1 + rate_percent/100)` antes de enviarlo. Odoo aplica su IVA default
+   *   por encima y el total final coincide con el bruto que cobro Medusa.
+   *   Match por country_code (prioridad) o currency_code.
+   *
+   * Ojo: si el partner tiene `fiscal_position_id` seteado, Odoo puede re-mapear
+   * impuestos DESPUES de nuestro `tax_id`. `override_tax_ids` no lo evita.
+   */
+  tax_behavior?: ErpOdooTaxBehavior;
 };
 
 export type ErpConfigSettings = {
@@ -776,6 +825,24 @@ export type ErpFiscalDocument = {
   type: string | null;
   number: string | null;
 };
+
+/**
+ * Condición fiscal SEMÁNTICA del comprador, cross-país. La capa país la infiere
+ * desde `order.metadata` (invoice_type + billing_snapshot); el adapter la mapea a
+ * los IDs específicos del ERP destino (p.ej. `l10n_ar.afip.responsibility.type`
+ * en Odoo AR). Se centraliza acá para que el payload viaje agnóstico y cada
+ * ERP resuelva sus propios IDs.
+ *
+ * `monotributo` no lo emite el checkout actual (solo tiene el toggle "solicita
+ * Factura A" para responsable inscripto / exento), pero se incluye en el tipo
+ * porque otros clientes del boilerplate lo van a necesitar sin cambiar el
+ * contrato del payload.
+ */
+export type ErpFiscalCondition =
+  | 'consumer_final'
+  | 'responsable_inscripto'
+  | 'monotributo'
+  | 'exento';
 
 /**
  * Payload de venta que se persiste en la outbox y recibe el adapter.
@@ -804,6 +871,19 @@ export type ErpSalePayload = {
     last_name: string | null;
     phone: string | null;
     document: ErpFiscalDocument;
+    /**
+     * Razón social del comprador (comprobante A / exento). En AR gana sobre
+     * `first_name + last_name` cuando el ERP arma el `name` del partner: la
+     * factura fiscal exige la denominación jurídica, no la persona de contacto.
+     * `null` para consumidor final (se usa `first_name + last_name`).
+     */
+    legal_name?: string | null;
+    /**
+     * Condición fiscal semántica cross-país; el adapter la mapea a IDs del ERP.
+     * `null` cuando la capa país no la resuelve (adapter cae al comportamiento
+     * legacy sin campos fiscales explícitos).
+     */
+    fiscal_condition?: ErpFiscalCondition | null;
   };
   items: Array<{
     sku: string | null;

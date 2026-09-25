@@ -439,6 +439,11 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
     reason:
       'estado de facturacion de UNA orden en el ERP unico de la instancia; el eje es la orden',
   },
+  'admin/erp/orders/[id]/stock-by-location': {
+    state: 'not-applicable',
+    reason:
+      'stock por sucursal para despachar UNA orden; el eje es la orden y el mapeo deposito -> stock location del ERP unico, no la tienda',
+  },
   'admin/erp/outbox-events': {
     state: 'not-applicable',
     reason: 'cola de salida hacia el ERP unico de la instancia',
@@ -542,6 +547,7 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   // ── kapso ───────────────────────────────────────────────────────
   'admin/kapso/bindings': { state: 'scoped' },
   'admin/kapso/bot-channels': { state: 'scoped' },
+  'admin/kapso/bot-switch': { state: 'scoped' },
   'admin/kapso/floating-button': { state: 'scoped' },
   'admin/kapso/inbox-embed': {
     state: 'not-applicable',
@@ -742,6 +748,10 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
     state: 'not-applicable',
     reason: 'ES el registro de tiendas; scoparlo lo volvería inutilizable',
   },
+  'admin/sites/[id]/home-preview': {
+    state: 'not-applicable',
+    reason: 'Editor del registro de tiendas: el ID de la ruta fija la tienda y se rechaza un site_id diferente; no usa la tienda activa del header.',
+  },
 
   // ── store-config ────────────────────────────────────────────────
   'admin/store-config/ai-config': { state: 'scoped' },
@@ -867,6 +877,7 @@ export const ADMIN_ROUTE_SCOPE: Record<string, RouteScopeState> = {
   'admin/whatsapp-analytics': { state: 'scoped' },
   'admin/whatsapp-flows': { state: 'scoped' },
   'admin/whatsapp-flows/publish': { state: 'scoped' },
+  'admin/whatsapp-flows/unpublish': { state: 'scoped' },
   'admin/whatsapp-flows/seed': { state: 'scoped' },
   'admin/whatsapp-flows/analytics': { state: 'scoped' },
   'admin/whatsapp-flows/preview-action': { state: 'scoped' },

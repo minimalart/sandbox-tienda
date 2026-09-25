@@ -31,6 +31,8 @@ export type Result = {
   unit: Unit;
   rows: {
     key: string;
+    /** Human name of the key when the dimension is an entity (store, product…). */
+    label?: string;
     value: number;
     currency: string | null;
     previous?: number | null;
@@ -49,6 +51,8 @@ export type Metric = {
   unit: Unit;
   temporal: 'flow' | 'state';
   dimensions: string[];
+  /** Whether growth is good news. Refunds going up is not a green arrow. */
+  polarity?: 'up_good' | 'down_good' | 'neutral';
 };
 export type Dataset = {
   id: string;
@@ -58,6 +62,14 @@ export type Dataset = {
   filters: { id: string; label: Label; operators: Filter['operator'][] }[];
   globalFilters: string[];
 };
+/** Presentation choices that never change what is queried. */
+export type WidgetOptions = {
+  /** Categories shown in bars, rankings and pies; the rest folds into "Other". */
+  limit?: number;
+  legend?: boolean;
+  /** Abbreviated numbers even when there is room. */
+  compact?: boolean;
+};
 export type Widget = {
   id: string;
   title: string;
@@ -65,6 +77,7 @@ export type Widget = {
   query: Query;
   visualization: string;
   target?: number;
+  options?: WidgetOptions;
   x: number;
   y: number;
   w: number;
@@ -88,6 +101,9 @@ export type Visualization = {
   shapes: Shape[];
   min: { w: number; h: number };
   max: { w: number; h: number };
+  /** Size a new widget of this kind starts with. Presets only: saved layouts
+   *  are never rewritten to match. */
+  default?: { w: number; h: number };
 };
 export type Template = {
   id: string;
@@ -130,24 +146,40 @@ export function resultShape(query: Query): Shape {
       ? 'time_series'
       : 'dimension_metric';
 }
-const builtInVisualizations: Visualization[] = [
-  ['metric', 'Indicator', 'Indicador', ['single_metric']],
-  ['sparkline', 'Indicator + trend', 'Indicador + evolución', ['time_series']],
-  ['gauge', 'Gauge', 'Medidor', ['single_metric']],
-  ['line', 'Line', 'Línea', ['time_series']],
-  ['area', 'Area', 'Área', ['time_series']],
-  ['bar', 'Bars', 'Barras', ['time_series', 'dimension_metric']],
-  ['pie', 'Pie', 'Circular', ['dimension_metric']],
-  ['donut', 'Donut', 'Dona', ['dimension_metric']],
-  ['table', 'Table', 'Tabla', ['single_metric', 'time_series', 'dimension_metric']],
-  ['ranking', 'Ranking', 'Ranking', ['dimension_metric']],
-].map(([id, en, es, shapes]) => ({
-  id: id as string,
-  label: { en: en as string, es: es as string },
-  shapes: shapes as Shape[],
-  min: { w: 2, h: 2 },
+// Starting sizes on the 12-column, 80px-row grid: an indicator needs a strip,
+// a chart needs room for axes and labels, a table needs rows.
+const builtInVisualizations: Visualization[] = (
+  [
+    ['metric', 'Indicator', 'Indicador', ['single_metric'], [3, 2]],
+    ['sparkline', 'Indicator + trend', 'Indicador + evolución', ['time_series'], [3, 3]],
+    ['gauge', 'Gauge', 'Medidor', ['single_metric'], [3, 2]],
+    ['line', 'Line', 'Línea', ['time_series'], [6, 4]],
+    ['area', 'Area', 'Área', ['time_series'], [6, 4]],
+    ['bar', 'Bars', 'Barras', ['time_series', 'dimension_metric'], [6, 4]],
+    ['pie', 'Pie', 'Circular', ['dimension_metric'], [4, 4]],
+    ['donut', 'Donut', 'Dona', ['dimension_metric'], [4, 4]],
+    ['table', 'Table', 'Tabla', ['single_metric', 'time_series', 'dimension_metric'], [6, 5]],
+    ['ranking', 'Ranking', 'Ranking', ['dimension_metric'], [6, 5]],
+  ] as [string, string, string, Shape[], [number, number]][]
+).map(([id, en, es, shapes, [w, h]]) => ({
+  id,
+  label: { en, es },
+  shapes,
+  // A card may be squeezed to a single cell: what fits inside is the
+  // renderer's problem, not a rule the editor should enforce.
+  min: { w: 1, h: 1 },
   max: { w: 12, h: 12 },
+  default: { w, h },
 }));
+/** Where a new widget of this kind starts: its preset, else its minimum, else
+ *  the 4×4 every widget used to get. A registry filled by an older contract
+ *  copy has no presets, hence the fallbacks. */
+export function visualizationSize(id: string): { w: number; h: number } {
+  const view = visualizations.find((v) => v.id === id);
+  return (
+    view?.default ?? (view?.min && (view.min.w > 2 || view.min.h > 2) ? view.min : { w: 4, h: 4 })
+  );
+}
 export const visualizations =
   registry.visualizations ?? (registry.visualizations = builtInVisualizations);
 export function registerDashboardWidget(definition: Visualization): void {
@@ -214,6 +246,17 @@ export function validateWidget(widget: Widget, dataset: Dataset): void {
     throw new AnalyticsValidationError('Incompatible visualization');
   if (widget.visualization === 'gauge' && !(Number.isFinite(widget.target) && widget.target! > 0))
     throw new AnalyticsValidationError('Gauge requires a positive target');
+  if (widget.options !== undefined) {
+    const o = widget.options;
+    if (
+      o === null ||
+      typeof o !== 'object' ||
+      (o.limit !== undefined && !(Number.isInteger(o.limit) && o.limit! >= 1 && o.limit! <= 50)) ||
+      (o.legend !== undefined && typeof o.legend !== 'boolean') ||
+      (o.compact !== undefined && typeof o.compact !== 'boolean')
+    )
+      throw new AnalyticsValidationError('Invalid widget options');
+  }
   if (
     ![widget.x, widget.y, widget.w, widget.h].every(Number.isInteger) ||
     widget.x < 0 ||

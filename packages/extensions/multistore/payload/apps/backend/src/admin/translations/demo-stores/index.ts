@@ -4,6 +4,21 @@ const DEMO_STORES_NAMESPACE = 'demo-stores';
 let registered = false;
 
 export const en = {
+  CANCEL: 'Cancel',
+  PREVIEW_SITE: 'Preview store',
+  PREVIEW_MAIN: 'Main store',
+  PREVIEW_COUNTRY: 'Country',
+  PREVIEW_UNSAVED: 'Preview unsaved changes',
+  PREVIEW_PUBLISHED: 'View public page',
+  PREVIEW_REFRESH: 'Refresh preview',
+  PREVIEW_WIDTH: 'Viewport width',
+  PREVIEW_HELP: 'Preview your store. This does not save or publish changes.',
+  PREVIEW_CONTEXT_REQUIRED: 'Select a store and configure a region to load the preview.',
+  PREVIEW_LOADING: 'Loading storefront…',
+  PREVIEW_ERROR: 'Could not load the preview. Check the storefront connection and retry.',
+  PREVIEW_RETRY: 'Retry',
+  PREVIEW_EMPTY_BLOCK: 'This block has no visible content.',
+  HOME_PUBLIC_PAGE: 'Open published home',
   TITLE: 'Stores',
   EMPTY_STATE: 'No stores yet. Create your first store to get started.',
   CREATE_BUTTON: 'Create',
@@ -127,6 +142,8 @@ export const en = {
   CONTENT_CATEGORIES_LAYOUT: 'Categories menu design',
   CONTENT_CATEGORIES_LAYOUT_HAMBURGER: 'Hamburger menu with side submenu',
   CONTENT_CATEGORIES_LAYOUT_BUTTON: 'Solid button with dropdown',
+  CONTENT_CART_TITLE: 'Cart',
+  CONTENT_CART_RECOMMENDATIONS_TOGGLE: 'Recommended products carousel',
 
   // Menu — one row per entry: visibility, order in the mobile bar and how it is
   // drawn there. The row labels are the ones the storefront paints.
@@ -270,6 +287,21 @@ export const en = {
 };
 
 export const es: typeof en = {
+  PREVIEW_SITE: 'Tienda de vista previa',
+  PREVIEW_MAIN: 'Tienda principal',
+  PREVIEW_COUNTRY: 'País',
+  PREVIEW_UNSAVED: 'Ver cambios sin guardar',
+  PREVIEW_PUBLISHED: 'Ver página pública',
+  PREVIEW_REFRESH: 'Actualizar vista previa',
+  PREVIEW_WIDTH: 'Ancho de pantalla',
+  PREVIEW_HELP: 'Vista previa de tu tienda. No guarda ni publica cambios.',
+  PREVIEW_CONTEXT_REQUIRED: 'Elegí una tienda y configurá una región para cargar la vista previa.',
+  PREVIEW_LOADING: 'Cargando tienda…',
+  PREVIEW_ERROR: 'No se pudo cargar la vista previa. Revisá la conexión con el storefront y reintentá.',
+  PREVIEW_RETRY: 'Reintentar',
+  PREVIEW_EMPTY_BLOCK: 'Este bloque no tiene contenido visible.',
+  HOME_PUBLIC_PAGE: 'Abrir home publicada',
+  CANCEL: 'Cancelar',
   TITLE: 'Tiendas',
   EMPTY_STATE: 'Todavía no hay tiendas. Creá tu primera tienda para empezar.',
   CREATE_BUTTON: 'Crear',
@@ -392,6 +424,8 @@ export const es: typeof en = {
   CONTENT_CATEGORIES_LAYOUT: 'Diseño del menú de categorías',
   CONTENT_CATEGORIES_LAYOUT_HAMBURGER: 'Menú hamburguesa con submenú lateral',
   CONTENT_CATEGORIES_LAYOUT_BUTTON: 'Botón sólido con desplegable',
+  CONTENT_CART_TITLE: 'Carrito',
+  CONTENT_CART_RECOMMENDATIONS_TOGGLE: 'Carrusel de productos recomendados',
 
   // Menú — una fila por entrada: si se ve, en qué posición entra a la barra
   // mobile y cómo se dibuja ahí.

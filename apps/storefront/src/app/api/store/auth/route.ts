@@ -83,7 +83,8 @@ async function checkMigratedCustomer(email: string): Promise<boolean> {
 
 /**
  * Pasa a la cuenta el carrito que venía de invitado, con el token recién
- * emitido.
+ * emitido. Es SIEMPRE automático y silencioso: nunca se le pide confirmación
+ * al usuario.
  *
  * ── POR QUÉ ACÁ Y NO EN EL SERVER ACTION ────────────────────────────────────
  *
@@ -94,16 +95,23 @@ async function checkMigratedCustomer(email: string): Promise<boolean> {
  * corría nunca.
  *
  * El síntoma que eso dejaba: agregar productos deslogueado, iniciar sesión, y
- * que el carrito siguiera colgado del invitado. El layout levantaba el
- * `CartMismatchBanner` y el usuario tenía que pasarlo a mano. DESDEELSUR-61 /
- * BUG-16 corrigió el TEXTO de ese aviso; la causa de que apareciera es ésta.
+ * que el carrito siguiera colgado del invitado. Hubo un tiempo en el que el
+ * layout levantaba un `CartMismatchBanner` pidiéndole al usuario que lo pasara
+ * a mano ("Sumarlos a mi cuenta") — DESDEELSUR-61 / BUG-16 corrigió el TEXTO de
+ * ese aviso, pero el cartel en sí YA ERA el bug: el transfer nunca debió
+ * necesitar que alguien lo confirmara. Se sacó y esta función (más el
+ * self-heal de `getOrSetCart`/`ensureCartCustomer` en `lib/data/cart.ts`) es
+ * ahora el único mecanismo.
  *
  * Va en el embudo de la cookie de sesión y no en cada `action` porque login,
- * signup, el callback de Google y el link de tenant crean sesión por el mismo
- * lugar y todos arrastran el mismo carrito.
+ * signup y el callback de Google crean sesión por el mismo lugar y todos
+ * arrastran el mismo carrito. `linkTenant` NO pasa por acá: esa acción valida
+ * credenciales pero deliberadamente no emite cookie de sesión (ver más abajo),
+ * así que no hay sesión nueva de la que colgar un transfer.
  *
- * Best effort a propósito: si la transferencia falla, el login TIENE que seguir
- * adelante — el banner queda como red de seguridad con su botón de reintento.
+ * Best effort a propósito: si la transferencia falla, el login TIENE que
+ * seguir adelante igual — el self-heal de `getOrSetCart`/`ensureCartCustomer`
+ * lo reintenta solo en el próximo request que lea el carrito.
  */
 async function transferGuestCartToCustomer(
   session: CustomerSession,
@@ -138,13 +146,26 @@ async function transferGuestCartToCustomer(
     // MercadoPago y la pantalla de éxito no siempre llega a limpiarla), y
     // re-engancharla a la cuenta hace reaparecer sus ítems "Sin stock",
     // bloqueando la próxima compra (DESDEELSUR-61 / BUG-08).
-    if (!cart || isCompletedCart(cart) || !shouldTransferCartToCustomer(cart)) {
+    //
+    // `actor_id` es el id del customer que acaba de loguearse/registrarse (el
+    // mismo claim que ya se lee más abajo para el alta de Google); se compara
+    // contra `cart.customer_id` para no reintentar un transfer que el core ya
+    // resuelve como no-op cuando el cart es del mismo customer.
+    const loggedInCustomerId = decodeJwtPayload(token)?.actor_id as
+      | string
+      | undefined;
+    if (
+      !cart ||
+      isCompletedCart(cart) ||
+      !shouldTransferCartToCustomer(cart, loggedInCustomerId)
+    ) {
       return;
     }
 
     await sdk.store.cart.transferCart(cartId, {}, headers);
   } catch {
-    /* Best effort: el CartMismatchBanner queda como reintento manual. */
+    /* Best effort: el self-heal de getOrSetCart/ensureCartCustomer reintenta
+       solo en el próximo request que lea el carrito. */
   }
 }
 
@@ -167,9 +188,10 @@ async function createResponseWithAuthCookie(
     sameSite: "lax",
   });
   // El carrito de invitado pasa a la cuenta acá mismo: éste es el único punto
-  // por el que pasan TODOS los caminos que crean sesión (login, signup, Google,
-  // link de tenant). Se espera el resultado a propósito: el cliente re-renderiza
-  // el layout apenas responde esta ruta y ahí se decide si mostrar el banner.
+  // por el que pasan TODOS los caminos que crean sesión (login, signup,
+  // Google). Se espera el resultado a propósito: el cliente navega recién
+  // cuando esta ruta responde, y el layout ya lee el carrito transferido en
+  // su primer render (sin cache, ver `retrieveCart` en `lib/data/cart.ts`).
   await transferGuestCartToCustomer(session, token);
 
   // Multi-sucursal: hidratar el canal desde la dirección por defecto del cliente

@@ -738,8 +738,9 @@ describe('ZeusErpAdapter — notifySale con línea entonada', () => {
     // El artículo sigue siendo la BASE: es lo que Zeus tiene en el maestro.
     assert.equal(items[0]!.codigo, '113');
     assert.equal(items[0]!.codigo_base, '113');
-    // El código de fórmula viaja como lo muestra Gestión (con espacio).
-    assert.equal(items[0]!.codigo_formula, '00NN 16/000');
+    // El código de fórmula viaja SIN espacios, igual que en la cotización: con
+    // el espacio de Gestión Zeus rechaza el pedido con 409 (orden #79).
+    assert.equal(items[0]!.codigo_formula, '00NN16/000');
     // El color también en la descripción, por si Zeus ignora los campos nuevos.
     assert.match(String(items[0]!.descripcion), /Color Cosmos/);
 
@@ -1012,6 +1013,36 @@ describe('ZeusErpAdapter — documento emitido y vista previa', () => {
     const result = await new ZeusErpAdapter(impl).notifySale(salePayload, previewCtx());
     assert.equal(result.status, 'duplicate');
     assert.equal((result.request as any[])[0].id_ecommerce, 'order_1');
+  });
+
+  /**
+   * El cuerpo del 409 es lo ÚNICO que distingue "ya lo tengo" de "te lo
+   * rechazo", y se venía descartando: el helper leía la respuesta y devolvía
+   * una marca pelada. Sin esto, `decideSaleConflict` no tiene con qué explicar
+   * nada y el operador ve un rechazo sin causa (DESDEELSUR-61).
+   */
+  it('el 409 conserva el cuerpo con el que contestó el ERP', async () => {
+    const { impl } = fakeFetch((url, _init, call) =>
+      url.pathname.endsWith('/pedidos') && call.method === 'POST'
+        ? { status: 409, body: '{"message":"cond_venta inexistente"}' }
+        : handler()(url, _init, call)
+    );
+    const result = await new ZeusErpAdapter(impl).notifySale(salePayload, previewCtx());
+
+    assert.equal(result.status, 'duplicate');
+    assert.match(String(result.conflict_body), /cond_venta inexistente/);
+  });
+
+  it('un 409 sin cuerpo deja conflict_body en null, no en cadena vacía', async () => {
+    const { impl } = fakeFetch((url, _init, call) =>
+      url.pathname.endsWith('/pedidos') && call.method === 'POST'
+        ? { status: 409, body: '' }
+        : handler()(url, _init, call)
+    );
+    const result = await new ZeusErpAdapter(impl).notifySale(salePayload, previewCtx());
+
+    assert.equal(result.status, 'duplicate');
+    assert.equal(result.conflict_body, null);
   });
 
   it('previewSale con clientCode no toca la red y arma el mismo documento', async () => {

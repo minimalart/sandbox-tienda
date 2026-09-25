@@ -354,9 +354,11 @@ const BLOCKS: Record<
 export default function LandingRenderer({
   content,
   countryCode,
+  previewLanguage,
 }: {
   content: PuckBlock[] | undefined | null
   countryCode?: string
+  previewLanguage?: 'es' | 'en'
 }) {
   const blocks = Array.isArray(content) ? content : []
   return (
@@ -369,6 +371,7 @@ export default function LandingRenderer({
             key={index}
             {...(block.props ?? {})}
             countryCode={countryCode}
+            previewLanguage={previewLanguage}
           />
         )
       })}

@@ -17,6 +17,7 @@ import { hexToRgba } from './templates/email-helpers';
 import { templates } from './templates';
 import { resolveSiteViaSql } from '../../lib/multistore/resolve-site-sql';
 import { pickTemplate, type PublishedTemplateRow } from './db-template-pick';
+import { parseRecipientList } from '../../lib/recipient-list';
 
 export type EmailProviderOptions = {
   from: string;
@@ -613,6 +614,23 @@ class EmailNotificationProviderService extends AbstractNotificationProviderServi
 
     const { subject, html, templateId } = resolved;
 
+    // ── UN `to`, VARIAS CASILLAS ─────────────────────────────────────────────
+    //
+    // Los avisos internos pueden tener más de un destinatario (`ADMIN_EMAIL` y
+    // `admin_notification_email` los guardan separados por coma) y SendGrid los
+    // quiere como array: pasarle la cadena cruda la trataría como UNA dirección
+    // con comas adentro y el envío entero rebota con un 400.
+    //
+    // Sin comas esto devuelve un array de uno y el mail sale exactamente igual
+    // que antes — que es el caso del 100% de los mails al cliente.
+    //
+    // El fallback a `notification.to` crudo NO es defensivo por costumbre: si
+    // algún emisor manda algo que este parser no reconoce como mail, el envío
+    // tiene que llegar a SendGrid y fallar ahí, con el motivo real en el log, en
+    // vez de desaparecer acá con un `to` vacío y un 202 mentiroso.
+    const recipients = parseRecipientList(notification.to);
+    const to = recipients.length ? recipients : notification.to;
+
     // Si el templateId no está configurado o es el placeholder, enviar con HTML para que el email llegue igual
     const useSendGridTemplate =
       templateId && templateId !== 'd-xxxxxxxx' && templateId.startsWith('d-');
@@ -626,7 +644,7 @@ class EmailNotificationProviderService extends AbstractNotificationProviderServi
     try {
       if (useSendGridTemplate) {
         const [response] = await mailer.send({
-          to: notification.to,
+          to,
           from,
           templateId: templateId,
           dynamicTemplateData: notification.data || {},
@@ -641,7 +659,7 @@ class EmailNotificationProviderService extends AbstractNotificationProviderServi
       }
 
       const [response] = await mailer.send({
-        to: notification.to,
+        to,
         from,
         subject,
         html,

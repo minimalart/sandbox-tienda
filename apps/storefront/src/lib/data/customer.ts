@@ -337,6 +337,12 @@ async function isCartAlreadyCompleted(
   }
 }
 
+// Sin caller activo desde ningún componente: hasta ahora la única consumidora
+// era `CartMismatchBanner` (sacado por ser el propio bug — el pase de carrito
+// es automático, ver `app/api/store/auth/route.ts`). Sigue usándose adentro de
+// este archivo, en `login()`/`signup()`, pero esos dos server actions tampoco
+// los importa ningún formulario (el storefront entra por `useAuth()` → esta
+// misma ruta). Se deja sin borrar: tocar `login()`/`signup()` es otro alcance.
 export async function transferCart() {
   const cartId = await getCartId();
 

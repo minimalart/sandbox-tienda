@@ -267,14 +267,31 @@ const BLOCKS: Record<string, BlockRenderer> = {
    * fields are the project's order-item shape: this.title, this.quantity,
    * this.unit_price_formatted, this.line_total_formatted, this.thumbnail.
    * `source`/`showImage`/`currency` are block props baked in at render time.
+   *
+   * `showStock` (default `no`) adds a badge with `this.stock_status_label` /
+   * `this.stock_status_color` right under the price line. It's an opt-in prop,
+   * not a global behavior change: those fields only exist on the ADMIN mail's
+   * `order_items` (see `subscribers/order-placed-email.ts`, `withStockStatus`)
+   * — every other template that reuses this same block (order-confirmation,
+   * quotation-*, kit-cde-notification) keeps `showStock` unset, so their
+   * `{{#if this.stock_status_label}}` never fires and nothing changes for them.
    */
-  LineItems: ({ source, showImage, currency }, key) => {
+  LineItems: ({ source, showImage, currency, showStock }, key) => {
     const src =
       typeof source === 'string' && source.trim() ? source.trim() : 'order_items';
     const cur = typeof currency === 'string' && currency ? currency : '$';
     const withImage = showImage !== 'no' && showImage !== false;
+    const withStock = showStock === 'yes' || showStock === true;
     const imgCell = withImage
       ? '<td style="padding:15px;width:80px;">{{#if this.thumbnail}}<img src="{{this.thumbnail}}" alt="{{this.title}}" width="80" style="display:block;border-radius:4px;border:0;height:auto;">{{/if}}</td>'
+      : '';
+    // Badge de estado de stock, alineado con el precio. `this.stock_status_label`
+    // ya viene formateado ("Stock disponible"/"insuficiente"/"Sin stock"/etc, ver
+    // `order-stock-context.ts`) y `this.stock_status_color` resuelto: el
+    // renderer es Handlebars pelado, sin helpers, así que decidir el color acá
+    // adentro (`{{#eq}}`) no es una opción.
+    const stockBadge = withStock
+      ? '{{#if this.stock_status_label}}<p style="margin:4px 0 0;font-size:12px;font-weight:600;color:{{this.stock_status_color}};">{{this.stock_status_label}}{{#if this.stock_available_label}} &middot; Disponible: {{this.stock_available_label}}{{/if}}</p>{{/if}}'
       : '';
     const html =
       `{{#each ${src}}}<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom:12px;background-color:#f8f9fa;border-radius:8px;"><tr>` +
@@ -292,12 +309,26 @@ const BLOCKS: Record<string, BlockRenderer> = {
        * con borde redondeado: Outlook ignora `border-radius` y descarta los
        * `display:inline-block`, y un cuadradito que se ve en todos lados es
        * mejor que un circulo que en la mitad de los clientes no aparece.
+       *
+       * Y va en una tabla ANIDADA de una sola celda, no como celda hermana del
+       * texto. Un `height:12px` en un `<td>` es un MINIMO: el fondo pinta la
+       * celda entera, y la celda mide lo que mida la fila. Con un nombre de
+       * color largo ("Mimos de Frutos Rojos") el texto envuelve en dos lineas,
+       * la fila pasa a 40px y el cuadradito sale estirado como un rectangulo
+       * (reportado por QA en DESDEELSUR-64). La tabla anidada fija su propia
+       * altura y no la hereda de la fila; el `vertical-align:top` y el
+       * `padding-top` de 3px lo dejan centrado sobre la PRIMERA linea
+       * (`line-height` 20px menos los 14px del cuadrado con su borde, sobre 2).
        */
       '{{#if this.color_label}}<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 5px 0;"><tr>' +
+      '<td width="12" style="width:12px;vertical-align:top;padding-top:3px;font-size:0;line-height:0;">' +
+      '<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="12" style="width:12px;"><tr>' +
       '<td width="12" height="12" style="width:12px;height:12px;background-color:{{#if this.color_hex}}{{this.color_hex}}{{else}}#d1d5db{{/if}};border:1px solid #e5e7eb;font-size:0;line-height:0;">&nbsp;</td>' +
-      '<td style="padding-left:6px;font-size:14px;color:#666666;">Color: {{this.color_label}}</td>' +
+      '</tr></table></td>' +
+      '<td style="padding-left:6px;font-size:14px;line-height:20px;color:#666666;vertical-align:top;">Color: {{this.color_label}}</td>' +
       '</tr></table>{{/if}}' +
       `<p style="margin:0;font-size:14px;color:#666666;">{{this.quantity}} x ${cur} {{this.unit_price_formatted}}</p>` +
+      stockBadge +
       '</td>' +
       `<td style="padding:15px;text-align:right;vertical-align:middle;font-size:16px;color:#333333;font-weight:bold;white-space:nowrap;">${cur} {{this.line_total_formatted}}</td>` +
       '</tr></table>{{/each}}';

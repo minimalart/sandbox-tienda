@@ -6,6 +6,7 @@ import { SHORTCUT_HELP } from './lib/keys';
 
 import { useNavigate } from 'react-router-dom';
 
+import { useUnpublishWhatsappFlow } from '../../../hooks/api/whatsapp-flows';
 import { useFlowEditor } from './_use-flow-editor';
 import { EditorActionsProvider } from './canvas/editor-context';
 import { FlowCanvas } from './canvas/flow-canvas';
@@ -49,6 +50,36 @@ export function FlowEditorPage({ versionId }: { versionId: string }): ReactEleme
   /** La columna de pasos se puede guardar para que el canvas se quede con el ancho. */
   const [libraryOpen, setLibraryOpen] = useState(true);
   const alto = useFillHeight();
+
+  /**
+   * DESPUBLICAR, desde el editor y no sólo desde la tabla.
+   *
+   * El recorrido que está atendiendo se abre desde acá, y es acá donde alguien se da
+   * cuenta de que todavía no está listo para atender a nadie. Mandarlo a la tabla
+   * para apagarlo sería mandarlo a otra pantalla justo cuando tiene apuro.
+   */
+  const despublicarMut = useUnpublishWhatsappFlow();
+  const [confirmandoApagado, setConfirmandoApagado] = useState(false);
+  /** Este recorrido ES el que atiende clientes. Es la única condición para apagarlo. */
+  const esElPublicado = Boolean(editor.data?.active?.id) && editor.data?.active?.id === versionId;
+  const esGeneral = esElPublicado && !editor.data?.active?.site_id && Boolean(editor.data?.site_id);
+
+  const despublicar = async () => {
+    try {
+      const out = await despublicarMut.mutateAsync({ version_id: versionId });
+      setConfirmandoApagado(false);
+      if (out.already_off) {
+        toast.success('Ya no había ningún recorrido publicado.');
+        return;
+      }
+      toast.success('Recorrido despublicado. El bot dejó de atender con él.');
+      // La copia en borrador es DONDE quedó el trabajo: dejarlo en la URL de una
+      // versión que ya no se puede editar es el mismo agujero que arregla `forkedTo`.
+      if (out.draft?.id) navigate(`/whatsapp/flujos/${out.draft.id}`, { replace: true });
+    } catch (error) {
+      toast.error(`No se pudo despublicar: ${(error as Error).message}`);
+    }
+  };
 
   /**
    * Si hay algo abierto sobre el canvas. El inspector no tiene un `open` propio —se
@@ -110,6 +141,7 @@ export function FlowEditorPage({ versionId }: { versionId: string }): ReactEleme
         onPublish={() => void editor.publish(editor.publishNotes)}
         onSeed={editor.requestSeed}
         onShowVersions={() => editor.setVersionsOpen(true)}
+        onUnpublish={esElPublicado ? () => setConfirmandoApagado(true) : undefined}
         seedLabel={hayTrabajo ? 'Reemplazar por el recorrido base' : 'Cargar el recorrido base'}
         busy={editor.busy}
         saving={editor.saving}
@@ -198,6 +230,7 @@ export function FlowEditorPage({ versionId }: { versionId: string }): ReactEleme
             onSendText={editor.simulator.sendText}
             onTap={editor.simulator.tap}
             onContinue={editor.simulator.continueAfterAction}
+            onActionVars={editor.simulator.applyActionVars}
             onTimeout={editor.simulator.timeout}
             onReset={editor.simulator.reset}
             onClose={editor.simulator.close}
@@ -278,6 +311,26 @@ export function FlowEditorPage({ versionId }: { versionId: string }): ReactEleme
         }}
         restoring={editor.restoring}
       />
+
+      <Prompt open={confirmandoApagado} onOpenChange={setConfirmandoApagado}>
+        <Prompt.Content>
+          <Prompt.Header>
+            <Prompt.Title>Despublicar este recorrido</Prompt.Title>
+            <Prompt.Description>
+              {esGeneral
+                ? 'Es el recorrido GENERAL: dejan de atenderse con él TODAS las tiendas que no tengan uno propio. '
+                : ''}
+              El bot deja de llevar esta conversación y vuelve a contestar como antes de
+              publicarlo. Te dejamos una copia en borrador para seguir editándola, y esta
+              versión queda en el historial.
+            </Prompt.Description>
+          </Prompt.Header>
+          <Prompt.Footer>
+            <Prompt.Cancel>Cancelar</Prompt.Cancel>
+            <Prompt.Action onClick={() => void despublicar()}>Despublicar</Prompt.Action>
+          </Prompt.Footer>
+        </Prompt.Content>
+      </Prompt>
 
       <Drawer open={editor.helpOpen} onOpenChange={editor.setHelpOpen}>
         <Drawer.Content>

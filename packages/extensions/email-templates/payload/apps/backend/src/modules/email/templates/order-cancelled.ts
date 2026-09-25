@@ -1,3 +1,4 @@
+import { copyrightLine, storeDisplayName, subjectWithStore } from './email-helpers';
 import type { EmailTemplateFunction, EmailTemplateResult } from './types';
 
 export type OrderCancelledData = {
@@ -20,15 +21,22 @@ export const orderCancelledTemplate: EmailTemplateFunction<OrderCancelledData> =
   data
 ): EmailTemplateResult => {
   const displayId = data.custom_display_id ?? data.display_id ?? data.order_id ?? '';
-  const channelName = data.sales_channel_name || data.sales_channel_id || '';
   const logoUrl = data.logo_url || '';
-  const cdeDisplayName = (data.cde_display_name || channelName || 'Mercatto').trim();
+  const cdeDisplayName = storeDisplayName(data);
   const orderDate = data.order_date_formatted || '';
   const primaryColor = (data.primary_color as string | undefined) || '#2e7d32';
   const customerName = (data.customer_name || '').trim();
   const year = new Date().getFullYear();
 
   const subjectBase = `Tu pedido fue cancelado #${displayId}`;
+
+  // Sin logo y sin nombre de tienda, la cabecera se omite: un título de 24px
+  // vacío deja un hueco, pero inventar una marca manda la de otro cliente.
+  const brandHeader = logoUrl
+    ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="200" style="display:block;margin:0 auto;border:0;height:auto;">`
+    : cdeDisplayName
+      ? `<div style="font-size:24px;font-weight:700;color:${primaryColor};">${cdeDisplayName}</div>`
+      : '';
 
   const html = `
 <!DOCTYPE html>
@@ -46,9 +54,7 @@ export const orderCancelledTemplate: EmailTemplateFunction<OrderCancelledData> =
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="600" style="margin:auto;background-color:#ffffff;max-width:600px;">
           <tr>
             <td style="padding:40px 20px 20px 20px;text-align:center;">
-              ${logoUrl
-                ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="200" style="display:block;margin:0 auto;border:0;height:auto;">`
-                : `<div style="font-size:24px;font-weight:700;color:${primaryColor};">${cdeDisplayName}</div>`}
+              ${brandHeader}
             </td>
           </tr>
           <tr>
@@ -75,7 +81,7 @@ export const orderCancelledTemplate: EmailTemplateFunction<OrderCancelledData> =
           </tr>
           <tr>
             <td style="padding:20px;background-color:${primaryColor};text-align:center;">
-              <p style="margin:0;color:#ffffff;font-size:12px;">© ${year} ${cdeDisplayName}. Todos los derechos reservados.</p>
+              <p style="margin:0;color:#ffffff;font-size:12px;">${copyrightLine(year, cdeDisplayName)}</p>
             </td>
           </tr>
         </table>
@@ -86,7 +92,7 @@ export const orderCancelledTemplate: EmailTemplateFunction<OrderCancelledData> =
 </html>`.trim();
 
   return {
-    subject: channelName ? `[${channelName}] ${subjectBase}` : `[Mercatto] ${subjectBase}`,
+    subject: subjectWithStore(subjectBase, data),
     html,
   };
 };

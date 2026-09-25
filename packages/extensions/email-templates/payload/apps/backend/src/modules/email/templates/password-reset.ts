@@ -1,5 +1,5 @@
 import type { EmailTemplateFunction, EmailTemplateResult } from './types';
-import { hexToRgba } from './email-helpers';
+import { copyrightLine, hexToRgba, storeDisplayName, subjectWithStore } from './email-helpers';
 
 export type PasswordResetData = {
   link_reseteo: string;
@@ -12,14 +12,21 @@ export type PasswordResetData = {
 export const passwordResetTemplate: EmailTemplateFunction<PasswordResetData> = (
   data
 ): EmailTemplateResult => {
-  const cdeDisplayName = (data.cde_display_name || data.sales_channel_name || 'Mercatto').trim().replace(/[-\s]b2[cb]$/i, '').trim() || 'Mercatto';
+  const cdeDisplayName = storeDisplayName(data);
   const logoUrl = data.logo_url || '';
-  const channelName = data.sales_channel_name || '';
   const primaryColor = data.primary_color || '#2e7d32';
   const primaryColorBg = hexToRgba(primaryColor, 0.1);
   void primaryColorBg;
   const subject = 'Restablecer tu contraseña';
   const year = new Date().getFullYear();
+
+  // Sin logo y sin nombre de tienda, la cabecera se omite: un título de 24px
+  // vacío deja un hueco, pero inventar una marca manda la de otro cliente.
+  const brandHeader = logoUrl
+    ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="200" style="display: block; margin: 0 auto; -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none;">`
+    : cdeDisplayName
+      ? `<div style="font-size: 24px; font-weight: 700; color: ${primaryColor};">${cdeDisplayName}</div>`
+      : '';
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -38,7 +45,7 @@ export const passwordResetTemplate: EmailTemplateFunction<PasswordResetData> = (
                     <!-- Logo -->
                     <tr>
                         <td style="padding: 40px 40px 20px 40px; text-align: center; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            ${logoUrl ? `<img src="${logoUrl}" alt="${cdeDisplayName}" width="200" style="display: block; margin: 0 auto; -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none;">` : `<div style="font-size: 24px; font-weight: 700; color: ${primaryColor};">${cdeDisplayName}</div>`}
+                            ${brandHeader}
                         </td>
                     </tr>
 
@@ -67,7 +74,7 @@ export const passwordResetTemplate: EmailTemplateFunction<PasswordResetData> = (
                     <!-- Footer -->
                     <tr>
                         <td style="padding: 20px; background-color: ${primaryColor}; text-align: center; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                            <p style="margin: 0; color: #ffffff; font-size: 12px;">© ${year} ${cdeDisplayName}. Todos los derechos reservados.</p>
+                            <p style="margin: 0; color: #ffffff; font-size: 12px;">${copyrightLine(year, cdeDisplayName)}</p>
                         </td>
                     </tr>
 
@@ -79,7 +86,7 @@ export const passwordResetTemplate: EmailTemplateFunction<PasswordResetData> = (
 </html>`.trim();
 
   return {
-    subject: channelName ? `[${channelName}] ${subject}` : `[Mercatto] ${subject}`,
+    subject: subjectWithStore(subject, data),
     html,
   };
 };

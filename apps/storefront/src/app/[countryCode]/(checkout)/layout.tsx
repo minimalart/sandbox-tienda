@@ -1,5 +1,6 @@
 import { AddToCartAnimationProvider } from "@lib/context/add-to-cart-animation";
 import { retrieveCart } from "@lib/data/cart";
+import { getActiveSalesChannelId } from "@lib/data/cookies";
 import { retrieveCustomer } from "@lib/data/customer";
 import { TenantProvider } from "@lib/site-config/context";
 import { tenantForClient } from "@lib/site-config/tenant-for-client";
@@ -32,6 +33,11 @@ export default async function CheckoutLayout({
   const themeStyles = await getTenantThemeStyles();
   const customer = await retrieveCustomer();
   const cart = await retrieveCart();
+  const activeSalesChannelId = await getActiveSalesChannelId();
+  const resolvedChannelId =
+    activeSalesChannelId ||
+    tenant.medusa.salesChannelId ||
+    process.env.NEXT_PUBLIC_SALES_CHANNEL_ID;
   const isSportsTemplate = tenant.template === "sports";
   const isCampaignTemplate = tenant.template === "campaign";
   const { avatarUrl, initials } = getCustomerAvatar(customer);
@@ -136,6 +142,7 @@ export default async function CheckoutLayout({
           </div>
           <CartDrawerMount
             themeClassName={isSportsTemplate ? "sports-cart" : undefined}
+            salesChannelId={resolvedChannelId}
           />
           <PromoConflictGuard />
           <Toaster />

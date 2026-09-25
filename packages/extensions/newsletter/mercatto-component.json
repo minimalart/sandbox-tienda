@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "newsletter",
   "name": "Newsletter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "kind": "extension",
   "status": "ready",
   "dependencies": [],
@@ -50,7 +50,7 @@
   "managed_files": [
     {
       "path": "apps/backend/src/admin/hooks/api/newsletter-subscriptions.tsx",
-      "sha256": "122ca92db11900389d5669d83181307cd837e3c803db59e6deb1063664b0c197"
+      "sha256": "112cb631f5a45a30b934f769459d37bbefee5ee492a90336684a662b181835ba"
     },
     {
       "path": "apps/backend/src/admin/routes/marketing-privacy/newsletter/page.tsx",

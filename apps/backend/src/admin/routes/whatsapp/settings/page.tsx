@@ -3,6 +3,7 @@ import { Container, Heading, Toaster } from '@medusajs/ui';
 import { ExtensionSettingsCard } from '../../../components/app-settings/extension-settings-card';
 import { HelpDrawer } from '../../../components/common/help-drawer';
 import { BotChannelsCard } from '../components/bot-channels-card';
+import { BotSwitchCard } from '../components/bot-switch-card';
 import { FloatingButtonCard } from '../components/floating-button-card';
 import { whatsappLabel } from '../../../translations/whatsapp';
 import { SingleColumnLayout } from '../../../components/layouts/single-column';
@@ -10,9 +11,13 @@ import { SingleColumnLayout } from '../../../components/layouts/single-column';
 /**
  * WhatsApp → Ajustes: preferencias de la extensión.
  *
- * El catálogo del bot va PRIMERO porque es lo que define si el asistente sirve
- * para algo: apuntado al canal equivocado contesta "no encontré productos" por
- * más que todo lo demás esté bien.
+ * El INTERRUPTOR del bot va primero de todo: apagado, nada de lo que sigue cambia
+ * una sola conversación, y es lo que se busca con apuro cuando el bot está
+ * molestando en el único número de la tienda.
+ *
+ * Después el catálogo del bot, porque es lo que define si el asistente sirve para
+ * algo: apuntado al canal equivocado contesta "no encontré productos" por más que
+ * todo lo demás esté bien.
  *
  * Los ajustes de `extension:whatsapp` son 23 campos, así que se reparten en tres
  * cards por `groups` en vez de una sola lista interminable. El bloque "Sólo por
@@ -42,6 +47,10 @@ const SettingsPage = () => (
         <HelpDrawer slug="whatsapp" />
       </div>
     </Container>
+
+    {/* El interruptor va PRIMERO: apagado, nada de lo que sigue cambia una sola
+        conversación. Y es lo que se busca con apuro cuando el bot está molestando. */}
+    <BotSwitchCard />
 
     <BotChannelsCard />
 

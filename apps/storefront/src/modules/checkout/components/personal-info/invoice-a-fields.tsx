@@ -19,6 +19,11 @@ import {
   useImperativeHandle,
   useState,
 } from "react";
+import {
+  INVOICE_A_REQUIRED_FIELDS,
+  type InvoiceARequiredField,
+  invoiceAFieldErrors,
+} from "./invoice-a-validation";
 
 export type InvoiceAHandle = {
   /** true si el bloque es válido para avanzar (o si Factura A está desactivada). */
@@ -31,6 +36,8 @@ type Props = {
   cartId: string | null;
   isLoggedIn: boolean;
   initialMetadata?: Record<string, unknown> | null;
+  /** Avisa si el bloque permite avanzar, para que el padre deshabilite "Continuar". */
+  onValidityChange?: (valid: boolean) => void;
 };
 
 const normalizeInvoiceATaxCondition = (
@@ -73,7 +80,7 @@ const ARCA_SENSITIVE_FIELDS: ReadonlySet<keyof BillingFields> = new Set<
 ]);
 
 const InvoiceAFields = forwardRef<InvoiceAHandle, Props>(
-  ({ cartId, isLoggedIn, initialMetadata }, ref) => {
+  ({ cartId, isLoggedIn, initialMetadata, onValidityChange }, ref) => {
     const meta = (initialMetadata ?? {}) as Record<string, unknown>;
     const initiallyEnabled = meta.invoice_type === "invoice_a";
     const initialSnapshot = (meta.billing_snapshot ?? null) as Partial<BillingFields> | null;
@@ -93,7 +100,11 @@ const InvoiceAFields = forwardRef<InvoiceAHandle, Props>(
       ),
     });
     const [saveForFuture, setSaveForFuture] = useState(false);
-    const [touched, setTouched] = useState(false);
+    // Por campo, como Datos personales: un campo marca error recién cuando el
+    // usuario pasó por él, no apenas se abre el bloque.
+    const [touched, setTouched] = useState<ReadonlySet<InvoiceARequiredField>>(
+      () => new Set(),
+    );
     // Rehidrata el "verificado en ARCA" si el snapshot del cart ya lo traía.
     const [arcaStatus, setArcaStatus] = useState<ArcaStatus>(
       initialSnapshot?.arca_verified ? "verified" : "idle",
@@ -157,9 +168,16 @@ const InvoiceAFields = forwardRef<InvoiceAHandle, Props>(
       setArcaMessage(null);
     };
 
+    const touch = (k: InvoiceARequiredField) => () =>
+      setTouched((prev) => (prev.has(k) ? prev : new Set(prev).add(k)));
+
     const set = (k: keyof BillingFields) => (
       e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     ) => {
+      // Igual que el `mode: "onChange"` de Datos personales: tipear ya valida.
+      if ((INVOICE_A_REQUIRED_FIELDS as readonly string[]).includes(k)) {
+        touch(k as InvoiceARequiredField)();
+      }
       invalidateArca(k);
       setFields((p) => ({ ...p, [k]: e.target.value }));
     };
@@ -210,24 +228,38 @@ const InvoiceAFields = forwardRef<InvoiceAHandle, Props>(
       }
     };
 
-    const newDataValid = (): boolean =>
-      fields.legal_name.trim().length > 0 &&
-      validateCuit(fields.document_number) &&
-      /.+@.+\..+/.test(fields.billing_email) &&
-      fields.address_line_1.trim().length > 0 &&
-      fields.city.trim().length > 0 &&
-      fields.province.trim().length > 0 &&
-      fields.postal_code.trim().length > 0;
+    const fieldErrors = invoiceAFieldErrors(fields);
+    const newDataValid = (): boolean => Object.keys(fieldErrors).length === 0;
+    const blockValid = !enabled
+      ? true
+      : mode === "saved"
+        ? invoiceAProfiles.some((profile) => profile.id === selectedProfileId)
+        : newDataValid();
+
+    useEffect(() => {
+      onValidityChange?.(blockValid);
+    }, [blockValid, onValidityChange]);
+
+    /** Error visible de un campo: sólo si ya lo tocó y está habilitado. */
+    const errorFor = (k: InvoiceARequiredField): string | undefined => {
+      if (!touched.has(k)) return undefined;
+      if (k !== "document_number" && !fieldsUnlocked) return undefined;
+      return fieldErrors[k];
+    };
+
+    const fieldError = (k: InvoiceARequiredField) => {
+      const message = errorFor(k);
+      return message ? (
+        <p className="mt-1 text-red-500 text-xs">{message}</p>
+      ) : null;
+    };
 
     useImperativeHandle(ref, () => ({
       validate: () => {
-        if (!enabled) return true;
-        if (mode === "saved") {
-          return invoiceAProfiles.some(
-            (profile) => profile.id === selectedProfileId,
-          );
-        }
-        return newDataValid();
+        // Si llegó a validar con datos faltantes, marcarlos todos: el usuario
+        // tiene que ver QUÉ campo falta, no un mensaje al pie.
+        if (!blockValid) setTouched(new Set(INVOICE_A_REQUIRED_FIELDS));
+        return blockValid;
       },
       persist: async () => {
         if (!cartId) return { ok: false, error: "Carrito no disponible." };
@@ -249,7 +281,7 @@ const InvoiceAFields = forwardRef<InvoiceAHandle, Props>(
         }
         // mode new
         if (!newDataValid())
-          return { ok: false, error: "Revisá los datos fiscales (CUIT, email, domicilio)." };
+          return { ok: false, error: "Falta completar datos." };
         // Descarta arca_* rehidratados del snapshot: la verificación vigente
         // la aporta el estado de este componente (y el backend re-valida).
         const {
@@ -286,8 +318,6 @@ const InvoiceAFields = forwardRef<InvoiceAHandle, Props>(
       },
     }));
 
-    const showError = touched && enabled;
-
     return (
       <div className="mt-4 rounded-[14px] border border-gray-200 p-3">
         <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -299,7 +329,7 @@ const InvoiceAFields = forwardRef<InvoiceAHandle, Props>(
         </label>
 
         {enabled ? (
-          <div className="mt-3 space-y-3" onBlur={() => setTouched(true)}>
+          <div className="mt-3 space-y-3">
             {isLoggedIn && invoiceAProfiles.length > 0 ? (
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2 text-sm">
@@ -348,9 +378,12 @@ const InvoiceAFields = forwardRef<InvoiceAHandle, Props>(
                       placeholder="30-12345678-9"
                       required
                       inputMode="numeric"
+                      hasError={!!errorFor("document_number")}
+                      onBlur={touch("document_number")}
                       value={fields.document_number}
                       onChange={set("document_number")}
                     />
+                    {fieldError("document_number")}
                   </div>
                   <button
                     type="button"
@@ -380,14 +413,19 @@ const InvoiceAFields = forwardRef<InvoiceAHandle, Props>(
                     Ingresá el CUIT y tocá "Buscar en ARCA" para habilitar el resto de los datos.
                   </p>
                 ) : null}
-                <FormInput
-                  label="Razón social"
-                  placeholder="Ej: Acme S.A."
-                  required
-                  disabled={!fieldsUnlocked}
-                  value={fields.legal_name}
-                  onChange={set("legal_name")}
-                />
+                <div>
+                  <FormInput
+                    label="Razón social"
+                    placeholder="Ej: Acme S.A."
+                    required
+                    disabled={!fieldsUnlocked}
+                    hasError={!!errorFor("legal_name")}
+                    onBlur={touch("legal_name")}
+                    value={fields.legal_name}
+                    onChange={set("legal_name")}
+                  />
+                  {fieldError("legal_name")}
+                </div>
                 <TaxConditionRadios
                   name="invoice-a-tax-condition"
                   disabled={!fieldsUnlocked}
@@ -398,47 +436,72 @@ const InvoiceAFields = forwardRef<InvoiceAHandle, Props>(
                   }
                   onChange={(value) => setValue("tax_condition", value)}
                 />
-                <FormInput
-                  label="Email de facturación"
-                  placeholder="facturacion@empresa.com"
-                  required
-                  type="email"
-                  disabled={!fieldsUnlocked}
-                  value={fields.billing_email}
-                  onChange={set("billing_email")}
-                />
-                <FormInput
-                  label="Domicilio fiscal"
-                  placeholder="Ej: Av. Siempreviva 742"
-                  required
-                  disabled={!fieldsUnlocked}
-                  value={fields.address_line_1}
-                  onChange={set("address_line_1")}
-                />
-                <FormInput
-                  label="Localidad"
-                  placeholder="Ej: Córdoba"
-                  required
-                  disabled={!fieldsUnlocked}
-                  value={fields.city}
-                  onChange={set("city")}
-                />
-                <FormInput
-                  label="Provincia"
-                  placeholder="Ej: Buenos Aires"
-                  required
-                  disabled={!fieldsUnlocked}
-                  value={fields.province}
-                  onChange={set("province")}
-                />
-                <FormInput
-                  label="Código postal"
-                  placeholder="Ej: 1414"
-                  required
-                  disabled={!fieldsUnlocked}
-                  value={fields.postal_code}
-                  onChange={set("postal_code")}
-                />
+                <div>
+                  <FormInput
+                    label="Email de facturación"
+                    placeholder="facturacion@empresa.com"
+                    required
+                    type="email"
+                    disabled={!fieldsUnlocked}
+                    hasError={!!errorFor("billing_email")}
+                    onBlur={touch("billing_email")}
+                    value={fields.billing_email}
+                    onChange={set("billing_email")}
+                  />
+                  {fieldError("billing_email")}
+                </div>
+                <div>
+                  <FormInput
+                    label="Domicilio fiscal"
+                    placeholder="Ej: Av. Siempreviva 742"
+                    required
+                    disabled={!fieldsUnlocked}
+                    hasError={!!errorFor("address_line_1")}
+                    onBlur={touch("address_line_1")}
+                    value={fields.address_line_1}
+                    onChange={set("address_line_1")}
+                  />
+                  {fieldError("address_line_1")}
+                </div>
+                <div>
+                  <FormInput
+                    label="Localidad"
+                    placeholder="Ej: Córdoba"
+                    required
+                    disabled={!fieldsUnlocked}
+                    hasError={!!errorFor("city")}
+                    onBlur={touch("city")}
+                    value={fields.city}
+                    onChange={set("city")}
+                  />
+                  {fieldError("city")}
+                </div>
+                <div>
+                  <FormInput
+                    label="Provincia"
+                    placeholder="Ej: Buenos Aires"
+                    required
+                    disabled={!fieldsUnlocked}
+                    hasError={!!errorFor("province")}
+                    onBlur={touch("province")}
+                    value={fields.province}
+                    onChange={set("province")}
+                  />
+                  {fieldError("province")}
+                </div>
+                <div>
+                  <FormInput
+                    label="Código postal"
+                    placeholder="Ej: 1414"
+                    required
+                    disabled={!fieldsUnlocked}
+                    hasError={!!errorFor("postal_code")}
+                    onBlur={touch("postal_code")}
+                    value={fields.postal_code}
+                    onChange={set("postal_code")}
+                  />
+                  {fieldError("postal_code")}
+                </div>
                 {isLoggedIn ? (
                   <label className="flex items-center gap-2 text-gray-600 text-sm sm:col-span-2">
                     <CheckboxInput
@@ -448,11 +511,6 @@ const InvoiceAFields = forwardRef<InvoiceAHandle, Props>(
                     />
                     Guardar estos datos para próximas compras
                   </label>
-                ) : null}
-                {showError && !newDataValid() ? (
-                  <p className="text-red-500 text-xs sm:col-span-2">
-                    Completá razón social, CUIT válido, email, domicilio, localidad, provincia y CP.
-                  </p>
                 ) : null}
               </div>
             ) : null}

@@ -1,0 +1,500 @@
+diff --git a/dist/app.js b/dist/app.js
+index c954aa5..735769e 100644
+--- a/dist/app.js
++++ b/dist/app.js
+@@ -154515,9 +154515,11 @@ function OrderCreateFulfillmentItem({
+   form,
+   locationId,
+   reservations,
+-  disabled
++  disabled,
++  onStockStatusChange
+ }) {
+-  const { t: t5 } = (0, import_react_i18next213.useTranslation)();
++  const { t: t5, i18n } = (0, import_react_i18next213.useTranslation)();
++  const isSpanish = i18n.language?.startsWith("es") ?? false;
+   const { variant } = useProductVariant(
+     item.product_id ?? "",
+     item.variant_id ?? "",
+@@ -154537,12 +154539,15 @@ function OrderCreateFulfillmentItem({
+       (i) => i.location_levels?.find((inv) => inv.location_id === locationId)
+     );
+     if (!locationHasEveryInventoryItem) {
+-      return {};
++      const managesInventory = (variant.manage_inventory ?? item.variant?.manage_inventory) === true;
++      return managesInventory ? { availableQuantity: 0, inStockQuantity: 0 } : {};
+     }
+     const inventoryItemRequiredQuantityMap = new Map(
+       inventory_items.map((i) => [i.inventory_item_id, i.required_quantity])
+     );
+-    const reservation = reservations?.find((r) => r.line_item_id === item.id);
++    const reservation = reservations?.find(
++      (r) => r.line_item_id === item.id && r.location_id === locationId
++    );
+     const iitemRequiredQuantity = inventory_items.find(
+       (i) => i.inventory_item_id === reservation?.inventory_item_id
+     )?.required_quantity;
+@@ -154582,10 +154587,19 @@ function OrderCreateFulfillmentItem({
+     };
+   }, [variant, locationId, reservations]);
+   const minValue = 0;
++  const allowsBackorder = !!(variant?.allow_backorder ?? item.variant?.allow_backorder);
++  const hasStockLimit = availableQuantity !== void 0 && !allowsBackorder;
+   const maxValue = Math.min(
+     getFulfillableQuantity(item),
+-    availableQuantity || Number.MAX_SAFE_INTEGER
++    hasStockLimit ? availableQuantity : Number.MAX_SAFE_INTEGER
+   );
++  const fulfillableQuantity = getFulfillableQuantity(item);
++  const requestedQuantity = Number(form.watch(`quantity.${item.id}`) ?? 0) || 0;
++  const isStockShort = !disabled && hasStockLimit && requestedQuantity > availableQuantity;
++  (0, import_react206.useEffect)(() => {
++    onStockStatusChange?.(item.id, isStockShort);
++  }, [item.id, isStockShort]);
++  (0, import_react206.useEffect)(() => () => onStockStatusChange?.(item.id, false), [item.id]);
+   return /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("div", { className: "bg-ui-bg-subtle shadow-elevation-card-rest my-2 rounded-xl", children: /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("div", { className: "flex flex-row items-center", children: [
+     disabled && /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("div", { className: "ml-4 inline-flex items-center", children: /* @__PURE__ */ (0, import_jsx_runtime305.jsx)(
+       import_ui203.Tooltip,
+@@ -154604,7 +154618,7 @@ function OrderCreateFulfillmentItem({
+         ),
+         children: [
+           /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("div", { className: "flex flex-1 items-center gap-x-3", children: [
+-            /* @__PURE__ */ (0, import_jsx_runtime305.jsx)(Thumbnail, { src: item.thumbnail }),
++            item.thumbnail ? /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("div", { className: "bg-ui-bg-base border-ui-border-base flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border", children: /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("img", { src: item.thumbnail, alt: item.title ?? "", className: "h-full w-full object-contain" }) }) : /* @__PURE__ */ (0, import_jsx_runtime305.jsx)(Thumbnail, { src: null }),
+             /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("div", { className: "flex flex-col", children: [
+               /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("div", { children: [
+                 /* @__PURE__ */ (0, import_jsx_runtime305.jsx)(import_ui203.Text, { className: "txt-small", as: "span", weight: "plus", children: item.title }),
+@@ -154620,70 +154634,17 @@ function OrderCreateFulfillmentItem({
+           /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("div", { className: "flex flex-1 items-center gap-x-1", children: [
+             /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("div", { className: "mr-2 block h-[16px] w-[2px] bg-gray-200" }),
+             /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("div", { className: "text-small flex flex-1 flex-col", children: [
+-              /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("span", { className: "text-ui-fg-subtle font-medium", children: t5("orders.fulfillment.available") }),
+-              /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("span", { className: "text-ui-fg-subtle", children: availableQuantity || "N/A" })
++              /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("span", { className: "text-ui-fg-subtle font-medium", children: isSpanish ? "Cantidad" : "Quantity" }),
++              /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("span", { className: "text-ui-fg-base", children: fulfillableQuantity === item.quantity ? item.quantity : isSpanish ? `${fulfillableQuantity} de ${item.quantity}` : `${fulfillableQuantity} of ${item.quantity}` })
+             ] }),
+             /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("div", { className: "flex flex-1 items-center gap-x-1", children: [
+               /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("div", { className: "mr-2 block h-[16px] w-[2px] bg-gray-200" }),
+               /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("div", { className: "flex flex-col", children: [
+-                /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("span", { className: "text-ui-fg-subtle font-medium", children: t5("orders.fulfillment.inStock") }),
+-                /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("span", { className: "text-ui-fg-subtle", children: [
+-                  inStockQuantity || "N/A",
+-                  " ",
+-                  inStockQuantity && /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("span", { className: "font-medium text-red-500", children: [
+-                    "-",
+-                    form.getValues(`quantity.${item.id}`)
+-                  ] })
+-                ] })
+-              ] })
+-            ] }),
+-            /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("div", { className: "flex flex-1 items-center gap-1", children: [
+-              /* @__PURE__ */ (0, import_jsx_runtime305.jsx)(
+-                Form.Field,
+-                {
+-                  control: form.control,
+-                  name: `quantity.${item.id}`,
+-                  rules: { required: true, min: minValue, max: maxValue },
+-                  render: ({ field }) => {
+-                    return /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)(Form.Item, { children: [
+-                      /* @__PURE__ */ (0, import_jsx_runtime305.jsx)(Form.Control, { children: /* @__PURE__ */ (0, import_jsx_runtime305.jsx)(
+-                        import_ui203.Input,
+-                        {
+-                          className: "bg-ui-bg-base txt-small w-[50px] rounded-lg text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+-                          type: "number",
+-                          ...field,
+-                          onChange: (e) => {
+-                            const val = e.target.value === "" ? null : Number(e.target.value);
+-                            field.onChange(val);
+-                            if (val !== null && !isNaN(val)) {
+-                              if (val < minValue || val > maxValue) {
+-                                form.setError(`quantity.${item.id}`, {
+-                                  type: "manual",
+-                                  message: t5(
+-                                    "orders.fulfillment.error.wrongQuantity",
+-                                    {
+-                                      count: maxValue,
+-                                      number: maxValue
+-                                    }
+-                                  )
+-                                });
+-                              } else {
+-                                form.clearErrors(`quantity.${item.id}`);
+-                              }
+-                            }
+-                          }
+-                        }
+-                      ) }),
+-                      /* @__PURE__ */ (0, import_jsx_runtime305.jsx)(Form.ErrorMessage, {})
+-                    ] });
+-                  }
+-                }
+-              ),
+-              /* @__PURE__ */ (0, import_jsx_runtime305.jsxs)("span", { className: "text-ui-fg-subtle", children: [
+-                "/ ",
+-                item.quantity,
+-                " ",
+-                t5("fields.qty")
++                /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("span", { className: "text-ui-fg-subtle font-medium", children: "Stock" }),
++                /* @__PURE__ */ (0, import_jsx_runtime305.jsx)("span", {
++                  className: isStockShort ? "font-medium text-ui-tag-red-text" : hasStockLimit ? "font-medium text-ui-tag-green-text" : "text-ui-fg-subtle",
++                  children: !locationId ? isSpanish ? "Elegí una ubicación" : "Choose a location" : isStockShort ? isSpanish ? "Sin stock suficiente" : "Not enough stock" : hasStockLimit ? isSpanish ? "Con stock" : "In stock" : isSpanish ? "Sin control de stock" : "Not tracked"
++                })
+               ] })
+             ] })
+           ] })
+@@ -154713,7 +154674,13 @@ function OrderCreateFulfillmentForm({
+   order,
+   requiresShipping
+ }) {
+-  const { t: t5 } = (0, import_react_i18next214.useTranslation)();
++  const { t: t5, i18n } = (0, import_react_i18next214.useTranslation)();
++  const isSpanish = i18n.language?.startsWith("es") ?? false;
++  const [stockShortItems, setStockShortItems] = (0, import_react207.useState)({});
++  const hasStockShortage = Object.values(stockShortItems).some(Boolean);
++  const handleStockStatusChange = (itemId, isShort) => setStockShortItems(
++    (prev) => prev[itemId] === isShort ? prev : { ...prev, [itemId]: isShort }
++  );
+   const { handleSuccess } = useRouteModal();
+   const direction = useDocumentDirection();
+   const { mutateAsync: createOrderFulfillment, isPending: isMutating } = useCreateOrderFulfillment(order.id);
+@@ -154748,6 +154715,15 @@ function OrderCreateFulfillmentForm({
+     name: "location_id",
+     control: form.control
+   });
++  const [submitError, setSubmitError] = (0, import_react207.useState)(null);
++  (0, import_react207.useEffect)(() => {
++    setSubmitError(null);
++  }, [selectedLocationId]);
++  (0, import_react207.useEffect)(() => {
++    if (submitError) {
++      document.getElementById("order-fulfillment-submit-error")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
++    }
++  }, [submitError]);
+   const { shipping_options = [], isLoading: isShippingOptionsLoading } = useShippingOptions({
+     stock_location_id: selectedLocationId,
+     // is_return: false, // TODO: 500 when enabled
+@@ -154775,6 +154751,9 @@ function OrderCreateFulfillmentForm({
+       });
+       return;
+     }
++    if (hasStockShortage) {
++      return;
++    }
+     let items = Object.entries(data.quantity).map(([id2, quantity]) => ({
+       id: id2,
+       quantity
+@@ -154795,14 +154774,14 @@ function OrderCreateFulfillmentForm({
+       no_notification: !data.send_notification,
+       items
+     };
++    setSubmitError(null);
+     try {
+       await createOrderFulfillment(payload);
+       import_ui204.toast.success(t5("orders.fulfillment.toast.created"));
+       handleSuccess(`/orders/${order.id}`);
+     } catch (e) {
+-      import_ui204.toast.error(
+-        e instanceof Error ? e.message : t5("errorBoundary.defaultTitle")
+-      );
++      const [errorTitle, ...errorDetail] = (e instanceof Error ? e.message : t5("errorBoundary.defaultTitle")).split("\n");
++      setSubmitError({ title: errorTitle, detail: errorDetail.map((line) => line.trim()).filter(Boolean) });
+     }
+   });
+   (0, import_react207.useEffect)(() => {
+@@ -154945,12 +154924,37 @@ function OrderCreateFulfillmentForm({
+                     locationId: selectedLocationId,
+                     disabled: requiresShipping && !isShippingProfileMatching,
+                     reservations: reservations ?? [],
++                    onStockStatusChange: handleStockStatusChange,
+                     currencyCode: order.currency_code
+                   },
+                   item.id
+                 );
+               }) })
+             ] }),
++            hasStockShortage && /* @__PURE__ */ (0, import_jsx_runtime306.jsx)(
++              import_ui204.Alert,
++              {
++                variant: "error",
++                dismissible: false,
++                className: "p-4",
++                children: (() => {
++                  const locationName = stockLocations.options.find((o) => o.value === selectedLocationId)?.label ?? (isSpanish ? "la ubicación elegida" : "the selected location");
++                  return isSpanish ? [
++                    /* @__PURE__ */ (0, import_jsx_runtime306.jsx)("span", { className: "-mt-[3px] block font-medium", children: `No podés preparar este pedido desde ${locationName}` }, "title"),
++                    /* @__PURE__ */ (0, import_jsx_runtime306.jsx)("span", { className: "text-ui-fg-subtle mt-1 block", children: "Hay productos que todavía no tienen stock suficiente en esta sucursal." }, "reason"),
++                    /* @__PURE__ */ (0, import_jsx_runtime306.jsx)("span", { className: "text-ui-fg-subtle mt-1 block", children: `Transferí en el ERP los productos faltantes a ${locationName}. Una vez actualizado el stock, volvé a intentar preparar el pedido.` }, "action")
++                  ] : [
++                    /* @__PURE__ */ (0, import_jsx_runtime306.jsx)("span", { className: "-mt-[3px] block font-medium", children: `You can't fulfill this order from ${locationName}` }, "title"),
++                    /* @__PURE__ */ (0, import_jsx_runtime306.jsx)("span", { className: "text-ui-fg-subtle mt-1 block", children: "Some items don't have enough stock at this location yet." }, "reason"),
++                    /* @__PURE__ */ (0, import_jsx_runtime306.jsx)("span", { className: "text-ui-fg-subtle mt-1 block", children: `Transfer the missing items to ${locationName} in your ERP. Once the stock is updated, try again.` }, "action")
++                  ];
++                })()
++              }
++            ),
++            submitError && /* @__PURE__ */ (0, import_jsx_runtime306.jsxs)(import_ui204.Alert, { id: "order-fulfillment-submit-error", className: "p-4", variant: "error", dismissible: false, children: [
++              /* @__PURE__ */ (0, import_jsx_runtime306.jsx)("span", { className: "-mt-[3px] block font-medium", children: submitError.title }, "title"),
++              ...submitError.detail.map((line, index) => /* @__PURE__ */ (0, import_jsx_runtime306.jsx)("span", { className: "text-ui-fg-subtle mt-1 block", children: line }, index))
++            ] }),
+             form.formState.errors.root && /* @__PURE__ */ (0, import_jsx_runtime306.jsx)(
+               import_ui204.Alert,
+               {
+@@ -154996,7 +155000,7 @@ function OrderCreateFulfillmentForm({
+               size: "small",
+               type: "submit",
+               isLoading: isMutating,
+-              disabled: !shippingOptionId,
++              disabled: !shippingOptionId || hasStockShortage,
+               children: t5("orders.fulfillment.create")
+             }
+           )
+diff --git a/dist/order-create-fulfillment-PQUTTGFY.mjs b/dist/order-create-fulfillment-PQUTTGFY.mjs
+index 0ad484e..70a54e3 100644
+--- a/dist/order-create-fulfillment-PQUTTGFY.mjs
++++ b/dist/order-create-fulfillment-PQUTTGFY.mjs
+@@ -104,9 +104,11 @@ function OrderCreateFulfillmentItem({
+   form,
+   locationId,
+   reservations,
+-  disabled
++  disabled,
++  onStockStatusChange
+ }) {
+-  const { t } = useTranslation();
++  const { t, i18n } = useTranslation();
++  const isSpanish = i18n.language?.startsWith("es") ?? false;
+   const { variant } = useProductVariant(
+     item.product_id ?? "",
+     item.variant_id ?? "",
+@@ -126,12 +128,15 @@ function OrderCreateFulfillmentItem({
+       (i) => i.location_levels?.find((inv) => inv.location_id === locationId)
+     );
+     if (!locationHasEveryInventoryItem) {
+-      return {};
++      const managesInventory = (variant.manage_inventory ?? item.variant?.manage_inventory) === true;
++      return managesInventory ? { availableQuantity: 0, inStockQuantity: 0 } : {};
+     }
+     const inventoryItemRequiredQuantityMap = new Map(
+       inventory_items.map((i) => [i.inventory_item_id, i.required_quantity])
+     );
+-    const reservation = reservations?.find((r) => r.line_item_id === item.id);
++    const reservation = reservations?.find(
++      (r) => r.line_item_id === item.id && r.location_id === locationId
++    );
+     const iitemRequiredQuantity = inventory_items.find(
+       (i) => i.inventory_item_id === reservation?.inventory_item_id
+     )?.required_quantity;
+@@ -171,10 +176,19 @@ function OrderCreateFulfillmentItem({
+     };
+   }, [variant, locationId, reservations]);
+   const minValue = 0;
++  const allowsBackorder = !!(variant?.allow_backorder ?? item.variant?.allow_backorder);
++  const hasStockLimit = availableQuantity !== void 0 && !allowsBackorder;
+   const maxValue = Math.min(
+     getFulfillableQuantity(item),
+-    availableQuantity || Number.MAX_SAFE_INTEGER
++    hasStockLimit ? availableQuantity : Number.MAX_SAFE_INTEGER
+   );
++  const fulfillableQuantity = getFulfillableQuantity(item);
++  const requestedQuantity = Number(form.watch(`quantity.${item.id}`) ?? 0) || 0;
++  const isStockShort = !disabled && hasStockLimit && requestedQuantity > availableQuantity;
++  useEffect(() => {
++    onStockStatusChange?.(item.id, isStockShort);
++  }, [item.id, isStockShort]);
++  useEffect(() => () => onStockStatusChange?.(item.id, false), [item.id]);
+   return /* @__PURE__ */ jsx("div", { className: "bg-ui-bg-subtle shadow-elevation-card-rest my-2 rounded-xl", children: /* @__PURE__ */ jsxs("div", { className: "flex flex-row items-center", children: [
+     disabled && /* @__PURE__ */ jsx("div", { className: "ml-4 inline-flex items-center", children: /* @__PURE__ */ jsx(
+       Tooltip,
+@@ -193,7 +207,7 @@ function OrderCreateFulfillmentItem({
+         ),
+         children: [
+           /* @__PURE__ */ jsxs("div", { className: "flex flex-1 items-center gap-x-3", children: [
+-            /* @__PURE__ */ jsx(Thumbnail, { src: item.thumbnail }),
++            item.thumbnail ? /* @__PURE__ */ jsx("div", { className: "bg-ui-bg-base border-ui-border-base flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border", children: /* @__PURE__ */ jsx("img", { src: item.thumbnail, alt: item.title ?? "", className: "h-full w-full object-contain" }) }) : /* @__PURE__ */ jsx(Thumbnail, { src: null }),
+             /* @__PURE__ */ jsxs("div", { className: "flex flex-col", children: [
+               /* @__PURE__ */ jsxs("div", { children: [
+                 /* @__PURE__ */ jsx(Text, { className: "txt-small", as: "span", weight: "plus", children: item.title }),
+@@ -209,70 +223,17 @@ function OrderCreateFulfillmentItem({
+           /* @__PURE__ */ jsxs("div", { className: "flex flex-1 items-center gap-x-1", children: [
+             /* @__PURE__ */ jsx("div", { className: "mr-2 block h-[16px] w-[2px] bg-gray-200" }),
+             /* @__PURE__ */ jsxs("div", { className: "text-small flex flex-1 flex-col", children: [
+-              /* @__PURE__ */ jsx("span", { className: "text-ui-fg-subtle font-medium", children: t("orders.fulfillment.available") }),
+-              /* @__PURE__ */ jsx("span", { className: "text-ui-fg-subtle", children: availableQuantity || "N/A" })
++              /* @__PURE__ */ jsx("span", { className: "text-ui-fg-subtle font-medium", children: isSpanish ? "Cantidad" : "Quantity" }),
++              /* @__PURE__ */ jsx("span", { className: "text-ui-fg-base", children: fulfillableQuantity === item.quantity ? item.quantity : isSpanish ? `${fulfillableQuantity} de ${item.quantity}` : `${fulfillableQuantity} of ${item.quantity}` })
+             ] }),
+             /* @__PURE__ */ jsxs("div", { className: "flex flex-1 items-center gap-x-1", children: [
+               /* @__PURE__ */ jsx("div", { className: "mr-2 block h-[16px] w-[2px] bg-gray-200" }),
+               /* @__PURE__ */ jsxs("div", { className: "flex flex-col", children: [
+-                /* @__PURE__ */ jsx("span", { className: "text-ui-fg-subtle font-medium", children: t("orders.fulfillment.inStock") }),
+-                /* @__PURE__ */ jsxs("span", { className: "text-ui-fg-subtle", children: [
+-                  inStockQuantity || "N/A",
+-                  " ",
+-                  inStockQuantity && /* @__PURE__ */ jsxs("span", { className: "font-medium text-red-500", children: [
+-                    "-",
+-                    form.getValues(`quantity.${item.id}`)
+-                  ] })
+-                ] })
+-              ] })
+-            ] }),
+-            /* @__PURE__ */ jsxs("div", { className: "flex flex-1 items-center gap-1", children: [
+-              /* @__PURE__ */ jsx(
+-                Form.Field,
+-                {
+-                  control: form.control,
+-                  name: `quantity.${item.id}`,
+-                  rules: { required: true, min: minValue, max: maxValue },
+-                  render: ({ field }) => {
+-                    return /* @__PURE__ */ jsxs(Form.Item, { children: [
+-                      /* @__PURE__ */ jsx(Form.Control, { children: /* @__PURE__ */ jsx(
+-                        Input,
+-                        {
+-                          className: "bg-ui-bg-base txt-small w-[50px] rounded-lg text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+-                          type: "number",
+-                          ...field,
+-                          onChange: (e) => {
+-                            const val = e.target.value === "" ? null : Number(e.target.value);
+-                            field.onChange(val);
+-                            if (val !== null && !isNaN(val)) {
+-                              if (val < minValue || val > maxValue) {
+-                                form.setError(`quantity.${item.id}`, {
+-                                  type: "manual",
+-                                  message: t(
+-                                    "orders.fulfillment.error.wrongQuantity",
+-                                    {
+-                                      count: maxValue,
+-                                      number: maxValue
+-                                    }
+-                                  )
+-                                });
+-                              } else {
+-                                form.clearErrors(`quantity.${item.id}`);
+-                              }
+-                            }
+-                          }
+-                        }
+-                      ) }),
+-                      /* @__PURE__ */ jsx(Form.ErrorMessage, {})
+-                    ] });
+-                  }
+-                }
+-              ),
+-              /* @__PURE__ */ jsxs("span", { className: "text-ui-fg-subtle", children: [
+-                "/ ",
+-                item.quantity,
+-                " ",
+-                t("fields.qty")
++                /* @__PURE__ */ jsx("span", { className: "text-ui-fg-subtle font-medium", children: "Stock" }),
++                /* @__PURE__ */ jsx("span", {
++                  className: isStockShort ? "font-medium text-ui-tag-red-text" : hasStockLimit ? "font-medium text-ui-tag-green-text" : "text-ui-fg-subtle",
++                  children: !locationId ? isSpanish ? "Elegí una ubicación" : "Choose a location" : isStockShort ? isSpanish ? "Sin stock suficiente" : "Not enough stock" : hasStockLimit ? isSpanish ? "Con stock" : "In stock" : isSpanish ? "Sin control de stock" : "Not tracked"
++                })
+               ] })
+             ] })
+           ] })
+@@ -288,7 +249,13 @@ function OrderCreateFulfillmentForm({
+   order,
+   requiresShipping
+ }) {
+-  const { t } = useTranslation2();
++  const { t, i18n } = useTranslation2();
++  const isSpanish = i18n.language?.startsWith("es") ?? false;
++  const [stockShortItems, setStockShortItems] = useState({});
++  const hasStockShortage = Object.values(stockShortItems).some(Boolean);
++  const handleStockStatusChange = (itemId, isShort) => setStockShortItems(
++    (prev) => prev[itemId] === isShort ? prev : { ...prev, [itemId]: isShort }
++  );
+   const { handleSuccess } = useRouteModal();
+   const direction = useDocumentDirection();
+   const { mutateAsync: createOrderFulfillment, isPending: isMutating } = useCreateOrderFulfillment(order.id);
+@@ -323,6 +290,15 @@ function OrderCreateFulfillmentForm({
+     name: "location_id",
+     control: form.control
+   });
++  const [submitError, setSubmitError] = useState(null);
++  useEffect(() => {
++    setSubmitError(null);
++  }, [selectedLocationId]);
++  useEffect(() => {
++    if (submitError) {
++      document.getElementById("order-fulfillment-submit-error")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
++    }
++  }, [submitError]);
+   const { shipping_options = [], isLoading: isShippingOptionsLoading } = useShippingOptions({
+     stock_location_id: selectedLocationId,
+     // is_return: false, // TODO: 500 when enabled
+@@ -350,6 +326,9 @@ function OrderCreateFulfillmentForm({
+       });
+       return;
+     }
++    if (hasStockShortage) {
++      return;
++    }
+     let items = Object.entries(data.quantity).map(([id, quantity]) => ({
+       id,
+       quantity
+@@ -370,14 +349,14 @@ function OrderCreateFulfillmentForm({
+       no_notification: !data.send_notification,
+       items
+     };
++    setSubmitError(null);
+     try {
+       await createOrderFulfillment(payload);
+       toast.success(t("orders.fulfillment.toast.created"));
+       handleSuccess(`/orders/${order.id}`);
+     } catch (e) {
+-      toast.error(
+-        e instanceof Error ? e.message : t("errorBoundary.defaultTitle")
+-      );
++      const [errorTitle, ...errorDetail] = (e instanceof Error ? e.message : t("errorBoundary.defaultTitle")).split("\n");
++      setSubmitError({ title: errorTitle, detail: errorDetail.map((line) => line.trim()).filter(Boolean) });
+     }
+   });
+   useEffect(() => {
+@@ -520,12 +499,37 @@ function OrderCreateFulfillmentForm({
+                     locationId: selectedLocationId,
+                     disabled: requiresShipping && !isShippingProfileMatching,
+                     reservations: reservations ?? [],
++                    onStockStatusChange: handleStockStatusChange,
+                     currencyCode: order.currency_code
+                   },
+                   item.id
+                 );
+               }) })
+             ] }),
++            hasStockShortage && /* @__PURE__ */ jsx2(
++              Alert,
++              {
++                variant: "error",
++                dismissible: false,
++                className: "p-4",
++                children: (() => {
++                  const locationName = stockLocations.options.find((o) => o.value === selectedLocationId)?.label ?? (isSpanish ? "la ubicación elegida" : "the selected location");
++                  return isSpanish ? [
++                    /* @__PURE__ */ jsx2("span", { className: "-mt-[3px] block font-medium", children: `No podés preparar este pedido desde ${locationName}` }, "title"),
++                    /* @__PURE__ */ jsx2("span", { className: "text-ui-fg-subtle mt-1 block", children: "Hay productos que todavía no tienen stock suficiente en esta sucursal." }, "reason"),
++                    /* @__PURE__ */ jsx2("span", { className: "text-ui-fg-subtle mt-1 block", children: `Transferí en el ERP los productos faltantes a ${locationName}. Una vez actualizado el stock, volvé a intentar preparar el pedido.` }, "action")
++                  ] : [
++                    /* @__PURE__ */ jsx2("span", { className: "-mt-[3px] block font-medium", children: `You can't fulfill this order from ${locationName}` }, "title"),
++                    /* @__PURE__ */ jsx2("span", { className: "text-ui-fg-subtle mt-1 block", children: "Some items don't have enough stock at this location yet." }, "reason"),
++                    /* @__PURE__ */ jsx2("span", { className: "text-ui-fg-subtle mt-1 block", children: `Transfer the missing items to ${locationName} in your ERP. Once the stock is updated, try again.` }, "action")
++                  ];
++                })()
++              }
++            ),
++            submitError && /* @__PURE__ */ jsxs2(Alert, { id: "order-fulfillment-submit-error", className: "p-4", variant: "error", dismissible: false, children: [
++              /* @__PURE__ */ jsx2("span", { className: "-mt-[3px] block font-medium", children: submitError.title }, "title"),
++              ...submitError.detail.map((line, index) => /* @__PURE__ */ jsx2("span", { className: "text-ui-fg-subtle mt-1 block", children: line }, index))
++            ] }),
+             form.formState.errors.root && /* @__PURE__ */ jsx2(
+               Alert,
+               {
+@@ -571,7 +575,7 @@ function OrderCreateFulfillmentForm({
+               size: "small",
+               type: "submit",
+               isLoading: isMutating,
+-              disabled: !shippingOptionId,
++              disabled: !shippingOptionId || hasStockShortage,
+               children: t("orders.fulfillment.create")
+             }
+           )

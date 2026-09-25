@@ -1,5 +1,8 @@
 import type { CampaignKitsSectionConfig } from "@lib/site-config/types";
 import { searchTypesenseProducts } from "@lib/typesense";
+import { getActiveTenant } from "@lib/site-config/active-tenant";
+import { BundleCard } from "@modules/bundles/components/bundle-card";
+import { loadBundleCards } from "@modules/bundles/lib/load-bundle-cards";
 import CampaignKitsList from "./kits-list.client";
 
 /**
@@ -17,12 +20,23 @@ import CampaignKitsList from "./kits-list.client";
 export default async function CampaignKits({
   config,
   countryCode,
+  withBundles = false,
 }: {
   config: CampaignKitsSectionConfig;
   countryCode: string;
+  /**
+   * Los kits publicados de la tienda abren el feed, con la card del índice
+   * `/bundles` (PRD Bundles V2 §40). Es lo que distingue un kit de un producto
+   * a simple vista: la card tonal sin foto contra la card de producto con foto.
+   */
+  withBundles?: boolean;
 }) {
   const filter = config.filter ?? {};
   const pageSize = filter.limit ?? 4;
+  // En paralelo con la búsqueda: los kits no le suman latencia al feed.
+  const kitsPromise = withBundles
+    ? Promise.all([loadBundleCards(), getActiveTenant()])
+    : Promise.resolve(null);
   let initialProducts: Awaited<
     ReturnType<typeof searchTypesenseProducts>
   >["products"] = [];
@@ -47,7 +61,26 @@ export default async function CampaignKits({
     if (aIn === bIn) return 0;
     return aIn ? -1 : 1;
   });
-  if (!initialProducts.length) return null;
+  const loaded = await kitsPromise;
+  const kits = loaded?.[0] ?? [];
+  const primaryColor = loaded?.[1].theme?.colors?.primary;
+  if (!initialProducts.length && !kits.length) return null;
+
+  const kitCards = kits.map((kit) => (
+    <li key={kit.id} className="min-w-0">
+      <BundleCard
+        handle={kit.handle}
+        title={kit.title}
+        itemCount={kit.itemCount}
+        configurableCount={kit.configurableCount}
+        fromAmount={kit.fromAmount}
+        currencyCode={kit.currencyCode}
+        primaryColor={primaryColor}
+        index={kit.index}
+        className="h-full"
+      />
+    </li>
+  ));
 
   return (
     <section
@@ -70,6 +103,7 @@ export default async function CampaignKits({
           initialHasMore={initialHasMore}
           pageSize={pageSize}
           countryCode={countryCode}
+          leading={kitCards}
           filters={{
             collectionId: filter.collectionId,
             tag: filter.tag,

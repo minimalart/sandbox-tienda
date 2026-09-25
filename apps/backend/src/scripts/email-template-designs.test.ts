@@ -320,3 +320,38 @@ test('el swatch cae a un gris neutro cuando la carta no tiene hex', async () => 
   const html = await renderPuckEmailHtml(doc);
   assert.match(html, /\{\{#if this\.color_hex\}\}\{\{this\.color_hex\}\}\{\{else\}\}#d1d5db\{\{\/if\}\}/);
 });
+
+/**
+ * DESDEELSUR-80/81: el mail admin mostraba la disponibilidad en una tabla
+ * APARTE ("Disponibilidad en esta sucursal", duplicando el resumen del pedido)
+ * y sólo para retiro. Ahora el badge va al lado de CADA ítem del resumen, para
+ * CUALQUIER orden, y la tabla separada se eliminó del design.
+ */
+
+test('order-notification-admin: el badge de stock va en el LineItems (showStock), no en una tabla aparte', async () => {
+  const design = EMAIL_TEMPLATE_DESIGNS['order-notification-admin']!;
+  const lineItems = design.content?.find((b) => b.type === 'LineItems');
+  assert.ok(lineItems, 'order-notification-admin perdió el bloque LineItems');
+  assert.equal(lineItems!.props?.showStock, 'yes', 'el LineItems del mail admin tiene que pedir el badge de stock');
+
+  const html = await renderPuckEmailHtml(design);
+  assert.match(html, /\{\{#if this\.stock_status_label\}\}/, 'el badge por ítem no llegó al HTML renderizado');
+});
+
+test('order-notification-admin: la tabla "Disponibilidad en esta sucursal" ya no existe', async () => {
+  const html = await renderPuckEmailHtml(EMAIL_TEMPLATE_DESIGNS['order-notification-admin']!);
+  assert.doesNotMatch(html, /Disponibilidad en esta sucursal/);
+});
+
+test('order-notification-admin: sigue mostrando nombre/dirección/teléfono de la sucursal de retiro', async () => {
+  const html = await renderPuckEmailHtml(EMAIL_TEMPLATE_DESIGNS['order-notification-admin']!);
+  assert.match(html, /pickup_store\.name/);
+  assert.match(html, /pickup_store\.address/);
+  assert.match(html, /pickup_store\.phone/);
+});
+
+test('order-notification-admin: aviso de stock insuficiente + de qué sucursal es', async () => {
+  const html = await renderPuckEmailHtml(EMAIL_TEMPLATE_DESIGNS['order-notification-admin']!);
+  assert.match(html, /\{\{#if has_stock_issues\}\}/);
+  assert.match(html, /\{\{#if stock_location_name\}\}/);
+});

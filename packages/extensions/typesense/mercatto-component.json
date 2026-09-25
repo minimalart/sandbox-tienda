@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "typesense",
   "name": "Typesense",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "kind": "extension",
   "status": "ready",
   "dependencies": [],
@@ -436,7 +436,7 @@
     },
     {
       "path": "apps/backend/src/api/admin/whatsapp-advisor/audit/route.ts",
-      "sha256": "1e711e637ea0887d34f13efca258681bf9a1e5f7a1dd3eea10550813e1d727e2"
+      "sha256": "61456e2d82d4a69ac3a256c27bfe4359b4c953070ca29dc979ba009f4d23b713"
     },
     {
       "path": "apps/backend/src/api/admin/whatsapp-advisor/config/route.ts",

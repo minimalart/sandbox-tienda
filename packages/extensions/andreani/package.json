@@ -1,9 +1,10 @@
 {
   "name": "@repo/extension-andreani",
-  "version": "1.4.0",
+  "version": "1.6.0",
   "private": true,
   "description": "Andreani component source package",
   "dependencies": {
-    "@repo/extension-delivery": "workspace:*"
+    "@repo/extension-delivery": "workspace:*",
+    "@repo/extension-email-templates": "workspace:*"
   }
 }

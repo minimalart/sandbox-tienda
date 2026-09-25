@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "store-config",
   "name": "Preferencias",
-  "version": "1.16.0",
+  "version": "1.18.1",
   "kind": "extension",
   "status": "ready",
   "dependencies": [],
@@ -138,7 +138,7 @@
     },
     {
       "path": "apps/backend/src/admin/hooks/api/store-config.tsx",
-      "sha256": "c5754cba94a9e3f919555072239f553231d82c3275ef35b20a2eddfc9415e356"
+      "sha256": "317eae488c820f826a5a9db9990d7013a286861c80ce4a79cb50f7358e47fe33"
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/components/ai-config-card.tsx",
@@ -158,7 +158,7 @@
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/components/email-branding-card.tsx",
-      "sha256": "9857b696731926d97731193e6967613227c6a79533f417bc272672177cc16141"
+      "sha256": "000715e04c06096fd18855de06b48c2cc7ba1f790a05702c663907a495d310cd"
     },
     {
       "path": "apps/backend/src/admin/routes/store-config/components/fiscal-docs-card.tsx",
@@ -210,7 +210,7 @@
     },
     {
       "path": "apps/backend/src/api/admin/store-config/email-branding/route.ts",
-      "sha256": "00252c5324b7ff9e3de34599eb644a6aedfda802bc75763c66a0b9ae76655603"
+      "sha256": "86362a80c85707840b552b1598d043ec1ce7c263497a16560e394c262559b074"
     },
     {
       "path": "apps/backend/src/api/admin/store-config/legal-pages/route.ts",
@@ -266,7 +266,7 @@
     },
     {
       "path": "apps/backend/src/api/store/minimum-purchase/route.ts",
-      "sha256": "b61317440df97890940ff5d85ce1a5175635ab40a182d91f53958d4495c6d6af"
+      "sha256": "545e2a34fcb0e66600da8c37eaa0b51e6be58790861ebd3916f667ec31b5d1a0"
     },
     {
       "path": "apps/backend/src/api/store/store-config/legal-pages/route.ts",
@@ -317,6 +317,14 @@
       "sha256": "7ec8708e4d2ec38940f0226e958c666b3b084305af3d30502197c281aaad4f35"
     },
     {
+      "path": "apps/backend/src/modules/store-config/minimum-purchase.test.ts",
+      "sha256": "54985f03b59aeb193f21d9daa3f708730b12ffbc99c8f70103fbb26dfea874f6"
+    },
+    {
+      "path": "apps/backend/src/modules/store-config/minimum-purchase.ts",
+      "sha256": "de667b26f56df678d64090609c34efd7b22288edc3f4936075566be1cce9b2a6"
+    },
+    {
       "path": "apps/backend/src/modules/store-config/models/index.ts",
       "sha256": "a78f6b3d8f5fd129f9d0cdfa2963815e646be4d625496d9436e2e8c623b5f5f8"
     },
@@ -330,7 +338,7 @@
     },
     {
       "path": "apps/backend/src/modules/store-config/service.ts",
-      "sha256": "fa12a536cd889c92f86c095ac16a0040183f32891af71e6eae9f21941873f62b"
+      "sha256": "f9304f3b4a497eca27620d76167b47b698b4e5733f99a23ce80ce2a61f1474d9"
     },
     {
       "path": "apps/backend/src/modules/store-config/settings.test.ts",
